@@ -181,7 +181,7 @@ The Settings page offers deep customization organized into these categories:
 ### Setup
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/deemix-app.git
+git clone https://github.com/DRAZY/deemix-app.git
 cd deemix-app
 npm install
 ```

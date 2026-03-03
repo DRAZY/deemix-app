@@ -117,7 +117,7 @@ const whatsNew = [
       </h2>
       <div class="space-y-2">
         <button
-          @click="openLink('https://github.com/YOUR_USERNAME/deemix-app')"
+          @click="openLink('https://github.com/DRAZY/deemix-app')"
           class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-background-tertiary transition-colors text-left"
         >
           <svg class="w-5 h-5 text-foreground-muted flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -132,7 +132,7 @@ const whatsNew = [
           </svg>
         </button>
         <button
-          @click="openLink('https://github.com/YOUR_USERNAME/deemix-app/issues')"
+          @click="openLink('https://github.com/DRAZY/deemix-app/issues')"
           class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-background-tertiary transition-colors text-left"
         >
           <svg class="w-5 h-5 text-foreground-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
