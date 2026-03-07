@@ -82,7 +82,7 @@ Pre-built binaries are available on the [Releases](../../releases) page.
 
 | Platform | Architecture | Formats |
 |----------|-------------|---------|
-| **macOS** | Universal (Intel + Apple Silicon) | `.dmg` |
+| **macOS** | Universal (Intel + Apple Silicon), ARM64 (Apple Silicon) | `.dmg` |
 | **Windows** | x64, ARM64 | `.exe` (Installer), `.exe` (Portable) |
 | **Linux** | x64, ARM64 | `.AppImage`, `.deb` |
 
@@ -90,6 +90,7 @@ Pre-built binaries are available on the [Releases](../../releases) page.
 
 #### macOS
 - `Deemix Remastered-{version}-universal.dmg` -- Intel + Apple Silicon
+- `Deemix Remastered-{version}-arm64.dmg` -- Apple Silicon only
 
 #### Windows
 - `Deemix Remastered-Setup-{version}-x64.exe` -- Installer (x64)
