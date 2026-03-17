@@ -268,12 +268,22 @@ export const useDownloadStore = defineStore('downloads', () => {
 
   async function syncSettingsToServer() {
     const settingsStore = useSettingsStore()
+
+    // Ensure settings are loaded before syncing — on Windows, userData reads
+    // can be slower and the store may not be ready when downloads are triggered
+    if (!settingsStore.isLoaded) {
+      console.log('[DownloadStore] Settings not yet loaded, waiting...')
+      await settingsStore.loadSettings()
+    }
+
     try {
       const qualityMap: Record<string, string> = {
         '128': 'MP3_128',
         '320': 'MP3_320',
         'flac': 'FLAC'
       }
+
+      console.log(`[DownloadStore] Syncing settings to server - quality: ${settingsStore.settings.quality}, downloadPath: ${settingsStore.settings.downloadPath}`)
 
       const settingsToSync: Record<string, any> = {
         quality: qualityMap[settingsStore.settings.quality] || 'MP3_320',
@@ -326,11 +336,17 @@ export const useDownloadStore = defineStore('downloads', () => {
         settingsToSync.downloadPath = settingsStore.settings.downloadPath
       }
 
-      await fetch(`http://127.0.0.1:${serverPort.value}/api/settings`, {
+      const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settingsToSync)
       })
+
+      if (!response.ok) {
+        console.error(`[DownloadStore] Settings sync failed with status ${response.status}`)
+      } else {
+        console.log('[DownloadStore] Settings synced to server successfully')
+      }
     } catch (e) {
       console.error('[DownloadStore] Failed to sync settings:', e)
     }

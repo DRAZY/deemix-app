@@ -1547,6 +1547,7 @@ export class DeemixServer extends EventEmitter {
 
     const isPlaylist = !!playlistName
     console.log(`[Server] Batch download: ${trackIds.length} tracks${isPlaylist ? `, playlist: "${playlistName}"` : ''}`)
+    console.log(`[Server] Batch settings - quality: ${this.settings.quality}, path: ${this.settings.downloadPath}, createPlaylistFolder: ${this.settings.createPlaylistFolder}, createAlbumFolder: ${this.settings.createAlbumFolder}`)
 
     try {
       const downloadIds: string[] = []
