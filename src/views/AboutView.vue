@@ -23,9 +23,13 @@ function openLink(url: string) {
 }
 
 const whatsNew = [
-  'Security patches for axios, lodash, and tar dependencies',
-  'Upgraded electron-builder to v26 for improved packaging',
-  'Added About page with version and runtime information'
+  'Playlist Sync -- Automatically monitor Spotify and Deezer playlists for new tracks with flexible scheduling',
+  'Link Analyzer batch downloads -- Converted Spotify playlists download as a single item with unified progress',
+  'Settings integration -- Sync and Link Analyzer downloads now use your configured quality, folders, and metadata',
+  'Cover art display -- Album artwork shows correctly for converted Spotify tracks in Downloads tab',
+  'Playlist card downloads -- Clicking playlist covers now properly downloads as playlists',
+  'Spotify username persistence -- Username is now saved and restored across app restarts',
+  'Cross-platform settings sync -- Settings are reliably applied on Windows, macOS, and Linux'
 ]
 </script>
 
