@@ -2063,8 +2063,38 @@ export class DeemixServer extends EventEmitter {
       return
     }
 
+    // Resolve share/short links (link.deezer.com, deezer.page.link) to full URLs
+    let resolvedUrl = rawUrl.trim()
+    if (resolvedUrl.includes('link.deezer.com') || resolvedUrl.includes('deezer.page.link')) {
+      try {
+        resolvedUrl = await new Promise<string>((resolve, reject) => {
+          const doRequest = (targetUrl: string, redirectCount: number) => {
+            if (redirectCount > 5) {
+              reject(new Error('Too many redirects'))
+              return
+            }
+            const protocol = targetUrl.startsWith('https') ? https : http
+            protocol.get(targetUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (response: any) => {
+              if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+                doRequest(response.headers.location, redirectCount + 1)
+              } else {
+                resolve(targetUrl)
+              }
+              response.resume()
+            }).on('error', reject)
+          }
+          doRequest(resolvedUrl, 0)
+        })
+        console.log(`[Server] Resolved share link: ${rawUrl} -> ${resolvedUrl}`)
+      } catch (err: any) {
+        console.error('[Server] Failed to resolve share link:', err.message)
+        this.sendJSON(res, { error: 'Failed to resolve share link' }, 400)
+        return
+      }
+    }
+
     // Parse the Deezer URL to extract type and ID
-    const parsed = this.parseDeezerUrl(rawUrl)
+    const parsed = this.parseDeezerUrl(resolvedUrl)
 
     if (!parsed) {
       this.sendJSON(res, { error: 'Invalid or unsupported Deezer URL' }, 400)
