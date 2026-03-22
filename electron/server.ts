@@ -607,18 +607,20 @@ export class DeemixServer extends EventEmitter {
 
     // Enable CORS - restrict to known localhost origins only
     // This prevents DNS rebinding attacks even though we restrict to localhost connections
+    // Note: Electron file:// sends Origin: "null" (string) or no origin header
     const origin = req.headers.origin || ''
     const allowedOrigins = [
       'http://localhost:5173',
       'http://127.0.0.1:5173',
       `http://localhost:${this.port}`,
-      `http://127.0.0.1:${this.port}`,
-      'file://'  // Electron production mode
+      `http://127.0.0.1:${this.port}`
     ]
-    // Only set CORS headers for known origins — reject unknown origins entirely
-    const corsOrigin = allowedOrigins.includes(origin) ? origin : null
-    if (corsOrigin) {
-      res.setHeader('Access-Control-Allow-Origin', corsOrigin)
+    if (allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin)
+    } else if (origin === '' || origin === 'null' || origin.startsWith('file://')) {
+      // Electron production mode: file:// pages send "null" or empty origin
+      // Safe because localhost binding already restricts access
+      res.setHeader('Access-Control-Allow-Origin', '*')
     }
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS')
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
