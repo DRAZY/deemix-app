@@ -23,13 +23,12 @@ function openLink(url: string) {
 }
 
 const whatsNew = [
+  'Deezer Favorites Import -- Import your liked tracks, albums, artists, and playlists from your Deezer account',
+  'Deezer share link support -- Link Analyzer now resolves link.deezer.com share URLs',
+  'Charts navigation fix -- "See all" links now correctly show all chart tabs on every platform',
   'Playlist Sync -- Automatically monitor Spotify and Deezer playlists for new tracks with flexible scheduling',
   'Link Analyzer batch downloads -- Converted Spotify playlists download as a single item with unified progress',
-  'Settings integration -- Sync and Link Analyzer downloads now use your configured quality, folders, and metadata',
-  'Cover art display -- Album artwork shows correctly for converted Spotify tracks in Downloads tab',
-  'Playlist card downloads -- Clicking playlist covers now properly downloads as playlists',
-  'Spotify username persistence -- Username is now saved and restored across app restarts',
-  'Cross-platform settings sync -- Settings are reliably applied on Windows, macOS, and Linux'
+  'Settings integration -- Sync and Link Analyzer downloads now use your configured quality, folders, and metadata'
 ]
 </script>
 
