@@ -2,6 +2,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useFavoritesStore } from '../stores/favoritesStore'
+import { useAuthStore } from '../stores/authStore'
+import { useToastStore } from '../stores/toastStore'
 import TrackCard from '../components/TrackCard.vue'
 import AlbumCard from '../components/AlbumCard.vue'
 import ArtistCard from '../components/ArtistCard.vue'
@@ -9,7 +11,10 @@ import EmptyState from '../components/EmptyState.vue'
 
 const { t } = useI18n()
 const favoritesStore = useFavoritesStore()
+const authStore = useAuthStore()
+const toastStore = useToastStore()
 const activeTab = ref<'tracks' | 'albums' | 'artists' | 'playlists'>('tracks')
+const serverPort = ref(6595)
 
 const tabs = computed(() => [
   { id: 'tracks', label: t('favorites.tracks'), count: () => favoritesStore.favoriteTracks.length },
@@ -18,14 +23,49 @@ const tabs = computed(() => [
   { id: 'playlists', label: t('favorites.playlists'), count: () => favoritesStore.favoritePlaylists.length }
 ])
 
-onMounted(() => {
+onMounted(async () => {
+  if (window.electronAPI) {
+    serverPort.value = await window.electronAPI.getServerPort()
+  }
   favoritesStore.loadFavorites()
 })
+
+async function importFromDeezer() {
+  try {
+    const { imported, skipped } = await favoritesStore.importDeezerFavorites(serverPort.value)
+    if (imported > 0) {
+      toastStore.success(`Imported ${imported} favorites from Deezer${skipped > 0 ? ` (${skipped} already existed)` : ''}`)
+    } else if (skipped > 0) {
+      toastStore.info('All Deezer favorites are already imported')
+    } else {
+      toastStore.info('No favorites found on your Deezer account')
+    }
+  } catch (e: any) {
+    toastStore.error(e.message || 'Failed to import Deezer favorites')
+  }
+}
 </script>
 
 <template>
   <div class="space-y-6">
-    <h1 class="text-2xl font-bold">{{ t('favorites.title') }}</h1>
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold">{{ t('favorites.title') }}</h1>
+      <button
+        v-if="authStore.isLoggedIn"
+        @click="importFromDeezer"
+        :disabled="favoritesStore.isImporting"
+        class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <svg v-if="favoritesStore.isImporting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+        </svg>
+        <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        </svg>
+        {{ favoritesStore.isImporting ? 'Importing...' : 'Import from Deezer' }}
+      </button>
+    </div>
 
     <!-- Tabs -->
     <div class="flex gap-2 border-b border-zinc-800 pb-2">

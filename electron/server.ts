@@ -697,6 +697,10 @@ export class DeemixServer extends EventEmitter {
         await this.handleAnalyze(url, res)
         break
 
+      case '/api/user/favorites':
+        await this.handleGetUserFavorites(res)
+        break
+
       // Spotify endpoints
       case '/api/spotify/auth':
         await this.handleSpotifyAuth(req, res)
@@ -2052,6 +2056,45 @@ export class DeemixServer extends EventEmitter {
       this.sendJSON(res, response)
     } catch (error: any) {
       this.sendJSON(res, { error: error.message }, 500)
+    }
+  }
+
+  private async handleGetUserFavorites(res: ServerResponse): Promise<void> {
+    if (!deezerAuth.isLoggedIn()) {
+      this.sendJSON(res, { error: 'Authentication required' }, 401)
+      return
+    }
+
+    const session = deezerAuth.getSession()
+    const userId = session?.user?.id
+    if (!userId) {
+      this.sendJSON(res, { error: 'User ID not available' }, 400)
+      return
+    }
+
+    try {
+      console.log(`[Server] Fetching Deezer favorites for user ${userId}`)
+
+      // Fetch all favorite types in parallel from the public API
+      const [tracksRes, albumsRes, artistsRes, playlistsRes] = await Promise.all([
+        this.deezerPublicAPI(`/user/${userId}/tracks?limit=200`),
+        this.deezerPublicAPI(`/user/${userId}/albums?limit=200`),
+        this.deezerPublicAPI(`/user/${userId}/artists?limit=200`),
+        this.deezerPublicAPI(`/user/${userId}/playlists?limit=200`)
+      ])
+
+      const result = {
+        tracks: tracksRes?.data || [],
+        albums: albumsRes?.data || [],
+        artists: artistsRes?.data || [],
+        playlists: (playlistsRes?.data || []).filter((p: any) => !p.is_loved_track)
+      }
+
+      console.log(`[Server] Fetched favorites: ${result.tracks.length} tracks, ${result.albums.length} albums, ${result.artists.length} artists, ${result.playlists.length} playlists`)
+      this.sendJSON(res, result)
+    } catch (error: any) {
+      console.error('[Server] Failed to fetch user favorites:', error.message)
+      this.sendJSON(res, { error: error.message || 'Failed to fetch favorites' }, 500)
     }
   }
 

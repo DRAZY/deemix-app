@@ -83,16 +83,104 @@ export const useFavoritesStore = defineStore('favorites', () => {
     }
   }
 
+  const isImporting = ref(false)
+
+  async function importDeezerFavorites(serverPort: number): Promise<{ imported: number; skipped: number }> {
+    isImporting.value = true
+    let imported = 0
+    let skipped = 0
+
+    try {
+      const response = await fetch(`http://127.0.0.1:${serverPort}/api/user/favorites`)
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err.error || `Server returned ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      // Import tracks
+      for (const track of (data.tracks || [])) {
+        if (!isFavorite(track.id, 'track')) {
+          favorites.value.push({
+            id: `track_${track.id}`,
+            type: 'track',
+            data: track,
+            addedAt: new Date().toISOString()
+          })
+          imported++
+        } else {
+          skipped++
+        }
+      }
+
+      // Import albums
+      for (const album of (data.albums || [])) {
+        if (!isFavorite(album.id, 'album')) {
+          favorites.value.push({
+            id: `album_${album.id}`,
+            type: 'album',
+            data: album,
+            addedAt: new Date().toISOString()
+          })
+          imported++
+        } else {
+          skipped++
+        }
+      }
+
+      // Import artists
+      for (const artist of (data.artists || [])) {
+        if (!isFavorite(artist.id, 'artist')) {
+          favorites.value.push({
+            id: `artist_${artist.id}`,
+            type: 'artist',
+            data: artist,
+            addedAt: new Date().toISOString()
+          })
+          imported++
+        } else {
+          skipped++
+        }
+      }
+
+      // Import playlists
+      for (const playlist of (data.playlists || [])) {
+        if (!isFavorite(playlist.id, 'playlist')) {
+          favorites.value.push({
+            id: `playlist_${playlist.id}`,
+            type: 'playlist',
+            data: playlist,
+            addedAt: new Date().toISOString()
+          })
+          imported++
+        } else {
+          skipped++
+        }
+      }
+
+      if (imported > 0) {
+        saveFavorites()
+      }
+
+      return { imported, skipped }
+    } finally {
+      isImporting.value = false
+    }
+  }
+
   return {
     favorites,
     favoriteTracks,
     favoriteAlbums,
     favoriteArtists,
     favoritePlaylists,
+    isImporting,
     loadFavorites,
     addFavorite,
     removeFavorite,
     isFavorite,
-    toggleFavorite
+    toggleFavorite,
+    importDeezerFavorites
   }
 })
