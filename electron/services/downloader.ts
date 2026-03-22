@@ -1030,6 +1030,7 @@ export class Downloader extends EventEmitter {
     const year = trackInfo.PHYSICAL_RELEASE_DATE?.split('-')[0] || ''
     const genre = '' // Would need async lookup
     const label = trackInfo.LABEL_NAME || ''
+    const folderExplicit = trackInfo.EXPLICIT_LYRICS ? 'Explicit' : ''
 
     // Template replacement helper for FOLDER names - uses album context for consistency
     const replaceFolderTemplate = (template: string): string => {
@@ -1041,6 +1042,7 @@ export class Downloader extends EventEmitter {
           .replace(/%year%/gi, year)
           .replace(/%genre%/gi, genre)
           .replace(/%label%/gi, label)
+          .replace(/%explicit%/gi, folderExplicit)
       )
     }
 

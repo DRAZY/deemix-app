@@ -848,6 +848,7 @@ function saveNow() {
               placeholder="%artist% - %album%"
               class="input w-full text-sm"
             />
+            <p class="text-xs text-foreground-muted mt-1">Variables: %artist%, %album%, %year%, %label%, %explicit%</p>
           </div>
         </div>
       </div>
@@ -897,7 +898,7 @@ function saveNow() {
         <div class="p-3 bg-background-main rounded-lg">
           <p class="text-xs text-foreground-muted mb-1">{{ t('settings.examplePath') }}</p>
           <code class="text-sm text-primary-400">
-            ~/Music/Deemix/<span v-if="settingsStore.settings.createArtistFolder">{{ settingsStore.settings.artistFolderTemplate.replace('%artist%', 'Artist Name') }}/</span><span v-if="settingsStore.settings.createAlbumFolder">{{ settingsStore.settings.albumFolderTemplate.replace('%artist%', 'Artist').replace('%album%', 'Album') }}/</span>01 - Track.mp3
+            ~/Music/Deemix/<span v-if="settingsStore.settings.createArtistFolder">{{ settingsStore.settings.artistFolderTemplate.replace('%artist%', 'Artist Name') }}/</span><span v-if="settingsStore.settings.createAlbumFolder">{{ settingsStore.settings.albumFolderTemplate.replace('%artist%', 'Artist').replace('%album%', 'Album').replace('%year%', '2024').replace('%label%', 'Label').replace('%explicit%', 'Explicit') }}/</span>01 - Track.mp3
           </code>
         </div>
       </div>
