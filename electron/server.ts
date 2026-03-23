@@ -1575,16 +1575,36 @@ export class DeemixServer extends EventEmitter {
         })
         downloadIds.push(downloadId)
 
-        // Build M3U track entry using the playlist track template
-        const position = String(i + 1).padStart(2, '0')
+        // Build M3U track entry — resolve ALL template variables
+        const position = String(i + 1).padStart(3, '0')
         const artistName = track.artist?.name || 'Unknown Artist'
         const trackTitle = track.title || 'Unknown Track'
+        const albumTitle = track.album?.title || 'Unknown Album'
+        const trackNum = (track.track_position || '').toString().padStart(2, '0')
+        const discNum = (track.disk_number || '1').toString()
         const template = this.settings.playlistTrackTemplate || '%position% - %artist% - %title%'
         const fileName = template
-          .replace(/%position%/g, position)
-          .replace(/%artist%/g, artistName)
-          .replace(/%title%/g, trackTitle)
-          .replace(/[<>:"/\\|?*]/g, '_') // Remove invalid filename chars
+          .replace(/%position%/gi, position)
+          .replace(/%artist%/gi, artistName)
+          .replace(/%artists%/gi, artistName)
+          .replace(/%title%/gi, trackTitle)
+          .replace(/%album%/gi, albumTitle)
+          .replace(/%albumartist%/gi, artistName)
+          .replace(/%tracknumber%/gi, trackNum)
+          .replace(/%discnumber%/gi, discNum)
+          .replace(/%year%/gi, '')
+          .replace(/%date%/gi, '')
+          .replace(/%bpm%/gi, '')
+          .replace(/%isrc%/gi, '')
+          .replace(/%explicit%/gi, track.explicit_lyrics ? 'Explicit' : '')
+          .replace(/%track_id%/gi, track.id?.toString() || '')
+          .replace(/%[a-z_]+%/gi, '') // Remove any remaining unresolved variables
+          .replace(/\s*\(\s*\)/g, '') // Clean empty brackets
+          .replace(/\s*\[\s*\]/g, '')
+          .replace(/\s*\{\s*\}/g, '')
+          .replace(/[<>:"/\\|?*]/g, '_')
+          .replace(/\s+/g, ' ')
+          .trim()
 
         m3uTracks.push({
           duration: track.duration || 0,
@@ -1700,30 +1720,9 @@ export class DeemixServer extends EventEmitter {
         downloadIds.push(downloadId)
       }
 
-      // Generate M3U playlist file if setting is enabled and this is a playlist
-      if (isPlaylist && this.settings.createPlaylistFile && downloadIds.length > 0) {
-        try {
-          const fileExt = this.settings.quality === 'FLAC' ? '.flac' : '.mp3'
-          const m3uTracks = trackIds.map((_, i) => {
-            const position = String(i + 1).padStart(2, '0')
-            const template = this.settings.playlistTrackTemplate || '%position% - %artist% - %title%'
-            const fileName = template
-              .replace(/%position%/g, position)
-              .replace(/%artist%/g, 'Unknown Artist')
-              .replace(/%title%/g, 'Unknown Track')
-              .replace(/[<>:"/\\|?*]/g, '_')
-            return {
-              duration: 0,
-              artist: 'Unknown Artist',
-              title: 'Unknown Track',
-              relativePath: `${playlistName}/${fileName}${fileExt}`
-            }
-          })
-          downloader.generateM3U(playlistName, this.settings.downloadPath, m3uTracks)
-        } catch (err: any) {
-          console.error('[Server] M3U generation failed:', err.message)
-        }
-      }
+      // Note: M3U generation skipped for batch downloads — track metadata isn't
+      // available at this point (only track IDs). The actual downloaded files
+      // will have correct names via the downloader's template engine.
 
       this.sendJSON(res, { ids: downloadIds, count: downloadIds.length })
     } catch (error: any) {

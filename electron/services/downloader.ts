@@ -1040,6 +1040,8 @@ export class Downloader extends EventEmitter {
     const folderExplicit = (albumContext ? isAlbumExplicit : isTrackExplicit) ? 'Explicit' : ''
 
     // Template replacement helper for FOLDER names - uses album context for consistency
+    const today = new Date()
+    const dateStr = today.toISOString().split('T')[0] // YYYY-MM-DD
     const replaceFolderTemplate = (template: string): string => {
       return this.sanitizeFilename(
         template
@@ -1047,6 +1049,7 @@ export class Downloader extends EventEmitter {
           .replace(/%album%/gi, folderAlbum)
           .replace(/%playlist%/gi, options.playlistName || 'Playlist')
           .replace(/%year%/gi, year)
+          .replace(/%date%/gi, dateStr)
           .replace(/%genre%/gi, genre)
           .replace(/%label%/gi, label)
           .replace(/%explicit%/gi, folderExplicit)
@@ -1610,12 +1613,12 @@ export class Downloader extends EventEmitter {
       // Get tag settings (default to all true if not provided)
       const tagSettings = options.metadataSettings?.tags || {
         title: true, artist: true, album: true, cover: true,
-        trackNumber: true, trackTotal: true, discNumber: true, discTotal: true,
+        trackNumber: true, trackTotal: false, discNumber: true, discTotal: false,
         albumArtist: true, genre: true, year: true, date: true,
-        explicitLyrics: true, isrc: true, trackLength: true, albumBarcode: true,
-        bpm: true, replayGain: false, albumLabel: true, unsyncLyrics: true,
-        syncLyrics: true, copyright: true, composer: true, involvedPeople: true,
-        sourceId: true
+        explicitLyrics: false, isrc: true, trackLength: true, albumBarcode: true,
+        bpm: true, replayGain: false, albumLabel: true, unsyncLyrics: false,
+        syncLyrics: false, copyright: false, composer: false, involvedPeople: false,
+        sourceId: false
       }
       const usingDefaults = !options.metadataSettings?.tags
       console.log('[Downloader] Tag settings source:', usingDefaults ? 'DEFAULTS (settings not received!)' : 'USER SETTINGS')
@@ -2017,12 +2020,12 @@ export class Downloader extends EventEmitter {
       // Get tag settings (default to all true if not provided)
       const tagSettings = options.metadataSettings?.tags || {
         title: true, artist: true, album: true, cover: true,
-        trackNumber: true, trackTotal: true, discNumber: true, discTotal: true,
+        trackNumber: true, trackTotal: false, discNumber: true, discTotal: false,
         albumArtist: true, genre: true, year: true, date: true,
-        explicitLyrics: true, isrc: true, trackLength: true, albumBarcode: true,
-        bpm: true, replayGain: false, albumLabel: true, unsyncLyrics: true,
-        syncLyrics: true, copyright: true, composer: true, involvedPeople: true,
-        sourceId: true
+        explicitLyrics: false, isrc: true, trackLength: true, albumBarcode: true,
+        bpm: true, replayGain: false, albumLabel: true, unsyncLyrics: false,
+        syncLyrics: false, copyright: false, composer: false, involvedPeople: false,
+        sourceId: false
       }
       const usingDefaults = !options.metadataSettings?.tags
       console.log('[Downloader/FLAC] Tag settings source:', usingDefaults ? 'DEFAULTS (settings not received!)' : 'USER SETTINGS')
