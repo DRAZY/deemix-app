@@ -1409,7 +1409,7 @@ export class DeemixServer extends EventEmitter {
         albumArtist: albumInfo.artist?.name || 'Unknown Artist',
         artistPicture: albumInfo.artist?.picture_xl || albumInfo.artist?.picture_big || albumInfo.artist?.picture_medium || undefined,
         totalDiscs: totalDiscs,
-        explicitLyrics: !!albumInfo.explicit_lyrics
+        explicitLyrics: albumInfo.explicit_content_lyrics === 1
       }
 
       for (const track of albumTracks.data) {
