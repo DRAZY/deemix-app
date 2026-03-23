@@ -2164,19 +2164,33 @@ export class DeemixServer extends EventEmitter {
     try {
       console.log(`[Server] Fetching Deezer favorites for user ${userId}`)
 
-      // Fetch all favorite types in parallel from the public API
-      const [tracksRes, albumsRes, artistsRes, playlistsRes] = await Promise.all([
-        this.deezerPublicAPI(`/user/${userId}/tracks?limit=200`),
-        this.deezerPublicAPI(`/user/${userId}/albums?limit=200`),
-        this.deezerPublicAPI(`/user/${userId}/artists?limit=200`),
-        this.deezerPublicAPI(`/user/${userId}/playlists?limit=200`)
+      // Paginated fetch — Deezer API returns max 200 per request.
+      // Follow the 'next' URL until all favorites are fetched.
+      const fetchAllPages = async (endpoint: string): Promise<any[]> => {
+        const allItems: any[] = []
+        let url = `${endpoint}${endpoint.includes('?') ? '&' : '?'}limit=200`
+        while (url) {
+          const response = await this.deezerPublicAPI(url.replace('https://api.deezer.com', ''))
+          if (response?.data) {
+            allItems.push(...response.data)
+          }
+          url = response?.next || null
+        }
+        return allItems
+      }
+
+      const [tracks, albums, artists, playlists] = await Promise.all([
+        fetchAllPages(`/user/${userId}/tracks`),
+        fetchAllPages(`/user/${userId}/albums`),
+        fetchAllPages(`/user/${userId}/artists`),
+        fetchAllPages(`/user/${userId}/playlists`)
       ])
 
       const result = {
-        tracks: tracksRes?.data || [],
-        albums: albumsRes?.data || [],
-        artists: artistsRes?.data || [],
-        playlists: (playlistsRes?.data || []).filter((p: any) => !p.is_loved_track)
+        tracks,
+        albums,
+        artists,
+        playlists: playlists.filter((p: any) => !p.is_loved_track)
       }
 
       console.log(`[Server] Fetched favorites: ${result.tracks.length} tracks, ${result.albums.length} albums, ${result.artists.length} artists, ${result.playlists.length} playlists`)
