@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
+import { setLocale } from '../i18n'
 
 export type ColorTheme = 'violet' | 'spotify' | 'rose' | 'ocean' | 'sunset' | 'mint' | 'dracula' | 'nord'
 
@@ -368,9 +369,14 @@ export const useSettingsStore = defineStore('settings', () => {
       }
     }
 
-    // Apply color theme on load
+    // Apply color theme and language on load
     applyColorTheme(settings.value.colorTheme)
     applyThemeMode(settings.value.theme)
+    if (settings.value.language && settings.value.language !== 'en') {
+      setLocale(settings.value.language).catch(e =>
+        console.warn('[Settings] Failed to restore language:', e)
+      )
+    }
 
     isLoaded.value = true
     console.log('[Settings] Settings load complete. ARL loaded:', !!settings.value.arl)
