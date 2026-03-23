@@ -30,7 +30,8 @@
 - **Charts** -- Browse global and country-specific charts for tracks, albums, artists, and playlists
 - **Artist Pages** -- Full discographies with filters for albums, EPs, singles, compilations, and featured-in releases
 - **Album & Playlist Views** -- Track listings with metadata, selective track downloads, and audio previews
-- **Link Analyzer** -- Paste any Deezer or Spotify URL to view content details and download directly
+- **Link Analyzer** -- Paste any Deezer or Spotify URL to view content details and download directly (supports share links like `link.deezer.com`)
+- **Favorites Import** -- Import your liked tracks, albums, artists, and playlists from your Deezer account
 
 ### Downloading
 
@@ -46,8 +47,9 @@
 - **ID3 Tagging** -- 21 configurable tag fields including title, artist, album, lyrics, ISRC, BPM, and more
 - **Album Artwork** -- Embedded and local cover art with configurable size and format (JPEG/PNG)
 - **Synced Lyrics** -- Optional LRC file generation for synced lyrics
-- **Folder Structure** -- Customizable templates for artist, album, playlist, and CD folder organization
-- **Track Naming** -- Template-based naming with variables like `%artist%`, `%title%`, `%tracknumber%`
+- **Folder Structure** -- Customizable templates for artist, album, playlist, and CD folder organization with variables like `%artist%`, `%album%`, `%year%`, `%explicit%`
+- **Track Naming** -- Template-based naming with variables like `%artist%`, `%title%`, `%tracknumber%`, `%explicit%`
+- **Explicit Tag** -- `%explicit%` variable in folder templates separates clean and explicit album versions into different folders
 
 ### Spotify Integration
 
@@ -84,6 +86,10 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
 - **Encrypted Credentials** -- ARL tokens and Spotify secrets stored using Electron safeStorage
 - **Path Traversal Protection** -- Download paths validated against directory traversal attacks
 - **Session Management** -- Automatic expiration detection and re-authentication
+- **SSRF Protection** -- Share link resolution validates redirect destinations against domain whitelist
+- **URL Validation** -- External URLs validated before opening; blocks unsafe protocols
+- **Error Sanitization** -- Internal server errors are sanitized before returning to the client
+- **Sandboxed Windows** -- All browser windows use OS-level process isolation
 
 ---
 
@@ -95,7 +101,7 @@ Pre-built binaries are available on the [Releases](../../releases) page.
 |----------|-------------|---------|
 | **macOS** | Universal (Intel + Apple Silicon), ARM64 (Apple Silicon) | `.dmg` |
 | **Windows** | x64, ARM64 | `.exe` (Installer), `.exe` (Portable) |
-| **Linux** | x64, ARM64 | `.AppImage`, `.deb` |
+| **Linux** | x64, ARM64 | `.AppImage` |
 
 ### Release Files
 
@@ -112,8 +118,6 @@ Pre-built binaries are available on the [Releases](../../releases) page.
 #### Linux
 - `Deemix Remastered-{version}.AppImage` -- AppImage (x64)
 - `Deemix Remastered-{version}-arm64.AppImage` -- AppImage (ARM64)
-- `deemix-app_{version}_amd64.deb` -- Debian package (x64)
-- `deemix-app_{version}_arm64.deb` -- Debian package (ARM64)
 
 ---
 
@@ -171,7 +175,7 @@ The Settings page offers deep customization organized into these categories:
 |----------|-------------|
 | **Appearance** | Theme (8 color themes), dark/light/system mode, slim sidebar, slim downloads |
 | **Downloads** | Quality (128/320/FLAC), max concurrent, overwrite mode, bitrate fallback |
-| **Folder Structure** | Create artist/album/playlist/CD folders, customizable folder name templates |
+| **Folder Structure** | Create artist/album/playlist/CD folders, templates with `%explicit%` tag support |
 | **Track Naming** | Templates for single tracks, album tracks, and playlist tracks |
 | **Metadata Tags** | Toggle 21 individual ID3 tag fields (title, artist, album, lyrics, ISRC, BPM, etc.) |
 | **Album Covers** | Save covers, embedded/local artwork size, JPEG quality, PNG option |
@@ -254,7 +258,7 @@ Build output is written to the `release/` directory.
 ```
 deemix-app/
 ├── src/                        # Vue frontend
-│   ├── components/             # Reusable UI components (19)
+│   ├── components/             # Reusable UI components (20)
 │   ├── composables/            # Composition functions
 │   │   ├── useContextMenu.ts       # Right-click menu handling
 │   │   ├── useKeyboardShortcuts.ts # Global keyboard shortcuts
@@ -266,7 +270,7 @@ deemix-app/
 │   ├── stores/                 # Pinia state stores
 │   │   ├── authStore.ts            # Authentication & session
 │   │   ├── downloadStore.ts        # Download queue management
-│   │   ├── favoritesStore.ts       # Favorites tracking
+│   │   ├── favoritesStore.ts       # Favorites tracking & Deezer import
 │   │   ├── playerStore.ts          # Audio preview playback
 │   │   ├── profileStore.ts         # Settings profiles
 │   │   ├── settingsStore.ts        # User preferences
