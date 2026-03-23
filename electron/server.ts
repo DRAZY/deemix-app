@@ -1402,6 +1402,12 @@ export class DeemixServer extends EventEmitter {
       // Calculate total number of discs in the album
       const totalDiscs = Math.max(...albumTracks.data.map((t: any) => t.disk_number || 1), 1)
 
+      // Determine explicit status by checking actual track data
+      // Album-level explicit_content_lyrics is unreliable (code 4 = "partial" for both
+      // truly explicit albums and non-explicit albums with explicit cover art).
+      // Instead, check if ANY track is explicitly flagged (code 1).
+      const hasExplicitTracks = albumTracks.data.some((t: any) => t.explicit_content_lyrics === 1)
+
       // Build album context for consistent folder naming
       const albumContext = {
         albumId: albumId,
@@ -1409,7 +1415,7 @@ export class DeemixServer extends EventEmitter {
         albumArtist: albumInfo.artist?.name || 'Unknown Artist',
         artistPicture: albumInfo.artist?.picture_xl || albumInfo.artist?.picture_big || albumInfo.artist?.picture_medium || undefined,
         totalDiscs: totalDiscs,
-        explicitLyrics: albumInfo.explicit_content_lyrics === 1
+        explicitLyrics: hasExplicitTracks
       }
 
       for (const track of albumTracks.data) {
