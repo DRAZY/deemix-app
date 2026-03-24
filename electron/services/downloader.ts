@@ -1672,12 +1672,16 @@ export class Downloader extends EventEmitter {
       let processedTitle = versionInfo ? `${baseTitle} (${versionInfo})` : baseTitle
       let processedArtist = ''
 
-      // Get artist string first
+      // Get artist string — combine main artists and featured artists
       if (trackInfo.ART_NAME) {
         if (options.metadataSettings?.saveOnlyMainArtist) {
           processedArtist = trackInfo.ART_NAME
         } else if (trackInfo.SNG_CONTRIBUTORS?.main_artist?.length > 0) {
-          let artists = trackInfo.SNG_CONTRIBUTORS.main_artist
+          let artists = [...trackInfo.SNG_CONTRIBUTORS.main_artist]
+          // Include featured artists
+          if (trackInfo.SNG_CONTRIBUTORS.featartist?.length > 0) {
+            artists.push(...trackInfo.SNG_CONTRIBUTORS.featartist)
+          }
           if (removeArtistCombinations) {
             artists = this.filterArtistCombinations(artists)
           }
@@ -2077,12 +2081,16 @@ export class Downloader extends EventEmitter {
       let processedTitle = flacVersionInfo ? `${flacBaseTitle} (${flacVersionInfo})` : flacBaseTitle
       let processedArtist = ''
 
-      // Get artist string first
+      // Get artist string — combine main artists and featured artists
       if (trackInfo.ART_NAME) {
         if (options.metadataSettings?.saveOnlyMainArtist) {
           processedArtist = trackInfo.ART_NAME
         } else if (trackInfo.SNG_CONTRIBUTORS?.main_artist?.length > 0) {
-          let artists = trackInfo.SNG_CONTRIBUTORS.main_artist
+          let artists = [...trackInfo.SNG_CONTRIBUTORS.main_artist]
+          // Include featured artists
+          if (trackInfo.SNG_CONTRIBUTORS.featartist?.length > 0) {
+            artists.push(...trackInfo.SNG_CONTRIBUTORS.featartist)
+          }
           if (removeArtistCombinations) {
             artists = this.filterArtistCombinations(artists)
           }
