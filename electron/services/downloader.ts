@@ -1672,22 +1672,24 @@ export class Downloader extends EventEmitter {
       let processedTitle = versionInfo ? `${baseTitle} (${versionInfo})` : baseTitle
       let processedArtist = ''
 
-      // Get artist string — combine main artists and featured artists
+      // Get artist string — include all artists (main + featured)
+      // ARTISTS array is the most reliable source from the Deezer private API
+      // as it contains every credited artist on the track
       if (trackInfo.ART_NAME) {
         if (options.metadataSettings?.saveOnlyMainArtist) {
           processedArtist = trackInfo.ART_NAME
-        } else if (trackInfo.SNG_CONTRIBUTORS?.main_artist?.length > 0) {
-          let artists = [...trackInfo.SNG_CONTRIBUTORS.main_artist]
-          // Include featured artists
-          if (trackInfo.SNG_CONTRIBUTORS.featartist?.length > 0) {
-            artists.push(...trackInfo.SNG_CONTRIBUTORS.featartist)
-          }
+        } else if (trackInfo.ARTISTS?.length > 0) {
+          let artists = trackInfo.ARTISTS.map((a: any) => a.ART_NAME)
           if (removeArtistCombinations) {
             artists = this.filterArtistCombinations(artists)
           }
           processedArtist = artists.join(tagSeparator)
-        } else if (trackInfo.ARTISTS?.length > 0) {
-          let artists = trackInfo.ARTISTS.map((a: any) => a.ART_NAME)
+        } else if (trackInfo.SNG_CONTRIBUTORS?.main_artist?.length > 0) {
+          // Fallback: combine main_artist + featartist from contributors
+          let artists = [...trackInfo.SNG_CONTRIBUTORS.main_artist]
+          if (trackInfo.SNG_CONTRIBUTORS.featartist?.length > 0) {
+            artists.push(...trackInfo.SNG_CONTRIBUTORS.featartist)
+          }
           if (removeArtistCombinations) {
             artists = this.filterArtistCombinations(artists)
           }
@@ -1725,11 +1727,11 @@ export class Downloader extends EventEmitter {
 
       if (tagSettings.albumArtist) {
         if (isPlaylistCompilation) {
-          // For playlist compilations, set album artist to "Various Artists"
           tags.performerInfo = 'Various Artists'
-        } else if (trackInfo.ALB_ART_NAME) {
-          const albumArtist = this.handleVariousArtists(trackInfo.ALB_ART_NAME, keepVariousArtists)
-          tags.performerInfo = albumArtist || processedArtist // Fall back to track artist if Various Artists is removed
+        } else {
+          const rawAlbumArtist = trackInfo.ALB_ART_NAME || trackInfo.ART_NAME || ''
+          const albumArtist = this.handleVariousArtists(rawAlbumArtist, keepVariousArtists)
+          tags.performerInfo = albumArtist || processedArtist || rawAlbumArtist
         }
       }
 
@@ -2081,22 +2083,21 @@ export class Downloader extends EventEmitter {
       let processedTitle = flacVersionInfo ? `${flacBaseTitle} (${flacVersionInfo})` : flacBaseTitle
       let processedArtist = ''
 
-      // Get artist string — combine main artists and featured artists
+      // Get artist string — include all artists (main + featured)
       if (trackInfo.ART_NAME) {
         if (options.metadataSettings?.saveOnlyMainArtist) {
           processedArtist = trackInfo.ART_NAME
-        } else if (trackInfo.SNG_CONTRIBUTORS?.main_artist?.length > 0) {
-          let artists = [...trackInfo.SNG_CONTRIBUTORS.main_artist]
-          // Include featured artists
-          if (trackInfo.SNG_CONTRIBUTORS.featartist?.length > 0) {
-            artists.push(...trackInfo.SNG_CONTRIBUTORS.featartist)
-          }
+        } else if (trackInfo.ARTISTS?.length > 0) {
+          let artists = trackInfo.ARTISTS.map((a: any) => a.ART_NAME)
           if (removeArtistCombinations) {
             artists = this.filterArtistCombinations(artists)
           }
           processedArtist = artists.join(separator)
-        } else if (trackInfo.ARTISTS?.length > 0) {
-          let artists = trackInfo.ARTISTS.map((a: any) => a.ART_NAME)
+        } else if (trackInfo.SNG_CONTRIBUTORS?.main_artist?.length > 0) {
+          let artists = [...trackInfo.SNG_CONTRIBUTORS.main_artist]
+          if (trackInfo.SNG_CONTRIBUTORS.featartist?.length > 0) {
+            artists.push(...trackInfo.SNG_CONTRIBUTORS.featartist)
+          }
           if (removeArtistCombinations) {
             artists = this.filterArtistCombinations(artists)
           }
@@ -2134,12 +2135,15 @@ export class Downloader extends EventEmitter {
 
       if (tagSettings.albumArtist) {
         if (isPlaylistCompilation) {
-          // For playlist compilations, set album artist to "Various Artists"
           comments.push(`ALBUMARTIST=Various Artists`)
           comments.push(`COMPILATION=1`)
-        } else if (trackInfo.ALB_ART_NAME) {
-          const albumArtist = this.handleVariousArtists(trackInfo.ALB_ART_NAME, keepVariousArtists)
-          comments.push(`ALBUMARTIST=${albumArtist || processedArtist}`)
+        } else {
+          const rawAlbumArtist = trackInfo.ALB_ART_NAME || trackInfo.ART_NAME || ''
+          const albumArtist = this.handleVariousArtists(rawAlbumArtist, keepVariousArtists)
+          const finalAlbumArtist = albumArtist || processedArtist || rawAlbumArtist
+          if (finalAlbumArtist) {
+            comments.push(`ALBUMARTIST=${finalAlbumArtist}`)
+          }
         }
       }
 

@@ -1580,8 +1580,9 @@ export class DeemixServer extends EventEmitter {
         const artistName = track.artist?.name || 'Unknown Artist'
         const trackTitle = track.title || 'Unknown Track'
         const albumTitle = track.album?.title || 'Unknown Album'
-        const trackNum = (track.track_position || '').toString().padStart(2, '0')
-        const discNum = (track.disk_number || '1').toString()
+        // Playlist tracks don't have track_position/disk_number — use playlist index as fallback
+        const trackNum = (track.track_position || (i + 1)).toString().padStart(2, '0')
+        const discNum = (track.disk_number || 1).toString()
         const template = this.settings.playlistTrackTemplate || '%position% - %artist% - %title%'
         const fileName = template
           .replace(/%position%/gi, position)
