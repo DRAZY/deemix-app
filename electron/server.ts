@@ -1578,16 +1578,59 @@ export class DeemixServer extends EventEmitter {
         })
         downloadIds.push(downloadId)
 
-        // Build M3U track entry — resolve ALL template variables
-        const position = String(i + 1).padStart(3, '0')
+        // Build M3U track entry — reconstruct the relative path to mirror
+        // the actual folder structure the downloader creates
         const artistName = track.artist?.name || 'Unknown Artist'
         const trackTitle = track.title || 'Unknown Track'
         const albumTitle = track.album?.title || 'Unknown Album'
-        // Playlist tracks don't have track_position/disk_number — use playlist index as fallback
         const trackNum = (track.track_position || (i + 1)).toString().padStart(2, '0')
         const discNum = (track.disk_number || 1).toString()
-        const template = this.settings.playlistTrackTemplate || '%position% - %artist% - %title%'
-        const fileName = template
+        const position = String(i + 1).padStart(3, '0')
+
+        // Helper to resolve folder template variables and sanitize
+        const resolveFolderTemplate = (template: string): string => {
+          return template
+            .replace(/%artist%/gi, artistName)
+            .replace(/%album%/gi, albumTitle)
+            .replace(/%playlist%/gi, playlistName)
+            .replace(/%year%/gi, '')
+            .replace(/%date%/gi, '')
+            .replace(/%genre%/gi, '')
+            .replace(/%label%/gi, '')
+            .replace(/%explicit%/gi, track.explicit_content_lyrics === 1 ? 'Explicit' : '')
+            .replace(/%[a-z_]+%/gi, '')
+            .replace(/\s*\(\s*\)/g, '').replace(/\s*\[\s*\]/g, '').replace(/\s*\{\s*\}/g, '')
+            .replace(/[<>:"/\\|?*]/g, '_').replace(/\s+/g, ' ').trim()
+        }
+
+        // Build folder path segments matching the downloader's buildOutputPath logic
+        const pathSegments: string[] = []
+
+        if (this.settings.createPlaylistFolder) {
+          pathSegments.push(resolveFolderTemplate(this.settings.playlistFolderTemplate || '%playlist%'))
+
+          // Playlist structure creates artist/album subfolders within playlist
+          if (this.settings.createPlaylistStructure) {
+            if (this.settings.createArtistFolder) {
+              pathSegments.push(resolveFolderTemplate(this.settings.artistFolderTemplate || '%artist%'))
+            }
+            if (this.settings.createAlbumFolder) {
+              pathSegments.push(resolveFolderTemplate(this.settings.albumFolderTemplate || '%artist% - %album%'))
+            }
+          }
+        } else {
+          // Standard folder structure (no playlist folder)
+          if (this.settings.createArtistFolder) {
+            pathSegments.push(resolveFolderTemplate(this.settings.artistFolderTemplate || '%artist%'))
+          }
+          if (this.settings.createAlbumFolder) {
+            pathSegments.push(resolveFolderTemplate(this.settings.albumFolderTemplate || '%artist% - %album%'))
+          }
+        }
+
+        // Build filename from template
+        const fileTemplate = this.settings.playlistTrackTemplate || '%position% - %artist% - %title%'
+        const fileName = fileTemplate
           .replace(/%position%/gi, position)
           .replace(/%artist%/gi, artistName)
           .replace(/%artists%/gi, artistName)
@@ -1596,25 +1639,17 @@ export class DeemixServer extends EventEmitter {
           .replace(/%albumartist%/gi, artistName)
           .replace(/%tracknumber%/gi, trackNum)
           .replace(/%discnumber%/gi, discNum)
-          .replace(/%year%/gi, '')
-          .replace(/%date%/gi, '')
-          .replace(/%bpm%/gi, '')
-          .replace(/%isrc%/gi, '')
-          .replace(/%explicit%/gi, track.explicit_lyrics ? 'Explicit' : '')
-          .replace(/%track_id%/gi, track.id?.toString() || '')
-          .replace(/%[a-z_]+%/gi, '') // Remove any remaining unresolved variables
-          .replace(/\s*\(\s*\)/g, '') // Clean empty brackets
-          .replace(/\s*\[\s*\]/g, '')
-          .replace(/\s*\{\s*\}/g, '')
-          .replace(/[<>:"/\\|?*]/g, '_')
-          .replace(/\s+/g, ' ')
-          .trim()
+          .replace(/%[a-z_]+%/gi, '')
+          .replace(/\s*\(\s*\)/g, '').replace(/\s*\[\s*\]/g, '').replace(/\s*\{\s*\}/g, '')
+          .replace(/[<>:"/\\|?*]/g, '_').replace(/\s+/g, ' ').trim()
+
+        pathSegments.push(`${fileName}${fileExt}`)
 
         m3uTracks.push({
           duration: track.duration || 0,
           artist: artistName,
           title: trackTitle,
-          relativePath: `${playlistName}/${fileName}${fileExt}`
+          relativePath: pathSegments.join('/')
         })
       }
 
