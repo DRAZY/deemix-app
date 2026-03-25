@@ -1466,7 +1466,8 @@ export class DeemixServer extends EventEmitter {
           },
           discNumber: track.disk_number,
           albumContext: albumContext,
-          createErrorLog: this.settings.createErrorLog
+          createErrorLog: this.settings.createErrorLog,
+          overwriteMode: this.settings.overwriteFiles
         })
         downloadIds.push(downloadId)
       }
@@ -1572,7 +1573,8 @@ export class DeemixServer extends EventEmitter {
             playlistName: playlistName
           },
           savePlaylistAsCompilation: this.settings.savePlaylistAsCompilation,
-          createErrorLog: this.settings.createErrorLog
+          createErrorLog: this.settings.createErrorLog,
+          overwriteMode: this.settings.overwriteFiles
         })
         downloadIds.push(downloadId)
 
@@ -1717,7 +1719,8 @@ export class DeemixServer extends EventEmitter {
             keepVariousArtists: this.settings.keepVariousArtists,
             removeArtistCombinations: this.settings.removeArtistCombinations
           },
-          createErrorLog: this.settings.createErrorLog
+          createErrorLog: this.settings.createErrorLog,
+          overwriteMode: this.settings.overwriteFiles
         })
         downloadIds.push(downloadId)
       }
