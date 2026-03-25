@@ -1519,6 +1519,32 @@ export class DeemixServer extends EventEmitter {
       // Determine file extension based on quality
       const fileExt = this.settings.quality === 'FLAC' ? '.flac' : '.mp3'
 
+      // Pre-fetch track details for M3U — playlist tracks lack track_position
+      // and disk_number, but individual track endpoints have them
+      let trackDetailMap: Map<number, any> | null = null
+      if (this.settings.createPlaylistFile) {
+        try {
+          trackDetailMap = new Map()
+          // Fetch in batches of 10 to avoid overwhelming the API
+          const batchSize = 10
+          for (let b = 0; b < playlist.data.length; b += batchSize) {
+            const batch = playlist.data.slice(b, b + batchSize)
+            const details = await Promise.all(
+              batch.map((t: any) => this.deezerPublicAPI(`/track/${t.id}`).catch(() => null))
+            )
+            for (const detail of details) {
+              if (detail?.id) {
+                trackDetailMap.set(detail.id, detail)
+              }
+            }
+          }
+          console.log(`[Server] Pre-fetched ${trackDetailMap.size} track details for M3U`)
+        } catch (err: any) {
+          console.warn('[Server] Failed to pre-fetch track details for M3U:', err.message)
+          trackDetailMap = null
+        }
+      }
+
       for (let i = 0; i < playlist.data.length; i++) {
         const track = playlist.data[i]
         const downloadId = await downloader.download({
@@ -1583,8 +1609,11 @@ export class DeemixServer extends EventEmitter {
         const artistName = track.artist?.name || 'Unknown Artist'
         const trackTitle = track.title || 'Unknown Track'
         const albumTitle = track.album?.title || 'Unknown Album'
-        const trackNum = (track.track_position || (i + 1)).toString().padStart(2, '0')
-        const discNum = (track.disk_number || 1).toString()
+        // Playlist track objects lack track_position/disk_number — look up from
+        // the pre-fetched detail map to get the real album position numbers
+        const trackDetail = trackDetailMap?.get(track.id)
+        const trackNum = (trackDetail?.track_position || track.track_position || (i + 1)).toString().padStart(2, '0')
+        const discNum = (trackDetail?.disk_number || track.disk_number || 1).toString()
         const position = String(i + 1).padStart(3, '0')
 
         // Helper to resolve folder template variables and sanitize
