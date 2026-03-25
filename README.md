@@ -93,6 +93,28 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
 
 ---
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/home-new-releases.png" alt="Home - New Releases" width="800" />
+  <br />
+  <em>Home Dashboard — New releases, search, and navigation</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/home-albums-playlists.png" alt="Home - Albums & Playlists" width="800" />
+  <br />
+  <em>Most Streamed Albums and Popular Playlists</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/settings.png" alt="Settings" width="800" />
+  <br />
+  <em>Settings — Profiles, themes, and deep customization</em>
+</p>
+
+---
+
 ## Downloads
 
 Pre-built binaries are available on the [Releases](../../releases) page.
