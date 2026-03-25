@@ -39,7 +39,7 @@
 - **Batch Downloads** -- Download entire albums, playlists, or select individual tracks
 - **Download Queue** -- Pause, resume, reorder (drag-and-drop), cancel, and retry downloads
 - **Smart Fallbacks** -- Automatic bitrate and search fallback when preferred quality is unavailable
-- **Concurrent Downloads** -- Configurable from 2 to 10 simultaneous downloads
+- **Concurrent Downloads** -- Configurable from 2 to 10+ simultaneous downloads
 - **Conflict Handling** -- Skip, overwrite, or rename when files already exist
 
 ### Metadata & Organization
