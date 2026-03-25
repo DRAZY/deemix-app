@@ -37,6 +37,7 @@
 
 - **Audio Formats** -- MP3 128 kbps, MP3 320 kbps, and FLAC (lossless)
 - **Batch Downloads** -- Download entire albums, playlists, or select individual tracks
+- **Batch Favorites** -- Download all your favorite tracks, albums, or playlists with one click
 - **Download Queue** -- Pause, resume, reorder (drag-and-drop), cancel, and retry downloads
 - **Smart Fallbacks** -- Automatic bitrate and search fallback when preferred quality is unavailable
 - **Concurrent Downloads** -- Configurable from 2 to 10+ simultaneous downloads
@@ -45,6 +46,8 @@
 ### Metadata & Organization
 
 - **ID3 Tagging** -- 21 configurable tag fields including title, artist, album, lyrics, ISRC, BPM, and more
+- **Featured Artists** -- All credited artists (main + featured) included in tags with configurable separator
+- **M3U Playlists** -- Automatic M3U8 playlist file generation with paths matching actual downloaded files
 - **Album Artwork** -- Embedded and local cover art with configurable size and format (JPEG/PNG)
 - **Synced Lyrics** -- Optional LRC file generation for synced lyrics
 - **Folder Structure** -- Customizable templates for artist, album, playlist, and CD folder organization with variables like `%artist%`, `%album%`, `%year%`, `%explicit%`
