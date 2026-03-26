@@ -55,6 +55,10 @@ const filterTabs = computed(() => [
   { key: 'featured' as DiscographyFilter, label: t('artistView.featuredIn'), count: getFilterCount('featured') }
 ])
 
+// Sort order for discography
+type DiscographySort = 'default' | 'name-asc' | 'name-desc' | 'date-newest' | 'date-oldest'
+const discographySort = ref<DiscographySort>('default')
+
 // Filter albums based on active tab
 const filteredAlbums = computed(() => {
   if (activeFilter.value === 'all') {
@@ -66,6 +70,16 @@ const filteredAlbums = computed(() => {
     return featuredInAlbums.value
   }
   return albums.value.filter(a => a.record_type === activeFilter.value)
+})
+
+// Sorted discography
+const sortedAlbums = computed(() => {
+  const items = [...filteredAlbums.value]
+  if (discographySort.value === 'name-asc') return items.sort((a, b) => (a.title || '').localeCompare(b.title || ''))
+  if (discographySort.value === 'name-desc') return items.sort((a, b) => (b.title || '').localeCompare(a.title || ''))
+  if (discographySort.value === 'date-newest') return items.sort((a, b) => (b.release_date || '').localeCompare(a.release_date || ''))
+  if (discographySort.value === 'date-oldest') return items.sort((a, b) => (a.release_date || '').localeCompare(b.release_date || ''))
+  return items // 'default' = Deezer's order
 })
 
 // Get the latest release (albums are already sorted newest-first)
@@ -478,6 +492,23 @@ const contextMenuItems = computed(() => {
           </button>
         </div>
 
+        <!-- Sort Controls -->
+        <div class="flex items-center gap-2 mb-4">
+          <svg class="w-4 h-4 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+          </svg>
+          <select
+            v-model="discographySort"
+            class="text-sm bg-background-secondary text-foreground rounded-lg px-3 py-1.5 border border-zinc-700 focus:border-primary-500 outline-none"
+          >
+            <option value="default">Default</option>
+            <option value="name-asc">Name A-Z</option>
+            <option value="name-desc">Name Z-A</option>
+            <option value="date-newest">Newest First</option>
+            <option value="date-oldest">Oldest First</option>
+          </select>
+        </div>
+
         <!-- Discography Table -->
         <div class="overflow-hidden rounded-lg bg-background-secondary/30">
           <!-- Table Header -->
@@ -492,7 +523,7 @@ const contextMenuItems = computed(() => {
           <!-- Table Body -->
           <div class="divide-y divide-zinc-800/50">
             <router-link
-              v-for="album in filteredAlbums"
+              v-for="album in sortedAlbums"
               :key="album.id"
               :to="`/album/${album.id}`"
               class="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-3 items-center hover:bg-white/5 transition-colors group"

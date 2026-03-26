@@ -19,6 +19,36 @@ const toastStore = useToastStore()
 const activeTab = ref<'tracks' | 'albums' | 'artists' | 'playlists'>('tracks')
 const isDownloading = ref(false)
 const serverPort = ref(6595)
+const sortOrder = ref<'added' | 'name-asc' | 'name-desc'>('added')
+
+// Sorted favorites — sorts the store's arrays without mutating them
+const sortedTracks = computed(() => {
+  const tracks = [...favoritesStore.favoriteTracks]
+  if (sortOrder.value === 'name-asc') return tracks.sort((a, b) => (a.title || '').localeCompare(b.title || ''))
+  if (sortOrder.value === 'name-desc') return tracks.sort((a, b) => (b.title || '').localeCompare(a.title || ''))
+  return tracks // 'added' = original order from store
+})
+
+const sortedAlbums = computed(() => {
+  const albums = [...favoritesStore.favoriteAlbums]
+  if (sortOrder.value === 'name-asc') return albums.sort((a, b) => (a.title || '').localeCompare(b.title || ''))
+  if (sortOrder.value === 'name-desc') return albums.sort((a, b) => (b.title || '').localeCompare(a.title || ''))
+  return albums
+})
+
+const sortedArtists = computed(() => {
+  const artists = [...favoritesStore.favoriteArtists]
+  if (sortOrder.value === 'name-asc') return artists.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+  if (sortOrder.value === 'name-desc') return artists.sort((a, b) => (b.name || '').localeCompare(a.name || ''))
+  return artists
+})
+
+const sortedPlaylists = computed(() => {
+  const playlists = [...favoritesStore.favoritePlaylists]
+  if (sortOrder.value === 'name-asc') return playlists.sort((a, b) => (a.title || '').localeCompare(b.title || ''))
+  if (sortOrder.value === 'name-desc') return playlists.sort((a, b) => (b.title || '').localeCompare(a.title || ''))
+  return playlists
+})
 
 const tabs = computed(() => [
   { id: 'tracks', label: t('favorites.tracks'), count: () => favoritesStore.favoriteTracks.length },
@@ -159,11 +189,26 @@ async function importFromDeezer() {
       </button>
     </div>
 
+    <!-- Sort Controls -->
+    <div class="flex items-center gap-2">
+      <svg class="w-4 h-4 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+      </svg>
+      <select
+        v-model="sortOrder"
+        class="text-sm bg-background-secondary text-foreground rounded-lg px-3 py-1.5 border border-zinc-700 focus:border-primary-500 outline-none"
+      >
+        <option value="added">Date Added</option>
+        <option value="name-asc">Name A-Z</option>
+        <option value="name-desc">Name Z-A</option>
+      </select>
+    </div>
+
     <!-- Tracks -->
     <div v-if="activeTab === 'tracks'">
-      <div v-if="favoritesStore.favoriteTracks.length > 0" class="space-y-1">
+      <div v-if="sortedTracks.length > 0" class="space-y-1">
         <TrackCard
-          v-for="track in favoritesStore.favoriteTracks"
+          v-for="track in sortedTracks"
           :key="track.id"
           :track="track"
         />
@@ -180,7 +225,7 @@ async function importFromDeezer() {
     <div v-if="activeTab === 'albums'">
       <div v-if="favoritesStore.favoriteAlbums.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <AlbumCard
-          v-for="album in favoritesStore.favoriteAlbums"
+          v-for="album in sortedAlbums"
           :key="album.id"
           :album="album"
         />
@@ -197,7 +242,7 @@ async function importFromDeezer() {
     <div v-if="activeTab === 'artists'">
       <div v-if="favoritesStore.favoriteArtists.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <ArtistCard
-          v-for="artist in favoritesStore.favoriteArtists"
+          v-for="artist in sortedArtists"
           :key="artist.id"
           :artist="artist"
         />
@@ -214,7 +259,7 @@ async function importFromDeezer() {
     <div v-if="activeTab === 'playlists'">
       <div v-if="favoritesStore.favoritePlaylists.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <AlbumCard
-          v-for="playlist in favoritesStore.favoritePlaylists"
+          v-for="playlist in sortedPlaylists"
           :key="playlist.id"
           :album="{
             id: playlist.id,
