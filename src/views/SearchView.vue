@@ -366,11 +366,16 @@ async function handlePaste(e: ClipboardEvent) {
           failed++
         }
       } else if (link.type === 'artist') {
-        // Download full discography — fetch all albums and queue each
+        // Download full discography — fetch artist info + all albums
+        const artistInfo = await deezerAPI.getArtist(id)
         const albums = await deezerAPI.getArtistAlbums(id)
         if (albums.length > 0) {
           for (const album of albums) {
             try {
+              // Inject artist info — /artist/{id}/albums doesn't include it
+              if (!album.artist && artistInfo) {
+                album.artist = { id: artistInfo.id, name: artistInfo.name }
+              }
               const tracks = await deezerAPI.getAlbumTracks(album.id)
               if (tracks?.length > 0) {
                 await downloadStore.addAlbumDownload(album, tracks)
