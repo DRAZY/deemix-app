@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { deezerAPI } from '../services/deezerAPI'
 import { useSearchHistory } from '../composables/useSearchHistory'
 import { useDownloadStore } from '../stores/downloadStore'
+import { useAuthStore } from '../stores/authStore'
 import { useToastStore } from '../stores/toastStore'
 import TrackCard from '../components/TrackCard.vue'
 import AlbumCard from '../components/AlbumCard.vue'
@@ -21,7 +22,10 @@ const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const downloadStore = useDownloadStore()
+const authStore = useAuthStore()
 const toastStore = useToastStore()
+const serverPort = ref(6595)
+const isBulkDownloading = ref(false)
 
 const searchQuery = ref('')
 const activeTab = ref<'all' | 'track' | 'album' | 'artist' | 'playlist'>('all')
@@ -171,7 +175,10 @@ const resultCounts = computed(() => ({
   playlists: pagination.value.playlists.total || results.value.playlists.length
 }))
 
-onMounted(() => {
+onMounted(async () => {
+  if (window.electronAPI) {
+    serverPort.value = await window.electronAPI.getServerPort()
+  }
   if (route.query.q) {
     searchQuery.value = route.query.q as string
     performSearch()
@@ -293,6 +300,82 @@ async function loadMore(type: 'track' | 'album' | 'artist' | 'playlist') {
   }
 }
 
+// Extract Deezer URLs from text (supports newlines, spaces, commas as separators)
+function extractDeezerUrls(text: string): Array<{ type: string; id: string }> {
+  const links: Array<{ type: string; id: string }> = []
+  // Match standard Deezer URLs
+  const urlPattern = /(?:https?:\/\/)?(?:www\.)?deezer\.com(?:\/[a-z]{2})?\/(track|album|artist|playlist)\/(\d+)/gi
+  let match
+  while ((match = urlPattern.exec(text)) !== null) {
+    links.push({ type: match[1].toLowerCase(), id: match[2] })
+  }
+  return links
+}
+
+async function handlePaste(e: ClipboardEvent) {
+  const text = e.clipboardData?.getData('text') || ''
+  const links = extractDeezerUrls(text)
+
+  // Only trigger bulk mode if 2+ links found
+  if (links.length < 2) return
+
+  // Prevent the paste from going into the search input
+  e.preventDefault()
+
+  if (!authStore.isLoggedIn) {
+    toastStore.error('Login required to download')
+    return
+  }
+
+  isBulkDownloading.value = true
+  toastStore.info(`Processing ${links.length} links...`)
+  await downloadStore.syncSettingsToServer()
+
+  let queued = 0
+  let failed = 0
+
+  for (const link of links) {
+    try {
+      if (link.type === 'track') {
+        const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/download`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trackId: parseInt(link.id) })
+        })
+        if (response.ok) queued++
+        else failed++
+      } else if (link.type === 'album') {
+        const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/download/album`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ albumId: parseInt(link.id) })
+        })
+        if (response.ok) queued++
+        else failed++
+      } else if (link.type === 'playlist') {
+        const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/download/playlist`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playlistId: parseInt(link.id) })
+        })
+        if (response.ok) queued++
+        else failed++
+      }
+    } catch (err) {
+      console.error(`[Search] Bulk download failed for ${link.type}/${link.id}:`, err)
+      failed++
+    }
+  }
+
+  isBulkDownloading.value = false
+
+  if (queued > 0) {
+    toastStore.success(`Queued ${queued} download${queued > 1 ? 's' : ''} from ${links.length} links${failed > 0 ? ` (${failed} failed)` : ''}`)
+  } else {
+    toastStore.error('Failed to queue any downloads')
+  }
+}
+
 function handleSearch() {
   performSearch()
 }
@@ -377,6 +460,7 @@ const contextMenuItems = computed(() => {
               type="text"
               :placeholder="t('search.placeholder')"
               class="input pl-12 text-lg"
+              @paste="handlePaste"
               @focus="handleSearchFocus"
               @blur="handleSearchBlur"
               @contextmenu="openSearchInputMenu"

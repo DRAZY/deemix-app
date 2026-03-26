@@ -37,6 +37,7 @@
 
 - **Audio Formats** -- MP3 128 kbps, MP3 320 kbps, and FLAC (lossless)
 - **Batch Downloads** -- Download entire albums, playlists, or select individual tracks
+- **Bulk Link Paste** -- Paste multiple Deezer links into the Search bar to queue them all at once
 - **Batch Favorites** -- Download all your favorite tracks, albums, or playlists with one click
 - **Download Queue** -- Pause, resume, reorder (drag-and-drop), cancel, and retry downloads
 - **Smart Fallbacks** -- Automatic bitrate and search fallback when preferred quality is unavailable

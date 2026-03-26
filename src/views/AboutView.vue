@@ -23,6 +23,7 @@ function openLink(url: string) {
 }
 
 const whatsNew = [
+  'Bulk Link Paste -- Paste multiple Deezer links into the Search bar to queue them all for download at once',
   'Batch Favorites Download -- Download all your favorite tracks, albums, or playlists with one click',
   'Featured Artists in Tags -- Artist tags now include all credited artists (main + featured), not just the main artist',
   'M3U Playlist Paths Fixed -- Playlist files now use actual file paths from completed downloads, guaranteed to match what is on disk',
