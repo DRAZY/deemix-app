@@ -28,7 +28,8 @@
 - **Home Dashboard** -- New releases, top tracks, top albums, and popular playlists at a glance
 - **Search** -- Find tracks, albums, artists, and playlists with tabbed result filtering and batch selection
 - **Charts** -- Browse global and country-specific charts for tracks, albums, artists, and playlists
-- **Artist Pages** -- Full discographies with filters for albums, EPs, singles, compilations, and featured-in releases
+- **Artist Pages** -- Full discographies with filters for albums, EPs, singles, compilations, and featured-in releases, with sorting by name or date
+- **Sorting** -- Sort favorites and artist discographies by name (A-Z, Z-A), date, or default order
 - **Album & Playlist Views** -- Track listings with metadata, selective track downloads, and audio previews
 - **Link Analyzer** -- Paste any Deezer or Spotify URL to view content details and download directly (supports share links like `link.deezer.com`)
 - **Favorites Import** -- Import your liked tracks, albums, artists, and playlists from your Deezer account
