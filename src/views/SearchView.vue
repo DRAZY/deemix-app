@@ -370,6 +370,8 @@ async function handlePaste(e: ClipboardEvent) {
         const artistInfo = await deezerAPI.getArtist(id)
         const albums = await deezerAPI.getArtistAlbums(id)
         if (albums.length > 0) {
+          let albumsQueued = 0
+          let albumsFailed = 0
           for (const album of albums) {
             try {
               // Inject artist info — /artist/{id}/albums doesn't include it
@@ -379,12 +381,21 @@ async function handlePaste(e: ClipboardEvent) {
               const tracks = await deezerAPI.getAlbumTracks(album.id)
               if (tracks?.length > 0) {
                 await downloadStore.addAlbumDownload(album, tracks)
+                albumsQueued++
+              } else {
+                console.warn(`[Search] Album ${album.id} "${album.title}" has no tracks — skipping`)
+                albumsFailed++
               }
-            } catch (e) {
-              console.error(`[Search] Failed to queue album ${album.id}:`, e)
+            } catch (e: any) {
+              console.error(`[Search] Failed to queue album ${album.id} "${album.title}":`, e.message || e)
+              albumsFailed++
             }
           }
-          queued++
+          if (albumsQueued > 0) queued++
+          else failed++
+          if (albumsFailed > 0) {
+            console.warn(`[Search] Artist ${artistInfo?.name}: ${albumsQueued} albums queued, ${albumsFailed} failed/skipped`)
+          }
         } else {
           failed++
         }

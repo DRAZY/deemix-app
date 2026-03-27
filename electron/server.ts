@@ -219,7 +219,9 @@ const SAFE_ERROR_PATTERNS = [
   'not configured', 'required', 'expired', 'CAPTCHA', 'Rate limit',
   'not available', 'Failed to resolve', 'Too many redirects',
   'Redirect to disallowed', 'Unsupported', 'already', 'Maximum',
-  'No Deezer match', 'Download failed', 'Conversion failed'
+  'No Deezer match', 'Download failed', 'Conversion failed',
+  'No tracks found', 'Album not available', 'data is not iterable',
+  'Cannot read properties', 'Track not available', 'rights'
 ]
 
 function sanitizeErrorMessage(error: any, fallback: string = 'Internal server error'): string {
@@ -1396,8 +1398,19 @@ export class DeemixServer extends EventEmitter {
       // Get album info first (for consistent folder structure)
       const albumInfo = await this.deezerPublicAPI(`/album/${albumId}`)
 
+      if (albumInfo.error) {
+        this.sendJSON(res, { error: `Album not available: ${albumInfo.error.message || 'unknown error'}` }, 404)
+        return
+      }
+
       // Get album tracks
       const albumTracks = await this.deezerPublicAPI(`/album/${albumId}/tracks?limit=500`)
+
+      if (!albumTracks.data || albumTracks.data.length === 0) {
+        this.sendJSON(res, { error: 'No tracks found for this album' }, 404)
+        return
+      }
+
       const downloadIds: string[] = []
 
       // Calculate total number of discs in the album
