@@ -1520,6 +1520,7 @@ export class DeemixServer extends EventEmitter {
       const playlist = await this.deezerPublicAPI(`/playlist/${playlistId}/tracks?limit=500`)
       const downloadIds: string[] = []
       const playlistName = playlistInfo.title || 'Playlist'
+      const playlistOwner = playlistInfo.creator?.name || playlistInfo.user?.name || ''
 
       // Register playlist for automatic M3U generation from actual file paths
       // The downloader collects real paths as tracks complete, then generates
@@ -1575,6 +1576,7 @@ export class DeemixServer extends EventEmitter {
             removeArtistCombinations: this.settings.removeArtistCombinations
           },
           playlistName: playlistName,
+          playlistOwner: playlistOwner,
           isFromPlaylist: true,
           playlistPosition: i + 1,
           playlistContext: {

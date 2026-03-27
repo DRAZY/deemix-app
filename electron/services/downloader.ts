@@ -119,6 +119,7 @@ export interface DownloadOptions {
     playlistId: string | number
     playlistName: string
   }
+  playlistOwner?: string
   savePlaylistAsCompilation?: boolean
   // Album context - used to keep all album tracks in same folder
   albumContext?: {
@@ -1100,6 +1101,7 @@ export class Downloader extends EventEmitter {
           .replace(/%artist%/gi, folderArtist)
           .replace(/%album%/gi, folderAlbum)
           .replace(/%playlist%/gi, options.playlistName || 'Playlist')
+          .replace(/%owner%/gi, options.playlistOwner || '')
           .replace(/%year%/gi, year)
           .replace(/%date%/gi, dateStr)
           .replace(/%genre%/gi, genre)

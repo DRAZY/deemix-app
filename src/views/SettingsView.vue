@@ -806,7 +806,7 @@ function saveNow() {
               placeholder="%playlist%"
               class="input w-full text-sm"
             />
-            <p class="text-xs text-foreground-muted mt-1">Variables: %playlist%, %date%, %artist%, %year%</p>
+            <p class="text-xs text-foreground-muted mt-1">Variables: %playlist%, %owner%, %date%, %artist%, %year%</p>
           </div>
         </div>
 
