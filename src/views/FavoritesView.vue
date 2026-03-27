@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useFavoritesStore } from '../stores/favoritesStore'
 import { useAuthStore } from '../stores/authStore'
@@ -19,7 +19,10 @@ const toastStore = useToastStore()
 const activeTab = ref<'tracks' | 'albums' | 'artists' | 'playlists'>('tracks')
 const isDownloading = ref(false)
 const serverPort = ref(6595)
-const sortOrder = ref<'added' | 'name-asc' | 'name-desc'>('added')
+const sortOrder = ref<'added' | 'name-asc' | 'name-desc'>(
+  (localStorage.getItem('favorites_sort') as any) || 'added'
+)
+watch(sortOrder, (val) => localStorage.setItem('favorites_sort', val))
 
 // Sorted favorites — sorts the store's arrays without mutating them
 const sortedTracks = computed(() => {

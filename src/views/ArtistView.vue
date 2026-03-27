@@ -57,7 +57,10 @@ const filterTabs = computed(() => [
 
 // Sort order for discography
 type DiscographySort = 'default' | 'name-asc' | 'name-desc' | 'date-newest' | 'date-oldest'
-const discographySort = ref<DiscographySort>('default')
+const discographySort = ref<DiscographySort>(
+  (localStorage.getItem('discography_sort') as DiscographySort) || 'default'
+)
+watch(discographySort, (val) => localStorage.setItem('discography_sort', val))
 
 // Filter albums based on active tab
 const filteredAlbums = computed(() => {
