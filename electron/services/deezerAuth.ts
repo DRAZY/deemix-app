@@ -1433,59 +1433,50 @@ export class DeezerAuth extends EventEmitter {
       MP3_128: trackInfo.FILESIZE_MP3_128
     })
 
-    // Determine format based on requested quality and track availability
+    // Build format fallback chain — send ALL acceptable formats to the media API
+    // so Deezer returns the best one the user's license allows.
+    // This matches the old Deemix behavior and fixes error 2002 ("insufficient rights")
+    // which occurs when the track exists but the user's license doesn't cover that format.
     let formats: string[] = []
-    let requestedFormat = quality
 
     if (quality === 'FLAC') {
-      if (trackInfo.FILESIZE_FLAC && parseInt(trackInfo.FILESIZE_FLAC) > 0) {
-        formats = ['FLAC']
-      } else if (bitrateFallback) {
-        // FLAC not available for this track, fall back
-        console.log('[DeezerAuth] FLAC not available for this track, falling back to MP3_320')
-        if (trackInfo.FILESIZE_MP3_320 && parseInt(trackInfo.FILESIZE_MP3_320) > 0) {
-          formats = ['MP3_320']
-          requestedFormat = 'MP3_320'
-        } else {
-          formats = ['MP3_128']
-          requestedFormat = 'MP3_128'
-        }
+      if (bitrateFallback) {
+        formats = ['FLAC', 'MP3_320', 'MP3_128']
       } else {
-        // bitrateFallback disabled - throw error instead of falling back
-        throw new Error('PreferredBitrateNotFound: FLAC not available for this track')
+        if (trackInfo.FILESIZE_FLAC && parseInt(trackInfo.FILESIZE_FLAC) > 0) {
+          formats = ['FLAC']
+        } else {
+          throw new Error('PreferredBitrateNotFound: FLAC not available for this track')
+        }
       }
     } else if (quality === 'MP3_320') {
-      if (trackInfo.FILESIZE_MP3_320 && parseInt(trackInfo.FILESIZE_MP3_320) > 0) {
-        formats = ['MP3_320']
-      } else if (bitrateFallback) {
-        // MP3_320 not available for this track, fall back
-        console.log('[DeezerAuth] MP3_320 not available for this track, falling back to MP3_128')
-        formats = ['MP3_128']
-        requestedFormat = 'MP3_128'
+      if (bitrateFallback) {
+        formats = ['MP3_320', 'MP3_128']
       } else {
-        // bitrateFallback disabled - throw error instead of falling back
-        throw new Error('PreferredBitrateNotFound: MP3_320 not available for this track')
+        if (trackInfo.FILESIZE_MP3_320 && parseInt(trackInfo.FILESIZE_MP3_320) > 0) {
+          formats = ['MP3_320']
+        } else {
+          throw new Error('PreferredBitrateNotFound: MP3_320 not available for this track')
+        }
       }
     } else {
-      // MP3_128 - always available
       formats = ['MP3_128']
-      requestedFormat = 'MP3_128'
     }
 
-    console.log('[DeezerAuth] Getting media URL for track:', trackId, 'requesting format:', formats[0])
+    console.log('[DeezerAuth] Getting media URL for track:', trackId, 'requesting formats:', formats.join(', '))
 
-    // Use the modern media.deezer.com API
-    const mediaUrl = await this.getMediaUrl(trackToken, formats)
+    // Use the modern media.deezer.com API — sends all formats, API picks the best available
+    const result = await this.getMediaUrl(trackToken, formats)
 
-    if (!mediaUrl) {
+    if (!result) {
       throw new Error('Failed to get media URL from Deezer')
     }
 
-    console.log('[DeezerAuth] Got media URL, format:', requestedFormat)
-    return { url: mediaUrl, format: requestedFormat }
+    console.log('[DeezerAuth] Got media URL, format:', result.format || formats[0])
+    return { url: result.url, format: result.format || formats[0] }
   }
 
-  private async getMediaUrl(trackToken: string, formats: string[]): Promise<string> {
+  private async getMediaUrl(trackToken: string, formats: string[]): Promise<{ url: string; format: string }> {
     // Build format list for the API
     const formatList = formats.map(f => {
       switch (f) {
@@ -1595,8 +1586,9 @@ export class DeezerAuth extends EventEmitter {
               const media = json.data[0].media[0]
               if (media.sources && media.sources[0]) {
                 const url = media.sources[0].url
-                console.log('[DeezerAuth] Got media URL:', url.substring(0, 80) + '...')
-                resolve(url)
+                const format = media.format || formats[0]
+                console.log('[DeezerAuth] Got media URL, format:', format, 'url:', url.substring(0, 80) + '...')
+                resolve({ url, format })
                 return
               }
             }
