@@ -1465,7 +1465,7 @@ export class DeezerAuth extends EventEmitter {
 
     console.log('[DeezerAuth] Getting media URL for track:', trackId, 'requesting formats:', formats.join(', '))
 
-    // Try modern media.deezer.com API first — sends all formats, API picks best available
+    // Try modern media.deezer.com API first
     try {
       const result = await this.getMediaUrl(trackToken, formats)
       if (result) {
@@ -1475,28 +1475,27 @@ export class DeezerAuth extends EventEmitter {
     } catch (modernError: any) {
       console.warn('[DeezerAuth] Modern media API failed:', modernError.message)
 
-      // Fallback: try legacy CDN URL (bypasses track token restrictions)
-      // This is how the old Deemix handled tracks that fail with error 2002
-      if (trackInfo.MD5_ORIGIN && trackInfo.MEDIA_VERSION) {
-        console.log('[DeezerAuth] Trying legacy CDN URL fallback...')
-        const formatCodes: Record<string, number> = { 'FLAC': 9, 'MP3_320': 3, 'MP3_128': 1 }
-
-        for (const fmt of formats) {
-          const code = formatCodes[fmt]
-          if (!code) continue
-          try {
-            const legacyUrl = await this.generateTrackUrl(trackInfo, code)
-            if (legacyUrl) {
-              console.log('[DeezerAuth] Got media URL via legacy CDN, format:', fmt)
-              return { url: legacyUrl, format: fmt }
+      // Token may have expired (cached from earlier in a large playlist).
+      // Clear the cache and retry with a fresh token before giving up.
+      const cacheKey = `track_${trackId}`
+      if (this.trackInfoCache.has(cacheKey)) {
+        console.log('[DeezerAuth] Clearing cached track token and retrying...')
+        this.trackInfoCache.delete(cacheKey)
+        try {
+          const freshTrackInfo = await this.getTrackInfo(trackId)
+          if (freshTrackInfo.TRACK_TOKEN) {
+            const retryResult = await this.getMediaUrl(freshTrackInfo.TRACK_TOKEN, formats)
+            if (retryResult) {
+              console.log('[DeezerAuth] Got media URL on retry with fresh token, format:', retryResult.format || formats[0])
+              return { url: retryResult.url, format: retryResult.format || formats[0] }
             }
-          } catch (legacyError: any) {
-            console.warn(`[DeezerAuth] Legacy CDN failed for ${fmt}:`, legacyError.message)
           }
+        } catch (retryError: any) {
+          console.warn('[DeezerAuth] Retry with fresh token also failed:', retryError.message)
         }
       }
 
-      // Both methods failed — throw the original error
+      // Both attempts failed — throw the original error
       throw modernError
     }
 
