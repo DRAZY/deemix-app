@@ -210,6 +210,7 @@ export class Downloader extends EventEmitter {
   private playlistM3UTracker: Map<string, {
     outputDir: string
     totalTracks: number
+    processedCount: number  // tracks completed + failed (for knowing when to generate)
     completedEntries: Array<{
       position: number
       duration: number
@@ -713,6 +714,11 @@ export class Downloader extends EventEmitter {
 
           this.emit('error', progress)
 
+          // Record failure for M3U tracking (so M3U still generates with available tracks)
+          if (next.options.isFromPlaylist && next.options.playlistName) {
+            this.recordM3UFailure(next.options.playlistName)
+          }
+
           // Write error log if enabled and we have folder info
           console.log(`[Downloader] Error log check - createErrorLog: ${next.options.createErrorLog}, albumFolder: ${progress.albumFolder || 'NOT SET'}`)
           if (next.options.createErrorLog && progress.albumFolder) {
@@ -871,6 +877,16 @@ export class Downloader extends EventEmitter {
       // File exists and overwrite mode is 'no' — mark as completed and skip
       progress.status = 'completed'
       progress.progress = 100
+      // Record skipped file for M3U — it still exists on disk
+      if (options.isFromPlaylist && options.playlistName) {
+        this.recordM3UEntry(options.playlistName, {
+          position: options.playlistPosition || 0,
+          duration: trackInfo.DURATION || 0,
+          artist: trackInfo.ART_NAME || 'Unknown Artist',
+          title: progress.trackTitle || trackInfo.SNG_TITLE || 'Unknown Track',
+          absolutePath: initialOutputPath
+        })
+      }
       this.emit('progress', progress)
       return
     }
@@ -3240,6 +3256,7 @@ export class Downloader extends EventEmitter {
     this.playlistM3UTracker.set(playlistName, {
       outputDir,
       totalTracks,
+      processedCount: 0,
       completedEntries: []
     })
     console.log(`[Downloader] Registered playlist "${playlistName}" for M3U (${totalTracks} tracks)`)
@@ -3250,6 +3267,17 @@ export class Downloader extends EventEmitter {
    * playlist track finishes downloading. When all tracks are recorded,
    * automatically generates the M3U file.
    */
+  /**
+   * Record a failed/skipped track so the M3U still generates when
+   * some tracks are unavailable (geo-restricted, etc.)
+   */
+  private recordM3UFailure(playlistName: string): void {
+    const tracker = this.playlistM3UTracker.get(playlistName)
+    if (!tracker) return
+    tracker.processedCount++
+    this.checkM3UComplete(playlistName)
+  }
+
   private recordM3UEntry(playlistName: string, entry: {
     position: number
     duration: number
@@ -3261,9 +3289,16 @@ export class Downloader extends EventEmitter {
     if (!tracker) return
 
     tracker.completedEntries.push(entry)
+    tracker.processedCount++
+    this.checkM3UComplete(playlistName)
+  }
 
-    // Check if all tracks are done
-    if (tracker.completedEntries.length >= tracker.totalTracks) {
+  private checkM3UComplete(playlistName: string): void {
+    const tracker = this.playlistM3UTracker.get(playlistName)
+    if (!tracker) return
+
+    // Generate M3U when all tracks are processed (success + failure)
+    if (tracker.processedCount >= tracker.totalTracks) {
       try {
         // Sort by playlist position to maintain order
         tracker.completedEntries.sort((a, b) => a.position - b.position)
