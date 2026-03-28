@@ -74,7 +74,10 @@ async function downloadAlbum() {
 
 function navigateToArtist(event: Event) {
   event.stopPropagation()
-  if (props.album.artist?.id != null) {
+  if (props.type === 'playlist') {
+    // Playlist creators are users, not artists — navigate to the playlist instead
+    router.push(`/playlist/${props.album.id}`)
+  } else if (props.album.artist?.id != null && props.album.artist.id !== 0) {
     router.push(`/artist/${props.album.artist.id}`)
   }
 }
