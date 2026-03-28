@@ -163,7 +163,9 @@ const contextMenuItems = computed(() => [
       <span v-else>
         {{ album.artist?.name || t('common.variousArtists') }}
       </span>
-      <span v-if="album.nb_tracks" class="text-foreground-muted/60"> &middot; {{ album.nb_tracks }} {{ album.nb_tracks === 1 ? 'track' : 'tracks' }}</span>
+    </p>
+    <p v-if="album.nb_tracks" class="text-xs text-foreground-muted/50">
+      {{ album.nb_tracks }} {{ album.nb_tracks === 1 ? 'track' : 'tracks' }}
     </p>
 
     <!-- Context Menu -->
