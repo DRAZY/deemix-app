@@ -849,7 +849,7 @@ function saveNow() {
               placeholder="%artist% - %album%"
               class="input w-full text-sm"
             />
-            <p class="text-xs text-foreground-muted mt-1">Variables: %artist%, %album%, %year%, %label%, %explicit%</p>
+            <p class="text-xs text-foreground-muted mt-1">Variables: %artist%, %album%, %year%, %date%, %label%, %explicit%</p>
           </div>
         </div>
       </div>
@@ -891,6 +891,7 @@ function saveNow() {
             <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%playlist%</code>
             <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%owner%</code>
             <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%year%</code>
+            <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%date%</code>
             <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%genre%</code>
             <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%label%</code>
             <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%explicit%</code>
