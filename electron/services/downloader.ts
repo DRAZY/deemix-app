@@ -1102,13 +1102,22 @@ export class Downloader extends EventEmitter {
     const year = trackInfo.PHYSICAL_RELEASE_DATE?.split('-')[0] || ''
     const genre = '' // Would need async lookup
     const label = trackInfo.LABEL_NAME || ''
-    // For folder naming, prefer album-level explicit flag (consistent across all tracks)
-    // Fall back to track-level flag for single track downloads
-    // Note: Deezer private API returns EXPLICIT_LYRICS as string "0"/"1", not boolean
-    // Must use strict checks — "0" is truthy in JS but means NOT explicit
-    const isAlbumExplicit = albumContext?.explicitLyrics === true
-    const isTrackExplicit = trackInfo.EXPLICIT_LYRICS === 1 || trackInfo.EXPLICIT_LYRICS === '1' || trackInfo.EXPLICIT_LYRICS === true
-    const folderExplicit = (albumContext ? isAlbumExplicit : isTrackExplicit) ? 'Explicit' : ''
+    // For folder naming, determine explicit status consistently:
+    // 1. albumContext (from album downloads) — most reliable, scans all tracks
+    // 2. EXPLICIT_ALBUM_CONTENT from trackInfo (from private API) — album-level flag
+    // 3. Per-track EXPLICIT_LYRICS — last resort for single tracks
+    // This ensures playlist tracks use the same album-level flag as album downloads
+    let folderExplicit = ''
+    if (albumContext) {
+      folderExplicit = albumContext.explicitLyrics === true ? 'Explicit' : ''
+    } else if (trackInfo.EXPLICIT_ALBUM_CONTENT?.EXPLICIT_LYRICS_STATUS !== undefined) {
+      // EXPLICIT_LYRICS_STATUS: 0=not explicit, 1=explicit, 2=unknown, 3=edited, 4=partial
+      const albumStatus = trackInfo.EXPLICIT_ALBUM_CONTENT.EXPLICIT_LYRICS_STATUS
+      folderExplicit = (albumStatus === 1 || albumStatus === 4) ? 'Explicit' : ''
+    } else {
+      const isTrackExplicit = trackInfo.EXPLICIT_LYRICS === 1 || trackInfo.EXPLICIT_LYRICS === '1' || trackInfo.EXPLICIT_LYRICS === true
+      folderExplicit = isTrackExplicit ? 'Explicit' : ''
+    }
 
     // Template replacement helper for FOLDER names - uses album context for consistency
     const today = new Date()
