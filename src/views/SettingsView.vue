@@ -720,14 +720,7 @@ function saveNow() {
             />
             <span class="text-sm">{{ t('settings.createSearchLog') }}</span>
           </label>
-          <label class="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              v-model="settingsStore.settings.gambleCDNs"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
-            />
-            <span class="text-sm">{{ t('settings.gambleCDNs') }}</span>
-          </label>
+          <!-- gambleCDNs hidden — not implemented, modern API handles CDN routing -->
         </div>
 
         <!-- Column 3 -->
