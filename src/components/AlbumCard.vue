@@ -151,11 +151,14 @@ const contextMenuItems = computed(() => [
     <!-- Title - click to navigate to album details -->
     <h3
       @click="navigate"
-      class="font-medium truncate hover:text-primary-400 transition-colors cursor-pointer"
+      class="font-medium hover:text-primary-400 transition-colors cursor-pointer"
+      :class="type === 'playlist' ? 'line-clamp-2' : 'truncate'"
     >
       {{ album.title }}
     </h3>
-    <p class="text-sm text-foreground-muted truncate">
+    <p class="text-sm text-foreground-muted"
+      :class="type === 'playlist' ? 'line-clamp-2' : 'truncate'"
+    >
       <span
         v-if="album.artist?.id != null"
         @click="navigateToArtist"
