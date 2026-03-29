@@ -134,6 +134,8 @@ export interface DownloadOptions {
   createErrorLog?: boolean
   // Overwrite behavior: 'no' = skip existing, 'overwrite' = replace, 'rename' = add suffix
   overwriteMode?: 'no' | 'overwrite' | 'rename'
+  // Pre-resolved album explicit status (set by processDownload before buildOutputPath)
+  _resolvedAlbumExplicit?: boolean
 }
 
 // Detailed error information for better user feedback
@@ -203,6 +205,9 @@ export class Downloader extends EventEmitter {
   // Progress throttling: track last emit time per download to reduce event frequency
   private lastProgressEmit: Map<string, number> = new Map()
   private readonly PROGRESS_THROTTLE_MS = 250 // Emit progress at most every 250ms
+  // Album explicit cache: stores album-level explicit status per album ID
+  // Fetched from public API once per unique album, prevents duplicate lookups
+  private albumExplicitCache: Map<string, Promise<boolean>> = new Map()
   // Reserved paths: tracks output paths currently being used by in-progress downloads
   // This prevents concurrent downloads from overwriting each other's files
   private reservedPaths: Set<string> = new Set()
@@ -885,6 +890,35 @@ export class Downloader extends EventEmitter {
       throw new Error(`Failed to get download URL: ${error.message}`)
     }
 
+    // Resolve album explicit status for folder naming (if not already known)
+    if (!options.albumContext && trackInfo.ALB_ID) {
+      const albumId = String(trackInfo.ALB_ID)
+      if (!this.albumExplicitCache.has(albumId)) {
+        this.albumExplicitCache.set(albumId, (async () => {
+          try {
+            const https = await import('https')
+            const albumData: any = await new Promise((resolve, reject) => {
+              https.default.get(`https://api.deezer.com/album/${albumId}`, (res: any) => {
+                let data = ''
+                res.on('data', (chunk: string) => data += chunk)
+                res.on('end', () => { try { resolve(JSON.parse(data)) } catch { resolve({}) } })
+              }).on('error', reject)
+            })
+            const status = albumData.explicit_content_lyrics
+            // Status 1 = explicit, 4 = partially explicit
+            return status === 1 || status === 4
+          } catch {
+            return false
+          }
+        })())
+      }
+      try {
+        options._resolvedAlbumExplicit = await this.albumExplicitCache.get(albumId)
+      } catch {
+        options._resolvedAlbumExplicit = undefined
+      }
+    }
+
     // Build output path using the ACTUAL format and resolved track info
     const initialOutputPath = this.buildOutputPath(trackInfo, options, actualFormat)
     console.log(`[Downloader] Initial output path: ${initialOutputPath}`)
@@ -1103,15 +1137,16 @@ export class Downloader extends EventEmitter {
     const genre = '' // Would need async lookup
     const label = trackInfo.LABEL_NAME || ''
     // For folder naming, determine explicit status consistently:
-    // 1. albumContext (from album downloads) — most reliable, scans all tracks
-    // 2. EXPLICIT_ALBUM_CONTENT from trackInfo (from private API) — album-level flag
-    // 3. Per-track EXPLICIT_LYRICS — last resort for single tracks
-    // This ensures playlist tracks use the same album-level flag as album downloads
+    // 1. albumContext (from album downloads) — scans all tracks
+    // 2. Pre-resolved from public API (fetched before buildOutputPath) — most reliable
+    // 3. EXPLICIT_ALBUM_CONTENT from trackInfo (private API) — may be missing
+    // 4. Per-track EXPLICIT_LYRICS — last resort
     let folderExplicit = ''
     if (albumContext) {
       folderExplicit = albumContext.explicitLyrics === true ? 'Explicit' : ''
+    } else if (options._resolvedAlbumExplicit !== undefined) {
+      folderExplicit = options._resolvedAlbumExplicit ? 'Explicit' : ''
     } else if (trackInfo.EXPLICIT_ALBUM_CONTENT?.EXPLICIT_LYRICS_STATUS !== undefined) {
-      // EXPLICIT_LYRICS_STATUS: 0=not explicit, 1=explicit, 2=unknown, 3=edited, 4=partial
       const albumStatus = trackInfo.EXPLICIT_ALBUM_CONTENT.EXPLICIT_LYRICS_STATUS
       folderExplicit = (albumStatus === 1 || albumStatus === 4) ? 'Explicit' : ''
     } else {
@@ -3274,6 +3309,7 @@ export class Downloader extends EventEmitter {
     this.currentDownloads = 0
     this._isPaused = false
     this.reservedPaths.clear()
+    this.albumExplicitCache.clear()
     this.playlistM3UTracker.clear()
     console.log('[Downloader] All downloads cleared, state reset')
   }
