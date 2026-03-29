@@ -1806,7 +1806,8 @@ export class DeemixServer extends EventEmitter {
       // Validate folder and track template strings (only allow safe template patterns)
       const templateSettings: (keyof ServerSettings)[] = [
         'playlistFolderTemplate', 'albumFolderTemplate', 'artistFolderTemplate',
-        'trackNameTemplate', 'albumTrackTemplate', 'playlistTrackTemplate'
+        'trackNameTemplate', 'albumTrackTemplate', 'playlistTrackTemplate',
+        'm3uNameTemplate'
       ]
 
       for (const key of templateSettings) {
