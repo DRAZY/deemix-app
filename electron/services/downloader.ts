@@ -640,6 +640,10 @@ export class Downloader extends EventEmitter {
     const existingDownload = this.findExistingDownload(options.trackId)
     if (existingDownload) {
       console.log(`[Downloader] Track ${options.trackId} already in queue/downloading (${existingDownload.id}), returning existing ID`)
+      // Record as processed for M3U tracking — this track won't go through processDownload
+      if (options.isFromPlaylist && options.playlistName) {
+        this.recordM3UFailure(options.playlistName)
+      }
       return existingDownload.id
     }
 
