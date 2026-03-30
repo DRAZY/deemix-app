@@ -201,13 +201,15 @@ export const useProfileStore = defineStore('profiles', () => {
 
   async function saveProfiles() {
     if (!isLoaded.value) return
-    const data = {
+    // JSON round-trip strips Vue reactive proxies — required for IPC structured clone
+    const data = JSON.parse(JSON.stringify({
       profiles: profiles.value.filter(p => !p.isBuiltIn),
       activeProfileId: activeProfileId.value
-    }
+    }))
     if (window.electronAPI?.storage) {
       try {
         await (window.electronAPI.storage as any).saveProfiles(data)
+        console.log('[Profiles] Saved', data.profiles.length, 'custom profiles')
       } catch (e) {
         console.error('[Profiles] Failed to save:', e)
       }
