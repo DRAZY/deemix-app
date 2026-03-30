@@ -1145,6 +1145,44 @@ export const useDownloadStore = defineStore('downloads', () => {
     }
   }
 
+  async function retryFailedTracks(id: string) {
+    const item = downloads.value.find(d => d.id === id)
+    if (!item || !item.failedTracks || item.failedTracks.length === 0) return
+
+    const toastStore = useToastStore()
+    const failedCount = item.failedTracks.length
+    toastStore.info(`Retrying ${failedCount} failed track${failedCount > 1 ? 's' : ''} from "${item.title}"...`)
+
+    await syncSettingsToServer()
+
+    let retried = 0
+    for (const failed of item.failedTracks) {
+      const trackId = failed.trackId || failed.id
+      if (!trackId) continue
+      try {
+        const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/download`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trackId })
+        })
+        if (response.ok) retried++
+      } catch (e) {
+        console.error(`[DownloadStore] Failed to retry track ${trackId}:`, e)
+      }
+    }
+
+    if (retried > 0) {
+      // Clear the failed tracks from the item since they're re-queued
+      item.failedTracks = []
+      item.error = undefined
+      item.status = 'downloading'
+      saveDownloads()
+      toastStore.success(`Re-queued ${retried} track${retried > 1 ? 's' : ''}`)
+    } else {
+      toastStore.error('Failed to retry any tracks')
+    }
+  }
+
   function clearCompleted() {
     downloads.value = downloads.value.filter(d => d.status !== 'completed')
     // Rebuild Maps after removal
@@ -1279,6 +1317,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     isSessionError,
     syncSettingsToServer,
     downloadHistory,
-    clearHistory
+    clearHistory,
+    retryFailedTracks
   }
 })

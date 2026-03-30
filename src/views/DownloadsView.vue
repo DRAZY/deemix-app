@@ -615,6 +615,20 @@ function copyAllErrorDetails() {
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
+            <!-- Retry failed tracks only (for albums/playlists with partial failures) -->
+            <button
+              v-if="item.status === 'error' && item.failedTracks && item.failedTracks.length > 0 && item.type !== 'track'"
+              @click="downloadStore.retryFailedTracks(item.id)"
+              class="hover:bg-yellow-500/20 rounded-lg transition-colors text-yellow-400 flex items-center gap-1"
+              :class="isSlim ? 'p-1 text-xs' : 'p-2 text-xs'"
+              :title="`Retry ${item.failedTracks.length} failed track${item.failedTracks.length > 1 ? 's' : ''}`"
+            >
+              <svg :class="isSlim ? 'w-3 h-3' : 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span v-if="!isSlim">{{ item.failedTracks.length }} failed</span>
+            </button>
             <!-- Delete button for completed/error items -->
             <button
               v-if="item.status === 'completed' || item.status === 'error'"
