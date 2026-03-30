@@ -3,6 +3,7 @@ import { onMounted, ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSettingsStore, type ColorTheme } from '../stores/settingsStore'
 import { useProfileStore } from '../stores/profileStore'
+import { useToastStore } from '../stores/toastStore'
 import { SUPPORTED_LOCALES, setLocale, getCurrentLocale } from '../i18n'
 import FlagIcon from '../components/FlagIcon.vue'
 import ProfileSelector from '../components/ProfileSelector.vue'
@@ -68,6 +69,37 @@ watch(
   { deep: true }
 )
 const currentLocale = ref(getCurrentLocale())
+
+function handleExportSettings() {
+  const json = settingsStore.exportSettings()
+  const blob = new Blob([json], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'deemix-settings.json'
+  a.click()
+  URL.revokeObjectURL(url)
+  const toastStore = useToastStore()
+  toastStore.success('Settings exported')
+}
+
+function handleImportSettings() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.json'
+  input.onchange = async (e: any) => {
+    const file = e.target?.files?.[0]
+    if (!file) return
+    const text = await file.text()
+    const toastStore = useToastStore()
+    if (settingsStore.importSettings(text)) {
+      toastStore.success('Settings imported successfully')
+    } else {
+      toastStore.error('Failed to import settings — invalid file')
+    }
+  }
+  input.click()
+}
 
 async function changeLanguage(code: string) {
   await setLocale(code)
@@ -1916,8 +1948,18 @@ function saveNow() {
       </div>
     </section>
 
-    <!-- Reset -->
-    <div class="flex justify-end gap-2">
+    <!-- Settings Management -->
+    <div class="flex justify-between">
+      <div class="flex gap-2">
+        <button @click="handleExportSettings" class="btn btn-secondary text-sm flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          Export Settings
+        </button>
+        <button @click="handleImportSettings" class="btn btn-secondary text-sm flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+          Import Settings
+        </button>
+      </div>
       <button
         @click="settingsStore.resetSettings()"
         class="btn btn-ghost text-red-400 hover:text-red-300"

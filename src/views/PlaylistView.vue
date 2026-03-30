@@ -99,6 +99,14 @@ function toggleFavorite() {
   }
 }
 
+// Track diff — how many tracks are already downloaded vs new
+const trackDiff = computed(() => {
+  if (!tracks.value.length) return null
+  const existing = tracks.value.filter(t => downloadStore.isTrackCompleted(t.id)).length
+  const newTracks = tracks.value.length - existing
+  return existing > 0 ? { existing, newTracks, total: tracks.value.length } : null
+})
+
 async function downloadPlaylist() {
   if (playlistDownloadState.value !== 'available') return // Already downloading or completed
   if (playlist.value && tracks.value.length > 0) {
@@ -182,6 +190,10 @@ const contextMenuItems = computed(() => {
               </svg>
               {{ playlistDownloadState === 'downloading' ? t('playlistView.inQueue') : playlistDownloadState === 'completed' ? t('playlistView.alreadyDownloaded') : t('playlistView.downloadPlaylist') }}
             </button>
+            <span v-if="trackDiff" class="text-xs text-foreground-muted flex items-center gap-1">
+              <svg class="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+              {{ trackDiff.existing }} already downloaded &middot; {{ trackDiff.newTracks }} new
+            </span>
             <button
               @click="toggleFavorite"
               class="btn btn-secondary flex items-center gap-2"

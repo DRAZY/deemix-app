@@ -706,6 +706,33 @@ export const useSettingsStore = defineStore('settings', () => {
     saveSettings()
   }
 
+  function exportSettings(): string {
+    // Export settings without sensitive credentials
+    const exported = { ...settings.value, arl: '', spotifyClientId: '', spotifyClientSecret: '', spotifyUsername: '' }
+    return JSON.stringify(exported, null, 2)
+  }
+
+  function importSettings(jsonStr: string): boolean {
+    try {
+      const imported = JSON.parse(jsonStr)
+      if (typeof imported !== 'object' || !imported) return false
+      // Merge imported settings, preserving credentials
+      const currentArl = settings.value.arl
+      const currentSpotifyId = settings.value.spotifyClientId
+      const currentSpotifySecret = settings.value.spotifyClientSecret
+      const currentSpotifyUser = settings.value.spotifyUsername
+      settings.value = deepMerge(defaultSettings, imported)
+      settings.value.arl = currentArl
+      settings.value.spotifyClientId = currentSpotifyId
+      settings.value.spotifyClientSecret = currentSpotifySecret
+      settings.value.spotifyUsername = currentSpotifyUser
+      saveSettings()
+      return true
+    } catch {
+      return false
+    }
+  }
+
   async function selectDownloadPath() {
     if (window.electronAPI) {
       const path = await window.electronAPI.selectFolder(settings.value.downloadPath)
@@ -746,6 +773,8 @@ export const useSettingsStore = defineStore('settings', () => {
     setColorTheme,
     setTheme,
     setArl,
-    setSpotifyCredentials
+    setSpotifyCredentials,
+    exportSettings,
+    importSettings
   }
 })

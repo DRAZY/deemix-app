@@ -126,6 +126,21 @@ export interface DownloadItem {
   totalBytes?: number
 }
 
+export interface DownloadHistoryEntry {
+  id: string
+  title: string
+  artist?: string
+  type: 'track' | 'album' | 'playlist'
+  quality?: string
+  actualFormat?: string
+  path?: string
+  status: 'completed' | 'error'
+  error?: string
+  completedAt: string
+  totalTracks?: number
+  failedTracks?: number
+}
+
 export interface SearchResults {
   tracks: Track[]
   albums: Album[]

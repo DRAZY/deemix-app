@@ -180,7 +180,16 @@ onMounted(async () => {
   if (window.electronAPI) {
     serverPort.value = await window.electronAPI.getServerPort()
   }
-  if (route.query.q) {
+  if (route.query.paste) {
+    // Global paste routed here — trigger bulk download
+    const pasteText = route.query.paste as string
+    searchQuery.value = pasteText
+    // Simulate a paste event to trigger handlePaste
+    setTimeout(() => {
+      const fakeEvent = { clipboardData: { getData: () => pasteText }, preventDefault: () => {} } as any
+      handlePaste(fakeEvent)
+    }, 500)
+  } else if (route.query.q) {
     searchQuery.value = route.query.q as string
     performSearch()
   }

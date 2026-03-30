@@ -23,6 +23,12 @@ function openLink(url: string) {
 }
 
 const whatsNew = [
+  'Auto-Update Checker -- Notifies you when a new version is available on startup',
+  'Download Progress in Title Bar -- See overall download progress without switching tabs',
+  'Global Paste -- Paste Deezer links anywhere in the app to start downloading',
+  'Download History -- Persistent log of all completed and failed downloads (last 500)',
+  'Export/Import Settings -- Transfer your settings between machines via JSON file',
+  'Playlist Diff -- See how many tracks are new vs already downloaded before re-downloading a playlist',
   'Playlist Card Display -- Playlist titles and creator names now wrap to show full text instead of truncating',
   'Cancel All Fix -- Canceling downloads during bulk paste now stops immediately, and new downloads start cleanly without restart',
   'M3U Filename Template -- Customize M3U playlist filenames with %playlist%, %date%, %year% variables',

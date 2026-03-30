@@ -1,12 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Track, Album, Playlist, DownloadItem, DownloadStatus, FailedTrack } from '../types'
+import type { Track, Album, Playlist, DownloadItem, DownloadStatus, FailedTrack, DownloadHistoryEntry } from '../types'
 import { useSettingsStore } from './settingsStore'
 import { useToastStore } from './toastStore'
 
 export const useDownloadStore = defineStore('downloads', () => {
   // Use regular ref for proper reactivity
   const downloads = ref<DownloadItem[]>([])
+  const downloadHistory = ref<DownloadHistoryEntry[]>([])
   const serverPort = ref(6595)
 
   // Debounce and idle callback tracking
@@ -260,10 +261,43 @@ export const useDownloadStore = defineStore('downloads', () => {
         console.error('Failed to load downloads:', e)
       }
     }
+    // Load download history
+    const savedHistory = localStorage.getItem('downloadHistory')
+    if (savedHistory) {
+      try { downloadHistory.value = JSON.parse(savedHistory) } catch { }
+    }
     // Sync settings to server
     await syncSettingsToServer()
     // Fetch initial queue status (pause state)
     await fetchQueueStatus()
+  }
+
+  function recordHistory(item: DownloadItem) {
+    const entry: DownloadHistoryEntry = {
+      id: item.id,
+      title: item.title,
+      artist: item.artist,
+      type: item.type,
+      quality: item.quality,
+      actualFormat: item.actualFormat,
+      path: item.path,
+      status: item.status === 'completed' ? 'completed' : 'error',
+      error: item.error,
+      completedAt: new Date().toISOString(),
+      totalTracks: item.totalTracks,
+      failedTracks: item.failedTracks?.length
+    }
+    downloadHistory.value.unshift(entry)
+    // Keep last 500 entries
+    if (downloadHistory.value.length > 500) {
+      downloadHistory.value = downloadHistory.value.slice(0, 500)
+    }
+    localStorage.setItem('downloadHistory', JSON.stringify(downloadHistory.value))
+  }
+
+  function clearHistory() {
+    downloadHistory.value = []
+    localStorage.removeItem('downloadHistory')
   }
 
   async function syncSettingsToServer() {
@@ -846,8 +880,10 @@ export const useDownloadStore = defineStore('downloads', () => {
         const toastStore = useToastStore()
         if (serverItem.status === 'completed') {
           toastStore.success(`Downloaded "${item.title}"`)
+          recordHistory(item)
         } else if (serverItem.status === 'error') {
           toastStore.error(`Download failed: "${item.title}"`)
+          recordHistory(item)
         }
       }
     }
@@ -991,7 +1027,7 @@ export const useDownloadStore = defineStore('downloads', () => {
         }
         changed = true
 
-        // Show toast notification for completion
+        // Show toast notification and record history
         const toastStore = useToastStore()
         if (newStatus === 'completed') {
           toastStore.success(`Downloaded "${item.title}"`)
@@ -1000,6 +1036,7 @@ export const useDownloadStore = defineStore('downloads', () => {
         } else {
           toastStore.warning(`Downloaded "${item.title}" with ${errorCount} failed track${errorCount > 1 ? 's' : ''}`)
         }
+        recordHistory(item)
       }
     }
 
@@ -1240,6 +1277,8 @@ export const useDownloadStore = defineStore('downloads', () => {
     resumeQueue,
     saveDownloadsImmediate,
     isSessionError,
-    syncSettingsToServer
+    syncSettingsToServer,
+    downloadHistory,
+    clearHistory
   }
 })

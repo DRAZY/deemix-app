@@ -14,6 +14,7 @@ import { useSettingsStore } from './stores/settingsStore'
 import { useProfileStore } from './stores/profileStore'
 import { useSyncStore } from './stores/syncStore'
 import { useFavoritesStore } from './stores/favoritesStore'
+import { useToastStore } from './stores/toastStore'
 import { useKeyboardShortcuts } from './composables/useKeyboardShortcuts'
 
 const router = useRouter()
@@ -26,6 +27,26 @@ const favoritesStore = useFavoritesStore()
 const isLoading = ref(true)
 const loadingMessage = ref('Loading settings...')
 const showAuthExpiredBanner = ref(false)
+
+// Update title bar with download progress
+watch(
+  () => ({
+    active: downloadStore.activeDownloads.length,
+    downloads: downloadStore.downloads
+  }),
+  ({ active, downloads }) => {
+    if (active > 0) {
+      const totalProgress = downloads
+        .filter(d => d.status === 'pending' || d.status === 'downloading')
+        .reduce((sum, d) => sum + (d.progress || 0), 0)
+      const avgProgress = Math.round(totalProgress / Math.max(active, 1))
+      document.title = `(${avgProgress}%) Deemix Remastered`
+    } else {
+      document.title = 'Deemix Remastered'
+    }
+  },
+  { deep: true }
+)
 
 // Watch for auth expiration and show banner
 watch(() => authStore.authExpired, (expired) => {
@@ -100,14 +121,53 @@ onMounted(async () => {
     console.warn('[App] Failed to load favorites:', e.message)
   }
 
+  // Global paste handler — detect Deezer links pasted anywhere and route to Search
+  window.addEventListener('paste', handleGlobalPaste)
+
   // Add beforeunload handler to save settings on close
   window.addEventListener('beforeunload', handleBeforeUnload)
 
   isLoading.value = false
   console.log('[App] Initialization complete')
+
+  // Non-blocking: check for app updates
+  if (settingsStore.settings.checkForUpdates) {
+    checkForUpdates()
+  }
 })
 
+async function checkForUpdates() {
+  try {
+    const currentVersion = window.electronAPI ? await window.electronAPI.getVersion() : '0.0.0'
+    const response = await fetch('https://api.github.com/repos/DRAZY/deemix-app/releases/latest')
+    if (!response.ok) return
+    const release = await response.json()
+    const latestVersion = (release.tag_name || '').replace(/^v/, '')
+    if (latestVersion && latestVersion !== currentVersion) {
+      const toastStore = useToastStore()
+      toastStore.info(`Update available: v${latestVersion}. Visit Settings > About to download.`)
+    }
+  } catch {
+    // Silent fail — update check is best-effort
+  }
+}
+
+function handleGlobalPaste(e: ClipboardEvent) {
+  // Skip if user is typing in an input field (let the input handle it)
+  const target = e.target as HTMLElement
+  if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) return
+
+  const text = e.clipboardData?.getData('text') || ''
+  const deezerPattern = /(?:https?:\/\/)?(?:www\.)?deezer\.com(?:\/[a-z]{2})?\/(track|album|artist|playlist)\/(\d+)/gi
+  const links = text.match(deezerPattern)
+  if (links && links.length > 0) {
+    e.preventDefault()
+    router.push({ path: '/search', query: { paste: text } })
+  }
+}
+
 onBeforeUnmount(() => {
+  window.removeEventListener('paste', handleGlobalPaste)
   window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 </script>
