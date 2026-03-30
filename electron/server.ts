@@ -1532,8 +1532,9 @@ export class DeemixServer extends EventEmitter {
       // Register playlist for automatic M3U generation from actual file paths
       // The downloader collects real paths as tracks complete, then generates
       // the M3U — this guarantees paths match what's on disk
+      const m3uTrackerId = `playlist_${playlistId}_${Date.now()}`
       if (this.settings.createPlaylistFile) {
-        downloader.registerPlaylistForM3U(playlistName, this.settings.downloadPath, playlist.data.length, this.settings.m3uNameTemplate)
+        downloader.registerPlaylistForM3U(m3uTrackerId, playlistName, this.settings.downloadPath, playlist.data.length, this.settings.m3uNameTemplate)
       }
 
       for (let i = 0; i < playlist.data.length; i++) {
@@ -1584,6 +1585,7 @@ export class DeemixServer extends EventEmitter {
           },
           playlistName: playlistName,
           playlistOwner: playlistOwner,
+          _m3uTrackerId: m3uTrackerId,
           isFromPlaylist: true,
           playlistPosition: i + 1,
           playlistContext: {

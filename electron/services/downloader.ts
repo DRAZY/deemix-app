@@ -136,6 +136,8 @@ export interface DownloadOptions {
   overwriteMode?: 'no' | 'overwrite' | 'rename'
   // Pre-resolved album explicit status (set by processDownload before buildOutputPath)
   _resolvedAlbumExplicit?: boolean
+  // M3U tracker ID — unique key for the playlist M3U tracker (avoids name collisions)
+  _m3uTrackerId?: string
 }
 
 // Detailed error information for better user feedback
@@ -218,6 +220,7 @@ export class Downloader extends EventEmitter {
     totalTracks: number
     processedCount: number
     m3uNameTemplate: string
+    playlistName: string
     completedEntries: Array<{
       position: number
       duration: number
@@ -642,7 +645,7 @@ export class Downloader extends EventEmitter {
       console.log(`[Downloader] Track ${options.trackId} already in queue/downloading (${existingDownload.id}), returning existing ID`)
       // Record as processed for M3U tracking — this track won't go through processDownload
       if (options.isFromPlaylist && options.playlistName) {
-        this.recordM3UFailure(options.playlistName)
+        this.recordM3UFailure(options._m3uTrackerId || options.playlistName || "")
       }
       return existingDownload.id
     }
@@ -727,7 +730,7 @@ export class Downloader extends EventEmitter {
 
           // Record failure for M3U tracking (so M3U still generates with available tracks)
           if (next.options.isFromPlaylist && next.options.playlistName) {
-            this.recordM3UFailure(next.options.playlistName)
+            this.recordM3UFailure(next.options._m3uTrackerId || next.options.playlistName || "")
           }
 
           // Write error log if enabled and we have folder info
@@ -936,7 +939,7 @@ export class Downloader extends EventEmitter {
       progress.progress = 100
       // Record skipped file for M3U — it still exists on disk
       if (options.isFromPlaylist && options.playlistName) {
-        this.recordM3UEntry(options.playlistName, {
+        this.recordM3UEntry(options._m3uTrackerId || options.playlistName || "", {
           position: options.playlistPosition || 0,
           duration: trackInfo.DURATION || 0,
           artist: trackInfo.ART_NAME || 'Unknown Artist',
@@ -1088,7 +1091,7 @@ export class Downloader extends EventEmitter {
 
       // Record actual file path for M3U generation (playlist tracks only)
       if (options.isFromPlaylist && options.playlistName) {
-        this.recordM3UEntry(options.playlistName, {
+        this.recordM3UEntry(options._m3uTrackerId || options.playlistName || "", {
           position: options.playlistPosition || 0,
           duration: trackInfo.DURATION || 0,
           artist: trackInfo.ART_NAME || 'Unknown Artist',
@@ -3335,30 +3338,16 @@ export class Downloader extends EventEmitter {
    * As tracks complete, their actual paths are collected. When all tracks
    * are done, the M3U is generated with paths that match the files on disk.
    */
-  registerPlaylistForM3U(playlistName: string, outputDir: string, totalTracks: number, m3uNameTemplate?: string): void {
-    this.playlistM3UTracker.set(playlistName, {
+  registerPlaylistForM3U(trackerId: string, playlistName: string, outputDir: string, totalTracks: number, m3uNameTemplate?: string): void {
+    this.playlistM3UTracker.set(trackerId, {
       outputDir,
       totalTracks,
       processedCount: 0,
       m3uNameTemplate: m3uNameTemplate || '%playlist%',
-      completedEntries: []
+      completedEntries: [],
+      playlistName // Store the display name for M3U file generation
     })
-    console.log(`[Downloader] Registered playlist "${playlistName}" for M3U (${totalTracks} tracks)`)
-
-    // Safety timeout: if M3U isn't generated within 10 minutes, generate with
-    // whatever entries were collected. Prevents orphaned trackers when tracks
-    // are skipped by duplicate detection or other early-exit paths.
-    setTimeout(() => {
-      const tracker = this.playlistM3UTracker.get(playlistName)
-      if (tracker && tracker.completedEntries.length > 0) {
-        console.warn(`[Downloader] M3U safety timeout for "${playlistName}" — generating with ${tracker.completedEntries.length}/${tracker.totalTracks} entries`)
-        tracker.processedCount = tracker.totalTracks // Force completion
-        this.checkM3UComplete(playlistName)
-      } else if (tracker) {
-        console.warn(`[Downloader] M3U safety timeout for "${playlistName}" — no entries collected, removing tracker`)
-        this.playlistM3UTracker.delete(playlistName)
-      }
-    }, 600000) // 10 minutes
+    console.log(`[Downloader] Registered M3U tracker "${trackerId}" for "${playlistName}" (${totalTracks} tracks)`)
   }
 
   /**
@@ -3392,37 +3381,41 @@ export class Downloader extends EventEmitter {
     this.checkM3UComplete(playlistName)
   }
 
-  private checkM3UComplete(playlistName: string): void {
-    const tracker = this.playlistM3UTracker.get(playlistName)
+  private checkM3UComplete(trackerId: string): void {
+    const tracker = this.playlistM3UTracker.get(trackerId)
     if (!tracker) return
 
     // Generate M3U when all tracks are processed (success + failure)
     if (tracker.processedCount >= tracker.totalTracks) {
       try {
-        // Sort by playlist position to maintain order
-        tracker.completedEntries.sort((a, b) => a.position - b.position)
+        if (tracker.completedEntries.length > 0) {
+          // Sort by playlist position to maintain order
+          tracker.completedEntries.sort((a, b) => a.position - b.position)
 
-        // Convert absolute paths to relative paths from the output directory
-        const tracks = tracker.completedEntries.map(e => {
-          let relativePath = e.absolutePath
-          if (relativePath.startsWith(tracker.outputDir)) {
-            relativePath = relativePath.slice(tracker.outputDir.length)
-            // Remove leading slash/backslash
-            relativePath = relativePath.replace(/^[/\\]/, '')
-          }
-          return {
-            duration: e.duration,
-            artist: e.artist,
-            title: e.title,
-            relativePath
-          }
-        })
+          // Convert absolute paths to relative paths from the output directory
+          const tracks = tracker.completedEntries.map(e => {
+            let relativePath = e.absolutePath
+            if (relativePath.startsWith(tracker.outputDir)) {
+              relativePath = relativePath.slice(tracker.outputDir.length)
+              relativePath = relativePath.replace(/^[/\\]/, '')
+            }
+            return {
+              duration: e.duration,
+              artist: e.artist,
+              title: e.title,
+              relativePath
+            }
+          })
 
-        this.generateM3U(playlistName, tracker.outputDir, tracks, tracker.m3uNameTemplate)
+          this.generateM3U(tracker.playlistName, tracker.outputDir, tracks, tracker.m3uNameTemplate)
+          console.log(`[Downloader] M3U generated for "${tracker.playlistName}" (${tracks.length} tracks)`)
+        } else {
+          console.warn(`[Downloader] No M3U entries for "${tracker.playlistName}" — all tracks failed`)
+        }
       } catch (err: any) {
-        console.error(`[Downloader] Auto M3U generation failed for "${playlistName}":`, err.message)
+        console.error(`[Downloader] Auto M3U generation failed for "${tracker.playlistName}":`, err.message)
       } finally {
-        this.playlistM3UTracker.delete(playlistName)
+        this.playlistM3UTracker.delete(trackerId)
       }
     }
   }
