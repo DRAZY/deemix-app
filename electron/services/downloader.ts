@@ -221,6 +221,8 @@ export class Downloader extends EventEmitter {
     processedCount: number
     m3uNameTemplate: string
     playlistName: string
+    lastActivity: number  // timestamp of last entry/failure record
+    activityTimer: ReturnType<typeof setTimeout> | null
     completedEntries: Array<{
       position: number
       duration: number
@@ -3317,6 +3319,10 @@ export class Downloader extends EventEmitter {
     this._isPaused = false
     this.reservedPaths.clear()
     this.albumExplicitCache.clear()
+    // Clear activity timers before clearing trackers
+    for (const tracker of this.playlistM3UTracker.values()) {
+      if (tracker.activityTimer) clearTimeout(tracker.activityTimer)
+    }
     this.playlistM3UTracker.clear()
     console.log('[Downloader] All downloads cleared, state reset')
   }
@@ -3345,7 +3351,9 @@ export class Downloader extends EventEmitter {
       processedCount: 0,
       m3uNameTemplate: m3uNameTemplate || '%playlist%',
       completedEntries: [],
-      playlistName // Store the display name for M3U file generation
+      playlistName,
+      lastActivity: Date.now(),
+      activityTimer: null
     })
     console.log(`[Downloader] Registered M3U tracker "${trackerId}" for "${playlistName}" (${totalTracks} tracks)`)
   }
@@ -3359,26 +3367,55 @@ export class Downloader extends EventEmitter {
    * Record a failed/skipped track so the M3U still generates when
    * some tracks are unavailable (geo-restricted, etc.)
    */
-  private recordM3UFailure(playlistName: string): void {
-    const tracker = this.playlistM3UTracker.get(playlistName)
+  private recordM3UFailure(trackerId: string): void {
+    const tracker = this.playlistM3UTracker.get(trackerId)
     if (!tracker) return
     tracker.processedCount++
-    this.checkM3UComplete(playlistName)
+    tracker.lastActivity = Date.now()
+    this.resetM3UActivityTimer(trackerId)
+    this.checkM3UComplete(trackerId)
   }
 
-  private recordM3UEntry(playlistName: string, entry: {
+  private recordM3UEntry(trackerId: string, entry: {
     position: number
     duration: number
     artist: string
     title: string
     absolutePath: string
   }): void {
-    const tracker = this.playlistM3UTracker.get(playlistName)
+    const tracker = this.playlistM3UTracker.get(trackerId)
     if (!tracker) return
 
     tracker.completedEntries.push(entry)
     tracker.processedCount++
-    this.checkM3UComplete(playlistName)
+    tracker.lastActivity = Date.now()
+    this.resetM3UActivityTimer(trackerId)
+    this.checkM3UComplete(trackerId)
+  }
+
+  /**
+   * Activity-based fallback: if no M3U entry has been recorded for 30 seconds
+   * and we have at least one entry, generate the M3U with what we have.
+   * This catches ALL edge cases where processedCount falls behind totalTracks.
+   */
+  private resetM3UActivityTimer(trackerId: string): void {
+    const tracker = this.playlistM3UTracker.get(trackerId)
+    if (!tracker) return
+
+    // Clear existing timer
+    if (tracker.activityTimer) {
+      clearTimeout(tracker.activityTimer)
+    }
+
+    // Set new timer — fires 30s after last activity
+    tracker.activityTimer = setTimeout(() => {
+      const t = this.playlistM3UTracker.get(trackerId)
+      if (t && t.processedCount < t.totalTracks) {
+        console.log(`[Downloader] M3U activity timeout for "${t.playlistName}" — generating with ${t.completedEntries.length} entries (processed ${t.processedCount}/${t.totalTracks})`)
+        t.processedCount = t.totalTracks // Force completion
+        this.checkM3UComplete(trackerId)
+      }
+    }, 30000)
   }
 
   private checkM3UComplete(trackerId: string): void {
@@ -3415,6 +3452,7 @@ export class Downloader extends EventEmitter {
       } catch (err: any) {
         console.error(`[Downloader] Auto M3U generation failed for "${tracker.playlistName}":`, err.message)
       } finally {
+        if (tracker.activityTimer) clearTimeout(tracker.activityTimer)
         this.playlistM3UTracker.delete(trackerId)
       }
     }
