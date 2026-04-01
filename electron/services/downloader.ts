@@ -3371,8 +3371,10 @@ export class Downloader extends EventEmitter {
     const tracker = this.playlistM3UTracker.get(trackerId)
     if (!tracker) return
     tracker.processedCount++
-    tracker.lastActivity = Date.now()
-    this.resetM3UActivityTimer(trackerId)
+    // Do NOT reset activity timer for failures — failures are instant (duplicate
+    // detection) while real downloads take time. Resetting the timer on failures
+    // causes premature M3U generation in bulk operations where many duplicates
+    // fire immediately but real downloads haven't started yet.
     this.checkM3UComplete(trackerId)
   }
 
@@ -3407,10 +3409,12 @@ export class Downloader extends EventEmitter {
       clearTimeout(tracker.activityTimer)
     }
 
-    // Set new timer — fires 30s after last activity
+    // Set new timer — fires 30s after last SUCCESSFUL download for this playlist
     tracker.activityTimer = setTimeout(() => {
       const t = this.playlistM3UTracker.get(trackerId)
-      if (t && t.processedCount < t.totalTracks) {
+      if (t && t.processedCount < t.totalTracks && t.completedEntries.length > 0) {
+        // Only force-generate if we have actual entries — don't kill trackers
+        // that haven't had any real downloads yet
         console.log(`[Downloader] M3U activity timeout for "${t.playlistName}" — generating with ${t.completedEntries.length} entries (processed ${t.processedCount}/${t.totalTracks})`)
         t.processedCount = t.totalTracks // Force completion
         this.checkM3UComplete(trackerId)
