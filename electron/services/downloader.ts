@@ -168,6 +168,7 @@ export interface DownloadProgress {
   albumTitle?: string
   albumFolder?: string  // Folder path for error log file (may include CD subfolder)
   albumRootFolder?: string  // Root album folder path (excludes CD subfolders) - used for deletion
+  playlistFolder?: string  // Playlist root folder path - used for deletion of entire playlist
   actualFormat?: string  // Actual downloaded format (may differ from requested due to fallback)
   error?: string
   errorDetails?: DownloadErrorDetails  // Enhanced error information
@@ -846,6 +847,18 @@ export class Downloader extends EventEmitter {
         progress.albumRootFolder = path.dirname(progress.albumFolder)
       } else {
         progress.albumRootFolder = progress.albumFolder
+      }
+
+      // Calculate playlist root folder for deletion of entire playlist
+      // This is the top-level playlist directory (e.g., ~/Music/Deemix/Study Lofi/)
+      if (options.isFromPlaylist && options.folderSettings?.createPlaylistFolder && options.playlistName) {
+        const playlistFolder = this.sanitizeFilename(
+          (options.folderSettings.playlistFolderTemplate || '%playlist%')
+            .replace(/%playlist%/gi, options.playlistName)
+            .replace(/%owner%/gi, options.playlistOwner || '')
+        )
+        progress.playlistFolder = path.join(options.outputPath, playlistFolder)
+        console.log(`[Downloader] Playlist folder set: ${progress.playlistFolder}`)
       }
     } catch (pathError: any) {
       console.error(`[Downloader] Failed to calculate early folder path:`, pathError.message)

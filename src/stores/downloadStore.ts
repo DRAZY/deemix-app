@@ -938,11 +938,16 @@ export const useDownloadStore = defineStore('downloads', () => {
     let totalProgress = 0
     const failedTracks: FailedTrack[] = []
     let albumFolderPath: string | null = null
+    let playlistFolderPath: string | null = null
     let actualFormat: string | null = null
 
     for (const trackId of trackIds) {
       const serverItem = queueMap.get(trackId)
       if (serverItem) {
+        // Capture playlist folder path for deletion of entire playlist directory
+        if (!playlistFolderPath && serverItem.playlistFolder) {
+          playlistFolderPath = serverItem.playlistFolder
+        }
         // Capture album folder path for deletion
         // Prefer albumRootFolder (excludes CD subfolders) for proper recursive deletion
         if (!albumFolderPath) {
@@ -1006,8 +1011,11 @@ export const useDownloadStore = defineStore('downloads', () => {
       changed = true
     }
 
-    if (albumFolderPath && !item.path) {
-      item.path = albumFolderPath
+    // For playlists, prefer the playlist root folder for deletion (deletes entire playlist directory)
+    // For albums, use the album root folder
+    const deletePath = (item.type === 'playlist' && playlistFolderPath) ? playlistFolderPath : albumFolderPath
+    if (deletePath && !item.path) {
+      item.path = deletePath
       changed = true
     }
 
