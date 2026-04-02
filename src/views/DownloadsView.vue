@@ -537,8 +537,8 @@ function copyAllErrorDetails() {
                   {{ formatSpeed(item.speed) }}
                 </span>
                 <!-- Track count for albums/playlists -->
-                <span v-if="item.totalTracks && !isSlim" class="text-sm font-medium text-primary-400">
-                  {{ item.completedTracks || 0 }}/{{ item.totalTracks }}
+                <span v-if="(item.totalTracks || item.originalTotalTracks) && !isSlim" class="text-sm font-medium text-primary-400">
+                  {{ (item.previouslyCompletedTracks || 0) + (item.completedTracks || 0) }}/{{ item.originalTotalTracks || item.totalTracks }}
                 </span>
                 <span :class="isSlim ? 'text-[10px]' : 'text-xs'" class="text-foreground-muted">{{ item.progress }}%</span>
               </div>
@@ -556,8 +556,8 @@ function copyAllErrorDetails() {
             <div v-else>
               <p :class="[getStatusColor(item.status), isSlim ? 'text-xs' : 'text-sm']" class="font-medium">
                 {{ getStatusText(item.status) }}
-                <span v-if="(item.status === 'completed' || item.status === 'error') && item.totalTracks" class="text-foreground-muted font-normal">
-                  ({{ item.completedTracks || 0 }}/{{ item.totalTracks }})
+                <span v-if="(item.status === 'completed' || item.status === 'error') && (item.totalTracks || item.originalTotalTracks)" class="text-foreground-muted font-normal">
+                  ({{ (item.previouslyCompletedTracks || 0) + (item.completedTracks || 0) }}/{{ item.originalTotalTracks || item.totalTracks }})
                 </span>
               </p>
               <!-- Clickable error message -->

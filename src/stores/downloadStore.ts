@@ -1189,7 +1189,9 @@ export const useDownloadStore = defineStore('downloads', () => {
     if (newTrackIds.length > 0) {
       // Replace trackIds with ONLY the new retry IDs — old IDs may no longer
       // exist in the server's download queue, which would prevent completion.
-      // Reset counters to match the retry batch size.
+      // Preserve the original album context so the UI can still show "28/29".
+      item.previouslyCompletedTracks = (item.previouslyCompletedTracks || 0) + (item.completedTracks || 0)
+      item.originalTotalTracks = item.originalTotalTracks || item.totalTracks
       item.trackIds = newTrackIds
       item.totalTracks = newTrackIds.length
       item.completedTracks = 0

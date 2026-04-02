@@ -114,6 +114,10 @@ export interface DownloadItem {
   completedTracks?: number
   failedTracks?: FailedTrack[]
   trackIds?: string[]  // Server-side download IDs for individual tracks
+  // Tracks completed before a retry — added to completedTracks for display
+  previouslyCompletedTracks?: number
+  // Original total track count — preserved across retries for display
+  originalTotalTracks?: number
   // Batch download context (for retry of converted Spotify playlists)
   batchConfig?: {
     trackIds: number[]
