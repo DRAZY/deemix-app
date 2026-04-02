@@ -159,9 +159,10 @@ function handleGlobalPaste(e: ClipboardEvent) {
 
   const text = e.clipboardData?.getData('text') || ''
 
-  // Check for share links first — route to Link Analyzer for resolution
+  // Check for share links and Spotify URLs — route to Link Analyzer for resolution
   if (text.includes('link.deezer.com') || text.includes('deezer.page.link') ||
-      text.includes('spotify.link')) {
+      text.includes('spotify.link') || text.includes('open.spotify.com') ||
+      text.includes('link.spotify.com') || text.startsWith('spotify:')) {
     e.preventDefault()
     router.push({ path: '/analyzer', query: { url: text.trim() } })
     return
