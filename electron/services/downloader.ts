@@ -120,6 +120,7 @@ export interface DownloadOptions {
     playlistName: string
   }
   playlistOwner?: string
+  playlistCoverUrl?: string  // Full URL for playlist cover image
   savePlaylistAsCompilation?: boolean
   // Album context - used to keep all album tracks in same folder
   albumContext?: {
@@ -218,6 +219,8 @@ export class Downloader extends EventEmitter {
   // Reserved paths: tracks output paths currently being used by in-progress downloads
   // This prevents concurrent downloads from overwriting each other's files
   private reservedPaths: Set<string> = new Set()
+  // Playlist folders that already had their cover artwork saved (avoid saving per-track)
+  private playlistCoverSaved: Set<string> = new Set()
   // Playlist M3U tracker: collects actual file paths as tracks complete
   // so M3U can be generated from real paths instead of reconstructed guesses
   private playlistM3UTracker: Map<string, {
@@ -859,6 +862,11 @@ export class Downloader extends EventEmitter {
         )
         progress.playlistFolder = path.join(options.outputPath, playlistFolder)
         console.log(`[Downloader] Playlist folder set: ${progress.playlistFolder}`)
+
+        // Save playlist cover artwork (once per playlist folder)
+        if (options.playlistCoverUrl && options.saveArtwork) {
+          this.savePlaylistCover(options.playlistCoverUrl, progress.playlistFolder, options)
+        }
       }
     } catch (pathError: any) {
       console.error(`[Downloader] Failed to calculate early folder path:`, pathError.message)
@@ -3110,6 +3118,61 @@ export class Downloader extends EventEmitter {
     }
   }
 
+  private async savePlaylistCover(coverUrl: string, playlistFolder: string, options: DownloadOptions): Promise<void> {
+    // Only save once per playlist folder
+    if (this.playlistCoverSaved.has(playlistFolder)) return
+    this.playlistCoverSaved.add(playlistFolder)
+
+    try {
+      const albumCoverSettings = options.metadataSettings?.albumCovers || {
+        saveCovers: true,
+        coverNameTemplate: 'cover',
+        localArtworkSize: 1200,
+        localArtworkFormat: 'jpeg' as LocalArtworkFormat,
+        jpegImageQuality: 90
+      }
+
+      if (!albumCoverSettings.saveCovers) return
+
+      const coverName = albumCoverSettings.coverNameTemplate || 'cover'
+      const artworkPath = path.join(playlistFolder, `${coverName}.jpg`)
+
+      // Don't overwrite existing artwork
+      if (fs.existsSync(artworkPath)) {
+        const stats = fs.statSync(artworkPath)
+        if (stats.size > 0) {
+          console.log(`[Downloader] Playlist cover already exists: ${artworkPath}`)
+          return
+        }
+        fs.unlinkSync(artworkPath)
+      }
+
+      // Ensure directory exists
+      if (!fs.existsSync(playlistFolder)) {
+        fs.mkdirSync(playlistFolder, { recursive: true })
+      }
+
+      // Deezer playlist picture URLs are full URLs, request the largest available
+      // Replace size in URL if it contains a size pattern, otherwise use as-is
+      let url = coverUrl
+      const sizeMatch = url.match(/\/(\d+x\d+)/)
+      if (sizeMatch) {
+        const size = albumCoverSettings.localArtworkSize || 1200
+        url = url.replace(sizeMatch[1], `${size}x${size}`)
+      }
+
+      console.log(`[Downloader] Downloading playlist cover: ${url}`)
+      const buffer = await this.downloadBuffer(url)
+
+      if (buffer.length > 0) {
+        fs.writeFileSync(artworkPath, buffer)
+        console.log(`[Downloader] Saved playlist cover: ${artworkPath} (${buffer.length} bytes)`)
+      }
+    } catch (error) {
+      console.error('[Downloader] Failed to save playlist cover:', error)
+    }
+  }
+
   private async saveArtistImage(artistPictureUrl: string, artistName: string, outputDir: string, options: DownloadOptions): Promise<void> {
     try {
       const albumCoverSettings = options.metadataSettings?.albumCovers || {
@@ -3352,6 +3415,7 @@ export class Downloader extends EventEmitter {
     this._isPaused = false
     this.reservedPaths.clear()
     this.albumInfoCache.clear()
+    this.playlistCoverSaved.clear()
     // Clear activity timers before clearing trackers
     for (const tracker of this.playlistM3UTracker.values()) {
       if (tracker.activityTimer) clearTimeout(tracker.activityTimer)

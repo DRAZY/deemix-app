@@ -262,6 +262,7 @@ class PlaylistSyncEngine extends EventEmitter {
       // Fetch current track list from source
       let currentTrackIds: string[] = []
       let trackMap = new Map<string, { title: string; artist: string }>()
+      let playlistCoverUrl = ''
 
       if (playlist.source === 'spotify') {
         console.log(`[PlaylistSync] Spotify credentials available: ${spotifyAPI.hasCredentials()}`)
@@ -270,6 +271,7 @@ class PlaylistSyncEngine extends EventEmitter {
         }
         console.log(`[PlaylistSync] Fetching Spotify playlist ${playlist.sourcePlaylistId}...`)
         const spotifyPlaylist = await spotifyAPI.getPlaylist(playlist.sourcePlaylistId)
+        playlistCoverUrl = spotifyPlaylist.images?.[0]?.url || ''
         const tracks = spotifyPlaylist.tracks.items
           .filter(item => item.track)
           .map(item => item.track)
@@ -284,7 +286,11 @@ class PlaylistSyncEngine extends EventEmitter {
       } else {
         // Deezer playlist
         console.log(`[PlaylistSync] Fetching Deezer playlist ${playlist.sourcePlaylistId}...`)
-        const response = await this.fetchDeezerPlaylist(playlist.sourcePlaylistId)
+        const [response, playlistMeta] = await Promise.all([
+          this.fetchDeezerPlaylist(playlist.sourcePlaylistId),
+          this.fetchDeezerPlaylistInfo(playlist.sourcePlaylistId)
+        ])
+        playlistCoverUrl = playlistMeta.picture_xl || playlistMeta.picture_big || ''
         console.log(`[PlaylistSync] Fetched ${response.tracks.length} tracks from Deezer`)
         for (const track of response.tracks) {
           const trackId = String(track.id)
@@ -385,6 +391,7 @@ class PlaylistSyncEngine extends EventEmitter {
             isSingle: false,
             isFromPlaylist: true,
             playlistName: playlist.sourcePlaylistName,
+            playlistCoverUrl: playlistCoverUrl || undefined,
             playlistPosition: playlistPosition,
             createErrorLog: settings?.createErrorLog ?? true,
             savePlaylistAsCompilation: settings?.savePlaylistAsCompilation ?? false,
@@ -544,6 +551,23 @@ class PlaylistSyncEngine extends EventEmitter {
 
   getActiveSyncIds(): string[] {
     return Array.from(this.activeSyncs.keys())
+  }
+
+  private async fetchDeezerPlaylistInfo(playlistId: string): Promise<{ picture_xl?: string; picture_big?: string }> {
+    return new Promise((resolve, reject) => {
+      const url = `https://api.deezer.com/playlist/${playlistId}`
+      https.get(url, (res) => {
+        let data = ''
+        res.on('data', (chunk: string) => data += chunk)
+        res.on('end', () => {
+          try {
+            resolve(JSON.parse(data))
+          } catch {
+            resolve({})
+          }
+        })
+      }).on('error', () => resolve({}))
+    })
   }
 
   private async fetchDeezerPlaylist(playlistId: string): Promise<{ tracks: Array<{ id: number; title: string; artist: { name: string } }> }> {

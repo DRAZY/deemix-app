@@ -708,7 +708,8 @@ export const useDownloadStore = defineStore('downloads', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           trackIds: config.trackIds,
-          playlistName: config.playlistName
+          playlistName: config.playlistName,
+          playlistCoverUrl: config.cover
         })
       })
 

@@ -1535,6 +1535,7 @@ export class DeemixServer extends EventEmitter {
       const downloadIds: string[] = []
       const playlistName = playlistInfo.title || 'Playlist'
       const playlistOwner = playlistInfo.creator?.name || playlistInfo.user?.name || ''
+      const playlistCoverUrl = playlistInfo.picture_xl || playlistInfo.picture_big || playlistInfo.picture_medium || ''
 
       // Register playlist for automatic M3U generation from actual file paths
       // The downloader collects real paths as tracks complete, then generates
@@ -1592,6 +1593,7 @@ export class DeemixServer extends EventEmitter {
           },
           playlistName: playlistName,
           playlistOwner: playlistOwner,
+          playlistCoverUrl: playlistCoverUrl || undefined,
           _m3uTrackerId: m3uTrackerId,
           isFromPlaylist: true,
           playlistPosition: i + 1,
@@ -1632,6 +1634,7 @@ export class DeemixServer extends EventEmitter {
       .map((id: any) => validateNumericId(id))
       .filter((id: number | null): id is number => id !== null)
     const playlistName = typeof body.playlistName === 'string' ? body.playlistName.trim() : ''
+    const playlistCoverUrl = typeof body.playlistCoverUrl === 'string' ? body.playlistCoverUrl.trim() : ''
 
     if (trackIds.length === 0) {
       this.sendJSON(res, { error: 'At least one valid track ID is required' }, 400)
@@ -1666,6 +1669,7 @@ export class DeemixServer extends EventEmitter {
           isSingle: !isPlaylist,
           isFromPlaylist: isPlaylist || undefined,
           playlistName: playlistName || undefined,
+          playlistCoverUrl: (isPlaylist && playlistCoverUrl) ? playlistCoverUrl : undefined,
           playlistPosition: isPlaylist ? i + 1 : undefined,
           playlistContext: isPlaylist ? { playlistId: 0, playlistName } : undefined,
           savePlaylistAsCompilation: isPlaylist ? this.settings.savePlaylistAsCompilation : undefined,
