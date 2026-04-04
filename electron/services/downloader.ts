@@ -1489,11 +1489,12 @@ export class Downloader extends EventEmitter {
         fileReady = true
       })
 
-      https.get(url, {
+      const req = https.get(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           'Cookie': deezerAuth.getCookieString()
-        }
+        },
+        timeout: 30000 // 30s connection timeout
       }, (response) => {
         console.log(`[Downloader] Response status: ${response.statusCode}`)
 
@@ -1502,7 +1503,9 @@ export class Downloader extends EventEmitter {
           const redirectUrl = response.headers.location
           console.log(`[Downloader] Redirect to: ${redirectUrl?.substring(0, 80)}...`)
           if (redirectUrl) {
-            https.get(redirectUrl, (redirectResponse) => {
+            const redirectReq = https.get(redirectUrl, {
+              timeout: 30000
+            }, (redirectResponse) => {
               console.log(`[Downloader] Redirect response status: ${redirectResponse.statusCode}`)
               // Check redirect response status
               if (redirectResponse.statusCode !== 200) {
@@ -1522,6 +1525,10 @@ export class Downloader extends EventEmitter {
               file.close()
               try { if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath) } catch (e) {}
               reject(err)
+            })
+            redirectReq.on('timeout', () => {
+              console.error('[Downloader] Redirect connection timed out')
+              redirectReq.destroy(new Error('Connection timed out on redirect'))
             })
             return
           }
@@ -1550,6 +1557,10 @@ export class Downloader extends EventEmitter {
         } catch (e) {}
         reject(error)
       })
+      req.on('timeout', () => {
+        console.error('[Downloader] Connection timed out')
+        req.destroy(new Error('Connection timed out'))
+      })
     })
   }
 
@@ -1571,6 +1582,18 @@ export class Downloader extends EventEmitter {
       console.warn('[Downloader] Warning: Content-Length is 0 or missing')
     }
 
+    // Stall detection: if no data received for 60 seconds, abort
+    let stallTimer: ReturnType<typeof setTimeout> | null = null
+    const STALL_TIMEOUT_MS = 60000
+    const resetStallTimer = () => {
+      if (stallTimer) clearTimeout(stallTimer)
+      stallTimer = setTimeout(() => {
+        console.error(`[Downloader] Download stalled — no data for ${STALL_TIMEOUT_MS / 1000}s, aborting`)
+        response.destroy(new Error('Download stalled — no data received for 60 seconds'))
+      }, STALL_TIMEOUT_MS)
+    }
+    resetStallTimer() // Start the timer
+
     response.on('data', (chunk: Buffer) => {
       downloaded += chunk.length
       progress.downloaded = downloaded
@@ -1578,11 +1601,13 @@ export class Downloader extends EventEmitter {
       progress.speed = downloaded / ((Date.now() - startTime) / 1000)
       // Use throttled emit to reduce UI update frequency during downloads
       this.emitProgressThrottled(progress)
+      resetStallTimer() // Reset on each data chunk
     })
 
     response.pipe(file)
 
     file.on('finish', () => {
+      if (stallTimer) clearTimeout(stallTimer)
       // Wait for close callback to ensure file is fully written to disk
       file.close((err) => {
         if (err) {
@@ -1638,6 +1663,7 @@ export class Downloader extends EventEmitter {
     })
 
     file.on('error', (error) => {
+      if (stallTimer) clearTimeout(stallTimer)
       console.error('[Downloader] File write error:', error.message)
       file.close(() => {
         // Clean up partial file
@@ -1652,6 +1678,7 @@ export class Downloader extends EventEmitter {
 
     // Handle response errors
     response.on('error', (error: Error) => {
+      if (stallTimer) clearTimeout(stallTimer)
       console.error('[Downloader] Response stream error:', error.message)
       file.close(() => {
         try {
