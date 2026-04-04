@@ -947,6 +947,8 @@ function copyLink() {
                 </svg>
                 SPOTIFY {{ spotifyResult.type?.toUpperCase() }}
               </span>
+              <span v-if="spotifyResult.type === 'playlist' && spotifyResult.data?.public === true" class="px-2 py-0.5 bg-green-600/20 text-green-400 text-xs font-semibold rounded-full uppercase">Public</span>
+              <span v-if="spotifyResult.type === 'playlist' && spotifyResult.data?.public === false" class="px-2 py-0.5 bg-yellow-600/20 text-yellow-400 text-xs font-semibold rounded-full uppercase">Private</span>
               <h2 class="text-2xl font-bold truncate">{{ spotifyResult.data?.name }}</h2>
               <p v-if="spotifyResult.data?.artists?.[0]?.name || spotifyResult.data?.owner?.display_name" class="text-lg text-foreground-muted truncate">
                 {{ spotifyResult.data?.artists?.[0]?.name || spotifyResult.data?.owner?.display_name }}
