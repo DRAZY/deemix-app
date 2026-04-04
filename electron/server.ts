@@ -410,7 +410,7 @@ export class DeemixServer extends EventEmitter {
   private settings: ServerSettings = {
     downloadPath: (process.env.HOME || process.env.USERPROFILE || '.') + (process.platform === 'win32' ? '\\Music\\Deemix' : '/Music/Deemix'),
     quality: 'MP3_320',
-    maxConcurrentDownloads: 3,
+    maxConcurrentDownloads: 5,
     // Download behavior settings
     overwriteFiles: 'no',
     bitrateFallback: true,

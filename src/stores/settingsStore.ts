@@ -132,7 +132,7 @@ export interface Settings {
 export const defaultSettings: Settings = {
   downloadPath: '',
   quality: '320',
-  maxConcurrentDownloads: 3,
+  maxConcurrentDownloads: 5,
   // Download behavior settings
   overwriteFiles: 'no',
   bitrateFallback: true,

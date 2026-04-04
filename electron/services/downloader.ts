@@ -200,7 +200,7 @@ export class Downloader extends EventEmitter {
   private activeDownloads: Map<string, DownloadProgress> = new Map()
   private downloadQueue: { id: string; options: DownloadOptions }[] = []
   private isProcessing = false
-  private maxConcurrent = 3
+  private maxConcurrent = 5
   private currentDownloads = 0
   // Queue pause state - when paused, no new downloads start (current ones complete)
   private _isPaused = false
