@@ -948,11 +948,13 @@ export class Downloader extends EventEmitter {
           try {
             const https = await import('https')
             const albumData: any = await new Promise((resolve, reject) => {
-              https.default.get(`https://api.deezer.com/album/${albumId}`, (res: any) => {
+              const req = https.default.get(`https://api.deezer.com/album/${albumId}`, { timeout: 15000 }, (res: any) => {
                 let data = ''
                 res.on('data', (chunk: string) => data += chunk)
                 res.on('end', () => { try { resolve(JSON.parse(data)) } catch { resolve({}) } })
-              }).on('error', reject)
+              })
+              req.on('timeout', () => req.destroy(new Error('Album info fetch timed out')))
+              req.on('error', reject)
             })
             const status = albumData.explicit_content_lyrics
             return {
@@ -3078,7 +3080,7 @@ export class Downloader extends EventEmitter {
       const url = `https://api.deezer.com/album/${albumId}`
       console.log(`[Downloader] Fetching genres from public API: ${url}`)
 
-      https.get(url, (res) => {
+      const req = https.get(url, { timeout: 15000 }, (res) => {
         let data = ''
         res.on('data', chunk => data += chunk)
         res.on('end', () => {
@@ -3101,7 +3103,11 @@ export class Downloader extends EventEmitter {
             resolve([])
           }
         })
-      }).on('error', (e) => {
+      })
+      req.on('timeout', () => {
+        req.destroy(new Error('Genre fetch timed out'))
+      })
+      req.on('error', (e) => {
         console.error(`[Downloader] Public API request failed:`, e.message)
         resolve([])
       })
@@ -3354,7 +3360,7 @@ export class Downloader extends EventEmitter {
           return
         }
 
-        https.get(requestUrl, (response) => {
+        const req = https.get(requestUrl, { timeout: 30000 }, (response) => {
           // Handle redirects
           if (response.statusCode === 301 || response.statusCode === 302 || response.statusCode === 307 || response.statusCode === 308) {
             const redirectUrl = response.headers.location
@@ -3385,7 +3391,11 @@ export class Downloader extends EventEmitter {
             }
           })
           response.on('error', reject)
-        }).on('error', reject)
+        })
+        req.on('timeout', () => {
+          req.destroy(new Error('Download timed out'))
+        })
+        req.on('error', reject)
       }
 
       makeRequest(url, 0)
