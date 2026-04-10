@@ -22,6 +22,52 @@ const showQualityTag = computed(() => settingsStore.settings.appearance?.showQua
 // Track which items have expanded failed tracks view
 const expandedItems = ref<Set<string>>(new Set())
 const showHistory = ref(false)
+const showStats = ref(false)
+
+const downloadStats = computed(() => {
+  const history = downloadStore.downloadHistory
+  if (!history.length) return null
+
+  const completed = history.filter(h => h.status === 'completed')
+  const failed = history.filter(h => h.status === 'error')
+
+  // Count total tracks (albums/playlists contribute their track count)
+  let totalTracks = 0
+  for (const entry of completed) {
+    totalTracks += entry.totalTracks || 1
+  }
+
+  // Top artists (from completed downloads)
+  const artistCounts = new Map<string, number>()
+  for (const entry of completed) {
+    const artist = entry.artist || 'Unknown'
+    artistCounts.set(artist, (artistCounts.get(artist) || 0) + 1)
+  }
+  const topArtists = [...artistCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+
+  // Format breakdown
+  const formatCounts = new Map<string, number>()
+  for (const entry of completed) {
+    const fmt = entry.actualFormat || entry.quality || 'Unknown'
+    formatCounts.set(fmt, (formatCounts.get(fmt) || 0) + 1)
+  }
+
+  // This week
+  const weekAgo = new Date()
+  weekAgo.setDate(weekAgo.getDate() - 7)
+  const thisWeek = completed.filter(e => new Date(e.completedAt) > weekAgo).length
+
+  return {
+    totalDownloads: completed.length,
+    totalTracks,
+    failedCount: failed.length,
+    topArtists,
+    formats: [...formatCounts.entries()].sort((a, b) => b[1] - a[1]),
+    thisWeek
+  }
+})
 
 function toggleExpanded(id: string) {
   if (expandedItems.value.has(id)) {
@@ -915,6 +961,62 @@ function copyAllErrorDetails() {
       @confirm="executeClearCompleted"
       @cancel="showClearCompletedConfirm = false"
     />
+
+    <!-- Download Statistics -->
+    <div v-if="downloadStats" class="mt-8 border-t border-zinc-800 pt-6">
+      <button
+        @click="showStats = !showStats"
+        class="flex items-center gap-2 text-foreground-muted hover:text-foreground transition-colors mb-4"
+      >
+        <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-90': showStats }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        <span class="text-sm font-medium">Download Statistics</span>
+      </button>
+
+      <div v-if="showStats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="card p-4 text-center">
+          <div class="text-2xl font-bold text-primary-400">{{ downloadStats.totalDownloads }}</div>
+          <div class="text-xs text-foreground-muted mt-1">Downloads</div>
+        </div>
+        <div class="card p-4 text-center">
+          <div class="text-2xl font-bold text-green-400">{{ downloadStats.totalTracks }}</div>
+          <div class="text-xs text-foreground-muted mt-1">Total Tracks</div>
+        </div>
+        <div class="card p-4 text-center">
+          <div class="text-2xl font-bold text-blue-400">{{ downloadStats.thisWeek }}</div>
+          <div class="text-xs text-foreground-muted mt-1">This Week</div>
+        </div>
+        <div class="card p-4 text-center">
+          <div class="text-2xl font-bold text-red-400">{{ downloadStats.failedCount }}</div>
+          <div class="text-xs text-foreground-muted mt-1">Failed</div>
+        </div>
+      </div>
+
+      <div v-if="showStats && downloadStats.topArtists.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="card p-4">
+          <h4 class="text-xs font-medium text-foreground-muted mb-3 uppercase tracking-wider">Top Artists</h4>
+          <div class="space-y-2">
+            <div v-for="([artist, count], i) in downloadStats.topArtists" :key="artist" class="flex items-center justify-between">
+              <span class="text-sm truncate">
+                <span class="text-foreground-muted mr-2">{{ i + 1 }}.</span>
+                {{ artist }}
+              </span>
+              <span class="text-xs text-foreground-muted ml-2 flex-shrink-0">{{ count }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="card p-4">
+          <h4 class="text-xs font-medium text-foreground-muted mb-3 uppercase tracking-wider">Formats</h4>
+          <div class="space-y-2">
+            <div v-for="([format, count]) in downloadStats.formats" :key="format" class="flex items-center justify-between">
+              <span class="text-sm">{{ format }}</span>
+              <span class="text-xs text-foreground-muted">{{ count }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Download History Toggle -->
     <div class="mt-8 border-t border-zinc-800 pt-6">
