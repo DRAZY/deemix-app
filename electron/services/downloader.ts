@@ -1384,7 +1384,7 @@ export class Downloader extends EventEmitter {
     return finalPath
   }
 
-  private sanitizeFilename(name: string): string {
+  sanitizeFilename(name: string): string {
     if (!name || typeof name !== 'string') return 'Unknown'
 
     return name
