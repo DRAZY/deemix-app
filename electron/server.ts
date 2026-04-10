@@ -751,6 +751,10 @@ export class DeemixServer extends EventEmitter {
         await this.handleCancelDownload(req, res)
         break
 
+      case '/api/queue/priority':
+        await this.handleQueuePriority(req, res)
+        break
+
       case '/api/queue/clear':
         downloader.clearAll()
         this.sendJSON(res, { success: true })
@@ -1742,6 +1746,19 @@ export class DeemixServer extends EventEmitter {
 
     downloader.cancelDownload(id)
     this.sendJSON(res, { success: true })
+  }
+
+  private async handleQueuePriority(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const body = await this.parseBody(req)
+    const { id } = body
+
+    if (!id) {
+      this.sendJSON(res, { error: 'Download ID is required' }, 400)
+      return
+    }
+
+    const moved = downloader.moveToFront(id)
+    this.sendJSON(res, { success: moved })
   }
 
   private handlePauseQueue(res: ServerResponse): void {

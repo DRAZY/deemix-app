@@ -3462,6 +3462,19 @@ export class Downloader extends EventEmitter {
   }
 
   /**
+   * Move a queued download to the front of the queue so it downloads next.
+   * Only works for pending downloads (already downloading tracks can't be reordered).
+   */
+  moveToFront(downloadId: string): boolean {
+    const queueIndex = this.downloadQueue.findIndex(d => d.id === downloadId)
+    if (queueIndex <= 0) return false // Not found or already first
+    const [item] = this.downloadQueue.splice(queueIndex, 1)
+    this.downloadQueue.unshift(item)
+    console.log(`[Downloader] Moved ${downloadId} to front of queue (was position ${queueIndex + 1})`)
+    return true
+  }
+
+  /**
    * Clear all downloads — reset queue, active downloads, and counters.
    * Called when user cancels all downloads to ensure clean state.
    */

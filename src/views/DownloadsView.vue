@@ -303,6 +303,21 @@ async function openItemFolder(path: string) {
   }
 }
 
+async function moveToFront(item: DownloadItem) {
+  // For album/playlist items, move all their pending track IDs to front
+  // For single tracks, move just the one download ID
+  const ids = item.trackIds?.length ? item.trackIds : [item.id]
+  for (const id of ids) {
+    try {
+      await fetch(`http://127.0.0.1:${downloadStore.serverPort}/api/queue/priority`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
+    } catch { /* ignore individual failures */ }
+  }
+}
+
 // Context menu for error details
 const { menuState, openMenu, closeMenu, copyToClipboard } = useContextMenu()
 const contextMenuValue = ref('')
@@ -628,6 +643,18 @@ function copyAllErrorDetails() {
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               <span v-if="!isSlim">{{ item.failedTracks.length }} failed</span>
+            </button>
+            <!-- Download Next button for pending items -->
+            <button
+              v-if="item.status === 'pending'"
+              @click="moveToFront(item)"
+              class="hover:bg-primary-500/20 rounded-lg transition-colors text-primary-400"
+              :class="isSlim ? 'p-1' : 'p-2'"
+              title="Download next"
+            >
+              <svg :class="isSlim ? 'w-4 h-4' : 'w-5 h-5'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+              </svg>
             </button>
             <!-- Delete button for completed/error items -->
             <button
