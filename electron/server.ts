@@ -715,6 +715,10 @@ export class DeemixServer extends EventEmitter {
         await this.handleGetAlbum(url, res)
         break
 
+      case '/api/album/check':
+        await this.handleCheckAlbumExists(url, res)
+        break
+
       case '/api/artist':
         await this.handleGetArtist(url, res)
         break
@@ -749,6 +753,10 @@ export class DeemixServer extends EventEmitter {
 
       case '/api/queue/cancel':
         await this.handleCancelDownload(req, res)
+        break
+
+      case '/api/queue/priority':
+        await this.handleQueuePriority(req, res)
         break
 
       case '/api/queue/clear':
@@ -1085,6 +1093,63 @@ export class DeemixServer extends EventEmitter {
       this.sendJSON(res, { ...album, tracks: allTracks })
     } catch (error: any) {
       this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  private async handleCheckAlbumExists(url: URL, res: ServerResponse): Promise<void> {
+    const rawId = url.searchParams.get('id')
+    const id = validateNumericId(rawId)
+
+    if (id === null) {
+      this.sendJSON(res, { error: 'Valid Album ID is required' }, 400)
+      return
+    }
+
+    try {
+      const album = await this.deezerPublicAPI(`/album/${id}`)
+      if (album.error) {
+        this.sendJSON(res, { exists: false })
+        return
+      }
+
+      // Build the expected folder path using the same logic as downloads
+      const artistName = downloader.sanitizeFilename(album.artist?.name || 'Unknown Artist')
+      const albumTitle = downloader.sanitizeFilename(album.title || 'Unknown Album')
+      const basePath = this.settings.downloadPath
+
+      // Check common folder patterns
+      const candidatePaths = [
+        join(basePath, `${artistName} - ${albumTitle}`),
+        join(basePath, artistName, `${artistName} - ${albumTitle}`),
+        join(basePath, `${artistName} - ${albumTitle} (Explicit)`),
+        join(basePath, artistName, `${artistName} - ${albumTitle} (Explicit)`)
+      ]
+
+      let existingPath: string | null = null
+      let existingTrackCount = 0
+
+      for (const candidate of candidatePaths) {
+        if (fs.existsSync(candidate)) {
+          existingPath = candidate
+          // Count audio files in the folder
+          try {
+            const files = fs.readdirSync(candidate)
+            existingTrackCount = files.filter(f =>
+              f.endsWith('.flac') || f.endsWith('.mp3')
+            ).length
+          } catch { /* ignore read errors */ }
+          break
+        }
+      }
+
+      this.sendJSON(res, {
+        exists: !!existingPath,
+        path: existingPath,
+        trackCount: existingTrackCount,
+        albumTracks: album.nb_tracks || 0
+      })
+    } catch (error: any) {
+      this.sendJSON(res, { exists: false })
     }
   }
 
@@ -1742,6 +1807,19 @@ export class DeemixServer extends EventEmitter {
 
     downloader.cancelDownload(id)
     this.sendJSON(res, { success: true })
+  }
+
+  private async handleQueuePriority(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const body = await this.parseBody(req)
+    const { id } = body
+
+    if (!id) {
+      this.sendJSON(res, { error: 'Download ID is required' }, 400)
+      return
+    }
+
+    const moved = downloader.moveToFront(id)
+    this.sendJSON(res, { success: moved })
   }
 
   private handlePauseQueue(res: ServerResponse): void {

@@ -1384,7 +1384,7 @@ export class Downloader extends EventEmitter {
     return finalPath
   }
 
-  private sanitizeFilename(name: string): string {
+  sanitizeFilename(name: string): string {
     if (!name || typeof name !== 'string') return 'Unknown'
 
     return name
@@ -3459,6 +3459,19 @@ export class Downloader extends EventEmitter {
       progress.error = 'Cancelled'
       this.emit('cancelled', progress)
     }
+  }
+
+  /**
+   * Move a queued download to the front of the queue so it downloads next.
+   * Only works for pending downloads (already downloading tracks can't be reordered).
+   */
+  moveToFront(downloadId: string): boolean {
+    const queueIndex = this.downloadQueue.findIndex(d => d.id === downloadId)
+    if (queueIndex <= 0) return false // Not found or already first
+    const [item] = this.downloadQueue.splice(queueIndex, 1)
+    this.downloadQueue.unshift(item)
+    console.log(`[Downloader] Moved ${downloadId} to front of queue (was position ${queueIndex + 1})`)
+    return true
   }
 
   /**

@@ -502,6 +502,15 @@ export const useDownloadStore = defineStore('downloads', () => {
       return // Early return - don't add duplicate
     }
 
+    // Check if album folder already exists on disk
+    try {
+      const checkResponse = await fetch(`http://127.0.0.1:${serverPort.value}/api/album/check?id=${album.id}`)
+      const checkData = await checkResponse.json()
+      if (checkData.exists && checkData.trackCount > 0) {
+        toastStore.info(`"${album.title}" already exists on disk (${checkData.trackCount}/${checkData.albumTracks} tracks) — downloading anyway`)
+      }
+    } catch { /* ignore check failures — don't block download */ }
+
     await syncSettingsToServer()
     const settingsStore = useSettingsStore()
 
