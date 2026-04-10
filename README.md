@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.0-blue" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.5.0-blue" />
   <img alt="Electron" src="https://img.shields.io/badge/Electron-35-47848F?logo=electron&logoColor=white" />
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
@@ -42,12 +42,16 @@
 - **Batch Favorites** -- Download all your favorite tracks, albums, or playlists with one click
 - **Three-Tier Track Resolution** -- Automatically finds alternative versions (FALLBACK, ISRC) when a track is unavailable — matches old Deemix behavior
 - **Download Queue** -- Pause, resume, reorder (drag-and-drop), cancel, and retry downloads (retries stay grouped under the parent album/playlist)
+- **Download Next** -- Move pending items to the front of the download queue so they download first
+- **Duplicate Album Detection** -- Warns when an album already exists on disk before downloading
+- **Download Statistics** -- View total downloads, tracks, top artists, format breakdown, and weekly activity
 - **Delete Files** -- Remove downloaded files directly from the app; deletes the entire playlist or album folder
 - **Download History** -- Persistent log of all completed and failed downloads (last 500 entries)
 - **Smart Fallbacks** -- Automatic bitrate and format fallback when preferred quality is unavailable
-- **Concurrent Downloads** -- Configurable from 2 to 50 simultaneous downloads
+- **Concurrent Downloads** -- Configurable from 2 to 50 simultaneous downloads (default: 5)
 - **Conflict Handling** -- Skip, overwrite, or rename when files already exist
 - **Playlist Diff** -- See how many tracks are new vs already downloaded before re-downloading a playlist
+- **Timeout Protection** -- All HTTP calls have connection and stall timeouts to prevent downloads from hanging
 
 ### Metadata & Organization
 

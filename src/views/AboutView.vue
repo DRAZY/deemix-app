@@ -23,25 +23,19 @@ function openLink(url: string) {
 }
 
 const whatsNew = [
-  'Auto-Update Checker -- Notifies you when a new version is available on startup',
-  'Download Progress in Title Bar -- See overall download progress without switching tabs',
-  'Global Paste -- Paste Deezer links anywhere in the app to start downloading',
-  'Download History -- Persistent log of all completed and failed downloads (last 500)',
-  'Export/Import Settings -- Transfer your settings between machines via JSON file',
-  'Playlist Diff -- See how many tracks are new vs already downloaded before re-downloading a playlist',
-  'Playlist Card Display -- Playlist titles and creator names now wrap to show full text instead of truncating',
-  'Cancel All Fix -- Canceling downloads during bulk paste now stops immediately, and new downloads start cleanly without restart',
-  'M3U Filename Template -- Customize M3U playlist filenames with %playlist%, %date%, %year% variables',
-  'Sorting -- Sort favorites and artist discographies by name, date, or default order',
-  'Bulk Link Paste -- Paste multiple Deezer links into the Search bar to queue them all for download at once',
-  'Batch Favorites Download -- Download all your favorite tracks, albums, or playlists with one click',
-  'Featured Artists in Tags -- Artist tags now include all credited artists (main + featured), not just the main artist',
-  'M3U Playlist Paths Fixed -- Playlist files now use actual file paths from completed downloads, guaranteed to match what is on disk',
-  'Overwrite Setting Respected -- The skip/overwrite/rename setting now works for all download types',
-  'Title Tag Formatting -- Fixed double parentheses in remix/version tags like "((Remix))"',
-  'Explicit Folder Tag -- %explicit% variable in folder templates separates clean and explicit album versions',
-  'Playlist Folder %date% Variable -- Add download date to playlist folder names',
-  'Deezer Favorites Import -- Import liked tracks, albums, artists, and playlists from your Deezer account'
+  'Download Statistics Dashboard -- View total downloads, tracks, top artists, formats, and weekly activity on the Downloads page',
+  'Duplicate Album Detection -- Warns when an album already exists on disk before downloading',
+  'Download Next -- Move pending items to the front of the download queue with one click',
+  'Playlist Cover Artwork -- Playlist covers saved as cover.jpg in the playlist folder or as {playlist name}.jpg in the root download directory',
+  'Spotify Public/Private Badge -- Link Analyzer shows playlist visibility status for Spotify playlists',
+  'Playlist Sync Improvements -- Sync now waits for downloads to complete, only marks successful tracks as known, and supports Force Full Sync (right-click sync button)',
+  'Compilation Album Fix -- Tracks from sampler/compilation albums now stay grouped under the album-level artist folder',
+  'Download Timeout Protection -- Connection and stall timeouts on all HTTP calls prevent downloads from hanging indefinitely',
+  'Track Number Preservation -- Resolved tracks keep their original album position instead of inheriting the alternative version\'s number',
+  'Retry Improvements -- Retried tracks stay grouped under the parent album/playlist with preserved track counts',
+  'Delete Files Fix -- Delete Files now removes the entire playlist folder, not just a subfolder',
+  'Spotify Playlist Error Feedback -- Clear error messages when Spotify playlist conversion or download fails',
+  'Default Concurrent Downloads -- Increased from 3 to 5 for better out-of-box performance'
 ]
 </script>
 
