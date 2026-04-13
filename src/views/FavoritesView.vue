@@ -88,16 +88,24 @@ async function downloadAllFavorites() {
         }
       }
     } else if (activeTab.value === 'playlists') {
+      let skipped = 0
       for (const playlist of favoritesStore.favoritePlaylists) {
         try {
           const tracks = await deezerAPI.getPlaylistTracks(playlist.id)
           if (tracks?.length > 0) {
             await downloadStore.addPlaylistDownload(playlist, tracks)
             queued++
+          } else {
+            console.warn(`[Favorites] Playlist "${playlist.title}" (${playlist.id}) has no available tracks — skipping`)
+            skipped++
           }
-        } catch (e) {
+        } catch (e: any) {
           console.error(`[Favorites] Failed to download playlist ${playlist.id}:`, e)
+          skipped++
         }
+      }
+      if (skipped > 0) {
+        toastStore.info(`${skipped} playlist${skipped > 1 ? 's' : ''} skipped (empty or unavailable)`)
       }
     }
 

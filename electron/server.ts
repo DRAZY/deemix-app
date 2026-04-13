@@ -1596,7 +1596,27 @@ export class DeemixServer extends EventEmitter {
     try {
       // Get playlist info first for the name
       const playlistInfo = await this.deezerPublicAPI(`/playlist/${playlistId}`)
+
+      if (playlistInfo.error) {
+        this.sendJSON(res, { error: `Playlist not available: ${playlistInfo.error.message || 'unknown error'}` }, 404)
+        return
+      }
+
       const playlist = await this.deezerPublicAPI(`/playlist/${playlistId}/tracks?limit=500`)
+
+      if (!playlist?.data || !Array.isArray(playlist.data) || playlist.data.length === 0) {
+        this.sendJSON(res, { error: 'No tracks found for this playlist — it may be empty, private, or unavailable' }, 404)
+        return
+      }
+
+      // Filter out null/undefined track entries (deleted tracks still appear in some playlists)
+      const validTracks = playlist.data.filter((t: any) => t && t.id)
+
+      if (validTracks.length === 0) {
+        this.sendJSON(res, { error: 'All tracks in this playlist are unavailable' }, 404)
+        return
+      }
+
       const downloadIds: string[] = []
       const playlistName = playlistInfo.title || 'Playlist'
       const playlistOwner = playlistInfo.creator?.name || playlistInfo.user?.name || ''
@@ -1607,11 +1627,11 @@ export class DeemixServer extends EventEmitter {
       // the M3U — this guarantees paths match what's on disk
       const m3uTrackerId = `playlist_${playlistId}_${Date.now()}`
       if (this.settings.createPlaylistFile) {
-        downloader.registerPlaylistForM3U(m3uTrackerId, playlistName, this.settings.downloadPath, playlist.data.length, this.settings.m3uNameTemplate)
+        downloader.registerPlaylistForM3U(m3uTrackerId, playlistName, this.settings.downloadPath, validTracks.length, this.settings.m3uNameTemplate)
       }
 
-      for (let i = 0; i < playlist.data.length; i++) {
-        const track = playlist.data[i]
+      for (let i = 0; i < validTracks.length; i++) {
+        const track = validTracks[i]
         const downloadId = await downloader.download({
           trackId: track.id,
           outputPath: this.settings.downloadPath,
