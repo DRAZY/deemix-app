@@ -214,7 +214,8 @@ async function importProfile() {
     </div>
 
     <!-- Action Buttons -->
-    <div class="flex gap-2 pt-2">
+    <div class="flex items-center gap-2 pt-2 flex-wrap">
+      <!-- Profile Management -->
       <button
         @click="showSaveDialog = !showSaveDialog"
         class="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-primary-500/20 text-primary-400 hover:bg-primary-500/30 transition-colors"
@@ -229,6 +230,11 @@ async function importProfile() {
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
         {{ t('settings.profiles.import') }}
       </button>
+
+      <!-- Separator -->
+      <div class="w-px h-6 bg-zinc-700 mx-1"></div>
+
+      <!-- Settings Backup -->
       <button
         @click="$emit('exportSettings')"
         class="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-background-main text-foreground-muted hover:text-foreground hover:bg-background-tertiary transition-colors"
