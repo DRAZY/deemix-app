@@ -436,7 +436,7 @@ function saveNow() {
       </h2>
 
       <div v-show="expandedSections.profiles" class="space-y-6 pt-6">
-        <ProfileSelector />
+        <ProfileSelector @exportSettings="handleExportSettings" @importSettings="handleImportSettings" />
       </div>
     </section>
 
@@ -1949,17 +1949,7 @@ function saveNow() {
     </section>
 
     <!-- Settings Management -->
-    <div class="flex justify-between">
-      <div class="flex gap-2">
-        <button @click="handleExportSettings" class="btn btn-secondary text-sm flex items-center gap-2">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-          Export Settings
-        </button>
-        <button @click="handleImportSettings" class="btn btn-secondary text-sm flex items-center gap-2">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-          Import Settings
-        </button>
-      </div>
+    <div class="flex justify-end">
       <button
         @click="settingsStore.resetSettings()"
         class="btn btn-ghost text-red-400 hover:text-red-300"
