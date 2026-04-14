@@ -7,7 +7,7 @@
 <p align="center">
   A modern, cross-platform desktop music downloader built entirely from scratch with Electron, Vue 3, and TypeScript.
   <br />
-  No code from the original Deemix project -- just the same spirit, reimagined with a modern stack.
+  No code from the original Deemix project - just the same spirit, reimagined with a modern stack.
 </p>
 
 <p align="center">
