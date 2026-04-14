@@ -47,10 +47,11 @@ const downloadStats = computed(() => {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
 
-  // Format breakdown
+  // Format breakdown (normalize to uppercase so FLAC/flac count together)
   const formatCounts = new Map<string, number>()
   for (const entry of completed) {
-    const fmt = entry.actualFormat || entry.quality || 'Unknown'
+    const raw = entry.actualFormat || entry.quality || 'Unknown'
+    const fmt = raw.toUpperCase()
     formatCounts.set(fmt, (formatCounts.get(fmt) || 0) + 1)
   }
 
