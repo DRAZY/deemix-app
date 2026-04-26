@@ -26,6 +26,7 @@
 ### Music Discovery & Browsing
 
 - **Home Dashboard** -- New releases, top tracks, top albums, and popular playlists at a glance
+- **New Releases Page** -- Dedicated page showing all of Deezer's latest album releases (up to 100), accessible via the **See all** link in the Home page's New Releases section
 - **Search** -- Find tracks, albums, artists, and playlists with tabbed result filtering and batch selection
 - **Charts** -- Browse global and country-specific charts for tracks, albums, artists, and playlists
 - **Artist Pages** -- Full discographies with filters for albums, EPs, singles, compilations, and featured-in releases, with sorting by name or date
