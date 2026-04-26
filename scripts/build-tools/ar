@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Cross-platform `ar` shim used during Linux .deb builds.
+#
+# fpm (the tool electron-builder shells out to for .deb packaging) calls
+# `ar` directly. macOS ships BSD ar, which produces a malformed Debian
+# archive. This shim redirects to GNU ar from Homebrew binutils on macOS
+# and falls through to the next system ar on Linux.
+#
+# Required on macOS: brew install dpkg fakeroot binutils
+
+set -e
+
+if [[ "$(uname)" == "Darwin" ]]; then
+  for candidate in \
+    /opt/homebrew/opt/binutils/bin/ar \
+    /usr/local/opt/binutils/bin/ar; do
+    if [[ -x "$candidate" ]]; then
+      exec "$candidate" "$@"
+    fi
+  done
+  echo "[ar shim] GNU ar not found. Run: brew install binutils" >&2
+  exit 1
+fi
+
+SELF_DIR="$(cd "$(dirname "$0")" && pwd)"
+IFS=':' read -ra DIRS <<<"$PATH"
+for d in "${DIRS[@]}"; do
+  [[ "$d" == "$SELF_DIR" ]] && continue
+  if [[ -x "$d/ar" ]]; then
+    exec "$d/ar" "$@"
+  fi
+done
+echo "[ar shim] system ar not found in PATH" >&2
+exit 1

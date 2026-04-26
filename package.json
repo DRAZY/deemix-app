@@ -15,10 +15,10 @@
     "build:mac": "vite build && electron-builder --mac --universal",
     "build:win": "vite build && electron-builder --win --x64",
     "build:win-arm64": "vite build && electron-builder --win --arm64",
-    "build:linux": "vite build && electron-builder --linux --x64",
-    "build:linux-arm64": "vite build && electron-builder --linux --arm64",
+    "build:linux": "vite build && PATH=\"$PWD/scripts/build-tools:$PATH\" electron-builder --linux --x64",
+    "build:linux-arm64": "vite build && PATH=\"$PWD/scripts/build-tools:$PATH\" electron-builder --linux --arm64",
     "build:mac-arm64": "vite build && electron-builder --mac --arm64",
-    "build:all": "vite build && electron-builder --mac --universal && electron-builder --mac --arm64 && electron-builder --win --x64 && electron-builder --win --arm64 && electron-builder --linux --x64 && electron-builder --linux --arm64",
+    "build:all": "vite build && electron-builder --mac --universal && electron-builder --mac --arm64 && electron-builder --win --x64 && electron-builder --win --arm64 && PATH=\"$PWD/scripts/build-tools:$PATH\" electron-builder --linux --x64 && PATH=\"$PWD/scripts/build-tools:$PATH\" electron-builder --linux --arm64",
     "typecheck": "vue-tsc --noEmit",
     "preview": "vite preview",
     "electron:dev": "concurrently \"vite\" \"electron .\""

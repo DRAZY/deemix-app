@@ -242,6 +242,14 @@ The Settings page offers deep customization organized into these categories:
 - [npm](https://www.npmjs.com/) 9 or later
 - [Git](https://git-scm.com/)
 
+**Building Linux `.deb` packages on macOS** additionally requires:
+
+```bash
+brew install dpkg fakeroot binutils
+```
+
+(`fpm` shells out to `ar`; macOS ships BSD ar which produces malformed Debian archives. The repo includes a `scripts/build-tools/ar` shim that redirects to GNU ar from `binutils` when running on macOS — the npm scripts wire it in automatically.)
+
 ### Setup
 
 ```bash
