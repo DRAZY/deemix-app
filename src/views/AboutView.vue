@@ -23,6 +23,7 @@ function openLink(url: string) {
 }
 
 const whatsNew = [
+  'New Releases Page -- Dedicated page showing all 100 of Deezer\'s latest album releases, accessible via "See all" on the Home page',
   'Download Statistics Dashboard -- View total downloads, tracks, top artists, formats, and weekly activity on the Downloads page',
   'Duplicate Album Detection -- Warns when an album already exists on disk before downloading',
   'Download Next -- Move pending items to the front of the download queue with one click',

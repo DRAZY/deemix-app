@@ -142,6 +142,12 @@ const contextMenuItems = computed(() => [
       <section v-if="newReleases.length > 0">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-xl font-bold">{{ t('home.newReleases') }}</h2>
+          <router-link to="/new-releases" class="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1">
+            {{ t('home.seeAll') }}
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </router-link>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <AlbumCard

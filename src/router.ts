@@ -64,6 +64,11 @@ const router = createRouter({
       component: () => import('./views/ChartsView.vue')
     },
     {
+      path: '/new-releases',
+      name: 'new-releases',
+      component: () => import('./views/NewReleasesView.vue')
+    },
+    {
       // Catch-all: redirect unknown routes to home
       path: '/:pathMatch(.*)*',
       redirect: '/'

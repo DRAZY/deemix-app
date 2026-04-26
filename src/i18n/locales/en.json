@@ -46,6 +46,10 @@
     "seeAll": "See all",
     "searchToStart": "Search for music to get started"
   },
+  "newReleases": {
+    "title": "New Releases",
+    "empty": "No new releases available right now"
+  },
   "search": {
     "placeholder": "Search for tracks, albums, artists, or playlists...",
     "all": "All",
