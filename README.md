@@ -253,8 +253,8 @@ brew install dpkg fakeroot binutils
 ### Setup
 
 ```bash
-git clone https://github.com/DRAZY/deemix-app.git
-cd deemix-app
+git clone https://github.com/DRAZY/deemix-remastered.git
+cd deemix-remastered
 npm install
 ```
 
@@ -293,7 +293,7 @@ Build output is written to the `release/` directory.
 ## Project Structure
 
 ```
-deemix-app/
+deemix-remastered/
 ├── src/                        # Vue frontend
 │   ├── components/             # Reusable UI components (20)
 │   ├── composables/            # Composition functions

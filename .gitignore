@@ -29,4 +29,7 @@ CONVERSATION_LOG*
 # Cache
 .cache/
 .tmp/
-SECURITY-REMEDIATION.md
+
+# Internal planning + AI memory (not for public repo)
+Plans/
+MEMORY/
