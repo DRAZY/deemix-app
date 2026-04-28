@@ -1,0 +1,77 @@
+name: Bug Report
+description: Something isn't working the way it should
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! The more detail you provide, the faster we can get it sorted.
+
+        Before submitting, please search [existing issues](https://github.com/DRAZY/deemix-remastered/issues?q=is%3Aissue) to make sure this hasn't already been reported.
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Find this on the **About** page in the app, or in the title bar.
+      placeholder: "1.5.2"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS (Intel)
+        - macOS (Apple Silicon)
+        - Windows (x64)
+        - Windows (ARM64)
+        - Linux (x64, AppImage)
+        - Linux (x64, .deb)
+        - Linux (ARM64, AppImage)
+        - Linux (ARM64, .deb)
+        - Other (specify in description)
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered list of exactly what you did before the bug appeared.
+      placeholder: |
+        1. Open the app
+        2. Click ...
+        3. Paste link ...
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened? Include any error messages verbatim.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: |
+        Paste any relevant log output (from the app's error log, the system console, or DevTools), or attach screenshots. Use code fences (```) for log blocks.
+      render: shell
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I am running the latest released version (or have noted my older version above).
+          required: true

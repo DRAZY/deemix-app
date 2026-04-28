@@ -1,0 +1,45 @@
+name: Feature Request
+description: Suggest a new capability or an improvement to an existing one
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion! A focused, well-scoped request is much more likely to get built.
+
+        **One feature per issue, please.** If you have multiple ideas, file them separately so each can be tracked, discussed, and shipped on its own timeline.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the user-facing problem or limitation you're running into. Lead with the *why*, not the solution.
+      placeholder: "When I try to ..., the app does X. I'd like it to do Y because ..."
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What would the ideal behavior look like? Be specific — UI placement, expected output, edge cases.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds have you tried, or what other approaches did you consider before suggesting this one?
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Screenshots, mockups, links to similar features in other apps, or anything else that helps explain the request.
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: This issue describes a single feature (not multiple bundled together).
+          required: true
