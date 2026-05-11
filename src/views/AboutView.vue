@@ -23,6 +23,8 @@ function openLink(url: string) {
 }
 
 const whatsNew = [
+  'Missing Cover Art Fix -- Album, playlist, and artist cover images no longer get stuck as the music-note placeholder after a transient network blip. The card components now fall through to the next available cover size when one fails, and reset cleanly when a card is reused for a different item (e.g., when scrolling or switching pages).',
+  'macOS Unsigned-Build Gatekeeper Fix -- Unsigned macOS .dmg artifacts now carry a proper ad-hoc bundle signature so Gatekeeper offers the standard "Open Anyway" option in System Settings > Privacy & Security. v1.5.7 binaries were missing the bundle-level signature and macOS treated them as tampered; v1.5.8 fixes the build pipeline.',
   'Deezer CDN Migration Fix -- Resolves the "getaddrinfo ENOTFOUND e-cdns-proxy-*.dzcdn.net" download error introduced when Deezer retired its legacy sharded track CDN in May 2026. All downloads now go exclusively through the modern Media API at media.deezer.com/v1/get_url, which returns signed URLs against whichever CDN Deezer currently routes to.',
   'Clearer Track-Unavailable Errors -- When a track genuinely cannot be downloaded (geo-restricted, Premium-only, or removed from Deezer\'s catalog), the error message now says so instead of surfacing a confusing DNS-level failure as the final hop in the fallback chain.',
   'Link Analyzer Timeout Fix -- Public Deezer API calls now time out after 15 seconds instead of hanging forever (issue #57)',

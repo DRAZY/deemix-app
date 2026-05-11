@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useDownloadStore } from '../stores/downloadStore'
@@ -20,18 +20,29 @@ const props = withDefaults(defineProps<{
 const router = useRouter()
 const downloadStore = useDownloadStore()
 const isDownloading = ref(false)
-const imageError = ref(false)
 
-const coverUrl = computed(() => {
-  return props.album.cover_medium ||
-         props.album.cover_big ||
-         props.album.cover_small ||
-         ''
-})
+const candidateUrls = computed(() =>
+  [props.album.cover_medium, props.album.cover_big, props.album.cover_small]
+    .filter((u): u is string => !!u)
+)
+
+const candidateIndex = ref(0)
+const allCoversFailed = ref(false)
+
+const coverUrl = computed(() => candidateUrls.value[candidateIndex.value] ?? '')
 
 function handleImageError() {
-  imageError.value = true
+  if (candidateIndex.value < candidateUrls.value.length - 1) {
+    candidateIndex.value++
+  } else {
+    allCoversFailed.value = true
+  }
 }
+
+watch(() => props.album.id, () => {
+  candidateIndex.value = 0
+  allCoversFailed.value = false
+})
 
 function navigate(event: Event) {
   event.stopPropagation()
@@ -112,7 +123,7 @@ const contextMenuItems = computed(() => [
     >
       <!-- Album cover image -->
       <img
-        v-if="coverUrl && !imageError"
+        v-if="coverUrl && !allCoversFailed"
         :src="coverUrl"
         :alt="album.title"
         loading="lazy"

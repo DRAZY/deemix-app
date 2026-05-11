@@ -4,6 +4,13 @@ All notable changes to **Deemix Remastered** are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.8] — 2026-05-11
+
+### Fixed
+
+- **Missing album / playlist / artist covers on Home, New Releases, and search results.** The card components (`AlbumCard.vue`, `TrackCard.vue`, `ArtistCard.vue`) had a one-shot error flag: once any image failed to load, the placeholder music-note icon was shown for the rest of the session for that card — even if the network recovered. The same bug also meant a 404 on one cover-size variant never fell through to the other available sizes (`cover_medium` failing wouldn't trigger a try at `cover_big` or `cover_small`). Both issues now fixed: image loading walks down the available size variants on error, and the error state resets when the underlying album/track/artist ID changes (so component reuse during scroll/route changes recovers cleanly).
+- **macOS unsigned builds are now properly ad-hoc signed.** v1.5.7's macOS artifacts were built with `-c.mac.identity=null`, which left only a linker-stub signature on the Mach-O binary and never wrote a `_CodeSignature/CodeResources` bundle manifest. Gatekeeper treated those .apps as *tampered* rather than *unsigned* and refused to surface the "Open Anyway" override. v1.5.8 uses `-c.mac.identity=-` (proper ad-hoc bundle signing) so `codesign --verify --deep --strict` passes and the standard Gatekeeper override flow works as expected.
+
 ## [1.5.7] — 2026-05-11
 
 ### Fixed

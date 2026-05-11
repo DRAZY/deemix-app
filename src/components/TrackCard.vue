@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useDownloadStore } from '../stores/downloadStore'
@@ -30,18 +30,31 @@ const duration = computed(() => {
   return `${mins}:${secs.toString().padStart(2, '0')}`
 })
 
-const imageError = ref(false)
+const candidateUrls = computed(() =>
+  [
+    props.track.album?.cover_small,
+    props.track.album?.cover_medium,
+    props.track.cover
+  ].filter((u): u is string => !!u)
+)
 
-const coverUrl = computed(() => {
-  return props.track.album?.cover_small ||
-         props.track.album?.cover_medium ||
-         props.track.cover ||
-         ''
-})
+const candidateIndex = ref(0)
+const allCoversFailed = ref(false)
+
+const coverUrl = computed(() => candidateUrls.value[candidateIndex.value] ?? '')
 
 function handleImageError() {
-  imageError.value = true
+  if (candidateIndex.value < candidateUrls.value.length - 1) {
+    candidateIndex.value++
+  } else {
+    allCoversFailed.value = true
+  }
 }
+
+watch(() => props.track.id, () => {
+  candidateIndex.value = 0
+  allCoversFailed.value = false
+})
 
 const isFavorite = computed(() => favoritesStore.isFavorite(props.track.id, 'track'))
 const isPlaying = computed(() => playerStore.isTrackPlaying(props.track.id))
@@ -139,7 +152,7 @@ const contextMenuItems = computed(() => [
 
     <!-- Cover art -->
     <img
-      v-if="coverUrl && !imageError"
+      v-if="coverUrl && !allCoversFailed"
       :src="coverUrl"
       :alt="track.title"
       loading="lazy"

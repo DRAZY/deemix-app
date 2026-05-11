@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useContextMenu } from '../composables/useContextMenu'
@@ -13,18 +13,28 @@ const props = defineProps<{
 }>()
 
 const router = useRouter()
-const imageError = ref(false)
+const candidateUrls = computed(() =>
+  [props.artist.picture_medium, props.artist.picture_big, props.artist.picture]
+    .filter((u): u is string => !!u)
+)
 
-const pictureUrl = computed(() => {
-  return props.artist.picture_medium ||
-         props.artist.picture_big ||
-         props.artist.picture ||
-         ''
-})
+const candidateIndex = ref(0)
+const allPicturesFailed = ref(false)
+
+const pictureUrl = computed(() => candidateUrls.value[candidateIndex.value] ?? '')
 
 function handleImageError() {
-  imageError.value = true
+  if (candidateIndex.value < candidateUrls.value.length - 1) {
+    candidateIndex.value++
+  } else {
+    allPicturesFailed.value = true
+  }
 }
+
+watch(() => props.artist.id, () => {
+  candidateIndex.value = 0
+  allPicturesFailed.value = false
+})
 
 function navigate() {
   router.push(`/artist/${props.artist.id}`)
@@ -51,7 +61,7 @@ const contextMenuItems = computed(() => [
     <div class="relative aspect-square mb-3">
       <!-- Artist image -->
       <img
-        v-if="pictureUrl && !imageError"
+        v-if="pictureUrl && !allPicturesFailed"
         :src="pictureUrl"
         :alt="artist.name"
         loading="lazy"
