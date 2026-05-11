@@ -1,6 +1,6 @@
 {
   "name": "deemix-app",
-  "version": "1.5.6",
+  "version": "1.5.7",
   "description": "Modern Deezer music downloader",
   "author": {
     "name": "Team MAXIMUS",
@@ -24,7 +24,6 @@
     "electron:dev": "concurrently \"vite\" \"electron .\""
   },
   "dependencies": {
-    "aes-js": "^3.1.2",
     "axios": "^1.6.0",
     "egoroof-blowfish": "^4.0.2",
     "flac-metadata": "^0.1.1",

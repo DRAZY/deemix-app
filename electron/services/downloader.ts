@@ -4,7 +4,6 @@ import * as path from 'path'
 import * as https from 'https'
 import * as crypto from 'crypto'
 import { Blowfish } from 'egoroof-blowfish'
-import * as aesjs from 'aes-js'
 import { deezerAuth } from './deezerAuth'
 
 export interface FolderSettings {
@@ -1705,61 +1704,6 @@ export class Downloader extends EventEmitter {
         reject(error)
       })
     })
-  }
-
-  private async generateDownloadUrl(trackInfo: any, format: number): Promise<string> {
-    const md5Origin = trackInfo.MD5_ORIGIN
-    const mediaVersion = trackInfo.MEDIA_VERSION
-    const sngId = trackInfo.SNG_ID
-
-    console.log(`[Downloader] generateDownloadUrl: md5Origin=${md5Origin}, mediaVersion=${mediaVersion}, sngId=${sngId}`)
-
-    if (!md5Origin) {
-      console.log(`[Downloader] No MD5_ORIGIN - checking for PREVIEW URL`)
-      // Fallback to preview URL for testing
-      if (trackInfo.PREVIEW) {
-        console.log(`[Downloader] Using PREVIEW URL: ${trackInfo.PREVIEW}`)
-        return trackInfo.PREVIEW
-      }
-      console.error(`[Downloader] No MD5_ORIGIN and no PREVIEW - track not available`)
-      throw new Error('Track not available for download')
-    }
-
-    // Generate the URL path using Latin-1 separator (0xa4 = ¤)
-    const separator = String.fromCharCode(0xa4)
-    const step1 = [md5Origin, format.toString(), sngId, mediaVersion].join(separator)
-    const md5Hash = crypto.createHash('md5').update(step1, 'latin1').digest('hex')
-    const step2 = md5Hash + separator + step1 + separator
-
-    // Pad to 16 byte boundary with spaces
-    let padded = step2
-    while (padded.length % 16 !== 0) {
-      padded += ' '
-    }
-
-    console.log(`[Downloader] URL generation: step2 length=${step2.length}, padded length=${padded.length}`)
-
-    // AES encrypt using pure JS implementation (OpenSSL 3.0 compatible)
-    try {
-      const key = aesjs.utils.utf8.toBytes('jo6aey6haid2Teih')
-
-      // Convert string to bytes using Latin-1 encoding (each char = 1 byte)
-      const textBytes = new Uint8Array(padded.length)
-      for (let i = 0; i < padded.length; i++) {
-        textBytes[i] = padded.charCodeAt(i) & 0xff
-      }
-
-      // Use AES-ECB mode
-      const aesEcb = new aesjs.ModeOfOperation.ecb(key)
-      const encryptedBytes = aesEcb.encrypt(textBytes)
-      const encryptedPath = aesjs.utils.hex.fromBytes(encryptedBytes)
-
-      console.log(`[Downloader] Generated URL path: ${encryptedPath.substring(0, 40)}...`)
-      return `https://e-cdns-proxy-${md5Origin[0]}.dzcdn.net/mobile/1/${encryptedPath}`
-    } catch (aesError: any) {
-      console.error('[Downloader] AES encryption failed:', aesError.message, aesError.stack)
-      throw new Error(`Failed to generate download URL: ${aesError.message}`)
-    }
   }
 
   private async decryptFile(inputPath: string, sngId: string, outputPath: string): Promise<string> {

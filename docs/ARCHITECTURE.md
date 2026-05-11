@@ -38,7 +38,7 @@ flowchart LR
     Auth --> Storage
 
     Auth -.->|"HTTPS"| DeezerWeb["api.deezer.com<br/>+ gateway.php"]
-    Downloader -.->|"HTTPS + Blowfish decrypt"| DeezerCDN["e-cdns-proxy-*.dzcdn.net"]
+    Downloader -.->|"HTTPS + Blowfish decrypt"| DeezerCDN["*.dzcdn.net<br/>(signed by media.deezer.com/v1/get_url)"]
     Spotify -.->|"HTTPS"| SpotifyAPI["api.spotify.com"]
     Sync --> Auth
     Sync --> Spotify
@@ -146,7 +146,7 @@ POST 127.0.0.1:6595/api/download/album {albumId, quality:'flac'}
 For each track:
   deezerAuth.getTrackData(trackId)        → gateway.php (auth required)
     ← media URL, license token
-  downloader.streamTrack(mediaUrl, key)   → e-cdns-proxy-*.dzcdn.net
+  downloader.streamTrack(mediaUrl, key)   → *.dzcdn.net (URL signed by Media API)
     ← encrypted bytes
   blowfishDecrypt(bytes, deriveKey(id))
   tagFile(decryptedBuffer, metadata)      → node-id3 / flac-metadata

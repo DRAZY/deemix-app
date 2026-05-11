@@ -3,7 +3,6 @@ import https from 'https'
 import crypto from 'crypto'
 import { URL } from 'url'
 import dns from 'dns'
-import * as aesjs from 'aes-js'
 
 // Configure DNS to use both IPv4 and IPv6 with IPv4 preferred
 // This helps with Electron's DNS resolution issues
@@ -1443,7 +1442,12 @@ export class DeezerAuth extends EventEmitter {
       const formats = buildFormats(info)
       console.log('[DeezerAuth] Trying track:', id, 'formats:', formats.join(', '))
 
-      // Primary path: modern Media API (requires licenseToken, IP-geo enforced)
+      // Modern Media API (requires licenseToken, IP-geo enforced).
+      // This is the only supported path — Deezer retired the legacy
+      // e-cdns-proxy-{0-f}.dzcdn.net CDN in May 2026, so locally-signed AES
+      // URLs (the path used by old Python deemix) no longer resolve. Track
+      // tokens are now redeemed via media.deezer.com/v1/get_url, which
+      // returns a signed URL on whichever CDN Deezer currently routes to.
       try {
         const result = await this.getMediaUrl(info.TRACK_TOKEN, formats)
         if (result) return result
@@ -1453,32 +1457,8 @@ export class DeezerAuth extends EventEmitter {
           throw e
         }
         console.warn(`[DeezerAuth] Media API failed for track ${id}:`, e.message)
-        // Fall through to legacy CDN fallback
-      }
-
-      // Fallback path: legacy CDN URL (signature-based, tolerant of region-shifted releases)
-      // Used by old Python deemix. Required for cases where the user's account region
-      // permits a release but the modern Media API rejects on the request's IP region.
-      if (info.MD5_ORIGIN && info.MEDIA_VERSION) {
-        const formatToInt: Record<string, number> = { FLAC: 9, MP3_320: 3, MP3_128: 1 }
-        const sizeKey: Record<string, string> = {
-          FLAC: 'FILESIZE_FLAC',
-          MP3_320: 'FILESIZE_MP3_320',
-          MP3_128: 'FILESIZE_MP3_128'
-        }
-        for (const fmt of formats) {
-          const sizeRaw = info[sizeKey[fmt]] ?? info.FILESIZE_MP3 ?? '0'
-          const size = parseInt(String(sizeRaw), 10)
-          if (size > 0) {
-            try {
-              const url = await this.generateTrackUrl(info, formatToInt[fmt])
-              console.log(`[DeezerAuth] Got media URL via LEGACY CDN for track ${id}, format: ${fmt}`)
-              return { url, format: fmt }
-            } catch (legacyErr: any) {
-              console.warn(`[DeezerAuth] Legacy URL generation failed for ${fmt}:`, legacyErr.message)
-            }
-          }
-        }
+        // Non-auth failure — let the outer FALLBACK / ISRC retries try
+        // alternative track IDs. There is no longer a legacy-CDN escape hatch.
       }
 
       return null
@@ -1529,7 +1509,12 @@ export class DeezerAuth extends EventEmitter {
       }
     }
 
-    throw new Error('Track not available: all versions exhausted (original, fallback, ISRC alternatives)')
+    throw new Error(
+      'Track unavailable on Deezer. The Media API rejected the original track, ' +
+      'its FALLBACK version, and every ISRC-matched alternative — this usually means ' +
+      'the release is geo-restricted for your account region, requires a Premium subscription, ' +
+      'or has been removed from Deezer\'s catalog.'
+    )
   }
 
   private async getMediaUrl(trackToken: string, formats: string[]): Promise<{ url: string; format: string }> {
@@ -1668,49 +1653,6 @@ export class DeezerAuth extends EventEmitter {
     })
   }
 
-  private async getLegacyMediaUrl(trackToken: string): Promise<string> {
-    // Fallback: Try to get track info and use old method
-    this.handleAuthExpired('No license token available')
-    throw new Error('License token required for downloads - please log in again')
-  }
-
-  private async generateTrackUrl(track: any, format: number): Promise<string> {
-    const md5Origin = track.MD5_ORIGIN
-    const mediaVersion = track.MEDIA_VERSION
-    const sngId = track.SNG_ID
-
-    if (!md5Origin || !mediaVersion) {
-      throw new Error('Track metadata incomplete')
-    }
-
-    // Generate the encrypted path using Latin-1 separator (0xa4 = ¤)
-    const separator = String.fromCharCode(0xa4)
-    const step1 = [md5Origin, format.toString(), sngId, mediaVersion].join(separator)
-    const md5Hash = crypto.createHash('md5').update(step1, 'latin1').digest('hex')
-    const step2 = md5Hash + separator + step1 + separator
-
-    // Pad to 16 byte boundary with null bytes
-    let padded = step2
-    while (padded.length % 16 !== 0) {
-      padded += '\0'
-    }
-
-    // AES encrypt using pure JS implementation (OpenSSL 3.0 compatible)
-    const keyBytes = aesjs.utils.utf8.toBytes('jo6aey6haid2Teih')
-
-    // Convert string to bytes using Latin-1 encoding (each char = 1 byte)
-    const textBytes = new Uint8Array(padded.length)
-    for (let i = 0; i < padded.length; i++) {
-      textBytes[i] = padded.charCodeAt(i) & 0xff
-    }
-
-    const aesEcb = new aesjs.ModeOfOperation.ecb(keyBytes)
-    const encryptedBytes = aesEcb.encrypt(textBytes)
-    const encryptedPath = aesjs.utils.hex.fromBytes(encryptedBytes)
-
-    // Construct the CDN URL
-    return `https://e-cdns-proxy-${md5Origin[0]}.dzcdn.net/mobile/1/${encryptedPath}`
-  }
 }
 
 export const deezerAuth = new DeezerAuth()

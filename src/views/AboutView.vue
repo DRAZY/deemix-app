@@ -23,7 +23,8 @@ function openLink(url: string) {
 }
 
 const whatsNew = [
-  'Region-Shifted Release Downloads -- Downloads of releases that drop earlier in your account region than your physical location (e.g., NZ early releases on a Bulgarian IP) now succeed via a legacy CDN fallback, matching old Python deemix (issue #57)',
+  'Deezer CDN Migration Fix -- Resolves the "getaddrinfo ENOTFOUND e-cdns-proxy-*.dzcdn.net" download error introduced when Deezer retired its legacy sharded track CDN in May 2026. All downloads now go exclusively through the modern Media API at media.deezer.com/v1/get_url, which returns signed URLs against whichever CDN Deezer currently routes to.',
+  'Clearer Track-Unavailable Errors -- When a track genuinely cannot be downloaded (geo-restricted, Premium-only, or removed from Deezer\'s catalog), the error message now says so instead of surfacing a confusing DNS-level failure as the final hop in the fallback chain.',
   'Link Analyzer Timeout Fix -- Public Deezer API calls now time out after 15 seconds instead of hanging forever (issue #57)',
   'Region-Restricted Content -- Link Analyzer falls back to the authenticated gateway for region-locked tracks/albums when public lookup returns no data',
   'Better Analyzer Errors -- Clearer messaging when content is unavailable in your region or the link is malformed',

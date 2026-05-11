@@ -4,6 +4,22 @@ All notable changes to **Deemix Remastered** are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.7] — 2026-05-11
+
+### Fixed
+
+- **`getaddrinfo ENOTFOUND e-cdns-proxy-*.dzcdn.net` download failures.** Deezer retired the legacy sharded track CDN (`e-cdns-proxy-{0-f}.dzcdn.net`) in May 2026 — Amazon Route 53 now returns NXDOMAIN for every shard from the authoritative `dzcdn.net` SOA. The v1.5.6 legacy-CDN fallback for region-shifted releases (issue [#57](https://github.com/DRAZY/deemix-remastered/issues/57)) was added against this CDN, so it stopped working the moment Deezer cut the records. All track downloads now go exclusively through Deezer's modern Media API (`https://media.deezer.com/v1/get_url`), which is the only path Deezer continues to support — it returns signed URLs against whichever CDN Deezer currently routes to, so it survives future CDN migrations without client changes.
+- **Clearer error when a track is genuinely unavailable.** The previous "all versions exhausted" message has been replaced with an explanation that the track is likely geo-restricted, requires Premium, or has been removed from Deezer's catalog — surfacing the real cause instead of the misleading DNS failure that v1.5.6 would emit at the end of the fallback chain.
+
+### Changed
+
+- Removed the dead `generateTrackUrl` AES-signed-URL builder from `deezerAuth.ts` and its never-called sibling `generateDownloadUrl` from `downloader.ts`. Both constructed URLs against the retired CDN. Dropped the `aes-js` dependency (only used by those two functions).
+- Removed the unused `getLegacyMediaUrl` stub from `deezerAuth.ts`.
+
+### Known limitations
+
+- Region-shifted releases (the v1.5.6 use case — e.g., a New Zealand–registered account hitting NZ-only early releases from a Bulgarian IP) cannot currently be recovered. The modern Media API enforces IP geo, and Deezer no longer publishes a signature-based escape hatch. The download will now fail cleanly with the new error message instead of producing a confusing DNS failure.
+
 ## [1.5.6] — 2026-05-01
 
 ### Fixed
