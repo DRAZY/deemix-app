@@ -37,6 +37,8 @@ export interface SyncedArtist {
   filters: ArtistSyncFilters
   firstSyncMode: FirstSyncMode
   createdAt: string
+  origin?: 'favorites' | 'manual'
+  lastSeenInFavoritesAt?: string | null
 }
 
 export const useArtistSyncStore = defineStore('artistSync', () => {
@@ -45,10 +47,18 @@ export const useArtistSyncStore = defineStore('artistSync', () => {
   const syncProgress = ref<Map<string, { current: number; total: number; phase: string; albumTitle?: string }>>(new Map())
   const serverPort = ref(6595)
   const isLoading = ref(false)
+  const lastFavoritesRefreshAt = ref<string | null>(null)
   let initialized = false
   let fetchInFlight = false
 
   const enabledArtists = computed(() => artists.value.filter(a => a.enabled))
+
+  function isStale(artist: SyncedArtist): boolean {
+    if (artist.origin !== 'favorites') return false
+    if (!lastFavoritesRefreshAt.value) return false
+    if (!artist.lastSeenInFavoritesAt) return true
+    return artist.lastSeenInFavoritesAt < lastFavoritesRefreshAt.value
+  }
 
   async function init() {
     if (initialized) return
@@ -100,6 +110,7 @@ export const useArtistSyncStore = defineStore('artistSync', () => {
       const data = await response.json()
       artists.value = data.artists || []
       activeSyncIds.value = data.activeSyncIds || []
+      lastFavoritesRefreshAt.value = data.lastFavoritesRefreshAt ?? null
     } catch (e) {
       console.error('[ArtistSyncStore] Failed to fetch artists:', e)
     } finally {
@@ -115,6 +126,7 @@ export const useArtistSyncStore = defineStore('artistSync', () => {
     downloadPath: string
     firstSyncMode?: FirstSyncMode
     filters?: Partial<ArtistSyncFilters>
+    origin?: 'favorites' | 'manual'
   }) {
     isLoading.value = true
     try {
@@ -229,6 +241,7 @@ export const useArtistSyncStore = defineStore('artistSync', () => {
     syncProgress,
     serverPort,
     isLoading,
+    lastFavoritesRefreshAt,
     enabledArtists,
     init,
     fetchArtists,
@@ -240,6 +253,7 @@ export const useArtistSyncStore = defineStore('artistSync', () => {
     syncAll,
     cancelSync,
     isSyncing,
+    isStale,
     getProgress
   }
 })

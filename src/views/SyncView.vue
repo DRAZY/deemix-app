@@ -281,6 +281,25 @@ function getScheduleLabel(schedule: SyncSchedule): string {
             </div>
           </div>
 
+          <!-- Stale: source playlist no longer in user's Deezer favorites -->
+          <div
+            v-if="syncStore.isStale(playlist)"
+            class="mt-2 flex items-center justify-between gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs"
+          >
+            <div class="flex items-center gap-2 text-amber-300 min-w-0">
+              <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span class="truncate">{{ t('sync.staleFavoriteNotice') }}</span>
+            </div>
+            <button
+              @click="syncStore.removePlaylist(playlist.id)"
+              class="px-2 py-1 rounded-md bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 transition-colors flex-shrink-0"
+            >
+              {{ t('sync.remove') }}
+            </button>
+          </div>
+
           <!-- Failed Tracks -->
           <div v-if="playlist.failedTracks.length > 0" class="mt-2">
             <button
@@ -421,6 +440,25 @@ function getScheduleLabel(schedule: SyncSchedule): string {
                   :style="{ width: artistSyncStore.getProgress(artist.id) ? `${(artistSyncStore.getProgress(artist.id)!.current / Math.max(artistSyncStore.getProgress(artist.id)!.total, 1)) * 100}%` : '0%' }"
                 />
               </div>
+            </div>
+
+            <!-- Stale: artist no longer in user's Deezer favorites -->
+            <div
+              v-if="artistSyncStore.isStale(artist)"
+              class="mt-2 flex items-center justify-between gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs"
+            >
+              <div class="flex items-center gap-2 text-amber-300 min-w-0">
+                <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span class="truncate">{{ t('sync.staleFavoriteArtistNotice') }}</span>
+              </div>
+              <button
+                @click="artistSyncStore.removeArtist(artist.id)"
+                class="px-2 py-1 rounded-md bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 transition-colors flex-shrink-0"
+              >
+                {{ t('sync.remove') }}
+              </button>
             </div>
 
             <!-- Failed Albums -->

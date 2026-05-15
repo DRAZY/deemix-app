@@ -55,6 +55,15 @@ export interface SyncedPlaylist {
   m3uPath: string | null
   downloadPath: string
   createdAt: string
+  // NEW (v1.6.3): how this sync entry came to exist. Favorites-origin
+  // entries can be flagged when their source playlist is no longer in the
+  // user's Deezer favorites; manual entries are never auto-flagged.
+  origin: 'favorites' | 'manual'
+  // Timestamp of the most recent refresh that observed this entry's source
+  // playlist in the user's Deezer favorites. Compared against the engine's
+  // lastFavoritesRefreshAt to decide whether the UI should surface a
+  // "no longer favorited" prompt.
+  lastSeenInFavoritesAt: string | null
 }
 
 export interface SyncResult {
@@ -69,6 +78,11 @@ export interface SyncResult {
 interface SyncState {
   playlists: SyncedPlaylist[]
   activeProfileId?: string | null
+  // Timestamp of the most recent full Deezer-favorites refresh. Set when
+  // markFavoriteMembership() is invoked. Used to identify stale entries:
+  // a favorites-origin entry is stale if its lastSeenInFavoritesAt is null
+  // or is earlier than this value.
+  lastFavoritesRefreshAt?: string | null
 }
 
 const SCHEDULE_INTERVALS: Record<SyncSchedule, number> = {
@@ -167,6 +181,14 @@ class PlaylistSyncEngine extends EventEmitter {
       if (!Array.isArray(this.state.playlists)) {
         this.state.playlists = []
       }
+      // Backfill v1.6.3 fields for entries written by earlier versions.
+      // Existing entries default to origin: 'manual' so the new prune logic
+      // never auto-flags pre-1.6.3 pins (we cannot retroactively know
+      // whether they came from a favorite or a direct Sync page add).
+      for (const p of this.state.playlists) {
+        if (!p.origin) p.origin = 'manual'
+        if (p.lastSeenInFavoritesAt === undefined) p.lastSeenInFavoritesAt = null
+      }
     } catch (err: any) {
       if (err.code !== 'ENOENT') {
         console.error('[PlaylistSync] Failed to load state:', err)
@@ -211,10 +233,20 @@ class PlaylistSyncEngine extends EventEmitter {
     sourcePlaylistUrl: string
     schedule: SyncSchedule
     downloadPath: string
+    // Origin defaults to 'manual' — entries added directly via the Sync page
+    // are manual; entries added via the Favorites → Pin to Sync UX pass
+    // 'favorites' so the membership-refresh logic can flag them when the
+    // user later un-favorites the playlist on Deezer.
+    origin?: 'favorites' | 'manual'
   }): Promise<SyncedPlaylist> {
+    const { origin: originParam, ...rest } = config
+    const origin: 'favorites' | 'manual' = originParam ?? 'manual'
+    // Favorites-origin entries start as observed-in-favorites at creation time
+    // so they aren't immediately flagged as stale before the first refresh.
+    const nowIso = new Date().toISOString()
     const playlist: SyncedPlaylist = {
       id: generateId(),
-      ...config,
+      ...rest,
       enabled: true,
       lastSyncAt: null,
       lastSyncStatus: null,
@@ -223,7 +255,9 @@ class PlaylistSyncEngine extends EventEmitter {
       failedTracks: [],
       totalTracksDownloaded: 0,
       m3uPath: null,
-      createdAt: new Date().toISOString()
+      createdAt: nowIso,
+      origin,
+      lastSeenInFavoritesAt: origin === 'favorites' ? nowIso : null
     }
     this.state.playlists.push(playlist)
     await this.saveState()
@@ -259,6 +293,44 @@ class PlaylistSyncEngine extends EventEmitter {
 
   getPlaylist(id: string): SyncedPlaylist | null {
     return this.state.playlists.find(p => p.id === id) || null
+  }
+
+  getLastFavoritesRefreshAt(): string | null {
+    return this.state.lastFavoritesRefreshAt ?? null
+  }
+
+  // Compares each favorites-origin entry against the supplied list of Deezer
+  // playlist IDs currently in the user's favorites. For matches, refreshes
+  // lastSeenInFavoritesAt to now. Non-matches keep their stale timestamp (or
+  // null), and combined with the global lastFavoritesRefreshAt that lets the
+  // UI surface a "no longer in your Deezer favorites" badge with a Remove
+  // affordance — without auto-deleting anything.
+  //
+  // Manual-origin entries are untouched.
+  async markFavoriteMembership(deezerFavoritePlaylistIds: string[]): Promise<{
+    refreshed: number
+    stale: number
+  }> {
+    const now = new Date().toISOString()
+    const favSet = new Set(deezerFavoritePlaylistIds.map(String))
+    let refreshed = 0
+    let stale = 0
+    for (const p of this.state.playlists) {
+      if (p.origin !== 'favorites') continue
+      // Only Deezer-source favorites can be matched — Spotify playlists
+      // don't live in the Deezer favorites list.
+      if (p.source !== 'deezer') continue
+      if (favSet.has(p.sourcePlaylistId)) {
+        p.lastSeenInFavoritesAt = now
+        refreshed++
+      } else {
+        stale++
+      }
+    }
+    this.state.lastFavoritesRefreshAt = now
+    await this.saveState()
+    this.emit('playlists:changed', this.state.playlists)
+    return { refreshed, stale }
   }
 
   // Reset a playlist's known tracks so next sync re-downloads everything

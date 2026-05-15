@@ -85,10 +85,21 @@ export const useFavoritesStore = defineStore('favorites', () => {
 
   const isImporting = ref(false)
 
-  async function importDeezerFavorites(serverPort: number): Promise<{ imported: number; skipped: number }> {
+  // v1.6.3 — was additive-only (issue #64). Now bidirectional: imports new
+  // favorites AND prunes locally-cached entries that have been un-favorited
+  // on Deezer's side. Also pings the sync engine to refresh membership so
+  // SyncView can flag favorites-origin sync entries that no longer have a
+  // backing favorite ("No longer in your Deezer favorites" prompt).
+  async function importDeezerFavorites(serverPort: number): Promise<{
+    imported: number
+    skipped: number
+    pruned: number
+    syncStale: { playlists: number; artists: number }
+  }> {
     isImporting.value = true
     let imported = 0
     let skipped = 0
+    let pruned = 0
 
     try {
       const response = await fetch(`http://127.0.0.1:${serverPort}/api/user/favorites`)
@@ -99,13 +110,22 @@ export const useFavoritesStore = defineStore('favorites', () => {
 
       const data = await response.json()
 
-      // Import tracks
-      for (const track of (data.tracks || [])) {
-        if (!isFavorite(track.id, 'track')) {
+      // Build the authoritative ID sets from the Deezer response so we can
+      // (a) skip-vs-import and (b) prune locally-cached entries no longer
+      // present on Deezer in one pass per type.
+      const deezerIds: Record<FavoriteItem['type'], Set<string>> = {
+        track: new Set((data.tracks || []).map((t: any) => String(t.id))),
+        album: new Set((data.albums || []).map((a: any) => String(a.id))),
+        artist: new Set((data.artists || []).map((a: any) => String(a.id))),
+        playlist: new Set((data.playlists || []).map((p: any) => String(p.id)))
+      }
+
+      const addIfMissing = (item: any, type: FavoriteItem['type']) => {
+        if (!isFavorite(item.id, type)) {
           favorites.value.push({
-            id: `track_${track.id}`,
-            type: 'track',
-            data: track,
+            id: `${type}_${item.id}`,
+            type,
+            data: item,
             addedAt: new Date().toISOString()
           })
           imported++
@@ -113,57 +133,49 @@ export const useFavoritesStore = defineStore('favorites', () => {
           skipped++
         }
       }
+      for (const track of (data.tracks || [])) addIfMissing(track, 'track')
+      for (const album of (data.albums || [])) addIfMissing(album, 'album')
+      for (const artist of (data.artists || [])) addIfMissing(artist, 'artist')
+      for (const playlist of (data.playlists || [])) addIfMissing(playlist, 'playlist')
 
-      // Import albums
-      for (const album of (data.albums || [])) {
-        if (!isFavorite(album.id, 'album')) {
-          favorites.value.push({
-            id: `album_${album.id}`,
-            type: 'album',
-            data: album,
-            addedAt: new Date().toISOString()
-          })
-          imported++
-        } else {
-          skipped++
-        }
-      }
+      // Prune: anything in our local cache whose ID is no longer in the
+      // Deezer response of its type.
+      const before = favorites.value.length
+      favorites.value = favorites.value.filter(f => {
+        const localId = String((f.data as any).id)
+        return deezerIds[f.type].has(localId)
+      })
+      pruned = before - favorites.value.length
 
-      // Import artists
-      for (const artist of (data.artists || [])) {
-        if (!isFavorite(artist.id, 'artist')) {
-          favorites.value.push({
-            id: `artist_${artist.id}`,
-            type: 'artist',
-            data: artist,
-            addedAt: new Date().toISOString()
-          })
-          imported++
-        } else {
-          skipped++
-        }
-      }
-
-      // Import playlists
-      for (const playlist of (data.playlists || [])) {
-        if (!isFavorite(playlist.id, 'playlist')) {
-          favorites.value.push({
-            id: `playlist_${playlist.id}`,
-            type: 'playlist',
-            data: playlist,
-            addedAt: new Date().toISOString()
-          })
-          imported++
-        } else {
-          skipped++
-        }
-      }
-
-      if (imported > 0) {
+      if (imported > 0 || pruned > 0) {
         saveFavorites()
       }
 
-      return { imported, skipped }
+      // Ask the sync engines to refresh favorites-membership against the
+      // same ID sets we just used. We pass the IDs we already have rather
+      // than making the server hit Deezer a second time.
+      let syncStale = { playlists: 0, artists: 0 }
+      try {
+        const refreshRes = await fetch(`http://127.0.0.1:${serverPort}/api/sync/refresh-favorites`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            playlistIds: Array.from(deezerIds.playlist),
+            artistIds: Array.from(deezerIds.artist)
+          })
+        })
+        if (refreshRes.ok) {
+          const r = await refreshRes.json()
+          syncStale = {
+            playlists: r.playlists?.stale ?? 0,
+            artists: r.artists?.stale ?? 0
+          }
+        }
+      } catch (e) {
+        console.warn('[FavoritesStore] sync refresh-favorites call failed (non-fatal):', e)
+      }
+
+      return { imported, skipped, pruned, syncStale }
     } finally {
       isImporting.value = false
     }

@@ -4,6 +4,27 @@ All notable changes to **Deemix Remastered** are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.3] — 2026-05-15
+
+### Fixed
+
+- **Un-favorited playlists and artists no longer linger in Favorites or Sync ([#64](https://github.com/DRAZY/deemix-remastered/issues/64)).** Two bugs were stacking up to produce one symptom:
+  - `favoritesStore.importDeezerFavorites` was additive-only — it imported new favorites from Deezer but never removed locally-cached entries that had been un-favorited on Deezer's side. Clicking **Import from Deezer** multiple times only ever grew the list. The function is now bidirectional: imports new + prunes removed in one pass.
+  - The sync engines (`playlistSync`, `artistSync`) had no link to favorites at all. Pinning a playlist for sync and then un-favoriting it on Deezer left the sync entry running indefinitely. Both engines now track a per-entry `origin: 'favorites' | 'manual'` and `lastSeenInFavoritesAt`. After every "Import from Deezer" run, the renderer cross-checks: entries whose source playlist/artist is no longer in the user's Deezer favorites get flagged.
+- **Import-from-Deezer toast is now informative.** Was "Imported N favorites from Deezer"; now shows `{N imported, M pruned, K unchanged}` and follows with a second toast counting any sync entries that just went stale.
+- **Sync page shows a "No longer in your Deezer favorites" notice on stale entries**, with a one-click **Remove** button. Manual-origin entries (added directly via the Sync page, not via Favorites → Pin to Sync) are never auto-flagged.
+
+### Engineering
+
+- New `markFavoriteMembership(favoriteIds: string[])` method on both engines.
+- New `POST /api/sync/refresh-favorites` route — accepts the renderer's already-fetched favorite IDs and routes them to both engines, avoiding a second Deezer round trip.
+- New `lastFavoritesRefreshAt` global timestamp persisted in each engine's state file; renderer compares against per-entry `lastSeenInFavoritesAt` to compute staleness.
+- Backwards-compatible state migration: pre-1.6.3 sync entries default to `origin: 'manual'` on first load so they're never auto-flagged.
+
+### Reversed product decision
+
+- This release reverses the "leave-in-place" call I made when designing #60 (favorite playlist sync) — at the time I argued sync was a separate, explicit commitment from favoriting. Real-user feedback (#64) showed that mental model was wrong for the pain point (bandwidth and disk waste from syncing playlists the user has clearly stopped caring about). The current behavior surfaces staleness without auto-deleting, so the user still confirms before destructive action.
+
 ## [1.6.2] — 2026-05-14
 
 ### Performance

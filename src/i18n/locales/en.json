@@ -658,7 +658,9 @@
     "syncedArtistsTitle": "Synced Artists",
     "syncAllArtists": "Sync All Artists",
     "albumsDownloaded": "albums downloaded",
-    "failedAlbums": "failed album(s)"
+    "failedAlbums": "failed album(s)",
+    "staleFavoriteNotice": "No longer in your Deezer favorites",
+    "staleFavoriteArtistNotice": "No longer in your Deezer favorites"
   },
   "about": {
     "appName": "Deemix Remastered",

@@ -25,6 +25,8 @@ export interface SyncedPlaylist {
   m3uPath: string | null
   downloadPath: string
   createdAt: string
+  origin?: 'favorites' | 'manual'
+  lastSeenInFavoritesAt?: string | null
 }
 
 export const useSyncStore = defineStore('sync', () => {
@@ -33,10 +35,24 @@ export const useSyncStore = defineStore('sync', () => {
   const syncProgress = ref<Map<string, { current: number; total: number; phase: string }>>(new Map())
   const serverPort = ref(6595)
   const isLoading = ref(false)
+  // ISO timestamp of the most recent favorites-membership refresh on the
+  // backend. Compared against each favorites-origin entry's
+  // lastSeenInFavoritesAt to decide whether it should be flagged as stale.
+  const lastFavoritesRefreshAt = ref<string | null>(null)
   let initialized = false
   let fetchInFlight = false
 
   const enabledPlaylists = computed(() => playlists.value.filter(p => p.enabled))
+
+  // True when a favorites-origin entry was not present in the most recent
+  // favorites refresh — i.e., the user un-liked the playlist on Deezer.
+  // Manual-origin entries are never stale by this rule.
+  function isStale(playlist: SyncedPlaylist): boolean {
+    if (playlist.origin !== 'favorites') return false
+    if (!lastFavoritesRefreshAt.value) return false
+    if (!playlist.lastSeenInFavoritesAt) return true
+    return playlist.lastSeenInFavoritesAt < lastFavoritesRefreshAt.value
+  }
 
   async function init() {
     if (initialized) return // Prevent duplicate init
@@ -88,6 +104,7 @@ export const useSyncStore = defineStore('sync', () => {
       const data = await response.json()
       playlists.value = data.playlists || []
       activeSyncIds.value = data.activeSyncIds || []
+      lastFavoritesRefreshAt.value = data.lastFavoritesRefreshAt ?? null
     } catch (e) {
       console.error('[SyncStore] Failed to fetch playlists:', e)
     } finally {
@@ -102,6 +119,7 @@ export const useSyncStore = defineStore('sync', () => {
     sourcePlaylistUrl: string
     schedule: SyncSchedule
     downloadPath: string
+    origin?: 'favorites' | 'manual'
   }) {
     isLoading.value = true
     try {
@@ -218,6 +236,7 @@ export const useSyncStore = defineStore('sync', () => {
     syncProgress,
     serverPort,
     isLoading,
+    lastFavoritesRefreshAt,
     enabledPlaylists,
     init,
     fetchPlaylists,
@@ -229,6 +248,7 @@ export const useSyncStore = defineStore('sync', () => {
     syncAll,
     cancelSync,
     isSyncing,
+    isStale,
     getProgress
   }
 })

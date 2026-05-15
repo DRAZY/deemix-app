@@ -69,6 +69,10 @@ export interface SyncedArtist {
   filters: ArtistSyncFilters
   firstSyncMode: FirstSyncMode
   createdAt: string
+  // NEW (v1.6.3): see playlistSync.ts for the staleness model — same
+  // semantics, different keying entity (artist instead of playlist).
+  origin: 'favorites' | 'manual'
+  lastSeenInFavoritesAt: string | null
 }
 
 export interface ArtistSyncResult {
@@ -82,6 +86,7 @@ export interface ArtistSyncResult {
 
 interface SyncState {
   artists: SyncedArtist[]
+  lastFavoritesRefreshAt?: string | null
 }
 
 const SCHEDULE_INTERVALS: Record<SyncSchedule, number> = {
@@ -176,6 +181,10 @@ class ArtistSyncEngine extends EventEmitter {
         if (!artist.firstSyncMode) artist.firstSyncMode = 'subscribe-forward'
         if (!Array.isArray(artist.knownAlbumIds)) artist.knownAlbumIds = []
         if (!Array.isArray(artist.failedAlbums)) artist.failedAlbums = []
+        // v1.6.3 — backfill: pre-existing entries are treated as manual so
+        // they aren't auto-flagged on the first favorites refresh.
+        if (!artist.origin) artist.origin = 'manual'
+        if (artist.lastSeenInFavoritesAt === undefined) artist.lastSeenInFavoritesAt = null
       }
     } catch (err: any) {
       if (err.code !== 'ENOENT') {
@@ -221,12 +230,18 @@ class ArtistSyncEngine extends EventEmitter {
     downloadPath: string
     firstSyncMode?: FirstSyncMode
     filters?: Partial<ArtistSyncFilters>
+    // Origin defaults to 'manual'; pass 'favorites' when adding from the
+    // Favorites → Pin to Sync UX so membership-refresh can flag the entry
+    // if the user later un-favorites the artist on Deezer.
+    origin?: 'favorites' | 'manual'
   }): Promise<SyncedArtist> {
     const existing = this.state.artists.find(
       a => a.source === 'deezer' && a.sourceArtistId === String(config.sourceArtistId)
     )
     if (existing) return existing
 
+    const origin: 'favorites' | 'manual' = config.origin ?? 'manual'
+    const nowIso = new Date().toISOString()
     const artist: SyncedArtist = {
       id: generateId(),
       source: 'deezer',
@@ -245,7 +260,9 @@ class ArtistSyncEngine extends EventEmitter {
       downloadPath: config.downloadPath,
       filters: { ...DEFAULT_ARTIST_FILTERS, ...(config.filters || {}) },
       firstSyncMode: config.firstSyncMode || 'subscribe-forward',
-      createdAt: new Date().toISOString()
+      createdAt: nowIso,
+      origin,
+      lastSeenInFavoritesAt: origin === 'favorites' ? nowIso : null
     }
     this.state.artists.push(artist)
     await this.saveState()
@@ -290,6 +307,33 @@ class ArtistSyncEngine extends EventEmitter {
 
   getArtist(id: string): SyncedArtist | null {
     return this.state.artists.find(a => a.id === id) || null
+  }
+
+  getLastFavoritesRefreshAt(): string | null {
+    return this.state.lastFavoritesRefreshAt ?? null
+  }
+
+  async markFavoriteMembership(deezerFavoriteArtistIds: string[]): Promise<{
+    refreshed: number
+    stale: number
+  }> {
+    const now = new Date().toISOString()
+    const favSet = new Set(deezerFavoriteArtistIds.map(String))
+    let refreshed = 0
+    let stale = 0
+    for (const a of this.state.artists) {
+      if (a.origin !== 'favorites') continue
+      if (favSet.has(a.sourceArtistId)) {
+        a.lastSeenInFavoritesAt = now
+        refreshed++
+      } else {
+        stale++
+      }
+    }
+    this.state.lastFavoritesRefreshAt = now
+    await this.saveState()
+    this.emit('artists:changed', this.state.artists)
+    return { refreshed, stale }
   }
 
   async resetArtist(id: string): Promise<boolean> {

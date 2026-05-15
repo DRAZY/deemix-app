@@ -888,6 +888,10 @@ export class DeemixServer extends EventEmitter {
         await this.handleCancelSyncArtist(req, res)
         break
 
+      case '/api/sync/refresh-favorites':
+        await this.handleRefreshFavoriteMembership(req, res)
+        break
+
       default:
         res.writeHead(404)
         res.end('Not Found')
@@ -3179,7 +3183,8 @@ export class DeemixServer extends EventEmitter {
   private handleGetSyncPlaylists(res: ServerResponse): void {
     const playlists = playlistSync.getPlaylists()
     const activeSyncIds = playlistSync.getActiveSyncIds()
-    this.sendJSON(res, { playlists, activeSyncIds })
+    const lastFavoritesRefreshAt = playlistSync.getLastFavoritesRefreshAt()
+    this.sendJSON(res, { playlists, activeSyncIds, lastFavoritesRefreshAt })
   }
 
   private async handleAddSyncPlaylist(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -3320,7 +3325,8 @@ export class DeemixServer extends EventEmitter {
   private handleGetSyncStatus(res: ServerResponse): void {
     const playlists = playlistSync.getPlaylists()
     const activeSyncIds = playlistSync.getActiveSyncIds()
-    this.sendJSON(res, { playlists, activeSyncIds })
+    const lastFavoritesRefreshAt = playlistSync.getLastFavoritesRefreshAt()
+    this.sendJSON(res, { playlists, activeSyncIds, lastFavoritesRefreshAt })
   }
 
   private async handleResolveShareUrl(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -3361,7 +3367,8 @@ export class DeemixServer extends EventEmitter {
   private handleGetSyncArtists(res: ServerResponse): void {
     const artists = artistSync.getArtists()
     const activeSyncIds = artistSync.getActiveSyncIds()
-    this.sendJSON(res, { artists, activeSyncIds })
+    const lastFavoritesRefreshAt = artistSync.getLastFavoritesRefreshAt()
+    this.sendJSON(res, { artists, activeSyncIds, lastFavoritesRefreshAt })
   }
 
   private async handleAddSyncArtist(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -3483,6 +3490,30 @@ export class DeemixServer extends EventEmitter {
   }
 
   // ==================== End Artist Sync Handlers ====================
+
+  // Cross-engine refresh: takes the renderer's already-fetched Deezer favorites
+  // IDs and asks each engine to mark which favorites-origin entries are still
+  // present. The renderer is the natural caller because it just made the
+  // /api/user/favorites call as part of importDeezerFavorites — no second
+  // round trip to Deezer here.
+  private async handleRefreshFavoriteMembership(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const playlistIds: string[] = Array.isArray(body.playlistIds) ? body.playlistIds.map(String) : []
+      const artistIds: string[] = Array.isArray(body.artistIds) ? body.artistIds.map(String) : []
+      const [playlistsResult, artistsResult] = await Promise.all([
+        playlistSync.markFavoriteMembership(playlistIds),
+        artistSync.markFavoriteMembership(artistIds)
+      ])
+      this.sendJSON(res, {
+        success: true,
+        playlists: playlistsResult,
+        artists: artistsResult
+      })
+    } catch (error: any) {
+      this.sendJSON(res, { error: error.message || 'Failed to refresh favorite membership' }, 500)
+    }
+  }
 
   updateSettings(settings: Partial<ServerSettings>): void {
     this.settings = { ...this.settings, ...settings }

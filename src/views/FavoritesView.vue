@@ -119,7 +119,8 @@ async function addOneToSync(playlist: Playlist) {
     sourcePlaylistName: playlist.title,
     sourcePlaylistUrl: `https://www.deezer.com/playlist/${playlist.id}`,
     schedule: '24h',
-    downloadPath: settingsStore.settings.downloadPath
+    downloadPath: settingsStore.settings.downloadPath,
+    origin: 'favorites'
   })
   if (result?.success) {
     toastStore.success(t('favorites.syncAdded', { name: playlist.title }))
@@ -145,7 +146,8 @@ async function syncAllFavorites() {
         sourcePlaylistName: playlist.title,
         sourcePlaylistUrl: `https://www.deezer.com/playlist/${playlist.id}`,
         schedule: '24h',
-        downloadPath: settingsStore.settings.downloadPath
+        downloadPath: settingsStore.settings.downloadPath,
+        origin: 'favorites'
       })
       if (result?.success) {
         added++
@@ -209,7 +211,8 @@ async function pinArtistToSync(artist: Artist) {
     sourceArtistUrl: `https://www.deezer.com/artist/${artist.id}`,
     schedule: '24h',
     downloadPath: settingsStore.settings.downloadPath,
-    firstSyncMode: 'subscribe-forward'
+    firstSyncMode: 'subscribe-forward',
+    origin: 'favorites'
   })
   if (result?.success) {
     toastStore.success(t('favorites.artistSyncAdded', { name: artist.name }))
@@ -235,7 +238,8 @@ async function syncAllFavoriteArtists() {
         sourceArtistUrl: `https://www.deezer.com/artist/${artist.id}`,
         schedule: '24h',
         downloadPath: settingsStore.settings.downloadPath,
-        firstSyncMode: 'subscribe-forward'
+        firstSyncMode: 'subscribe-forward',
+        origin: 'favorites'
       })
       if (result?.success) {
         added++
@@ -312,13 +316,27 @@ async function downloadAllFavorites() {
 
 async function importFromDeezer() {
   try {
-    const { imported, skipped } = await favoritesStore.importDeezerFavorites(serverPort.value)
-    if (imported > 0) {
-      toastStore.success(`Imported ${imported} favorites from Deezer${skipped > 0 ? ` (${skipped} already existed)` : ''}`)
+    const { imported, skipped, pruned, syncStale } = await favoritesStore.importDeezerFavorites(serverPort.value)
+    const parts: string[] = []
+    if (imported > 0) parts.push(`+${imported} imported`)
+    if (pruned > 0) parts.push(`−${pruned} pruned`)
+    if (skipped > 0) parts.push(`${skipped} unchanged`)
+    const summary = parts.length > 0 ? parts.join(', ') : 'No favorites found on your Deezer account'
+
+    if (imported > 0 || pruned > 0) {
+      toastStore.success(`Synced with Deezer favorites: ${summary}`)
     } else if (skipped > 0) {
       toastStore.info('All Deezer favorites are already imported')
     } else {
-      toastStore.info('No favorites found on your Deezer account')
+      toastStore.info(summary)
+    }
+
+    const staleTotal = (syncStale?.playlists ?? 0) + (syncStale?.artists ?? 0)
+    if (staleTotal > 0) {
+      const detail: string[] = []
+      if (syncStale.playlists > 0) detail.push(`${syncStale.playlists} playlist${syncStale.playlists > 1 ? 's' : ''}`)
+      if (syncStale.artists > 0) detail.push(`${syncStale.artists} artist${syncStale.artists > 1 ? 's' : ''}`)
+      toastStore.info(`${detail.join(' + ')} in Sync no longer in your Deezer favorites — review on the Sync page.`)
     }
   } catch (e: any) {
     toastStore.error(e.message || 'Failed to import Deezer favorites')

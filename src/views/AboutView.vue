@@ -33,6 +33,14 @@ interface ReleaseNotes {
 
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.6.3',
+    date: '2026-05-15',
+    items: [
+      'Un-favorited playlists/artists no longer linger (#64) -- "Import from Deezer" was additive-only; now it also prunes locally-cached favorites that you\'ve un-liked on Deezer. The Sync page surfaces a "No longer in your Deezer favorites" notice on sync entries whose source has been un-favorited, with a one-click Remove. Manual sync entries (added directly via the Sync page, not via Favorites → Pin to Sync) are never auto-flagged.',
+      'Smarter Import toast -- Was "Imported N favorites"; now shows {imported / pruned / unchanged} plus a follow-up count of any sync entries that just went stale.'
+    ]
+  },
+  {
     version: '1.6.2',
     date: '2026-05-14',
     items: [
