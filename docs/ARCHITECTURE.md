@@ -23,7 +23,8 @@ flowchart LR
         Auth["Deezer Auth<br/>(cookie + gateway.php)"]
         Downloader["Downloader<br/>(stream, decrypt, tag, write)"]
         Spotify["Spotify Client<br/>(Client Credentials)"]
-        Sync["Playlist Sync<br/>(diff + schedule)"]
+        Sync["Playlist Sync<br/>(track diff + schedule)"]
+        ArtistSyncS["Artist Sync<br/>(album diff + schedule)"]
         Storage["safeStorage<br/>(OS keychain)"]
     end
 
@@ -35,6 +36,7 @@ flowchart LR
     Server --> Downloader
     Server --> Spotify
     Server --> Sync
+    Server --> ArtistSyncS
     Auth --> Storage
 
     Auth -.->|"HTTPS"| DeezerWeb["api.deezer.com<br/>+ gateway.php"]
@@ -43,6 +45,8 @@ flowchart LR
     Sync --> Auth
     Sync --> Spotify
     Sync --> Downloader
+    ArtistSyncS --> Auth
+    ArtistSyncS --> Downloader
 
     style Renderer fill:#1e293b,color:#e2e8f0,stroke:#0ea5e9
     style Preload fill:#1e293b,color:#e2e8f0,stroke:#a78bfa
@@ -54,7 +58,7 @@ flowchart LR
 Where the UI runs. Sandboxed, no Node.js access, no filesystem access. Pure browser context with a custom title bar (frameless window).
 
 - **Stack:** Vue 3 + Pinia stores + Vue Router + vue-i18n + Tailwind
-- **State:** Pinia stores in `src/stores/` (auth, download queue, settings, profiles, sync, toast notifications, favorites, player)
+- **State:** Pinia stores in `src/stores/` (auth, download queue, settings, profiles, playlist sync, artist sync, toast notifications, favorites, player)
 - **Pages:** 13 view components in `src/views/` (Home, Search, Charts, Downloads, Favorites, Album, Artist, Playlist, Link Analyzer, New Releases, Sync, Settings, About)
 - **Components:** 20 reusable UI pieces in `src/components/`
 - **Talks to backend** via two channels: HTTP fetch to `127.0.0.1:6595` for queryable data, or the `window.electronAPI` bridge for OS-level operations (file dialog, deep link, encrypt secret)
@@ -80,7 +84,8 @@ Runs on `127.0.0.1:6595` (port shifts on collision). Serves `/api/*` endpoints t
 - **Editorial:** `/api/{chart,chart/countries,editorial/releases,user/favorites}`
 - **Spotify:** `/api/spotify/{auth,status,analyze,convert}`
 - **Downloads:** `/api/{download,download/album,download/playlist,download/batch,queue,queue/cancel,queue/priority,queue/clear,queue/pause,queue/resume,queue/status}`
-- **Sync:** `/api/sync/{playlists,run}`
+- **Playlist Sync:** `/api/sync/{playlists,run,run-all,reset,cancel,resolve-url}`
+- **Artist Sync:** `/api/sync/artists{,/run,/run-all,/reset,/cancel}`
 - **Generic:** `/api/{settings,analyze,health}`
 
 Why a local HTTP server instead of pure IPC? Two reasons. First, the renderer can stream long-lived data (download progress, queue status) with familiar `fetch` patterns instead of subscribing to events. Second, services like the Spotify OAuth callback need a real HTTP listener.
@@ -106,7 +111,11 @@ Client Credentials OAuth (no user login — uses the developer's own Client ID/S
 
 #### Playlist Sync — `electron/services/playlistSync.ts`
 
-Periodically diffs Spotify and Deezer playlists against a local known-state database, queues newly-added tracks for download, and emits sync-progress events back to the renderer via the preload bridge. Schedule is configurable (on launch / hourly / 6h / 12h / 24h / manual). Force Full Sync (right-click the sync button) wipes the known-state and re-downloads everything.
+Periodically diffs Spotify and Deezer playlists against a local known-state database, queues newly-added tracks for download, and emits sync-progress events back to the renderer via the preload bridge. Schedule is configurable (on launch / hourly / 6h / 12h / 24h / manual). Force Full Sync (right-click the sync button) wipes the known-state and re-downloads everything. State persisted at `userData/playlist-sync.json`.
+
+#### Artist Sync — `electron/services/artistSync.ts`
+
+Parallel engine to Playlist Sync, structurally identical but operating on a different diff key. Watches pinned Deezer artists' discographies via `/artist/{id}/albums` and diffs against `knownAlbumIds[]` rather than a track list — the diff unit is the **album**, not the track. Three first-sync modes determine first-run behavior: `subscribe-forward` (default; captures the current discography as already-known without downloading anything, only future releases trigger downloads), `download-backlog` (download the entire filtered discography), `date-threshold` (download from `minReleaseDate` forward). Per-artist filters control which release types (album / EP / single / compilation / feature) are pulled. Caps at 3 concurrent artist syncs; per-track parallelism still flows through the downloader's `maxConcurrentDownloads`. Shares the download-settings provider with playlist sync so quality, folder structure, templates, and metadata stay consistent across both. State persisted at `userData/artist-sync.json`, independent from `playlist-sync.json`. Pinia counterpart is `useArtistSyncStore`; IPC channels are `artistSync:start`/`progress`/`complete`/`error`.
 
 #### safeStorage Bridge — `electron/main.ts`
 

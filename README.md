@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.5.6-blue" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.6.1-blue" />
   <img alt="Electron" src="https://img.shields.io/badge/Electron-35-47848F?logo=electron&logoColor=white" />
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
@@ -82,6 +82,16 @@
 - **Force Full Sync** -- Right-click the sync button to reset and re-download all tracks in a playlist
 - **Settings-Aware** -- Uses your configured quality, folder structure, and metadata settings
 - **Real-Time Progress** -- Live progress bars and status updates during sync
+- **One-Click Pin from Favorites** -- Each favorited playlist gets a **Sync** button + a 5-state status badge (Syncing X/Y, Synced, Partial, Sync error, Sync pending). A **Sync all favorite playlists** button at the top bulk-pins everything not already in sync.
+
+### Artist Sync
+
+- **Auto-Download New Releases** -- Pin an artist; the engine watches `/artist/{id}/albums` on a schedule and auto-downloads anything new
+- **Three First-Sync Modes** -- `subscribe-forward` (default; safest — captures current discography as already-known without downloading anything, only future releases trigger downloads), `download-backlog` (download the entire filtered discography on first sync), `date-threshold` (download everything from a chosen release date forward)
+- **Per-Artist Filters** -- Choose which release types to pull. Defaults: Albums ✓, EPs ✓, Singles ✗, Compilations ✗, Features ✗
+- **One-Click Pin from Favorites** -- Each favorited artist gets a **Pin to Sync** button + the same 5-state status badge as playlist sync. A **Sync all favorite artists** button bulk-pins everything.
+- **Synced Artists Section on the Sync Page** -- Live per-artist progress (shows the current album being downloaded), failed-album expansion, force re-check (right-click), enable/disable, and remove.
+- **Concurrent Sync Cap** -- Max 3 artists syncing in parallel; per-track downloads respect your existing `maxConcurrentDownloads` setting
 
 ### User Experience
 
@@ -325,6 +335,7 @@ deemix-remastered/
 │   │   ├── profileStore.ts         # Settings profiles
 │   │   ├── settingsStore.ts        # User preferences & export/import
 │   │   ├── syncStore.ts            # Playlist sync state
+│   │   ├── artistSyncStore.ts      # Artist sync state
 │   │   └── toastStore.ts           # Notification system
 │   ├── types/                  # TypeScript type definitions
 │   └── views/                  # Page components (13 pages)
@@ -336,6 +347,7 @@ deemix-remastered/
 │       ├── deezerAuth.ts           # Deezer authentication
 │       ├── downloader.ts           # Download engine
 │       ├── playlistSync.ts         # Playlist sync engine
+│       ├── artistSync.ts           # Artist sync engine (#61)
 │       ├── spotifyAPI.ts           # Spotify API client
 │       └── spotifyConverter.ts     # Spotify-to-Deezer conversion
 ├── public/                     # Static assets & icons

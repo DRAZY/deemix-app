@@ -22,33 +22,63 @@ function openLink(url: string) {
   }
 }
 
-const whatsNew = [
-  'Missing Cover Art Fix -- Album, playlist, and artist cover images no longer get stuck as the music-note placeholder after a transient network blip. The card components now fall through to the next available cover size when one fails, and reset cleanly when a card is reused for a different item (e.g., when scrolling or switching pages).',
-  'macOS Unsigned-Build Gatekeeper Fix -- Unsigned macOS .dmg artifacts now carry a proper ad-hoc bundle signature so Gatekeeper offers the standard "Open Anyway" option in System Settings > Privacy & Security. v1.5.7 binaries were missing the bundle-level signature and macOS treated them as tampered; v1.5.8 fixes the build pipeline.',
-  'Deezer CDN Migration Fix -- Resolves the "getaddrinfo ENOTFOUND e-cdns-proxy-*.dzcdn.net" download error introduced when Deezer retired its legacy sharded track CDN in May 2026. All downloads now go exclusively through the modern Media API at media.deezer.com/v1/get_url, which returns signed URLs against whichever CDN Deezer currently routes to.',
-  'Clearer Track-Unavailable Errors -- When a track genuinely cannot be downloaded (geo-restricted, Premium-only, or removed from Deezer\'s catalog), the error message now says so instead of surfacing a confusing DNS-level failure as the final hop in the fallback chain.',
-  'Link Analyzer Timeout Fix -- Public Deezer API calls now time out after 15 seconds instead of hanging forever (issue #57)',
-  'Region-Restricted Content -- Link Analyzer falls back to the authenticated gateway for region-locked tracks/albums when public lookup returns no data',
-  'Better Analyzer Errors -- Clearer messaging when content is unavailable in your region or the link is malformed',
-  'Playlist Sync M3U -- Each sync run now writes a timestamped M3U playlist file alongside the synced tracks (issue #59)',
-  'Large Playlist Fix -- Playlists and albums with more than 500 tracks now download in full instead of being silently truncated at the first 500 (issue #58)',
-  'Sync Toast Fix -- Adding or removing a playlist from Sync no longer throws an error when displaying the success/failure toast',
-  'Artist Page Fix -- Artist discography now loads reliably (resolved a runtime error reading the server port)',
-  'New App Icon -- Refreshed app icon with a vibrant paper-cut layered design (cobalt + lime palette) replacing the previous purple gradient',
-  'New Releases Page -- Dedicated page showing all 100 of Deezer\'s latest album releases, accessible via "See all" on the Home page',
-  'Download Statistics Dashboard -- View total downloads, tracks, top artists, formats, and weekly activity on the Downloads page',
-  'Duplicate Album Detection -- Warns when an album already exists on disk before downloading',
-  'Download Next -- Move pending items to the front of the download queue with one click',
-  'Playlist Cover Artwork -- Playlist covers saved as cover.jpg in the playlist folder or as {playlist name}.jpg in the root download directory',
-  'Spotify Public/Private Badge -- Link Analyzer shows playlist visibility status for Spotify playlists',
-  'Playlist Sync Improvements -- Sync now waits for downloads to complete, only marks successful tracks as known, and supports Force Full Sync (right-click sync button)',
-  'Compilation Album Fix -- Tracks from sampler/compilation albums now stay grouped under the album-level artist folder',
-  'Download Timeout Protection -- Connection and stall timeouts on all HTTP calls prevent downloads from hanging indefinitely',
-  'Track Number Preservation -- Resolved tracks keep their original album position instead of inheriting the alternative version\'s number',
-  'Retry Improvements -- Retried tracks stay grouped under the parent album/playlist with preserved track counts',
-  'Delete Files Fix -- Delete Files now removes the entire playlist folder, not just a subfolder',
-  'Spotify Playlist Error Feedback -- Clear error messages when Spotify playlist conversion or download fails',
-  'Default Concurrent Downloads -- Increased from 3 to 5 for better out-of-box performance'
+// What's New — grouped by version, newest first. Older versions are
+// summarized into a single "Earlier releases" entry to keep this page
+// scannable. Full history lives in CHANGELOG.md.
+interface ReleaseNotes {
+  version: string
+  date: string
+  items: string[]
+}
+
+const whatsNew: ReleaseNotes[] = [
+  {
+    version: '1.6.1',
+    date: '2026-05-14',
+    items: [
+      'Sync Badge Progress -- The "Syncing…" badge on favorite playlist and artist cards now shows the actual progress (e.g., "Syncing 12/87") so you can tell at a glance that the engine is working through the tracklist instead of just spinning. Behaviour fix: previously the badge gave no indication of progress for long-running syncs.',
+      'About Page Refresh -- Reorganized "What\'s New" by version with clear date stamps; older releases are summarized for readability.'
+    ]
+  },
+  {
+    version: '1.6.0',
+    date: '2026-05-14',
+    items: [
+      'Favorite Playlist One-Click Sync (#60) -- Each row on Favorites → Playlists now has a Sync button that pins the playlist to the sync engine with a 24-hour schedule. A new "Sync all favorite playlists" button at the top bulk-pins everything not already in sync, skipping duplicates. Each card shows a 5-state status badge (Syncing / Synced / Partial / Sync error / Sync pending).',
+      'Artist Sync Engine (#61) -- New parallel sync engine that watches pinned Deezer artists\' discographies and auto-downloads new releases on a schedule. Pin an artist from Favorites → Artists; the engine compares the artist\'s /albums against album IDs you\'ve already seen.',
+      'Subscribe-Forward First Sync (default) -- On first sync of a newly-pinned artist, the engine captures the current discography as "already known" without downloading anything. From that point forward, only NEW releases trigger downloads. Prevents accidentally pulling a 200-album backlog for prolific artists. Two other first-sync modes available: download-backlog and date-threshold.',
+      'Default Artist Filters -- Albums on, EPs on, Singles off, Compilations off, Features off. Configurable per artist at pin time.',
+      'Synced Artists Section on Sync Page -- Live progress per artist (shows the current album being downloaded), failed-album expansion, force re-check (right-click), enable/disable, and remove.'
+    ]
+  },
+  {
+    version: '1.5.8',
+    date: '2026-05-11',
+    items: [
+      'Missing Cover Art Fix -- Album, playlist, and artist cover images no longer get stuck as the music-note placeholder after a transient network blip. Cards now fall through to the next available cover size and reset cleanly when reused for a different item.',
+      'macOS Unsigned-Build Gatekeeper Fix -- Unsigned .dmg artifacts now carry a proper ad-hoc bundle signature so Gatekeeper offers the "Open Anyway" override in System Settings.'
+    ]
+  },
+  {
+    version: '1.5.7',
+    date: '2026-05-11',
+    items: [
+      'Deezer CDN Migration Fix -- Resolves the "getaddrinfo ENOTFOUND e-cdns-proxy-*.dzcdn.net" download error introduced when Deezer retired its legacy sharded track CDN. All downloads now go exclusively through the modern Media API.',
+      'Clearer Track-Unavailable Errors -- Error message now correctly distinguishes between a missing track and a CDN/DNS failure.'
+    ]
+  },
+  {
+    version: 'Earlier',
+    date: '< 2026-05-11',
+    items: [
+      'Playlist Sync (M3U, force full sync, large-playlist support, sync toast fix)',
+      'Link Analyzer (timeout protection, region-restricted fallback, clearer errors)',
+      'Browse & Discovery (New Releases page, Charts, Spotify public/private badge)',
+      'Downloads (statistics dashboard, duplicate album detection, Download Next, retry grouping, default concurrency increase to 5)',
+      'Metadata & Files (playlist cover artwork, compilation album fix, track number preservation, delete-files fix)',
+      'Refreshed app icon (cobalt + lime paper-cut design)'
+    ]
+  }
 ]
 </script>
 
@@ -76,12 +106,22 @@ const whatsNew = [
         </svg>
         {{ t('about.whatsNew') }}
       </h2>
-      <ul class="space-y-2">
-        <li v-for="(item, i) in whatsNew" :key="i" class="flex items-start gap-2 text-sm text-foreground-muted">
-          <span class="text-primary-400 mt-0.5 flex-shrink-0">&bull;</span>
-          {{ item }}
-        </li>
-      </ul>
+      <div class="space-y-5">
+        <div v-for="release in whatsNew" :key="release.version" class="space-y-2">
+          <div class="flex items-baseline gap-2 pb-1 border-b border-zinc-800/60">
+            <h3 class="text-sm font-semibold text-foreground">
+              {{ release.version === 'Earlier' ? 'Earlier releases' : `v${release.version}` }}
+            </h3>
+            <span class="text-xs text-foreground-muted">{{ release.date }}</span>
+          </div>
+          <ul class="space-y-1.5">
+            <li v-for="(item, i) in release.items" :key="i" class="flex items-start gap-2 text-sm text-foreground-muted">
+              <span class="text-primary-400 mt-0.5 flex-shrink-0">&bull;</span>
+              <span>{{ item }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
 
     <!-- Runtime Info -->
@@ -122,7 +162,7 @@ const whatsNew = [
       </h2>
       <div class="space-y-2">
         <button
-          @click="openLink('https://github.com/DRAZY/deemix-app')"
+          @click="openLink('https://github.com/DRAZY/deemix-remastered')"
           class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-background-tertiary transition-colors text-left"
         >
           <svg class="w-5 h-5 text-foreground-muted flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -137,7 +177,7 @@ const whatsNew = [
           </svg>
         </button>
         <button
-          @click="openLink('https://github.com/DRAZY/deemix-app/issues')"
+          @click="openLink('https://github.com/DRAZY/deemix-remastered/issues')"
           class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-background-tertiary transition-colors text-left"
         >
           <svg class="w-5 h-5 text-foreground-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

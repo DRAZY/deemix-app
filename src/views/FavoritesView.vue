@@ -99,6 +99,18 @@ function getSyncStatus(playlistId: number | string): SyncBadgeStatus {
   }
 }
 
+// When a sync is in flight, show "Syncing X/Y" so the user can see the engine
+// is actually working through the tracklist instead of just spinning.
+function getPlaylistSyncingLabel(playlistId: number | string): string {
+  const entry = getSyncEntry(playlistId)
+  if (!entry) return t('favorites.syncing')
+  const progress = syncStore.getProgress(entry.id)
+  if (progress && progress.total > 0) {
+    return `${t('favorites.syncing')} ${progress.current}/${progress.total}`
+  }
+  return t('favorites.syncing')
+}
+
 async function addOneToSync(playlist: Playlist) {
   if (getSyncEntry(playlist.id)) return // idempotent — already in sync
   const result = await syncStore.addPlaylist({
@@ -175,6 +187,18 @@ function getArtistSyncStatus(artistId: number | string): SyncBadgeStatus {
     case 'error': return 'error'
     default: return 'pending'
   }
+}
+
+// Artist progress unit is albums, not tracks — show "Album X/Y" so the
+// label reads accurately for the artist sync surface.
+function getArtistSyncingLabel(artistId: number | string): string {
+  const entry = getArtistSyncEntry(artistId)
+  if (!entry) return t('favorites.syncing')
+  const progress = artistSyncStore.getProgress(entry.id)
+  if (progress && progress.total > 0) {
+    return `${t('favorites.syncing')} ${progress.current}/${progress.total}`
+  }
+  return t('favorites.syncing')
 }
 
 async function pinArtistToSync(artist: Artist) {
@@ -462,7 +486,7 @@ async function importFromDeezer() {
               'bg-zinc-500/90 text-white': getArtistSyncStatus(artist.id) === 'pending'
             }"
             :title="
-              getArtistSyncStatus(artist.id) === 'syncing' ? t('favorites.syncing')
+              getArtistSyncStatus(artist.id) === 'syncing' ? getArtistSyncingLabel(artist.id)
               : getArtistSyncStatus(artist.id) === 'success' ? t('favorites.synced')
               : getArtistSyncStatus(artist.id) === 'partial' ? t('favorites.syncPartial')
               : getArtistSyncStatus(artist.id) === 'error' ? t('favorites.syncError')
@@ -483,7 +507,7 @@ async function importFromDeezer() {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>
-              {{ getArtistSyncStatus(artist.id) === 'syncing' ? t('favorites.syncing')
+              {{ getArtistSyncStatus(artist.id) === 'syncing' ? getArtistSyncingLabel(artist.id)
                  : getArtistSyncStatus(artist.id) === 'success' ? t('favorites.synced')
                  : getArtistSyncStatus(artist.id) === 'partial' ? t('favorites.syncPartial')
                  : getArtistSyncStatus(artist.id) === 'error' ? t('favorites.syncError')
@@ -540,7 +564,7 @@ async function importFromDeezer() {
               'bg-zinc-500/90 text-white': getSyncStatus(playlist.id) === 'pending'
             }"
             :title="
-              getSyncStatus(playlist.id) === 'syncing' ? t('favorites.syncing')
+              getSyncStatus(playlist.id) === 'syncing' ? getPlaylistSyncingLabel(playlist.id)
               : getSyncStatus(playlist.id) === 'success' ? t('favorites.synced')
               : getSyncStatus(playlist.id) === 'partial' ? t('favorites.syncPartial')
               : getSyncStatus(playlist.id) === 'error' ? t('favorites.syncError')
@@ -561,7 +585,7 @@ async function importFromDeezer() {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span>
-              {{ getSyncStatus(playlist.id) === 'syncing' ? t('favorites.syncing')
+              {{ getSyncStatus(playlist.id) === 'syncing' ? getPlaylistSyncingLabel(playlist.id)
                  : getSyncStatus(playlist.id) === 'success' ? t('favorites.synced')
                  : getSyncStatus(playlist.id) === 'partial' ? t('favorites.syncPartial')
                  : getSyncStatus(playlist.id) === 'error' ? t('favorites.syncError')

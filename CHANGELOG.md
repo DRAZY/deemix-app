@@ -4,6 +4,19 @@ All notable changes to **Deemix Remastered** are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] — 2026-05-14
+
+### Fixed
+
+- **Sync badge "going in circles" on Favorites.** The status badge on favorite playlist and artist cards stayed on `Syncing…` for the entire duration of a sync run with no progress indication, so users had no way to tell whether the engine was actively working or had stalled. The badge now reads `Syncing 12/87` when progress data is available, matching the live values already streamed over the existing `sync:progress` IPC channel (`playlistSync.onSyncProgress` / `artistSync.onSyncProgress`). No backend changes — the data was already flowing, the badge just wasn't reading it.
+- **Auto-update checker pointed at the wrong repo.** `App.vue` was polling `github.com/DRAZY/deemix-app/releases/latest` instead of `DRAZY/deemix-remastered`, so the "new version available" toast on startup would silently never fire after the rename to `deemix-remastered`. Now hits the correct repo.
+- **Broken GitHub links on the About page.** Both the "GitHub Repository" and "Report an Issue" buttons in the About view pointed to the old `deemix-app` repo URL and would 404. Now point to `DRAZY/deemix-remastered`.
+
+### Changed
+
+- **About → What's New rewritten as a version-grouped log.** Was a flat list of ~26 bullets spanning many versions; now grouped by version with a date stamp per release, newest first. Older releases collapsed into a single summary entry. Full history continues to live in `CHANGELOG.md`.
+- **README & ARCHITECTURE refreshed.** Version badge bumped, new "Artist Sync" feature section added under Features, project-structure tree updated (`artistSync.ts`, `artistSyncStore.ts`), API endpoint table includes the artist-sync routes, top-level architecture diagram shows the second sync engine.
+
 ## [1.6.0] — 2026-05-14
 
 ### Added

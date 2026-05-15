@@ -139,7 +139,7 @@ onMounted(async () => {
 async function checkForUpdates() {
   try {
     const currentVersion = window.electronAPI ? await window.electronAPI.getVersion() : '0.0.0'
-    const response = await fetch('https://api.github.com/repos/DRAZY/deemix-app/releases/latest')
+    const response = await fetch('https://api.github.com/repos/DRAZY/deemix-remastered/releases/latest')
     if (!response.ok) return
     const release = await response.json()
     const latestVersion = (release.tag_name || '').replace(/^v/, '')
