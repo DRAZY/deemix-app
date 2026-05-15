@@ -33,6 +33,14 @@ interface ReleaseNotes {
 
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.6.4',
+    date: '2026-05-15',
+    items: [
+      'Remove from favorites, directly from the card -- Every playlist and artist card on the Favorites tabs now has a small X button in the top-left corner. Click it to remove the item from your local favorites cache; any sync entry sourced from that item is auto-removed too. Doesn\'t touch Deezer — re-importing will bring it back if it\'s still favorited on Deezer\'s side.',
+      'Sync / Pin buttons are now toggles -- The Sync button on playlist cards and the Pin to Sync button on artist cards used to flip to a disabled "Synced" / "Pinned" state once added. Both are now toggles — click again to remove just the sync entry while keeping the item in favorites. Hover the button to see "Unsync" / "Unpin" to confirm what the click will do.'
+    ]
+  },
+  {
     version: '1.6.3',
     date: '2026-05-15',
     items: [

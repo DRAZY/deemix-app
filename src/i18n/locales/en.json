@@ -161,7 +161,17 @@
     "artistSyncAdded": "Pinned \"{name}\" to artist sync",
     "artistSyncBulkResult": "Pinned {added} artist(s) to sync ({skipped} already pinned)",
     "artistSyncAllNoneAdded": "All favorite artists are already pinned",
-    "artistSyncFailed": "Failed to pin artist to sync"
+    "artistSyncFailed": "Failed to pin artist to sync",
+    "removeFromFavoritesTooltip": "Remove from favorites",
+    "removedFromFavorites": "Removed \"{name}\" from favorites",
+    "syncPlaylistTooltip": "Pin this playlist to sync",
+    "unsyncPlaylistTooltip": "Stop syncing this playlist (stays in favorites)",
+    "unsync": "Unsync",
+    "syncRemoved": "Stopped syncing \"{name}\"",
+    "pinArtistTooltip": "Pin this artist to sync",
+    "unpinArtistTooltip": "Unpin this artist (stays in favorites)",
+    "unpin": "Unpin",
+    "artistSyncRemoved": "Unpinned \"{name}\" from sync"
   },
   "analyzer": {
     "title": "Link Analyzer",

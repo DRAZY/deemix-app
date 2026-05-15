@@ -4,6 +4,18 @@ All notable changes to **Deemix Remastered** are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.4] — 2026-05-15
+
+### Fixed
+
+- **No way to remove a playlist or artist from favorites from inside the app.** v1.6.3 added the prune-on-import flow for un-favorited Deezer items, but the favorite playlist and artist cards themselves still had no remove affordance — only a Sync button. v1.6.4 adds a small "X" remove button in the top-left corner of every playlist and artist card on the Favorites tabs. Clicking it removes the item from the local favorites cache, and also auto-removes any sync entry sourced from that playlist/artist (the user's clear intent is "make this go away"). Doesn't touch Deezer; re-importing will bring it back if it's still on Deezer's side.
+- **No way to unpin/unsync from the favorite cards.** The Sync and Pin to Sync buttons used to flip to a *disabled* "Synced" / "Pinned" state once added — meaning the only way to unsync a favorite was to navigate to the Sync page and remove it manually. Both buttons are now toggles: click once to pin, click again (the button hover-flips to "Unsync" / "Unpin") to remove just the sync entry while keeping the playlist/artist in favorites.
+
+### Engineering
+
+- New handlers in `FavoritesView.vue`: `unfavoritePlaylist()`, `unfavoriteArtist()`, `toggleSyncPlaylist()`, `toggleSyncArtist()`.
+- All four interactions wired with informative toasts (Removed "X" / Stopped syncing "X" / Unpinned "X" / etc).
+
 ## [1.6.3] — 2026-05-15
 
 ### Fixed

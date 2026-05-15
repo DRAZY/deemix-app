@@ -111,6 +111,56 @@ function getPlaylistSyncingLabel(playlistId: number | string): string {
   return t('favorites.syncing')
 }
 
+// Local-only unfavorite from the card. Removes from favoritesStore AND
+// removes any sync entry sourced from this playlist — the user's intent
+// is clearly "make this go away", and leaving the sync entry running on
+// a just-unfavorited playlist would defeat the purpose. Doesn't touch
+// Deezer; the playlist will reappear on the next "Import from Deezer"
+// run if the user re-favorites it on Deezer's side.
+async function unfavoritePlaylist(playlist: Playlist) {
+  const id = `playlist_${playlist.id}`
+  const entry = getSyncEntry(playlist.id)
+  if (entry) {
+    await syncStore.removePlaylist(entry.id)
+  }
+  favoritesStore.removeFavorite(id)
+  toastStore.info(t('favorites.removedFromFavorites', { name: playlist.title }))
+}
+
+async function unfavoriteArtist(artist: Artist) {
+  const id = `artist_${artist.id}`
+  const entry = getArtistSyncEntry(artist.id)
+  if (entry) {
+    await artistSyncStore.removeArtist(entry.id)
+  }
+  favoritesStore.removeFavorite(id)
+  toastStore.info(t('favorites.removedFromFavorites', { name: artist.name }))
+}
+
+// Toggles a playlist's sync state. If not synced → adds; if synced → removes
+// the sync entry (keeps the playlist in favorites — just stops syncing it).
+async function toggleSyncPlaylist(playlist: Playlist) {
+  const entry = getSyncEntry(playlist.id)
+  if (entry) {
+    await syncStore.removePlaylist(entry.id)
+    toastStore.info(t('favorites.syncRemoved', { name: playlist.title }))
+    return
+  }
+  await addOneToSync(playlist)
+}
+
+// Same toggle behavior for artist sync. Unpinning keeps the artist
+// favorited — only the sync entry is removed.
+async function toggleSyncArtist(artist: Artist) {
+  const entry = getArtistSyncEntry(artist.id)
+  if (entry) {
+    await artistSyncStore.removeArtist(entry.id)
+    toastStore.info(t('favorites.artistSyncRemoved', { name: artist.name }))
+    return
+  }
+  await pinArtistToSync(artist)
+}
+
 async function addOneToSync(playlist: Playlist) {
   if (getSyncEntry(playlist.id)) return // idempotent — already in sync
   const result = await syncStore.addPlaylist({
@@ -492,6 +542,17 @@ async function importFromDeezer() {
           class="relative flex flex-col gap-2"
         >
           <ArtistCard :artist="artist" />
+          <!-- Remove from favorites (X in top-left); also auto-removes
+               any artist-sync entry sourced from this artist. -->
+          <button
+            @click="unfavoriteArtist(artist)"
+            class="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm text-white hover:bg-red-500/90 transition-colors flex items-center justify-center"
+            :title="t('favorites.removeFromFavoritesTooltip')"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
           <!-- Sync status badge — overlays the card top-right -->
           <span
             v-if="getArtistSyncStatus(artist.id) !== 'none'"
@@ -532,16 +593,22 @@ async function importFromDeezer() {
                  : t('favorites.syncPending') }}
             </span>
           </span>
-          <!-- Per-card Pin to Sync button — flips to disabled when pinned -->
+          <!-- Per-card Pin toggle — click to pin, click again to unpin.
+               Unpinning keeps the artist favorited; only the sync entry is removed. -->
           <button
-            @click="pinArtistToSync(artist)"
-            :disabled="getArtistSyncStatus(artist.id) !== 'none' || artistSyncStore.isLoading"
-            class="w-full px-2 py-1 text-xs font-medium rounded-md transition-colors disabled:cursor-not-allowed"
+            @click="toggleSyncArtist(artist)"
+            :disabled="artistSyncStore.isLoading"
+            class="w-full px-2 py-1 text-xs font-medium rounded-md transition-colors group"
             :class="getArtistSyncStatus(artist.id) === 'none'
               ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : 'bg-zinc-700 text-zinc-300'"
+              : 'bg-zinc-700 text-zinc-300 hover:bg-red-600 hover:text-white'"
+            :title="getArtistSyncStatus(artist.id) === 'none' ? t('favorites.pinArtistTooltip') : t('favorites.unpinArtistTooltip')"
           >
-            {{ getArtistSyncStatus(artist.id) === 'none' ? t('favorites.pinArtistToSync') : t('favorites.artistSynced') }}
+            <span v-if="getArtistSyncStatus(artist.id) === 'none'">{{ t('favorites.pinArtistToSync') }}</span>
+            <span v-else>
+              <span class="group-hover:hidden">{{ t('favorites.artistSynced') }}</span>
+              <span class="hidden group-hover:inline">{{ t('favorites.unpin') }}</span>
+            </span>
           </button>
         </div>
       </div>
@@ -570,6 +637,17 @@ async function importFromDeezer() {
             }"
             type="playlist"
           />
+          <!-- Remove from favorites (X in top-left); also auto-removes
+               any sync entry sourced from this playlist. -->
+          <button
+            @click="unfavoritePlaylist(playlist)"
+            class="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm text-white hover:bg-red-500/90 transition-colors flex items-center justify-center"
+            :title="t('favorites.removeFromFavoritesTooltip')"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
           <!-- Sync status badge — overlays the card top-right -->
           <span
             v-if="getSyncStatus(playlist.id) !== 'none'"
@@ -610,16 +688,22 @@ async function importFromDeezer() {
                  : t('favorites.syncPending') }}
             </span>
           </span>
-          <!-- Per-card Sync button — flips to disabled "Synced" once added -->
+          <!-- Per-card Sync toggle — click to add, click again to unsync.
+               Unsync keeps the playlist favorited; it only stops syncing it. -->
           <button
-            @click="addOneToSync(playlist)"
-            :disabled="getSyncStatus(playlist.id) !== 'none' || syncStore.isLoading"
-            class="w-full px-2 py-1 text-xs font-medium rounded-md transition-colors disabled:cursor-not-allowed"
+            @click="toggleSyncPlaylist(playlist)"
+            :disabled="syncStore.isLoading"
+            class="w-full px-2 py-1 text-xs font-medium rounded-md transition-colors group"
             :class="getSyncStatus(playlist.id) === 'none'
               ? 'bg-blue-600 text-white hover:bg-blue-700'
-              : 'bg-zinc-700 text-zinc-300'"
+              : 'bg-zinc-700 text-zinc-300 hover:bg-red-600 hover:text-white'"
+            :title="getSyncStatus(playlist.id) === 'none' ? t('favorites.syncPlaylistTooltip') : t('favorites.unsyncPlaylistTooltip')"
           >
-            {{ getSyncStatus(playlist.id) === 'none' ? t('favorites.syncPlaylist') : t('favorites.synced') }}
+            <span v-if="getSyncStatus(playlist.id) === 'none'">{{ t('favorites.syncPlaylist') }}</span>
+            <span v-else>
+              <span class="group-hover:hidden">{{ t('favorites.synced') }}</span>
+              <span class="hidden group-hover:inline">{{ t('favorites.unsync') }}</span>
+            </span>
           </button>
         </div>
       </div>
