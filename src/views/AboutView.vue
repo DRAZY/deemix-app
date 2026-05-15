@@ -33,6 +33,14 @@ interface ReleaseNotes {
 
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.7.0',
+    date: '2026-05-15',
+    items: [
+      'Security: Electron 35 → 39 (final batch of stack hygiene) -- Closes the remaining 16 Dependabot alerts (5 high, 8 medium, 3 low) by bumping the Electron runtime. With v1.6.6 + v1.7.0 combined, every open vulnerability the project had is now closed — the repo reports zero vulnerabilities locally. None of the CVE-listed Electron APIs are used by this codebase (confirmed via grep before the bump), and zero native modules ship in the app bundle, so the runtime swap is metadata-only on our side — no code changes, no behavior changes.',
+      'Minor-version bump (1.7.0) because the underlying Chromium and Node runtimes moved several majors, even though our application code is unchanged.'
+    ]
+  },
+  {
     version: '1.6.6',
     date: '2026-05-15',
     items: [

@@ -4,6 +4,20 @@ All notable changes to **Deemix Remastered** are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] — 2026-05-15
+
+### Security
+
+- **Closed the remaining 16 Electron Dependabot alerts (5 high, 8 medium, 3 low) by bumping the Electron runtime from 35.x to 39.8.5+** (npm installed 39.8.10). This closes every open security advisory the project had as of this release — the repo now reports zero vulnerabilities locally.
+- The bump is the runtime/Chromium/Node refresh promised in v1.6.6's release notes. All of the CVE-listed Electron APIs (`desktopCapturer.getSources`, `app.setLoginItemSettings`, `app.setAsDefaultProtocolClient`, `app.moveToApplicationsFolder`, `commandLineSwitches webPreference`, `nativeImage.createFromPath` with SVG, the legacy `autoUpdater` module, etc.) are not used by this codebase — confirmed via grep before the bump. The Electron APIs we *do* use (`safeStorage`, `BrowserWindow`, `ipcMain.handle`, `session`, `Menu`, `dialog`, `shell`) are all rock-stable across 35 → 39.
+- Zero native node modules ship in the app bundle, so the ABI change between Electron 35 and 39 has no runtime impact for us (the historically biggest source of Electron upgrade pain).
+- **Why minor-version bump (1.7.0) instead of patch (1.6.7)?** The underlying runtime — Chromium and Node — moved several majors. Even though our code didn't change, the application's runtime substrate did. SemVer-wise that's a minor bump for the app.
+
+### Engineering
+
+- `electron` `^35.0.0` → `^39.8.5` in `package.json` (installed 39.8.10). No other code touched.
+- All six OS build targets (mac universal, mac arm64, win x64, win arm64, linux x64, linux arm64) produce on Electron 39.
+
 ## [1.6.6] — 2026-05-15
 
 ### Security
