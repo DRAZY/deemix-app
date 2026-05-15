@@ -74,6 +74,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
 
+  // Artist sync events — separate IPC channels from playlistSync so the
+  // renderer can route them to a dedicated store without inspecting payload.
+  artistSync: {
+    onSyncStart: (callback: (data: { artistId: string }) => void) => {
+      ipcRenderer.on('artistSync:start', (_, data) => callback(data))
+    },
+    onSyncProgress: (callback: (data: { artistId: string; current: number; total: number; phase: string; albumTitle?: string }) => void) => {
+      ipcRenderer.on('artistSync:progress', (_, data) => callback(data))
+    },
+    onSyncComplete: (callback: (data: any) => void) => {
+      ipcRenderer.on('artistSync:complete', (_, data) => callback(data))
+    },
+    onSyncError: (callback: (data: { artistId: string; error: string }) => void) => {
+      ipcRenderer.on('artistSync:error', (_, data) => callback(data))
+    }
+  },
+
   // Persistent storage (stored in userData, not localStorage)
   // This fixes session persistence issues with file:// protocol
   storage: {
@@ -151,6 +168,12 @@ declare global {
         onSyncProgress: (callback: (data: { playlistId: string; current: number; total: number; phase: string }) => void) => void
         onSyncComplete: (callback: (data: any) => void) => void
         onSyncError: (callback: (data: { playlistId: string; error: string }) => void) => void
+      }
+      artistSync: {
+        onSyncStart: (callback: (data: { artistId: string }) => void) => void
+        onSyncProgress: (callback: (data: { artistId: string; current: number; total: number; phase: string; albumTitle?: string }) => void) => void
+        onSyncComplete: (callback: (data: any) => void) => void
+        onSyncError: (callback: (data: { artistId: string; error: string }) => void) => void
       }
       storage: {
         saveCredentials: (credentials: StorageCredentials) => Promise<StorageResult>

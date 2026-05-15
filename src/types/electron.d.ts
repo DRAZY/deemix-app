@@ -68,6 +68,12 @@ declare global {
         onSyncComplete: (callback: (data: any) => void) => void
         onSyncError: (callback: (data: { playlistId: string; error: string }) => void) => void
       }
+      artistSync: {
+        onSyncStart: (callback: (data: { artistId: string }) => void) => void
+        onSyncProgress: (callback: (data: { artistId: string; current: number; total: number; phase: string; albumTitle?: string }) => void) => void
+        onSyncComplete: (callback: (data: any) => void) => void
+        onSyncError: (callback: (data: { artistId: string; error: string }) => void) => void
+      }
       storage: {
         saveCredentials: (credentials: ElectronStorageCredentials) => Promise<ElectronStorageResult>
         loadCredentials: () => Promise<ElectronCredentialsLoadResult>

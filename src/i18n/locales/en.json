@@ -143,7 +143,25 @@
     "playlists": "Favorite Playlists",
     "noFavorites": "No favorites yet",
     "noFavoritesHint": "Click the heart icon on tracks, albums, or artists to save them here",
-    "loginToSee": "Login to see your Deezer favorites"
+    "loginToSee": "Login to see your Deezer favorites",
+    "syncPlaylist": "Sync",
+    "syncing": "Syncing…",
+    "synced": "Synced",
+    "syncPartial": "Partial",
+    "syncError": "Sync error",
+    "syncPending": "Sync pending",
+    "syncAllPlaylists": "Sync all favorite playlists",
+    "syncAdded": "Added \"{name}\" to sync",
+    "syncBulkResult": "Added {added} to sync ({skipped} already syncing)",
+    "syncAllNoneAdded": "All favorite playlists are already in sync",
+    "syncFailed": "Failed to add to sync",
+    "pinArtistToSync": "Pin to Sync",
+    "artistSynced": "Pinned",
+    "syncAllArtists": "Sync all favorite artists",
+    "artistSyncAdded": "Pinned \"{name}\" to artist sync",
+    "artistSyncBulkResult": "Pinned {added} artist(s) to sync ({skipped} already pinned)",
+    "artistSyncAllNoneAdded": "All favorite artists are already pinned",
+    "artistSyncFailed": "Failed to pin artist to sync"
   },
   "analyzer": {
     "title": "Link Analyzer",
@@ -636,7 +654,11 @@
     "urlPlaceholder": "Paste a Spotify or Deezer playlist URL...",
     "playlistName": "Playlist Name",
     "namePlaceholder": "My Awesome Playlist",
-    "schedule": "Sync Schedule"
+    "schedule": "Sync Schedule",
+    "syncedArtistsTitle": "Synced Artists",
+    "syncAllArtists": "Sync All Artists",
+    "albumsDownloaded": "albums downloaded",
+    "failedAlbums": "failed album(s)"
   },
   "about": {
     "appName": "Deemix Remastered",

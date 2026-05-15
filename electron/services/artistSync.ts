@@ -1,0 +1,640 @@
+import { EventEmitter } from 'events'
+import * as https from 'https'
+import { app } from 'electron'
+import { join } from 'path'
+import { readFile, writeFile, mkdir } from 'fs/promises'
+import { deezerAuth } from './deezerAuth'
+import { downloader, type DownloadOptions, type FolderSettings, type TrackTemplates, type MetadataSettings } from './downloader'
+
+// Reuse the SyncSchedule contract from playlistSync to keep one source of truth
+// for cadence semantics across both engines.
+export type SyncSchedule = 'launch' | '1h' | '6h' | '12h' | '24h' | 'manual'
+
+export interface ArtistSyncDownloadSettings {
+  downloadPath: string
+  quality: 'MP3_128' | 'MP3_320' | 'FLAC'
+  bitrateFallback: boolean
+  createArtistFolder: boolean
+  createAlbumFolder: boolean
+  saveArtwork: boolean
+  embedArtwork: boolean
+  saveLyrics: boolean
+  syncedLyrics: boolean
+  createErrorLog: boolean
+  folderSettings: FolderSettings
+  trackTemplates: TrackTemplates
+  metadataSettings: MetadataSettings
+}
+
+export type ArtistSettingsProvider = () => ArtistSyncDownloadSettings
+
+export type FirstSyncMode = 'subscribe-forward' | 'download-backlog' | 'date-threshold'
+
+export type DeezerRecordType = 'album' | 'ep' | 'single' | 'compile' | 'bootleg' | 'featured' | string
+
+export interface ArtistSyncFilters {
+  includeAlbums: boolean
+  includeSingles: boolean
+  includeEPs: boolean
+  includeCompilations: boolean
+  includeFeatures: boolean
+  minReleaseDate: string | null
+}
+
+export interface SyncedArtist {
+  id: string
+  source: 'deezer'
+  sourceArtistId: string
+  sourceArtistName: string
+  sourceArtistUrl: string
+  schedule: SyncSchedule
+  enabled: boolean
+  lastSyncAt: string | null
+  lastSyncStatus: 'success' | 'partial' | 'error' | null
+  lastSyncError: string | null
+  knownAlbumIds: string[]
+  failedAlbums: Array<{
+    sourceAlbumId: string
+    title: string
+    releaseDate: string | null
+    error: string
+  }>
+  totalAlbumsDownloaded: number
+  totalTracksDownloaded: number
+  downloadPath: string
+  filters: ArtistSyncFilters
+  firstSyncMode: FirstSyncMode
+  createdAt: string
+}
+
+export interface ArtistSyncResult {
+  artistId: string
+  newAlbums: number
+  newTracks: number
+  failedAlbums: number
+  totalAlbumsSeen: number
+  error: string | null
+}
+
+interface SyncState {
+  artists: SyncedArtist[]
+}
+
+const SCHEDULE_INTERVALS: Record<SyncSchedule, number> = {
+  'launch': 0,
+  '1h': 60 * 60 * 1000,
+  '6h': 6 * 60 * 60 * 1000,
+  '12h': 12 * 60 * 60 * 1000,
+  '24h': 24 * 60 * 60 * 1000,
+  'manual': Infinity
+}
+
+export const DEFAULT_ARTIST_FILTERS: ArtistSyncFilters = {
+  includeAlbums: true,
+  includeSingles: false,
+  includeEPs: true,
+  includeCompilations: false,
+  includeFeatures: false,
+  minReleaseDate: null
+}
+
+interface DeezerArtistAlbum {
+  id: number
+  title: string
+  release_date?: string
+  record_type?: DeezerRecordType
+  explicit_lyrics?: boolean
+  cover_xl?: string
+  cover_big?: string
+  artist?: { id: number; name: string }
+}
+
+interface DeezerAlbumTrack {
+  id: number
+  title: string
+  artist?: { name: string }
+  track_position?: number
+  disk_number?: number
+}
+
+function generateId(): string {
+  return `artist_sync_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+}
+
+class ArtistSyncEngine extends EventEmitter {
+  private state: SyncState = { artists: [] }
+  private activeSyncs = new Map<string, boolean>()
+  private cancelRequested = new Set<string>()
+  private schedulerInterval: NodeJS.Timeout | null = null
+  private isInitialized = false
+  private settingsProvider: ArtistSettingsProvider | null = null
+
+  setSettingsProvider(provider: ArtistSettingsProvider): void {
+    this.settingsProvider = provider
+  }
+
+  private getStatePath(): string {
+    return join(app.getPath('userData'), 'artist-sync.json')
+  }
+
+  async init(): Promise<void> {
+    await this.loadState()
+    this.startScheduler()
+    this.isInitialized = true
+
+    const launchArtists = this.state.artists.filter(a => a.enabled && a.schedule === 'launch')
+    for (const artist of launchArtists) {
+      this.syncArtist(artist.id).catch(err =>
+        console.error(`[ArtistSync] Launch sync failed for ${artist.id}:`, err)
+      )
+    }
+  }
+
+  async shutdown(): Promise<void> {
+    if (this.schedulerInterval) {
+      clearInterval(this.schedulerInterval)
+      this.schedulerInterval = null
+    }
+    await this.saveState()
+  }
+
+  private async loadState(): Promise<void> {
+    try {
+      const data = await readFile(this.getStatePath(), 'utf-8')
+      const parsed = JSON.parse(data)
+      this.state = parsed
+      if (!Array.isArray(this.state.artists)) {
+        this.state.artists = []
+      }
+      // Backfill defaults for fields added after initial release.
+      for (const artist of this.state.artists) {
+        if (!artist.filters) artist.filters = { ...DEFAULT_ARTIST_FILTERS }
+        if (!artist.firstSyncMode) artist.firstSyncMode = 'subscribe-forward'
+        if (!Array.isArray(artist.knownAlbumIds)) artist.knownAlbumIds = []
+        if (!Array.isArray(artist.failedAlbums)) artist.failedAlbums = []
+      }
+    } catch (err: any) {
+      if (err.code !== 'ENOENT') {
+        console.error('[ArtistSync] Failed to load state:', err)
+      }
+      this.state = { artists: [] }
+    }
+  }
+
+  private async saveState(): Promise<void> {
+    try {
+      await mkdir(app.getPath('userData'), { recursive: true })
+      await writeFile(this.getStatePath(), JSON.stringify(this.state, null, 2))
+    } catch (err) {
+      console.error('[ArtistSync] Failed to save state:', err)
+    }
+  }
+
+  private startScheduler(): void {
+    this.schedulerInterval = setInterval(() => {
+      const now = Date.now()
+      for (const artist of this.state.artists) {
+        if (!artist.enabled || artist.schedule === 'manual' || artist.schedule === 'launch') continue
+        if (this.activeSyncs.has(artist.id)) continue
+
+        const interval = SCHEDULE_INTERVALS[artist.schedule]
+        const lastSync = artist.lastSyncAt ? new Date(artist.lastSyncAt).getTime() : 0
+        if (now - lastSync >= interval) {
+          this.syncArtist(artist.id).catch(err =>
+            console.error(`[ArtistSync] Scheduled sync failed for ${artist.id}:`, err)
+          )
+        }
+      }
+    }, 60000)
+  }
+
+  // CRUD
+  async addArtist(config: {
+    sourceArtistId: string
+    sourceArtistName: string
+    sourceArtistUrl: string
+    schedule: SyncSchedule
+    downloadPath: string
+    firstSyncMode?: FirstSyncMode
+    filters?: Partial<ArtistSyncFilters>
+  }): Promise<SyncedArtist> {
+    const existing = this.state.artists.find(
+      a => a.source === 'deezer' && a.sourceArtistId === String(config.sourceArtistId)
+    )
+    if (existing) return existing
+
+    const artist: SyncedArtist = {
+      id: generateId(),
+      source: 'deezer',
+      sourceArtistId: String(config.sourceArtistId),
+      sourceArtistName: config.sourceArtistName,
+      sourceArtistUrl: config.sourceArtistUrl,
+      schedule: config.schedule,
+      enabled: true,
+      lastSyncAt: null,
+      lastSyncStatus: null,
+      lastSyncError: null,
+      knownAlbumIds: [],
+      failedAlbums: [],
+      totalAlbumsDownloaded: 0,
+      totalTracksDownloaded: 0,
+      downloadPath: config.downloadPath,
+      filters: { ...DEFAULT_ARTIST_FILTERS, ...(config.filters || {}) },
+      firstSyncMode: config.firstSyncMode || 'subscribe-forward',
+      createdAt: new Date().toISOString()
+    }
+    this.state.artists.push(artist)
+    await this.saveState()
+    this.emit('artists:changed', this.state.artists)
+
+    // Trigger initial sync. With the default subscribe-forward mode this
+    // captures the current discography into knownAlbumIds without downloading.
+    this.syncArtist(artist.id).catch(err =>
+      console.error(`[ArtistSync] Initial sync failed for ${artist.id}:`, err)
+    )
+
+    return artist
+  }
+
+  async removeArtist(id: string): Promise<void> {
+    this.state.artists = this.state.artists.filter(a => a.id !== id)
+    this.activeSyncs.delete(id)
+    this.cancelRequested.delete(id)
+    await this.saveState()
+    this.emit('artists:changed', this.state.artists)
+  }
+
+  async updateArtist(
+    id: string,
+    updates: Partial<Pick<SyncedArtist, 'schedule' | 'enabled' | 'downloadPath' | 'sourceArtistName' | 'filters' | 'firstSyncMode'>>
+  ): Promise<SyncedArtist | null> {
+    const artist = this.state.artists.find(a => a.id === id)
+    if (!artist) return null
+    if (updates.filters) {
+      artist.filters = { ...artist.filters, ...updates.filters }
+      delete (updates as any).filters
+    }
+    Object.assign(artist, updates)
+    await this.saveState()
+    this.emit('artists:changed', this.state.artists)
+    return artist
+  }
+
+  getArtists(): SyncedArtist[] {
+    return this.state.artists
+  }
+
+  getArtist(id: string): SyncedArtist | null {
+    return this.state.artists.find(a => a.id === id) || null
+  }
+
+  async resetArtist(id: string): Promise<boolean> {
+    const artist = this.state.artists.find(a => a.id === id)
+    if (!artist) return false
+    artist.knownAlbumIds = []
+    artist.failedAlbums = []
+    artist.totalAlbumsDownloaded = 0
+    artist.totalTracksDownloaded = 0
+    artist.lastSyncStatus = null
+    artist.lastSyncError = null
+    await this.saveState()
+    this.emit('artists:changed', this.state.artists)
+    return true
+  }
+
+  cancelSync(id: string): void {
+    this.cancelRequested.add(id)
+  }
+
+  isSyncing(id: string): boolean {
+    return this.activeSyncs.has(id)
+  }
+
+  getActiveSyncIds(): string[] {
+    return Array.from(this.activeSyncs.keys())
+  }
+
+  // Filtering rules per record_type. Deezer's "featured" record type isn't
+  // exposed by the public /artist/{id}/albums endpoint — it requires the
+  // /related or /search route. For v1 we treat anything where the album's
+  // primary artist differs from the synced artist as a "feature".
+  private albumPassesFilters(album: DeezerArtistAlbum, artist: SyncedArtist): boolean {
+    const recordType = (album.record_type || '').toLowerCase()
+    const filters = artist.filters
+
+    if (recordType === 'single' && !filters.includeSingles) return false
+    if (recordType === 'ep' && !filters.includeEPs) return false
+    if (recordType === 'compile' && !filters.includeCompilations) return false
+    if (recordType === 'album' && !filters.includeAlbums) return false
+
+    // Anything else (bootleg, etc.) follows the includeAlbums flag as a
+    // pragmatic default — they're typically the most-album-like entries.
+    if (!['single', 'ep', 'compile', 'album'].includes(recordType) && !filters.includeAlbums) return false
+
+    // "Feature" detection by primary-artist mismatch.
+    const albumArtistId = album.artist?.id != null ? String(album.artist.id) : null
+    if (albumArtistId && albumArtistId !== artist.sourceArtistId && !filters.includeFeatures) {
+      return false
+    }
+
+    if (filters.minReleaseDate && album.release_date) {
+      if (album.release_date < filters.minReleaseDate) return false
+    }
+
+    return true
+  }
+
+  // Sync the artist's discography.
+  //
+  // Algorithm:
+  //   1. Fetch /artist/{id}/albums (paginated, follow `next`)
+  //   2. Apply filters per artist config
+  //   3. Compute newAlbumIds = filtered - knownAlbumIds
+  //   4. First-sync mode:
+  //        - subscribe-forward: capture into knownAlbumIds without downloading
+  //        - download-backlog: download everything in the filtered set
+  //        - date-threshold: filters.minReleaseDate already shaped the set;
+  //          treat the same as download-backlog
+  //   5. For each album to download: fetch tracks and queue each via downloader
+  //   6. Mark successfully-downloaded albums as known; record failures
+  async syncArtist(id: string): Promise<ArtistSyncResult> {
+    const artist = this.state.artists.find(a => a.id === id)
+    if (!artist) throw new Error(`Artist ${id} not found`)
+    if (this.activeSyncs.has(id)) throw new Error(`Artist ${id} is already syncing`)
+    if (this.activeSyncs.size >= 3) {
+      throw new Error('Maximum concurrent artist syncs reached (3)')
+    }
+
+    this.activeSyncs.set(id, true)
+    this.cancelRequested.delete(id)
+    this.emit('sync:start', id)
+    console.log(`[ArtistSync] Starting sync for "${artist.sourceArtistName}" (deezer:${artist.sourceArtistId})`)
+
+    try {
+      const discography = await this.fetchDeezerArtistDiscography(artist.sourceArtistId)
+      const filtered = discography.filter(album => this.albumPassesFilters(album, artist))
+      const filteredIds = filtered.map(a => String(a.id))
+      const known = new Set(artist.knownAlbumIds)
+      const newAlbumIds = filteredIds.filter(aid => !known.has(aid))
+      const isFirstSync = artist.lastSyncAt === null
+
+      this.emit('sync:progress', id, { current: 0, total: newAlbumIds.length, phase: 'resolving' })
+
+      // First-sync mode decides whether we actually download the discovered
+      // albums, or just register them as "known" going forward.
+      const downloadNow =
+        !isFirstSync ||
+        artist.firstSyncMode === 'download-backlog' ||
+        artist.firstSyncMode === 'date-threshold'
+
+      let downloadedAlbumCount = 0
+      let downloadedTrackCount = 0
+      const failed: SyncedArtist['failedAlbums'] = []
+
+      if (!downloadNow) {
+        // Subscribe-forward on first sync: mark all current albums as known
+        // without queueing any downloads.
+        artist.knownAlbumIds = filteredIds
+      } else {
+        const settings = this.settingsProvider?.()
+        const newAlbumsByDate = filtered
+          .filter(a => newAlbumIds.includes(String(a.id)))
+          .sort((a, b) => (a.release_date || '').localeCompare(b.release_date || ''))
+
+        for (let i = 0; i < newAlbumsByDate.length; i++) {
+          if (this.cancelRequested.has(id)) break
+          const album = newAlbumsByDate[i]
+          const albumIdStr = String(album.id)
+          this.emit('sync:progress', id, {
+            current: i + 1,
+            total: newAlbumsByDate.length,
+            phase: 'downloading',
+            albumTitle: album.title
+          })
+          try {
+            const tracks = await this.fetchDeezerAlbumTracks(album.id)
+            const albumCoverUrl = album.cover_xl || album.cover_big || ''
+            if (tracks.length === 0) {
+              failed.push({
+                sourceAlbumId: albumIdStr,
+                title: album.title,
+                releaseDate: album.release_date || null,
+                error: 'Album has no available tracks'
+              })
+              continue
+            }
+            let albumSucceededAtLeastOnce = false
+            for (let t = 0; t < tracks.length; t++) {
+              if (this.cancelRequested.has(id)) break
+              const track = tracks[t]
+              const opts: DownloadOptions = {
+                trackId: track.id,
+                outputPath: artist.downloadPath || settings?.downloadPath || join(process.env.HOME || process.env.USERPROFILE || '/tmp', 'Music', 'Deemix'),
+                quality: settings?.quality || 'MP3_320',
+                bitrateFallback: settings?.bitrateFallback ?? true,
+                createFolders: true,
+                artistFolder: settings?.createArtistFolder ?? true,
+                albumFolder: settings?.createAlbumFolder ?? true,
+                saveArtwork: settings?.saveArtwork ?? true,
+                embedArtwork: settings?.embedArtwork ?? true,
+                saveLyrics: settings?.saveLyrics ?? true,
+                syncedLyrics: settings?.syncedLyrics ?? true,
+                isSingle: false,
+                isFromPlaylist: false,
+                createErrorLog: settings?.createErrorLog ?? true,
+                savePlaylistAsCompilation: false,
+                folderSettings: settings?.folderSettings,
+                trackTemplates: settings?.trackTemplates,
+                metadataSettings: settings?.metadataSettings,
+                playlistCoverUrl: albumCoverUrl || undefined
+              }
+              const downloadId = await downloader.download(opts)
+              await new Promise<void>((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                  cleanup()
+                  reject(new Error('Download timed out'))
+                }, 5 * 60 * 1000)
+                const onComplete = (progress: any) => {
+                  if (progress.id === downloadId) { cleanup(); resolve() }
+                }
+                const onError = (progress: any) => {
+                  if (progress.id === downloadId) {
+                    cleanup()
+                    reject(new Error(progress.error || 'Download failed'))
+                  }
+                }
+                const onCancelled = (progress: any) => {
+                  if (progress.id === downloadId) { cleanup(); reject(new Error('Download cancelled')) }
+                }
+                const cleanup = () => {
+                  clearTimeout(timeout)
+                  downloader.removeListener('complete', onComplete)
+                  downloader.removeListener('error', onError)
+                  downloader.removeListener('cancelled', onCancelled)
+                }
+                const current = downloader.getAllProgress().find(p => p.id === downloadId)
+                if (current?.status === 'completed') { cleanup(); resolve(); return }
+                if (current?.status === 'error') {
+                  cleanup()
+                  reject(new Error(current.error || 'Download failed'))
+                  return
+                }
+                downloader.on('complete', onComplete)
+                downloader.on('error', onError)
+                downloader.on('cancelled', onCancelled)
+              }).then(() => {
+                downloadedTrackCount++
+                albumSucceededAtLeastOnce = true
+              }).catch(err => {
+                console.error(`[ArtistSync] Track ${track.id} of album ${album.title} failed:`, err.message)
+              })
+            }
+            if (albumSucceededAtLeastOnce) {
+              downloadedAlbumCount++
+              artist.knownAlbumIds.push(albumIdStr)
+            } else {
+              failed.push({
+                sourceAlbumId: albumIdStr,
+                title: album.title,
+                releaseDate: album.release_date || null,
+                error: 'All tracks failed'
+              })
+            }
+          } catch (err: any) {
+            failed.push({
+              sourceAlbumId: albumIdStr,
+              title: album.title,
+              releaseDate: album.release_date || null,
+              error: err.message || 'Album fetch failed'
+            })
+          }
+        }
+      }
+
+      artist.failedAlbums = failed
+      artist.totalAlbumsDownloaded += downloadedAlbumCount
+      artist.totalTracksDownloaded += downloadedTrackCount
+      artist.lastSyncAt = new Date().toISOString()
+      artist.lastSyncStatus = failed.length > 0
+        ? (downloadedAlbumCount > 0 ? 'partial' : (downloadNow ? 'error' : 'success'))
+        : 'success'
+      artist.lastSyncError = failed.length > 0
+        ? `${failed.length} album(s) failed`
+        : null
+
+      await this.saveState()
+
+      const result: ArtistSyncResult = {
+        artistId: id,
+        newAlbums: downloadedAlbumCount,
+        newTracks: downloadedTrackCount,
+        failedAlbums: failed.length,
+        totalAlbumsSeen: filteredIds.length,
+        error: null
+      }
+
+      this.emit('sync:complete', id, result)
+      this.emit('artists:changed', this.state.artists)
+      return result
+    } catch (err: any) {
+      artist.lastSyncAt = new Date().toISOString()
+      artist.lastSyncStatus = 'error'
+      artist.lastSyncError = err.message
+      await this.saveState()
+      const result: ArtistSyncResult = {
+        artistId: id,
+        newAlbums: 0,
+        newTracks: 0,
+        failedAlbums: 0,
+        totalAlbumsSeen: 0,
+        error: err.message
+      }
+      this.emit('sync:error', id, err.message)
+      this.emit('artists:changed', this.state.artists)
+      return result
+    } finally {
+      this.activeSyncs.delete(id)
+      this.cancelRequested.delete(id)
+    }
+  }
+
+  async syncAll(): Promise<ArtistSyncResult[]> {
+    const enabled = this.state.artists.filter(a => a.enabled)
+    const results: ArtistSyncResult[] = []
+    for (const artist of enabled) {
+      if (this.activeSyncs.has(artist.id)) continue
+      try {
+        const result = await this.syncArtist(artist.id)
+        results.push(result)
+      } catch (err: any) {
+        results.push({
+          artistId: artist.id,
+          newAlbums: 0,
+          newTracks: 0,
+          failedAlbums: 0,
+          totalAlbumsSeen: 0,
+          error: err.message
+        })
+      }
+    }
+    return results
+  }
+
+  private fetchDeezerArtistDiscography(artistId: string): Promise<DeezerArtistAlbum[]> {
+    return new Promise((resolve, reject) => {
+      const albums: DeezerArtistAlbum[] = []
+      const fetchPage = (url: string) => {
+        https.get(url, (res) => {
+          let data = ''
+          res.on('data', (chunk: string) => data += chunk)
+          res.on('end', () => {
+            try {
+              const parsed = JSON.parse(data)
+              if (parsed.error) {
+                reject(new Error(parsed.error.message || 'Deezer API error'))
+                return
+              }
+              const items: DeezerArtistAlbum[] = parsed.data || []
+              for (const album of items) albums.push(album)
+              if (parsed.next) {
+                fetchPage(parsed.next)
+              } else {
+                resolve(albums)
+              }
+            } catch {
+              reject(new Error('Failed to parse Deezer response'))
+            }
+          })
+        }).on('error', reject)
+      }
+      fetchPage(`https://api.deezer.com/artist/${artistId}/albums?limit=100`)
+    })
+  }
+
+  private fetchDeezerAlbumTracks(albumId: number): Promise<DeezerAlbumTrack[]> {
+    return new Promise((resolve, reject) => {
+      const url = `https://api.deezer.com/album/${albumId}/tracks?limit=200`
+      https.get(url, (res) => {
+        let data = ''
+        res.on('data', (chunk: string) => data += chunk)
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(data)
+            if (parsed.error) {
+              reject(new Error(parsed.error.message || 'Deezer API error'))
+              return
+            }
+            resolve(parsed.data || [])
+          } catch {
+            reject(new Error('Failed to parse Deezer album response'))
+          }
+        })
+      }).on('error', reject)
+    })
+  }
+}
+
+export const artistSync = new ArtistSyncEngine()
+
+// Suppress unused-import warning in case future routes need deezerAuth access.
+void deezerAuth

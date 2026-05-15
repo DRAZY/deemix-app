@@ -33,3 +33,5 @@ CONVERSATION_LOG*
 # Internal planning + AI memory (not for public repo)
 Plans/
 MEMORY/
+
+.build-logs/

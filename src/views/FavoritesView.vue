@@ -5,19 +5,27 @@ import { useFavoritesStore } from '../stores/favoritesStore'
 import { useAuthStore } from '../stores/authStore'
 import { useDownloadStore } from '../stores/downloadStore'
 import { useToastStore } from '../stores/toastStore'
+import { useSyncStore, type SyncedPlaylist } from '../stores/syncStore'
+import { useArtistSyncStore, type SyncedArtist } from '../stores/artistSyncStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { deezerAPI } from '../services/deezerAPI'
 import TrackCard from '../components/TrackCard.vue'
 import AlbumCard from '../components/AlbumCard.vue'
 import ArtistCard from '../components/ArtistCard.vue'
 import EmptyState from '../components/EmptyState.vue'
+import type { Playlist, Artist } from '../types'
 
 const { t } = useI18n()
 const favoritesStore = useFavoritesStore()
 const authStore = useAuthStore()
 const downloadStore = useDownloadStore()
 const toastStore = useToastStore()
+const syncStore = useSyncStore()
+const artistSyncStore = useArtistSyncStore()
+const settingsStore = useSettingsStore()
 const activeTab = ref<'tracks' | 'albums' | 'artists' | 'playlists'>('tracks')
 const isDownloading = ref(false)
+const isBulkSyncing = ref(false)
 const serverPort = ref(6595)
 const sortOrder = ref<'added' | 'name-asc' | 'name-desc'>(
   (localStorage.getItem('favorites_sort') as any) || 'added'
@@ -60,7 +68,166 @@ onMounted(async () => {
     serverPort.value = await window.electronAPI.getServerPort()
   }
   favoritesStore.loadFavorites()
+  syncStore.init().catch(e => console.error('[Favorites] syncStore.init failed:', e))
+  artistSyncStore.init().catch(e => console.error('[Favorites] artistSyncStore.init failed:', e))
 })
+
+// Lookup of synced Deezer playlists keyed by sourcePlaylistId for O(1) badge/button state.
+const syncedDeezerById = computed<Map<string, SyncedPlaylist>>(() => {
+  const m = new Map<string, SyncedPlaylist>()
+  for (const p of syncStore.playlists) {
+    if (p.source === 'deezer') m.set(p.sourcePlaylistId, p)
+  }
+  return m
+})
+
+function getSyncEntry(playlistId: number | string): SyncedPlaylist | undefined {
+  return syncedDeezerById.value.get(String(playlistId))
+}
+
+type SyncBadgeStatus = 'none' | 'syncing' | 'success' | 'partial' | 'error' | 'pending'
+
+function getSyncStatus(playlistId: number | string): SyncBadgeStatus {
+  const entry = getSyncEntry(playlistId)
+  if (!entry) return 'none'
+  if (syncStore.isSyncing(entry.id)) return 'syncing'
+  switch (entry.lastSyncStatus) {
+    case 'success': return 'success'
+    case 'partial': return 'partial'
+    case 'error': return 'error'
+    default: return 'pending'
+  }
+}
+
+async function addOneToSync(playlist: Playlist) {
+  if (getSyncEntry(playlist.id)) return // idempotent — already in sync
+  const result = await syncStore.addPlaylist({
+    source: 'deezer',
+    sourcePlaylistId: String(playlist.id),
+    sourcePlaylistName: playlist.title,
+    sourcePlaylistUrl: `https://www.deezer.com/playlist/${playlist.id}`,
+    schedule: '24h',
+    downloadPath: settingsStore.settings.downloadPath
+  })
+  if (result?.success) {
+    toastStore.success(t('favorites.syncAdded', { name: playlist.title }))
+  } else {
+    toastStore.error(result?.error || t('favorites.syncFailed'))
+  }
+}
+
+async function syncAllFavorites() {
+  if (isBulkSyncing.value) return
+  isBulkSyncing.value = true
+  let added = 0
+  let skipped = 0
+  try {
+    for (const playlist of favoritesStore.favoritePlaylists) {
+      if (getSyncEntry(playlist.id)) {
+        skipped++
+        continue
+      }
+      const result = await syncStore.addPlaylist({
+        source: 'deezer',
+        sourcePlaylistId: String(playlist.id),
+        sourcePlaylistName: playlist.title,
+        sourcePlaylistUrl: `https://www.deezer.com/playlist/${playlist.id}`,
+        schedule: '24h',
+        downloadPath: settingsStore.settings.downloadPath
+      })
+      if (result?.success) {
+        added++
+      } else {
+        console.error('[Favorites] Bulk sync add failed for', playlist.id, result?.error)
+      }
+    }
+    if (added > 0) {
+      toastStore.success(t('favorites.syncBulkResult', { added, skipped }))
+    } else if (skipped > 0) {
+      toastStore.info(t('favorites.syncAllNoneAdded'))
+    }
+  } finally {
+    isBulkSyncing.value = false
+  }
+}
+
+// Artist-sync mirror of the playlist-sync helpers above. Same UX pattern,
+// different store + different default first-sync mode (subscribe-forward).
+const syncedArtistsById = computed<Map<string, SyncedArtist>>(() => {
+  const m = new Map<string, SyncedArtist>()
+  for (const a of artistSyncStore.artists) {
+    if (a.source === 'deezer') m.set(a.sourceArtistId, a)
+  }
+  return m
+})
+
+function getArtistSyncEntry(artistId: number | string): SyncedArtist | undefined {
+  return syncedArtistsById.value.get(String(artistId))
+}
+
+function getArtistSyncStatus(artistId: number | string): SyncBadgeStatus {
+  const entry = getArtistSyncEntry(artistId)
+  if (!entry) return 'none'
+  if (artistSyncStore.isSyncing(entry.id)) return 'syncing'
+  switch (entry.lastSyncStatus) {
+    case 'success': return 'success'
+    case 'partial': return 'partial'
+    case 'error': return 'error'
+    default: return 'pending'
+  }
+}
+
+async function pinArtistToSync(artist: Artist) {
+  if (getArtistSyncEntry(artist.id)) return
+  const result = await artistSyncStore.addArtist({
+    sourceArtistId: String(artist.id),
+    sourceArtistName: artist.name,
+    sourceArtistUrl: `https://www.deezer.com/artist/${artist.id}`,
+    schedule: '24h',
+    downloadPath: settingsStore.settings.downloadPath,
+    firstSyncMode: 'subscribe-forward'
+  })
+  if (result?.success) {
+    toastStore.success(t('favorites.artistSyncAdded', { name: artist.name }))
+  } else {
+    toastStore.error(result?.error || t('favorites.artistSyncFailed'))
+  }
+}
+
+async function syncAllFavoriteArtists() {
+  if (isBulkSyncing.value) return
+  isBulkSyncing.value = true
+  let added = 0
+  let skipped = 0
+  try {
+    for (const artist of favoritesStore.favoriteArtists) {
+      if (getArtistSyncEntry(artist.id)) {
+        skipped++
+        continue
+      }
+      const result = await artistSyncStore.addArtist({
+        sourceArtistId: String(artist.id),
+        sourceArtistName: artist.name,
+        sourceArtistUrl: `https://www.deezer.com/artist/${artist.id}`,
+        schedule: '24h',
+        downloadPath: settingsStore.settings.downloadPath,
+        firstSyncMode: 'subscribe-forward'
+      })
+      if (result?.success) {
+        added++
+      } else {
+        console.error('[Favorites] Bulk artist sync add failed for', artist.id, result?.error)
+      }
+    }
+    if (added > 0) {
+      toastStore.success(t('favorites.artistSyncBulkResult', { added, skipped }))
+    } else if (skipped > 0) {
+      toastStore.info(t('favorites.artistSyncAllNoneAdded'))
+    }
+  } finally {
+    isBulkSyncing.value = false
+  }
+}
 
 async function downloadAllFavorites() {
   if (isDownloading.value) return
@@ -156,6 +323,36 @@ async function importFromDeezer() {
           {{ isDownloading ? 'Downloading...' : `Download All ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}` }}
         </button>
         <button
+          v-if="activeTab === 'playlists' && favoritesStore.favoritePlaylists.length > 0"
+          @click="syncAllFavorites"
+          :disabled="isBulkSyncing"
+          class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <svg v-if="isBulkSyncing" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          {{ t('favorites.syncAllPlaylists') }}
+        </button>
+        <button
+          v-if="activeTab === 'artists' && favoritesStore.favoriteArtists.length > 0"
+          @click="syncAllFavoriteArtists"
+          :disabled="isBulkSyncing"
+          class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <svg v-if="isBulkSyncing" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          {{ t('favorites.syncAllArtists') }}
+        </button>
+        <button
           v-if="authStore.isLoggedIn"
           @click="importFromDeezer"
           :disabled="favoritesStore.isImporting"
@@ -247,11 +444,64 @@ async function importFromDeezer() {
     <!-- Artists -->
     <div v-if="activeTab === 'artists'">
       <div v-if="favoritesStore.favoriteArtists.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <ArtistCard
+        <div
           v-for="artist in sortedArtists"
           :key="artist.id"
-          :artist="artist"
-        />
+          class="relative flex flex-col gap-2"
+        >
+          <ArtistCard :artist="artist" />
+          <!-- Sync status badge — overlays the card top-right -->
+          <span
+            v-if="getArtistSyncStatus(artist.id) !== 'none'"
+            class="absolute top-2 right-2 px-2 py-0.5 text-xs font-medium rounded-full backdrop-blur-sm pointer-events-none flex items-center gap-1"
+            :class="{
+              'bg-blue-500/90 text-white': getArtistSyncStatus(artist.id) === 'syncing',
+              'bg-green-500/90 text-white': getArtistSyncStatus(artist.id) === 'success',
+              'bg-yellow-500/90 text-black': getArtistSyncStatus(artist.id) === 'partial',
+              'bg-red-500/90 text-white': getArtistSyncStatus(artist.id) === 'error',
+              'bg-zinc-500/90 text-white': getArtistSyncStatus(artist.id) === 'pending'
+            }"
+            :title="
+              getArtistSyncStatus(artist.id) === 'syncing' ? t('favorites.syncing')
+              : getArtistSyncStatus(artist.id) === 'success' ? t('favorites.synced')
+              : getArtistSyncStatus(artist.id) === 'partial' ? t('favorites.syncPartial')
+              : getArtistSyncStatus(artist.id) === 'error' ? t('favorites.syncError')
+              : t('favorites.syncPending')
+            "
+          >
+            <svg v-if="getArtistSyncStatus(artist.id) === 'syncing'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            <svg v-else-if="getArtistSyncStatus(artist.id) === 'success'" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+            </svg>
+            <svg v-else-if="getArtistSyncStatus(artist.id) === 'error'" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <svg v-else class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>
+              {{ getArtistSyncStatus(artist.id) === 'syncing' ? t('favorites.syncing')
+                 : getArtistSyncStatus(artist.id) === 'success' ? t('favorites.synced')
+                 : getArtistSyncStatus(artist.id) === 'partial' ? t('favorites.syncPartial')
+                 : getArtistSyncStatus(artist.id) === 'error' ? t('favorites.syncError')
+                 : t('favorites.syncPending') }}
+            </span>
+          </span>
+          <!-- Per-card Pin to Sync button — flips to disabled when pinned -->
+          <button
+            @click="pinArtistToSync(artist)"
+            :disabled="getArtistSyncStatus(artist.id) !== 'none' || artistSyncStore.isLoading"
+            class="w-full px-2 py-1 text-xs font-medium rounded-md transition-colors disabled:cursor-not-allowed"
+            :class="getArtistSyncStatus(artist.id) === 'none'
+              ? 'bg-blue-600 text-white hover:bg-blue-700'
+              : 'bg-zinc-700 text-zinc-300'"
+          >
+            {{ getArtistSyncStatus(artist.id) === 'none' ? t('favorites.pinArtistToSync') : t('favorites.artistSynced') }}
+          </button>
+        </div>
       </div>
       <EmptyState
         v-else
@@ -264,17 +514,72 @@ async function importFromDeezer() {
     <!-- Playlists -->
     <div v-if="activeTab === 'playlists'">
       <div v-if="favoritesStore.favoritePlaylists.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        <AlbumCard
+        <div
           v-for="playlist in sortedPlaylists"
           :key="playlist.id"
-          :album="{
-            id: playlist.id,
-            title: playlist.title,
-            cover_medium: playlist.picture_medium,
-            artist: { id: 0, name: playlist.creator?.name || t('common.unknown') }
-          }"
-          type="playlist"
-        />
+          class="relative flex flex-col gap-2"
+        >
+          <AlbumCard
+            :album="{
+              id: playlist.id,
+              title: playlist.title,
+              cover_medium: playlist.picture_medium,
+              artist: { id: 0, name: playlist.creator?.name || t('common.unknown') }
+            }"
+            type="playlist"
+          />
+          <!-- Sync status badge — overlays the card top-right -->
+          <span
+            v-if="getSyncStatus(playlist.id) !== 'none'"
+            class="absolute top-2 right-2 px-2 py-0.5 text-xs font-medium rounded-full backdrop-blur-sm pointer-events-none flex items-center gap-1"
+            :class="{
+              'bg-blue-500/90 text-white': getSyncStatus(playlist.id) === 'syncing',
+              'bg-green-500/90 text-white': getSyncStatus(playlist.id) === 'success',
+              'bg-yellow-500/90 text-black': getSyncStatus(playlist.id) === 'partial',
+              'bg-red-500/90 text-white': getSyncStatus(playlist.id) === 'error',
+              'bg-zinc-500/90 text-white': getSyncStatus(playlist.id) === 'pending'
+            }"
+            :title="
+              getSyncStatus(playlist.id) === 'syncing' ? t('favorites.syncing')
+              : getSyncStatus(playlist.id) === 'success' ? t('favorites.synced')
+              : getSyncStatus(playlist.id) === 'partial' ? t('favorites.syncPartial')
+              : getSyncStatus(playlist.id) === 'error' ? t('favorites.syncError')
+              : t('favorites.syncPending')
+            "
+          >
+            <svg v-if="getSyncStatus(playlist.id) === 'syncing'" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            <svg v-else-if="getSyncStatus(playlist.id) === 'success'" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+            </svg>
+            <svg v-else-if="getSyncStatus(playlist.id) === 'error'" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <svg v-else class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>
+              {{ getSyncStatus(playlist.id) === 'syncing' ? t('favorites.syncing')
+                 : getSyncStatus(playlist.id) === 'success' ? t('favorites.synced')
+                 : getSyncStatus(playlist.id) === 'partial' ? t('favorites.syncPartial')
+                 : getSyncStatus(playlist.id) === 'error' ? t('favorites.syncError')
+                 : t('favorites.syncPending') }}
+            </span>
+          </span>
+          <!-- Per-card Sync button — flips to disabled "Synced" once added -->
+          <button
+            @click="addOneToSync(playlist)"
+            :disabled="getSyncStatus(playlist.id) !== 'none' || syncStore.isLoading"
+            class="w-full px-2 py-1 text-xs font-medium rounded-md transition-colors disabled:cursor-not-allowed"
+            :class="getSyncStatus(playlist.id) === 'none'
+              ? 'bg-blue-600 text-white hover:bg-blue-700'
+              : 'bg-zinc-700 text-zinc-300'"
+          >
+            {{ getSyncStatus(playlist.id) === 'none' ? t('favorites.syncPlaylist') : t('favorites.synced') }}
+          </button>
+        </div>
       </div>
       <EmptyState
         v-else

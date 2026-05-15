@@ -4,6 +4,7 @@ import { rm, stat, readFile, writeFile, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import { DeemixServer } from './server'
 import { playlistSync } from './services/playlistSync'
+import { artistSync } from './services/artistSync'
 import { spotifyAPI } from './services/spotifyAPI'
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
@@ -415,6 +416,79 @@ async function initServer() {
         mainWindow.webContents.send('sync:error', { playlistId, error })
       }
     })
+
+    // Artist sync engine — shares the download-settings provider with playlistSync
+    // so quality, folder structure, templates, and metadata stay consistent.
+    artistSync.setSettingsProvider(() => {
+      const s = server!.getSettings()
+      return {
+        downloadPath: s.downloadPath,
+        quality: s.quality,
+        bitrateFallback: s.bitrateFallback,
+        createArtistFolder: s.createArtistFolder,
+        createAlbumFolder: s.createAlbumFolder,
+        saveArtwork: s.saveArtwork,
+        embedArtwork: s.embedArtwork,
+        saveLyrics: s.saveLyrics,
+        syncedLyrics: s.syncedLyrics,
+        createErrorLog: s.createErrorLog,
+        folderSettings: {
+          createPlaylistFolder: s.createPlaylistFolder,
+          createArtistFolder: s.createArtistFolder,
+          createAlbumFolder: s.createAlbumFolder,
+          createCDFolder: s.createCDFolder,
+          createPlaylistStructure: s.createPlaylistStructure,
+          createSinglesStructure: s.createSinglesStructure,
+          playlistFolderTemplate: s.playlistFolderTemplate,
+          albumFolderTemplate: s.albumFolderTemplate,
+          artistFolderTemplate: s.artistFolderTemplate
+        },
+        trackTemplates: {
+          trackNameTemplate: s.trackNameTemplate,
+          albumTrackTemplate: s.albumTrackTemplate,
+          playlistTrackTemplate: s.playlistTrackTemplate
+        },
+        metadataSettings: {
+          tags: s.tags,
+          albumCovers: s.albumCovers,
+          useNullSeparator: s.useNullSeparator,
+          saveID3v1: s.saveID3v1,
+          saveOnlyMainArtist: s.saveOnlyMainArtist,
+          artistSeparator: s.artistSeparator,
+          dateFormatFlac: s.dateFormatFlac,
+          titleCasing: s.titleCasing,
+          artistCasing: s.artistCasing,
+          removeAlbumVersion: s.removeAlbumVersion,
+          featuredArtistsHandling: s.featuredArtistsHandling,
+          keepVariousArtists: s.keepVariousArtists,
+          removeArtistCombinations: s.removeArtistCombinations
+        }
+      }
+    })
+
+    await artistSync.init()
+    console.log('[Main] Artist sync engine initialized')
+
+    artistSync.on('sync:start', (artistId: string) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('artistSync:start', { artistId })
+      }
+    })
+    artistSync.on('sync:progress', (artistId: string, data: any) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('artistSync:progress', { artistId, ...data })
+      }
+    })
+    artistSync.on('sync:complete', (artistId: string, result: any) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('artistSync:complete', { artistId, ...result })
+      }
+    })
+    artistSync.on('sync:error', (artistId: string, error: string) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('artistSync:error', { artistId, error })
+      }
+    })
   } catch (error) {
     console.error('[Main] Failed to start server:', error)
     throw error
@@ -453,6 +527,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', async () => {
   await playlistSync.shutdown()
+  await artistSync.shutdown()
   server?.stop()
 })
 

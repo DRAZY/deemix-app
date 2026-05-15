@@ -2,13 +2,16 @@
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSyncStore, type SyncSchedule } from '../stores/syncStore'
+import { useArtistSyncStore } from '../stores/artistSyncStore'
 import { useToastStore } from '../stores/toastStore'
 import { useSettingsStore } from '../stores/settingsStore'
 
 const { t } = useI18n()
 const syncStore = useSyncStore()
+const artistSyncStore = useArtistSyncStore()
 const toastStore = useToastStore()
 const settingsStore = useSettingsStore()
+const expandedArtistErrors = ref<Set<string>>(new Set())
 
 const showAddModal = ref(false)
 const playlistUrl = ref('')
@@ -32,7 +35,17 @@ const scheduleOptions: { value: SyncSchedule; label: string }[] = [
 onMounted(async () => {
   await syncStore.init() // Safe to call again - guarded against duplicate init
   await syncStore.fetchPlaylists() // Refresh playlist data when view opens
+  await artistSyncStore.init().catch(e => console.error('[SyncView] artistSyncStore.init failed:', e))
+  await artistSyncStore.fetchArtists()
 })
+
+function toggleArtistErrors(id: string) {
+  if (expandedArtistErrors.value.has(id)) {
+    expandedArtistErrors.value.delete(id)
+  } else {
+    expandedArtistErrors.value.add(id)
+  }
+}
 
 async function detectUrl() {
   const url = playlistUrl.value.trim()
@@ -334,6 +347,149 @@ function getScheduleLabel(schedule: SyncSchedule): string {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Synced Artists Section (U1 layout: appended below the playlist list) -->
+    <div v-if="artistSyncStore.artists.length > 0" class="space-y-3 pt-4 border-t border-zinc-800">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold">{{ t('sync.syncedArtistsTitle') }}</h2>
+        <button
+          @click="artistSyncStore.syncAll()"
+          class="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg bg-background-secondary text-foreground-muted hover:text-foreground transition-colors"
+        >
+          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          {{ t('sync.syncAllArtists') }}
+        </button>
+      </div>
+
+      <div v-for="artist in artistSyncStore.artists" :key="artist.id" class="card">
+        <div class="flex items-start gap-4">
+          <!-- Source icon: artist (mic) -->
+          <div class="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+          </div>
+
+          <!-- Info -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h3 class="font-medium truncate">{{ artist.sourceArtistName }}</h3>
+              <span
+                v-if="artist.lastSyncStatus"
+                class="px-2 py-0.5 text-xs rounded-full"
+                :class="{
+                  'bg-green-500/20 text-green-400': artist.lastSyncStatus === 'success',
+                  'bg-yellow-500/20 text-yellow-400': artist.lastSyncStatus === 'partial',
+                  'bg-red-500/20 text-red-400': artist.lastSyncStatus === 'error'
+                }"
+              >
+                {{ artist.lastSyncStatus }}
+              </span>
+              <span class="px-2 py-0.5 text-xs rounded-full bg-zinc-700 text-zinc-300">
+                {{ artist.firstSyncMode }}
+              </span>
+            </div>
+            <div class="flex items-center gap-4 text-xs text-foreground-muted mt-1 flex-wrap">
+              <span>{{ getScheduleLabel(artist.schedule) }}</span>
+              <span>{{ artist.totalAlbumsDownloaded }} {{ t('sync.albumsDownloaded') }}</span>
+              <span>{{ artist.totalTracksDownloaded }} {{ t('sync.tracksDownloaded') }}</span>
+              <span>{{ t('sync.lastSync') }}: {{ formatDate(artist.lastSyncAt) }}</span>
+            </div>
+
+            <!-- Sync Progress -->
+            <div v-if="artistSyncStore.isSyncing(artist.id)" class="mt-2">
+              <div class="flex items-center gap-2 text-xs text-primary-400">
+                <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <span v-if="artistSyncStore.getProgress(artist.id)">
+                  {{ artistSyncStore.getProgress(artist.id)?.phase === 'resolving'
+                     ? 'Checking discography...'
+                     : `Album ${artistSyncStore.getProgress(artist.id)?.current}/${artistSyncStore.getProgress(artist.id)?.total}${artistSyncStore.getProgress(artist.id)?.albumTitle ? ` — ${artistSyncStore.getProgress(artist.id)?.albumTitle}` : ''}` }}
+                </span>
+                <span v-else>{{ t('sync.syncing') }}...</span>
+              </div>
+              <div class="mt-1 h-1 rounded-full bg-background-main overflow-hidden">
+                <div
+                  class="h-full bg-primary-500 rounded-full transition-all duration-300"
+                  :style="{ width: artistSyncStore.getProgress(artist.id) ? `${(artistSyncStore.getProgress(artist.id)!.current / Math.max(artistSyncStore.getProgress(artist.id)!.total, 1)) * 100}%` : '0%' }"
+                />
+              </div>
+            </div>
+
+            <!-- Failed Albums -->
+            <div v-if="artist.failedAlbums.length > 0" class="mt-2">
+              <button
+                @click="toggleArtistErrors(artist.id)"
+                class="text-xs text-red-400 hover:text-red-300 flex items-center gap-1"
+              >
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                {{ artist.failedAlbums.length }} {{ t('sync.failedAlbums') }}
+                <svg class="w-3 h-3 transition-transform" :class="{ 'rotate-180': expandedArtistErrors.has(artist.id) }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div v-if="expandedArtistErrors.has(artist.id)" class="mt-2 space-y-1">
+                <div v-for="album in artist.failedAlbums" :key="album.sourceAlbumId" class="text-xs text-foreground-muted bg-background-main rounded px-2 py-1">
+                  {{ album.title }} <span v-if="album.releaseDate">({{ album.releaseDate }})</span>: <span class="text-red-400">{{ album.error }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center gap-1">
+            <button
+              v-if="artistSyncStore.isSyncing(artist.id)"
+              @click="artistSyncStore.cancelSync(artist.id)"
+              class="p-2 text-foreground-muted hover:text-red-400 transition-colors"
+              :title="t('common.cancel')"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <button
+              v-else
+              @click="artistSyncStore.syncArtist(artist.id)"
+              @contextmenu.prevent="artistSyncStore.forceSync(artist.id)"
+              class="p-2 text-foreground-muted hover:text-primary-400 transition-colors"
+              :title="t('sync.syncNow') + ' (right-click: force full re-check)'"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+            <button
+              @click="artistSyncStore.updateArtist(artist.id, { enabled: !artist.enabled })"
+              class="p-2 transition-colors"
+              :class="artist.enabled ? 'text-green-400 hover:text-green-300' : 'text-foreground-muted hover:text-foreground'"
+              :title="artist.enabled ? t('sync.disable') : t('sync.enable')"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path v-if="artist.enabled" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path v-if="artist.enabled" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+              </svg>
+            </button>
+            <button
+              @click="artistSyncStore.removeArtist(artist.id)"
+              class="p-2 text-foreground-muted hover:text-red-400 transition-colors"
+              :title="t('sync.remove')"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>

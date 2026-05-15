@@ -4,6 +4,28 @@ All notable changes to **Deemix Remastered** are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] — 2026-05-14
+
+### Added
+
+- **One-click sync for favorited Deezer playlists** ([#60](https://github.com/DRAZY/deemix-remastered/issues/60)). Each row on **Favorites → Playlists** now has a **Sync** button that pins the playlist to the existing playlist-sync engine with a 24-hour schedule. A second button at the top of the tab — **Sync all favorite playlists** — bulk-pins every favorited playlist that isn't already in sync, skipping duplicates and toasting a `{added}/{skipped}` summary. Each card surfaces a status badge (Syncing / Synced / Partial / Sync error / Sync pending) so the user can see at a glance which playlists are caught up, mid-sync, or failing. Idempotent: clicking Sync on an already-synced playlist is a no-op and the button flips to a disabled "Synced" state.
+- **Artist sync engine** ([#61](https://github.com/DRAZY/deemix-remastered/issues/61)). New parallel sync engine (`electron/services/artistSync.ts`) that watches pinned Deezer artists for new releases and auto-downloads them on a schedule. Mirrors the playlist-sync architecture but diffs **album IDs** against the artist's `/artist/{id}/albums` discography instead of tracks against a playlist. Per-artist filters control which release types are downloaded — defaults are **Albums on, EPs on, Singles off, Compilations off, Features off** — and a per-artist `minReleaseDate` lets users bound how far back to look. Three first-sync modes:
+  - `subscribe-forward` (default) — capture the current discography into `knownAlbumIds` without downloading anything; only future releases trigger downloads. Safest for prolific artists.
+  - `download-backlog` — download the entire filtered discography on first sync.
+  - `date-threshold` — download everything from `minReleaseDate` forward, subscribe-forward for older.
+  Engine respects the existing `maxConcurrentDownloads` setting for the actual track downloads, and caps itself at 3 concurrent artist syncs so the scheduler can't stampede.
+- **Favorites → Artists tab now has Pin to Sync UX** ([#61](https://github.com/DRAZY/deemix-remastered/issues/61)). Per-artist **Pin to Sync** button + same 5-state status badge as #60, plus a top-bar **Sync all favorite artists** bulk action that pins every favorited artist (idempotent, skipping already-pinned).
+- **Synced Artists section on the Sync page.** Appended below the synced-playlists list. Full row UI per artist: status pill (`success` / `partial` / `error`), first-sync-mode badge, schedule, album + track totals, last-sync timestamp, live progress with current album name, expandable failed-albums list, and per-row Sync Now (right-click for force re-check) / Enable-Disable / Remove controls. **Sync All Artists** button kicks the whole list off in sequence.
+
+### Engineering
+
+- New `artistSync.ts` engine alongside `playlistSync.ts` (chose two-engines over a `SyncedSource` discriminated union — playlist diffing and discography diffing are structurally different enough that cohabitating in one type would force every code path to branch anyway).
+- New `/api/sync/artists*` HTTP surface on the embedded server: `GET/POST/PUT/DELETE /api/sync/artists`, plus `/run`, `/run-all`, `/reset`, `/cancel` operations.
+- New `artistSync:*` IPC channels (`start`, `progress`, `complete`, `error`) and matching `window.electronAPI.artistSync` preload bridge.
+- New `useArtistSyncStore` Pinia store mirroring `useSyncStore` so renderer code follows one pattern.
+- Artist-sync engine state persisted at `userData/artist-sync.json`, independent from `playlist-sync.json`.
+- Shares the download-settings provider with the playlist engine so quality, folder structure, templates, and metadata stay consistent across both sync types.
+
 ## [1.5.8] — 2026-05-11
 
 ### Fixed

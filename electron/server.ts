@@ -10,6 +10,7 @@ import { downloader, DownloadProgress } from './services/downloader'
 import { spotifyAPI } from './services/spotifyAPI'
 import { spotifyConverter } from './services/spotifyConverter'
 import { playlistSync } from './services/playlistSync'
+import { artistSync, type FirstSyncMode, type ArtistSyncFilters } from './services/artistSync'
 
 // File-based cache for discography (persists across app restarts)
 const DISCOGRAPHY_FILE_CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
@@ -856,6 +857,35 @@ export class DeemixServer extends EventEmitter {
 
       case '/api/sync/resolve-url':
         await this.handleResolveShareUrl(req, res)
+        break
+
+      // Artist Sync routes
+      case '/api/sync/artists':
+        if (req.method === 'GET') {
+          this.handleGetSyncArtists(res)
+        } else if (req.method === 'POST') {
+          await this.handleAddSyncArtist(req, res)
+        } else if (req.method === 'PUT') {
+          await this.handleUpdateSyncArtist(req, res)
+        } else if (req.method === 'DELETE') {
+          await this.handleDeleteSyncArtist(req, res)
+        }
+        break
+
+      case '/api/sync/artists/run':
+        await this.handleRunSyncArtist(req, res)
+        break
+
+      case '/api/sync/artists/run-all':
+        await this.handleRunSyncArtistAll(res)
+        break
+
+      case '/api/sync/artists/reset':
+        await this.handleResetSyncArtist(req, res)
+        break
+
+      case '/api/sync/artists/cancel':
+        await this.handleCancelSyncArtist(req, res)
         break
 
       default:
@@ -3325,6 +3355,134 @@ export class DeemixServer extends EventEmitter {
   }
 
   // ==================== End Playlist Sync Handlers ====================
+
+  // ==================== Artist Sync Handlers ====================
+
+  private handleGetSyncArtists(res: ServerResponse): void {
+    const artists = artistSync.getArtists()
+    const activeSyncIds = artistSync.getActiveSyncIds()
+    this.sendJSON(res, { artists, activeSyncIds })
+  }
+
+  private async handleAddSyncArtist(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const { sourceArtistId, sourceArtistName, sourceArtistUrl, schedule, downloadPath, firstSyncMode, filters } = body
+      if (!sourceArtistId || !sourceArtistName) {
+        this.sendJSON(res, { error: 'Missing required fields: sourceArtistId, sourceArtistName' }, 400)
+        return
+      }
+      const validModes: FirstSyncMode[] = ['subscribe-forward', 'download-backlog', 'date-threshold']
+      const mode: FirstSyncMode = validModes.includes(firstSyncMode) ? firstSyncMode : 'subscribe-forward'
+
+      const artist = await artistSync.addArtist({
+        sourceArtistId: String(sourceArtistId),
+        sourceArtistName: String(sourceArtistName),
+        sourceArtistUrl: String(sourceArtistUrl || `https://www.deezer.com/artist/${sourceArtistId}`),
+        schedule: schedule || '24h',
+        downloadPath: downloadPath || this.settings.downloadPath || '',
+        firstSyncMode: mode,
+        filters: filters as Partial<ArtistSyncFilters> | undefined
+      })
+      this.sendJSON(res, { success: true, artist })
+    } catch (error: any) {
+      this.sendJSON(res, { error: error.message || 'Failed to add artist' }, 500)
+    }
+  }
+
+  private async handleUpdateSyncArtist(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const { id, ...updates } = body
+      if (!id) {
+        this.sendJSON(res, { error: 'Missing artist id' }, 400)
+        return
+      }
+      const artist = await artistSync.updateArtist(id, updates)
+      if (!artist) {
+        this.sendJSON(res, { error: 'Artist not found' }, 404)
+        return
+      }
+      this.sendJSON(res, { success: true, artist })
+    } catch (error: any) {
+      this.sendJSON(res, { error: error.message || 'Failed to update artist' }, 500)
+    }
+  }
+
+  private async handleDeleteSyncArtist(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const { id } = body
+      if (!id) {
+        this.sendJSON(res, { error: 'Missing artist id' }, 400)
+        return
+      }
+      await artistSync.removeArtist(id)
+      this.sendJSON(res, { success: true })
+    } catch (error: any) {
+      this.sendJSON(res, { error: error.message || 'Failed to delete artist' }, 500)
+    }
+  }
+
+  private async handleRunSyncArtist(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const { id } = body
+      if (!id) {
+        this.sendJSON(res, { error: 'Missing artist id' }, 400)
+        return
+      }
+      artistSync.syncArtist(id).catch(err =>
+        console.error(`[Server] Artist sync failed for ${id}:`, err)
+      )
+      this.sendJSON(res, { success: true, message: 'Artist sync started' })
+    } catch (error: any) {
+      this.sendJSON(res, { error: error.message || 'Failed to start artist sync' }, 500)
+    }
+  }
+
+  private async handleRunSyncArtistAll(res: ServerResponse): Promise<void> {
+    artistSync.syncAll().catch(err =>
+      console.error('[Server] Artist sync all failed:', err)
+    )
+    this.sendJSON(res, { success: true, message: 'Artist sync all started' })
+  }
+
+  private async handleResetSyncArtist(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const { id } = body
+      if (!id) {
+        this.sendJSON(res, { error: 'Missing artist id' }, 400)
+        return
+      }
+      const success = await artistSync.resetArtist(id)
+      if (success) {
+        this.sendJSON(res, { success: true, message: 'Artist reset — next sync will re-download all matching albums' })
+      } else {
+        this.sendJSON(res, { error: 'Artist not found' }, 404)
+      }
+    } catch (error: any) {
+      this.sendJSON(res, { error: error.message || 'Failed to reset artist' }, 500)
+    }
+  }
+
+  private async handleCancelSyncArtist(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const { id } = body
+      if (!id) {
+        this.sendJSON(res, { error: 'Missing artist id' }, 400)
+        return
+      }
+      artistSync.cancelSync(id)
+      this.sendJSON(res, { success: true })
+    } catch (error: any) {
+      this.sendJSON(res, { error: error.message || 'Failed to cancel artist sync' }, 500)
+    }
+  }
+
+  // ==================== End Artist Sync Handlers ====================
 
   updateSettings(settings: Partial<ServerSettings>): void {
     this.settings = { ...this.settings, ...settings }
