@@ -21,6 +21,9 @@ export interface SyncDownloadSettings {
   createErrorLog: boolean
   savePlaylistAsCompilation: boolean
   createPlaylistFile?: boolean
+  // Worker-pool size for parallel per-track downloads inside a sync run.
+  // Falls back to 5 if unset (matches the server's default).
+  maxConcurrentDownloads: number
   folderSettings: FolderSettings
   trackTemplates: TrackTemplates
   metadataSettings: MetadataSettings
@@ -81,6 +84,30 @@ function generateId(): string {
   return `sync_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 }
 
+// Bounded-concurrency worker pool. N workers each pull the next index from a
+// shared cursor until items are exhausted. Returns results in original order.
+// Used by the sync engines to download tracks in parallel up to
+// `maxConcurrentDownloads`, instead of the prior strictly-sequential await.
+export async function runPool<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  if (items.length === 0) return results
+  const n = Math.max(1, Math.min(concurrency, items.length))
+  let nextIdx = 0
+  const pulls = Array.from({ length: n }, async () => {
+    while (true) {
+      const i = nextIdx++
+      if (i >= items.length) return
+      results[i] = await worker(items[i], i)
+    }
+  })
+  await Promise.all(pulls)
+  return results
+}
+
 class PlaylistSyncEngine extends EventEmitter {
   private state: SyncState = { playlists: [] }
   private activeSyncs = new Map<string, boolean>()
@@ -105,6 +132,14 @@ class PlaylistSyncEngine extends EventEmitter {
     await this.loadState()
     this.startScheduler()
     this.isInitialized = true
+
+    // Parallel sync attaches up to maxConcurrentDownloads × 3 listeners on
+    // the shared downloader emitter at any moment, and both engines share
+    // the singleton. Default Node cap is 10 — raise it to a safe headroom
+    // for two engines each running with concurrency up to the 50 ceiling.
+    if (typeof (downloader as any).setMaxListeners === 'function') {
+      (downloader as any).setMaxListeners(400)
+    }
 
     // Trigger launch syncs
     const launchPlaylists = this.state.playlists.filter(
@@ -391,17 +426,24 @@ class PlaylistSyncEngine extends EventEmitter {
         )
       }
 
-      for (let i = 0; i < deezerTrackIds.length; i++) {
-        const trackId = deezerTrackIds[i]
-        try {
-          this.emit('sync:progress', id, {
-            current: i + 1,
-            total: deezerTrackIds.length,
-            phase: 'downloading'
-          })
-          // Look up this track's position in the full playlist
+      // Parallel download pool capped by maxConcurrentDownloads. Previously
+      // this loop awaited each track to fully complete before queueing the
+      // next, which serialized everything to a single in-flight download
+      // regardless of the user's concurrency setting. We now run N workers
+      // (N = maxConcurrentDownloads, default 5) and emit progress as each
+      // track completes. For a 400-track playlist this is the difference
+      // between ~30 min and ~6 min at the default setting.
+      const poolConcurrency = Math.max(1, settings?.maxConcurrentDownloads ?? 5)
+      let completedCount = 0
+
+      const trackResults = await runPool(
+        deezerTrackIds,
+        poolConcurrency,
+        async (trackId) => {
+          // Capture per-track context up front so error paths can populate
+          // the failed-tracks list with meaningful title/artist info.
           const sourceId = deezerToSourceId.get(trackId) || String(trackId)
-          const playlistPosition = sourceIdToPosition.get(sourceId) || (i + 1)
+          const playlistPosition = sourceIdToPosition.get(sourceId) || 0
 
           const downloadOpts: DownloadOptions = {
             trackId,
@@ -427,69 +469,89 @@ class PlaylistSyncEngine extends EventEmitter {
             metadataSettings: settings?.metadataSettings,
             ...(shouldGenerateM3U ? { _m3uTrackerId: m3uTrackerId } : {})
           }
-          const downloadId = await downloader.download(downloadOpts)
 
-          // Wait for the download to actually complete (not just queue)
-          await new Promise<void>((resolve, reject) => {
-            const timeout = setTimeout(() => {
-              cleanup()
-              reject(new Error('Download timed out'))
-            }, 5 * 60 * 1000) // 5 minute timeout per track
+          try {
+            const downloadId = await downloader.download(downloadOpts)
 
-            const onComplete = (progress: any) => {
-              if (progress.id === downloadId) {
+            await new Promise<void>((resolve, reject) => {
+              const timeout = setTimeout(() => {
                 cleanup()
-                resolve()
+                reject(new Error('Download timed out'))
+              }, 5 * 60 * 1000) // 5 minute timeout per track
+
+              const onComplete = (progress: any) => {
+                if (progress.id === downloadId) { cleanup(); resolve() }
+              }
+              const onError = (progress: any) => {
+                if (progress.id === downloadId) {
+                  cleanup()
+                  reject(new Error(progress.error || 'Download failed'))
+                }
+              }
+              const onCancelled = (progress: any) => {
+                if (progress.id === downloadId) {
+                  cleanup()
+                  reject(new Error('Download cancelled'))
+                }
+              }
+              const cleanup = () => {
+                clearTimeout(timeout)
+                downloader.removeListener('complete', onComplete)
+                downloader.removeListener('error', onError)
+                downloader.removeListener('cancelled', onCancelled)
+              }
+
+              // Check if already completed (e.g., duplicate/skipped)
+              const current = downloader.getAllProgress().find(p => p.id === downloadId)
+              if (current?.status === 'completed') { cleanup(); resolve(); return }
+              if (current?.status === 'error') {
+                cleanup()
+                reject(new Error(current.error || 'Download failed'))
+                return
+              }
+
+              downloader.on('complete', onComplete)
+              downloader.on('error', onError)
+              downloader.on('cancelled', onCancelled)
+            })
+
+            // Emit progress as each track *completes*, not as it starts —
+            // with parallel workers, completion order is what matters.
+            completedCount++
+            this.emit('sync:progress', id, {
+              current: completedCount,
+              total: deezerTrackIds.length,
+              phase: 'downloading'
+            })
+            return { ok: true as const, sourceId }
+          } catch (err: any) {
+            completedCount++
+            this.emit('sync:progress', id, {
+              current: completedCount,
+              total: deezerTrackIds.length,
+              phase: 'downloading'
+            })
+            const info = trackMap.get(String(trackId))
+            return {
+              ok: false as const,
+              failure: {
+                sourceTrackId: String(trackId),
+                title: info?.title || `Track ${trackId}`,
+                artist: info?.artist || 'Unknown',
+                error: err.message || 'Download failed'
               }
             }
-            const onError = (progress: any) => {
-              if (progress.id === downloadId) {
-                cleanup()
-                reject(new Error(progress.error || 'Download failed'))
-              }
-            }
-            const onCancelled = (progress: any) => {
-              if (progress.id === downloadId) {
-                cleanup()
-                reject(new Error('Download cancelled'))
-              }
-            }
-            const cleanup = () => {
-              clearTimeout(timeout)
-              downloader.removeListener('complete', onComplete)
-              downloader.removeListener('error', onError)
-              downloader.removeListener('cancelled', onCancelled)
-            }
+          }
+        }
+      )
 
-            // Check if already completed (e.g., duplicate/skipped)
-            const current = downloader.getAllProgress().find(p => p.id === downloadId)
-            if (current?.status === 'completed') {
-              cleanup()
-              resolve()
-              return
-            }
-            if (current?.status === 'error') {
-              cleanup()
-              reject(new Error(current.error || 'Download failed'))
-              return
-            }
-
-            downloader.on('complete', onComplete)
-            downloader.on('error', onError)
-            downloader.on('cancelled', onCancelled)
-          })
-
+      // Aggregate worker results into the existing accounting structures.
+      for (const r of trackResults) {
+        if (r.ok) {
           downloadedCount++
-          // Use sourceId (already resolved above) to track successful downloads
-          successfullyDownloadedIds.push(sourceId)
-        } catch (err: any) {
-          const info = trackMap.get(String(trackId))
-          failed.push({
-            sourceTrackId: String(trackId),
-            title: info?.title || `Track ${trackId}`,
-            artist: info?.artist || 'Unknown',
-            error: err.message || 'Download failed'
-          })
+          successfullyDownloadedIds.push(r.sourceId)
+        } else {
+          failed.push(r.failure)
         }
       }
 

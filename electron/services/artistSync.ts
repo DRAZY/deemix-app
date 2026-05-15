@@ -5,6 +5,7 @@ import { join } from 'path'
 import { readFile, writeFile, mkdir } from 'fs/promises'
 import { deezerAuth } from './deezerAuth'
 import { downloader, type DownloadOptions, type FolderSettings, type TrackTemplates, type MetadataSettings } from './downloader'
+import { runPool } from './playlistSync'
 
 // Reuse the SyncSchedule contract from playlistSync to keep one source of truth
 // for cadence semantics across both engines.
@@ -21,6 +22,9 @@ export interface ArtistSyncDownloadSettings {
   saveLyrics: boolean
   syncedLyrics: boolean
   createErrorLog: boolean
+  // Worker-pool size for parallel per-track downloads inside a sync run.
+  // Falls back to 5 if unset (matches the server's default).
+  maxConcurrentDownloads: number
   folderSettings: FolderSettings
   trackTemplates: TrackTemplates
   metadataSettings: MetadataSettings
@@ -423,71 +427,90 @@ class ArtistSyncEngine extends EventEmitter {
               })
               continue
             }
+            // Within-album parallelism — download the album's tracks in
+            // parallel up to maxConcurrentDownloads. Keeps the cross-album
+            // loop sequential so the per-album progress UI ("Album 3/5,
+            // downloading X") remains meaningful.
+            const poolConcurrency = Math.max(1, settings?.maxConcurrentDownloads ?? 5)
             let albumSucceededAtLeastOnce = false
-            for (let t = 0; t < tracks.length; t++) {
-              if (this.cancelRequested.has(id)) break
-              const track = tracks[t]
-              const opts: DownloadOptions = {
-                trackId: track.id,
-                outputPath: artist.downloadPath || settings?.downloadPath || join(process.env.HOME || process.env.USERPROFILE || '/tmp', 'Music', 'Deemix'),
-                quality: settings?.quality || 'MP3_320',
-                bitrateFallback: settings?.bitrateFallback ?? true,
-                createFolders: true,
-                artistFolder: settings?.createArtistFolder ?? true,
-                albumFolder: settings?.createAlbumFolder ?? true,
-                saveArtwork: settings?.saveArtwork ?? true,
-                embedArtwork: settings?.embedArtwork ?? true,
-                saveLyrics: settings?.saveLyrics ?? true,
-                syncedLyrics: settings?.syncedLyrics ?? true,
-                isSingle: false,
-                isFromPlaylist: false,
-                createErrorLog: settings?.createErrorLog ?? true,
-                savePlaylistAsCompilation: false,
-                folderSettings: settings?.folderSettings,
-                trackTemplates: settings?.trackTemplates,
-                metadataSettings: settings?.metadataSettings,
-                playlistCoverUrl: albumCoverUrl || undefined
+
+            const trackResults = await runPool(
+              tracks,
+              poolConcurrency,
+              async (track) => {
+                if (this.cancelRequested.has(id)) {
+                  return { ok: false as const, reason: 'cancelled' }
+                }
+                const opts: DownloadOptions = {
+                  trackId: track.id,
+                  outputPath: artist.downloadPath || settings?.downloadPath || join(process.env.HOME || process.env.USERPROFILE || '/tmp', 'Music', 'Deemix'),
+                  quality: settings?.quality || 'MP3_320',
+                  bitrateFallback: settings?.bitrateFallback ?? true,
+                  createFolders: true,
+                  artistFolder: settings?.createArtistFolder ?? true,
+                  albumFolder: settings?.createAlbumFolder ?? true,
+                  saveArtwork: settings?.saveArtwork ?? true,
+                  embedArtwork: settings?.embedArtwork ?? true,
+                  saveLyrics: settings?.saveLyrics ?? true,
+                  syncedLyrics: settings?.syncedLyrics ?? true,
+                  isSingle: false,
+                  isFromPlaylist: false,
+                  createErrorLog: settings?.createErrorLog ?? true,
+                  savePlaylistAsCompilation: false,
+                  folderSettings: settings?.folderSettings,
+                  trackTemplates: settings?.trackTemplates,
+                  metadataSettings: settings?.metadataSettings,
+                  playlistCoverUrl: albumCoverUrl || undefined
+                }
+                try {
+                  const downloadId = await downloader.download(opts)
+                  await new Promise<void>((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                      cleanup()
+                      reject(new Error('Download timed out'))
+                    }, 5 * 60 * 1000)
+                    const onComplete = (progress: any) => {
+                      if (progress.id === downloadId) { cleanup(); resolve() }
+                    }
+                    const onError = (progress: any) => {
+                      if (progress.id === downloadId) {
+                        cleanup()
+                        reject(new Error(progress.error || 'Download failed'))
+                      }
+                    }
+                    const onCancelled = (progress: any) => {
+                      if (progress.id === downloadId) { cleanup(); reject(new Error('Download cancelled')) }
+                    }
+                    const cleanup = () => {
+                      clearTimeout(timeout)
+                      downloader.removeListener('complete', onComplete)
+                      downloader.removeListener('error', onError)
+                      downloader.removeListener('cancelled', onCancelled)
+                    }
+                    const current = downloader.getAllProgress().find(p => p.id === downloadId)
+                    if (current?.status === 'completed') { cleanup(); resolve(); return }
+                    if (current?.status === 'error') {
+                      cleanup()
+                      reject(new Error(current.error || 'Download failed'))
+                      return
+                    }
+                    downloader.on('complete', onComplete)
+                    downloader.on('error', onError)
+                    downloader.on('cancelled', onCancelled)
+                  })
+                  return { ok: true as const, trackId: track.id }
+                } catch (err: any) {
+                  console.error(`[ArtistSync] Track ${track.id} of album ${album.title} failed:`, err.message)
+                  return { ok: false as const, reason: err.message || 'Download failed' }
+                }
               }
-              const downloadId = await downloader.download(opts)
-              await new Promise<void>((resolve, reject) => {
-                const timeout = setTimeout(() => {
-                  cleanup()
-                  reject(new Error('Download timed out'))
-                }, 5 * 60 * 1000)
-                const onComplete = (progress: any) => {
-                  if (progress.id === downloadId) { cleanup(); resolve() }
-                }
-                const onError = (progress: any) => {
-                  if (progress.id === downloadId) {
-                    cleanup()
-                    reject(new Error(progress.error || 'Download failed'))
-                  }
-                }
-                const onCancelled = (progress: any) => {
-                  if (progress.id === downloadId) { cleanup(); reject(new Error('Download cancelled')) }
-                }
-                const cleanup = () => {
-                  clearTimeout(timeout)
-                  downloader.removeListener('complete', onComplete)
-                  downloader.removeListener('error', onError)
-                  downloader.removeListener('cancelled', onCancelled)
-                }
-                const current = downloader.getAllProgress().find(p => p.id === downloadId)
-                if (current?.status === 'completed') { cleanup(); resolve(); return }
-                if (current?.status === 'error') {
-                  cleanup()
-                  reject(new Error(current.error || 'Download failed'))
-                  return
-                }
-                downloader.on('complete', onComplete)
-                downloader.on('error', onError)
-                downloader.on('cancelled', onCancelled)
-              }).then(() => {
+            )
+
+            for (const r of trackResults) {
+              if (r.ok) {
                 downloadedTrackCount++
                 albumSucceededAtLeastOnce = true
-              }).catch(err => {
-                console.error(`[ArtistSync] Track ${track.id} of album ${album.title} failed:`, err.message)
-              })
+              }
             }
             if (albumSucceededAtLeastOnce) {
               downloadedAlbumCount++

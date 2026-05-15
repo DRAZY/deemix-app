@@ -4,6 +4,16 @@ All notable changes to **Deemix Remastered** are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] — 2026-05-14
+
+### Performance
+
+- **Sync is now parallel — 3-5x faster for large playlists.** The playlist-sync and artist-sync engines previously downloaded tracks one at a time, awaiting each `download.complete` event before queueing the next. This serialized every sync run to a single in-flight download regardless of the user's `maxConcurrentDownloads` setting — for a 400-track favorite playlist that's ~30 minutes at the default. Both engines now use a bounded worker pool (size = `maxConcurrentDownloads`, default 5) that downloads tracks in parallel. Same playlist now finishes in ~6 minutes at the default setting, or ~3 minutes if the user bumps the setting to 10. Per-track retry semantics, success/failure aggregation, and the `knownTrackIds`-only-on-success rule are preserved. For artist sync, parallelism is *within-album* — the cross-album loop stays sequential so the "Album X/Y, currently downloading Z" progress UI remains meaningful.
+
+### Engineering
+
+- Extracted a reusable `runPool<T, R>(items, concurrency, worker)` helper in `electron/services/playlistSync.ts` (also imported by `artistSync.ts`) — N workers each pull from a shared cursor until items exhaust. Returns results in original order. Bounds in-flight downloader event listeners to N×3 instead of unbounded.
+
 ## [1.6.1] — 2026-05-14
 
 ### Fixed

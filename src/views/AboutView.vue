@@ -33,6 +33,14 @@ interface ReleaseNotes {
 
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.6.2',
+    date: '2026-05-14',
+    items: [
+      'Sync is 3-5x Faster -- Playlist sync and artist sync now download tracks in parallel up to your configured maxConcurrentDownloads (default 5). Previously sync was serialized to one track at a time regardless of the setting — a 400-track playlist took ~30 minutes; it now takes ~6 minutes at the default, or ~3 minutes if you bump maxConcurrentDownloads to 10. Per-track retry semantics, success/failure aggregation, and the "only mark successfully-downloaded tracks as known" rule are all preserved.',
+      'Artist Sync Parallelism -- Each artist sync now downloads its album\'s tracks in parallel (within-album). The cross-album loop stays sequential so the "Album X/Y, currently downloading Z" progress UI still tells you which album is active.'
+    ]
+  },
+  {
     version: '1.6.1',
     date: '2026-05-14',
     items: [
