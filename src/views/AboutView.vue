@@ -33,6 +33,14 @@ interface ReleaseNotes {
 
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.6.6',
+    date: '2026-05-15',
+    items: [
+      'Security: 24 Dependabot alerts closed via dependency bumps -- axios 1.6 → 1.15.2 (closes 14 alerts including 5 highs around prototype pollution, header injection, SSRF), vite 6.0 → 6.4.2 (closes 2 alerts including a high-severity arbitrary file read via the dev-server WebSocket), postcss 8.4 → 8.5.10 (closes 1 XSS alert), plus an overrides block pinning four transitive build-time deps (lodash, @xmldom/xmldom, ip-address, follow-redirects) for 7 more alerts including 4 highs. None of these are runtime-shipped in the app — this is a pure stack hygiene pass. No API changes, no behavior changes.',
+      'Electron 35 → 39 major bump deliberately deferred to v1.7.0 to keep this release\'s rollback surface clean.'
+    ]
+  },
+  {
     version: '1.6.5',
     date: '2026-05-15',
     items: [

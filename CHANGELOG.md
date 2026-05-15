@@ -4,6 +4,20 @@ All notable changes to **Deemix Remastered** are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.6] — 2026-05-15
+
+### Security
+
+- **Closed 24 Dependabot alerts (10 high, 12 medium, 2 low) via pure dependency version bumps.** No functional changes, no API surface touched, no behavior changes — only version numbers moved.
+- `axios` `^1.6.0` → `^1.15.2` (installed 1.16.1): closes 14 alerts including 5 highs around prototype pollution, header injection, NO_PROXY SSRF bypass, and the CVE-2025-62718 incomplete-fix chain.
+- `vite` `^6.0.0` → `^6.4.2`: closes 2 alerts including a high-severity arbitrary file read via the dev-server WebSocket.
+- `postcss` `^8.4.0` → `^8.5.10` (installed 8.5.14): closes 1 medium XSS-via-unescaped-`</style>` alert.
+- New `overrides` block in package.json pins transitive build-time dependencies: `lodash ^4.18.0`, `@xmldom/xmldom ^0.8.13`, `ip-address ^10.1.1`, `follow-redirects ^1.16.0`. These are all under `electron-builder` / `concurrently` (dev-only) and never shipped in the app bundle; the bumps close 7 more alerts including 4 highs (lodash code injection via `_.template`, xmldom XML injection chain).
+
+### Engineering
+
+- The Electron 35 → 39 major bump (16 remaining alerts) is deliberately split into v1.7.0 to keep the rollback surface here clean. v1.6.6 is metadata-only; v1.7.0 will be the runtime version refresh.
+
 ## [1.6.5] — 2026-05-15
 
 ### Fixed
