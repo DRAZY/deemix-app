@@ -4,6 +4,20 @@ All notable changes to **Deemix Remastered** are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.5] — 2026-05-15
+
+### Fixed
+
+- **Sync list could be silently destroyed by a torn write on Windows.** Both sync engines (`playlistSync`, `artistSync`) wrote their state with a single non-atomic `writeFile`. If the process was killed mid-write — Windows Update reboot, antivirus quarantine, sudden power loss — the on-disk JSON could end up truncated. On the next launch, `loadState()` caught the parse error, silently reset the in-memory state to an empty list, and the next mutation (or shutdown) overwrote the corrupt-but-recoverable file with the empty default. The user's pinned playlists and artists were gone for good. Surfaced on Windows first because torn writes are more common there, but the underlying anti-pattern was platform-agnostic.
+- Two surgical changes close the data-loss invariant:
+  1. **Atomic writes.** State JSON is now staged to a sibling `.tmp` file and `rename`d into place. NTFS, APFS, and ext4 all guarantee `rename` is atomic, so readers either see the previous good file or the new good file — never a torn one.
+  2. **Quarantine on corruption.** If `loadState()` fails to parse the file for any non-`ENOENT` reason, the bad file is renamed to `playlist-sync.json.corrupt-<ISO-timestamp>` (or `artist-sync.json.corrupt-…`) before in-memory state resets to default. The bytes are preserved next to the live file for forensic recovery, instead of being overwritten on the next save.
+
+### Engineering
+
+- New exported helpers in `electron/services/playlistSync.ts`: `safeWriteJson(path, data)` (atomic via `.tmp` + `rename`) and `quarantineCorruptFile(path)` (timestamped sibling on read failure). Both consumed by `playlistSync` and `artistSync` so the two engines share one durability contract.
+- Surface area is intentionally tight: only the two sync engines are touched this release. Credentials, settings, and profiles in `electron/main.ts` follow the same legacy anti-pattern and will get the same treatment in a follow-up — split deliberately to keep this patch small and easy to review.
+
 ## [1.6.4] — 2026-05-15
 
 ### Fixed

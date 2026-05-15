@@ -1,8 +1,8 @@
 import { EventEmitter } from 'events'
 import * as https from 'https'
 import { app } from 'electron'
-import { join } from 'path'
-import { readFile, writeFile, mkdir } from 'fs/promises'
+import { join, dirname } from 'path'
+import { readFile, writeFile, mkdir, rename } from 'fs/promises'
 import { spotifyAPI } from './spotifyAPI'
 import { spotifyConverter } from './spotifyConverter'
 import { deezerAuth } from './deezerAuth'
@@ -96,6 +96,32 @@ const SCHEDULE_INTERVALS: Record<SyncSchedule, number> = {
 
 function generateId(): string {
   return `sync_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+}
+
+// Atomic JSON write: stage to a sibling .tmp and rename into place.
+// On NTFS / APFS / ext4, rename is atomic, so readers never observe a
+// partial file even if the process dies mid-write. Eliminates the torn-write
+// hole that caused silent sync-state loss on Windows (v1.6.5).
+export async function safeWriteJson(filePath: string, data: unknown): Promise<void> {
+  const tmpPath = filePath + '.tmp'
+  await mkdir(dirname(filePath), { recursive: true })
+  await writeFile(tmpPath, JSON.stringify(data, null, 2))
+  await rename(tmpPath, filePath)
+}
+
+// Preserve the bytes of an unreadable state file before resetting in-memory
+// state to defaults. The renamed sibling lets users (and us) recover from
+// rare corruption events instead of having the next saveState() overwrite it.
+export async function quarantineCorruptFile(filePath: string): Promise<string | null> {
+  try {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const dest = filePath + '.corrupt-' + stamp
+    await rename(filePath, dest)
+    console.error(`[Sync] State file unreadable, quarantined to ${dest}`)
+    return dest
+  } catch {
+    return null
+  }
 }
 
 // Bounded-concurrency worker pool. N workers each pull the next index from a
@@ -192,6 +218,10 @@ class PlaylistSyncEngine extends EventEmitter {
     } catch (err: any) {
       if (err.code !== 'ENOENT') {
         console.error('[PlaylistSync] Failed to load state:', err)
+        // The file exists but is unreadable. Preserve the bytes before
+        // resetting in-memory state, otherwise the next saveState() will
+        // overwrite a potentially recoverable file with the empty default.
+        await quarantineCorruptFile(this.getStatePath())
       }
       this.state = { playlists: [] }
     }
@@ -199,8 +229,7 @@ class PlaylistSyncEngine extends EventEmitter {
 
   private async saveState(): Promise<void> {
     try {
-      await mkdir(app.getPath('userData'), { recursive: true })
-      await writeFile(this.getStatePath(), JSON.stringify(this.state, null, 2))
+      await safeWriteJson(this.getStatePath(), this.state)
     } catch (err) {
       console.error('[PlaylistSync] Failed to save state:', err)
     }

@@ -33,6 +33,14 @@ interface ReleaseNotes {
 
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.6.5',
+    date: '2026-05-15',
+    items: [
+      'Sync list could be silently lost (Windows) -- Both sync engines used a non-atomic file write for their state. If the process was killed mid-write (Windows Update reboot, antivirus, sudden power loss), the on-disk JSON could end up truncated; the next launch silently reset state to empty and the next save overwrote the corrupt-but-recoverable file with the empty default — destroying the user\'s pinned playlists and artists. Fixed with two surgical changes: state JSON is now staged to a .tmp sibling and atomically renamed into place (rename is atomic on NTFS / APFS / ext4), and any unreadable state file is renamed to a .corrupt-<timestamp> sibling before in-memory state resets, so the bytes survive for forensic recovery.',
+      'Affected user note -- If you launched a previous build and saw your sync list go empty, those bytes were already overwritten by the previous version and cannot be auto-recovered. From 1.6.5 forward, any future corruption event is preserved next to the live state file.'
+    ]
+  },
+  {
     version: '1.6.4',
     date: '2026-05-15',
     items: [

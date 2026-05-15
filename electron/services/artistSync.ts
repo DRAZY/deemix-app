@@ -2,10 +2,10 @@ import { EventEmitter } from 'events'
 import * as https from 'https'
 import { app } from 'electron'
 import { join } from 'path'
-import { readFile, writeFile, mkdir } from 'fs/promises'
+import { readFile } from 'fs/promises'
 import { deezerAuth } from './deezerAuth'
 import { downloader, type DownloadOptions, type FolderSettings, type TrackTemplates, type MetadataSettings } from './downloader'
-import { runPool } from './playlistSync'
+import { runPool, safeWriteJson, quarantineCorruptFile } from './playlistSync'
 
 // Reuse the SyncSchedule contract from playlistSync to keep one source of truth
 // for cadence semantics across both engines.
@@ -189,6 +189,9 @@ class ArtistSyncEngine extends EventEmitter {
     } catch (err: any) {
       if (err.code !== 'ENOENT') {
         console.error('[ArtistSync] Failed to load state:', err)
+        // See playlistSync.loadState — quarantine before resetting so a
+        // subsequent saveState() can't overwrite the bytes.
+        await quarantineCorruptFile(this.getStatePath())
       }
       this.state = { artists: [] }
     }
@@ -196,8 +199,7 @@ class ArtistSyncEngine extends EventEmitter {
 
   private async saveState(): Promise<void> {
     try {
-      await mkdir(app.getPath('userData'), { recursive: true })
-      await writeFile(this.getStatePath(), JSON.stringify(this.state, null, 2))
+      await safeWriteJson(this.getStatePath(), this.state)
     } catch (err) {
       console.error('[ArtistSync] Failed to save state:', err)
     }
