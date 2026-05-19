@@ -21,6 +21,11 @@ export interface SyncDownloadSettings {
   createErrorLog: boolean
   savePlaylistAsCompilation: boolean
   createPlaylistFile?: boolean
+  // Mirrors the server's `overwriteFiles` setting. Threaded through to the
+  // downloader as `overwriteMode` so sync runs honor the user's "skip
+  // existing files" choice instead of clobbering pre-existing files and
+  // externally-applied tags (e.g. ReplayGain). See issue #66.
+  overwriteFiles: 'no' | 'overwrite' | 'rename'
   // Worker-pool size for parallel per-track downloads inside a sync run.
   // Falls back to 5 if unset (matches the server's default).
   maxConcurrentDownloads: number
@@ -565,6 +570,10 @@ class PlaylistSyncEngine extends EventEmitter {
             playlistPosition: playlistPosition,
             createErrorLog: settings?.createErrorLog ?? true,
             savePlaylistAsCompilation: settings?.savePlaylistAsCompilation ?? false,
+            // Safe-side default: scheduled/unattended sync must not destroy
+            // existing files unless the user explicitly opted in via the
+            // global setting. Downloader's own default is 'overwrite'.
+            overwriteMode: settings?.overwriteFiles ?? 'no',
             folderSettings: settings?.folderSettings,
             trackTemplates: settings?.trackTemplates,
             metadataSettings: settings?.metadataSettings,

@@ -22,6 +22,10 @@ export interface ArtistSyncDownloadSettings {
   saveLyrics: boolean
   syncedLyrics: boolean
   createErrorLog: boolean
+  // Mirrors the server's `overwriteFiles` setting. Threaded through to the
+  // downloader as `overwriteMode` so sync runs honor the user's "skip
+  // existing files" choice. See issue #66.
+  overwriteFiles: 'no' | 'overwrite' | 'rename'
   // Worker-pool size for parallel per-track downloads inside a sync run.
   // Falls back to 5 if unset (matches the server's default).
   maxConcurrentDownloads: number
@@ -503,6 +507,9 @@ class ArtistSyncEngine extends EventEmitter {
                   isFromPlaylist: false,
                   createErrorLog: settings?.createErrorLog ?? true,
                   savePlaylistAsCompilation: false,
+                  // Safe-side default: scheduled/unattended sync must not
+                  // destroy existing files unless the user explicitly opted in.
+                  overwriteMode: settings?.overwriteFiles ?? 'no',
                   folderSettings: settings?.folderSettings,
                   trackTemplates: settings?.trackTemplates,
                   metadataSettings: settings?.metadataSettings,
