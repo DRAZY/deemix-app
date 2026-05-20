@@ -1003,6 +1003,12 @@ export class Downloader extends EventEmitter {
         })
       }
       this.emit('progress', progress)
+      // Mirror the success path's contract: every download that finishes —
+      // including ones that finish by being skipped — must emit 'complete'.
+      // Sync engines (playlistSync/artistSync) resolve their per-track Promise
+      // on this event; without it, skipped tracks hang their worker for the
+      // full 5-minute timeout and the sync pool stalls (#67).
+      this.emit('complete', { ...progress, path: initialOutputPath })
       return
     }
     console.log(`[Downloader] Reserved output path: ${outputPath}`)

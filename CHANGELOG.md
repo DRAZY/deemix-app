@@ -4,6 +4,13 @@ All notable changes to **Deemix Remastered** are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.2] — 2026-05-20
+
+### Fixed
+
+- **Sync froze mid-run when existing files were skipped (#67).** v1.7.1 wired the user's `overwriteFiles` setting through to sync, which made the downloader's skip-existing-files path get exercised inside sync for the first time. That skip path emitted only `'progress'` (with `status: 'completed'`) and never `'complete'` — but both `playlistSync` and `artistSync` resolve their per-track Promise on the `'complete'` event. Each skipped track silently stranded its worker for the full 5-minute timeout, and with 3-5 parallel workers all hitting skipped files, the whole sync pool stalled. Manual downloads were unaffected because they don't subscribe to the `'complete'` event the way the sync engines do.
+- Fix is one line in `electron/services/downloader.ts`: the skip path now emits `'complete'` after `'progress'`, matching the success path's contract. No changes to the sync engines or to the skip logic itself — the asymmetry was always in the emitter.
+
 ## [1.7.0] — 2026-05-15
 
 ### Security
