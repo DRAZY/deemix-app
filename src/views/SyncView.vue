@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useSyncStore, type SyncSchedule } from '../stores/syncStore'
-import { useArtistSyncStore } from '../stores/artistSyncStore'
+import { useSyncStore, type SyncSchedule, type SyncedPlaylist } from '../stores/syncStore'
+import { useArtistSyncStore, type SyncedArtist, type FirstSyncMode } from '../stores/artistSyncStore'
 import { useToastStore } from '../stores/toastStore'
 import { useSettingsStore } from '../stores/settingsStore'
 
@@ -31,6 +31,82 @@ const scheduleOptions: { value: SyncSchedule; label: string }[] = [
   { value: '24h', label: 'Every 24 hours' },
   { value: 'manual', label: 'Manual only' }
 ]
+
+const firstSyncModeOptions: { value: FirstSyncMode; labelKey: string }[] = [
+  { value: 'subscribe-forward', labelKey: 'sync.firstSyncModeSubscribeForward' },
+  { value: 'download-backlog', labelKey: 'sync.firstSyncModeDownloadBacklog' },
+  { value: 'date-threshold', labelKey: 'sync.firstSyncModeDateThreshold' }
+]
+
+// Edit-modal state — opens with a pencil-icon click on either a synced
+// playlist or a synced artist card. Single modal handles both, using the
+// editingType discriminator to conditionally render artist-only fields
+// (firstSyncMode). Backend update endpoints already support every field
+// the modal exposes (playlistSync.updatePlaylist, artistSync.updateArtist);
+// this is a UI-only feature (#69).
+const showEditModal = ref(false)
+const editingType = ref<'playlist' | 'artist'>('playlist')
+const editingId = ref('')
+const editName = ref('')
+const editSchedule = ref<SyncSchedule>('6h')
+const editDownloadPath = ref('')
+const editFirstSyncMode = ref<FirstSyncMode>('subscribe-forward')
+const editSaving = ref(false)
+const isEditNameValid = computed(() => editName.value.trim().length > 0)
+
+function openEditPlaylist(p: SyncedPlaylist) {
+  editingType.value = 'playlist'
+  editingId.value = p.id
+  editName.value = p.sourcePlaylistName
+  editSchedule.value = p.schedule
+  editDownloadPath.value = p.downloadPath || ''
+  showEditModal.value = true
+}
+
+function openEditArtist(a: SyncedArtist) {
+  editingType.value = 'artist'
+  editingId.value = a.id
+  editName.value = a.sourceArtistName
+  editSchedule.value = a.schedule
+  editDownloadPath.value = a.downloadPath || ''
+  editFirstSyncMode.value = a.firstSyncMode
+  showEditModal.value = true
+}
+
+function closeEditModal() {
+  showEditModal.value = false
+  editingId.value = ''
+  editName.value = ''
+  editDownloadPath.value = ''
+  editSaving.value = false
+}
+
+async function saveEdit() {
+  if (!isEditNameValid.value || editSaving.value) return
+  editSaving.value = true
+  try {
+    if (editingType.value === 'playlist') {
+      await syncStore.updatePlaylist(editingId.value, {
+        sourcePlaylistName: editName.value.trim(),
+        schedule: editSchedule.value,
+        downloadPath: editDownloadPath.value.trim() || settingsStore.settings.downloadPath
+      })
+      toastStore.success(t('sync.editSaved'))
+    } else {
+      await artistSyncStore.updateArtist(editingId.value, {
+        sourceArtistName: editName.value.trim(),
+        schedule: editSchedule.value,
+        downloadPath: editDownloadPath.value.trim() || settingsStore.settings.downloadPath,
+        firstSyncMode: editFirstSyncMode.value
+      })
+      toastStore.success(t('sync.artistEditSaved'))
+    }
+    closeEditModal()
+  } catch (e: any) {
+    toastStore.error(e?.message || t('sync.editFailed'))
+    editSaving.value = false
+  }
+}
 
 onMounted(async () => {
   await syncStore.init() // Safe to call again - guarded against duplicate init
@@ -346,6 +422,15 @@ function getScheduleLabel(schedule: SyncSchedule): string {
             </svg>
           </button>
           <button
+            @click="openEditPlaylist(playlist)"
+            class="p-2 text-foreground-muted hover:text-primary-400 transition-colors"
+            :title="t('sync.edit')"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+          <button
             @click="syncStore.updatePlaylist(playlist.id, { enabled: !playlist.enabled })"
             class="p-2 transition-colors"
             :class="playlist.enabled ? 'text-green-400 hover:text-green-300' : 'text-foreground-muted hover:text-foreground'"
@@ -507,6 +592,15 @@ function getScheduleLabel(schedule: SyncSchedule): string {
               </svg>
             </button>
             <button
+              @click="openEditArtist(artist)"
+              class="p-2 text-foreground-muted hover:text-primary-400 transition-colors"
+              :title="t('sync.edit')"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </button>
+            <button
               @click="artistSyncStore.updateArtist(artist.id, { enabled: !artist.enabled })"
               class="p-2 transition-colors"
               :class="artist.enabled ? 'text-green-400 hover:text-green-300' : 'text-foreground-muted hover:text-foreground'"
@@ -598,6 +692,81 @@ function getScheduleLabel(schedule: SyncSchedule): string {
               >
                 <span v-if="addLoading">{{ t('sync.adding') }}...</span>
                 <span v-else>{{ t('sync.add') }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </teleport>
+
+    <!-- Edit Sync Entry Modal — shared between playlist and artist edits (#69) -->
+    <teleport to="body">
+      <transition name="fade">
+        <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60" @click.self="closeEditModal">
+          <div class="bg-background-secondary rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
+            <h2 class="text-lg font-semibold mb-4">
+              {{ editingType === 'playlist' ? t('sync.editPlaylist') : t('sync.editArtist') }}
+            </h2>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium mb-1">{{ t('sync.editName') }}</label>
+                <input
+                  v-model="editName"
+                  class="w-full px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+                  :placeholder="t('sync.namePlaceholder')"
+                />
+                <p v-if="!isEditNameValid" class="mt-1 text-xs text-red-400">{{ t('sync.editNameRequired') }}</p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium mb-1">{{ t('sync.schedule') }}</label>
+                <select
+                  v-model="editSchedule"
+                  class="w-full px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+                >
+                  <option v-for="opt in scheduleOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium mb-1">{{ t('sync.editDownloadPath') }}</label>
+                <input
+                  v-model="editDownloadPath"
+                  class="w-full px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+                  :placeholder="settingsStore.settings.downloadPath || t('sync.editDownloadPathPlaceholder')"
+                />
+              </div>
+
+              <div v-if="editingType === 'artist'">
+                <label class="block text-sm font-medium mb-1">{{ t('sync.editFirstSyncMode') }}</label>
+                <select
+                  v-model="editFirstSyncMode"
+                  class="w-full px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+                >
+                  <option v-for="opt in firstSyncModeOptions" :key="opt.value" :value="opt.value">{{ t(opt.labelKey) }}</option>
+                </select>
+              </div>
+
+              <p class="text-xs text-foreground-muted">
+                {{ t('sync.editFolderNoticeRename') }}
+              </p>
+            </div>
+
+            <div class="flex justify-end gap-2 mt-6">
+              <button
+                @click="closeEditModal"
+                class="px-4 py-2 text-sm rounded-lg text-foreground-muted hover:text-foreground transition-colors"
+              >
+                {{ t('common.cancel') }}
+              </button>
+              <button
+                @click="saveEdit"
+                :disabled="!isEditNameValid || editSaving"
+                class="px-4 py-2 text-sm font-medium rounded-lg bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span v-if="editSaving">{{ t('sync.saving') }}...</span>
+                <span v-else>{{ t('sync.saveChanges') }}</span>
               </button>
             </div>
           </div>

@@ -4,6 +4,13 @@ All notable changes to **Deemix Remastered** are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.4] — 2026-05-20
+
+### Added
+
+- **Editable sync entries — rename, schedule, path, first-sync mode ([#69](https://github.com/DRAZY/deemix-remastered/issues/69)).** Every synced playlist and synced artist card on the Sync page now has a pencil-icon button that opens an edit dialog pre-filled with the entry's current values. Editable fields are **Name**, **Sync schedule**, and **Download path** for both entity types, plus **First-sync mode** for artists. The backend update endpoints (`playlistSync.updatePlaylist`, `artistSync.updateArtist`) and HTTP PUT routes already supported every one of these fields — this release exposes them in the UI. Schedule changes take effect on the next scheduler tick (60s). Folder-name changes apply to *future* downloads only; files already on disk stay in their existing folder, and the dialog includes an in-line notice making that explicit so renaming never silently orphans an existing library.
+- Twelve new `sync.*` i18n keys land in `en.json` for the dialog (other locales fall back to English until the next translation pass).
+
 ## [1.7.3] — 2026-05-20
 
 ### Fixed
