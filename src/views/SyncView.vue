@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSyncStore, type SyncSchedule, type SyncedPlaylist } from '../stores/syncStore'
-import { useArtistSyncStore, type SyncedArtist, type FirstSyncMode } from '../stores/artistSyncStore'
+import { useArtistSyncStore, type SyncedArtist, type FirstSyncMode, type ArtistSyncFilters } from '../stores/artistSyncStore'
 import { useToastStore } from '../stores/toastStore'
 import { useSettingsStore } from '../stores/settingsStore'
 
@@ -51,6 +51,15 @@ const editName = ref('')
 const editSchedule = ref<SyncSchedule>('6h')
 const editDownloadPath = ref('')
 const editFirstSyncMode = ref<FirstSyncMode>('subscribe-forward')
+// Per-entry release-type filters surfaced for artist sync (#71). Defaults
+// mirror DEFAULT_ARTIST_FILTERS in the engine; openEditArtist overwrites them
+// from the entry's stored filters on open.
+const editFilterAlbums = ref(true)
+const editFilterSingles = ref(false)
+const editFilterEPs = ref(true)
+const editFilterCompilations = ref(false)
+const editFilterFeatures = ref(false)
+const editFilterMinDate = ref('') // empty string = no threshold
 const editSaving = ref(false)
 const isEditNameValid = computed(() => editName.value.trim().length > 0)
 
@@ -70,6 +79,15 @@ function openEditArtist(a: SyncedArtist) {
   editSchedule.value = a.schedule
   editDownloadPath.value = a.downloadPath || ''
   editFirstSyncMode.value = a.firstSyncMode
+  // Seed filter UI from the entry's stored filters (#71). Engine backfills
+  // DEFAULT_ARTIST_FILTERS at load for v1.7.4-and-older entries, so this is
+  // always populated.
+  editFilterAlbums.value = a.filters?.includeAlbums ?? true
+  editFilterSingles.value = a.filters?.includeSingles ?? false
+  editFilterEPs.value = a.filters?.includeEPs ?? true
+  editFilterCompilations.value = a.filters?.includeCompilations ?? false
+  editFilterFeatures.value = a.filters?.includeFeatures ?? false
+  editFilterMinDate.value = a.filters?.minReleaseDate ?? ''
   showEditModal.value = true
 }
 
@@ -93,11 +111,22 @@ async function saveEdit() {
       })
       toastStore.success(t('sync.editSaved'))
     } else {
+      const filters: ArtistSyncFilters = {
+        includeAlbums: editFilterAlbums.value,
+        includeSingles: editFilterSingles.value,
+        includeEPs: editFilterEPs.value,
+        includeCompilations: editFilterCompilations.value,
+        includeFeatures: editFilterFeatures.value,
+        // Empty string in the date input means "no threshold" — store null
+        // so the engine's date check stays unambiguous.
+        minReleaseDate: editFilterMinDate.value.trim() || null
+      }
       await artistSyncStore.updateArtist(editingId.value, {
         sourceArtistName: editName.value.trim(),
         schedule: editSchedule.value,
         downloadPath: editDownloadPath.value.trim() || settingsStore.settings.downloadPath,
-        firstSyncMode: editFirstSyncMode.value
+        firstSyncMode: editFirstSyncMode.value,
+        filters
       })
       toastStore.success(t('sync.artistEditSaved'))
     }
@@ -746,6 +775,44 @@ function getScheduleLabel(schedule: SyncSchedule): string {
                 >
                   <option v-for="opt in firstSyncModeOptions" :key="opt.value" :value="opt.value">{{ t(opt.labelKey) }}</option>
                 </select>
+              </div>
+
+              <!-- Release-type filters for artist sync (#71). Defaults match
+                   DEFAULT_ARTIST_FILTERS in the engine; per-entry overrides
+                   persist via the existing PUT /api/sync/artists endpoint. -->
+              <div v-if="editingType === 'artist'">
+                <label class="block text-sm font-medium mb-1">{{ t('sync.editReleaseTypes') }}</label>
+                <div class="grid grid-cols-2 gap-x-3 gap-y-2 mt-1">
+                  <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" v-model="editFilterAlbums" class="accent-primary-500" />
+                    {{ t('sync.filterAlbums') }}
+                  </label>
+                  <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" v-model="editFilterSingles" class="accent-primary-500" />
+                    {{ t('sync.filterSingles') }}
+                  </label>
+                  <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" v-model="editFilterEPs" class="accent-primary-500" />
+                    {{ t('sync.filterEPs') }}
+                  </label>
+                  <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" v-model="editFilterCompilations" class="accent-primary-500" />
+                    {{ t('sync.filterCompilations') }}
+                  </label>
+                  <label class="flex items-center gap-2 text-sm col-span-2">
+                    <input type="checkbox" v-model="editFilterFeatures" class="accent-primary-500" />
+                    {{ t('sync.filterFeatures') }}
+                  </label>
+                </div>
+              </div>
+
+              <div v-if="editingType === 'artist'">
+                <label class="block text-sm font-medium mb-1">{{ t('sync.editMinReleaseDate') }}</label>
+                <input
+                  v-model="editFilterMinDate"
+                  type="date"
+                  class="w-full px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+                />
               </div>
 
               <p class="text-xs text-foreground-muted">

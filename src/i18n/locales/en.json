@@ -689,7 +689,14 @@
     "saving": "Saving",
     "firstSyncModeSubscribeForward": "Subscribe forward — track new releases only",
     "firstSyncModeDownloadBacklog": "Download backlog — fetch entire discography",
-    "firstSyncModeDateThreshold": "From a date — limited by filter"
+    "firstSyncModeDateThreshold": "From a date — limited by filter",
+    "editReleaseTypes": "Release types to sync",
+    "filterAlbums": "Albums",
+    "filterSingles": "Singles",
+    "filterEPs": "EPs",
+    "filterCompilations": "Compilations",
+    "filterFeatures": "Featured releases",
+    "editMinReleaseDate": "Only download releases after"
   },
   "about": {
     "appName": "Deemix Remastered",
