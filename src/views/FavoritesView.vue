@@ -182,36 +182,47 @@ async function addOneToSync(playlist: Playlist) {
 async function syncAllFavorites() {
   if (isBulkSyncing.value) return
   isBulkSyncing.value = true
-  let added = 0
-  let skipped = 0
-  let failed = 0
   try {
+    // Filter out already-synced playlists locally so the server doesn't have
+    // to dedupe across 300 entries — and we know the skipped count up front.
+    const toAdd: Playlist[] = []
+    let skipped = 0
     for (const playlist of favoritesStore.favoritePlaylists) {
       if (getSyncEntry(playlist.id)) {
         skipped++
         continue
       }
-      const result = await syncStore.addPlaylist({
-        source: 'deezer',
-        sourcePlaylistId: String(playlist.id),
-        sourcePlaylistName: playlist.title,
-        sourcePlaylistUrl: `https://www.deezer.com/playlist/${playlist.id}`,
-        schedule: '24h',
-        downloadPath: settingsStore.settings.downloadPath,
-        origin: 'favorites'
-      })
-      if (result?.success) {
-        added++
-      } else {
-        failed++
-        console.error('[Favorites] Bulk sync add failed for', playlist.id, playlist.title, result?.error)
-      }
+      toAdd.push(playlist)
     }
-    // Surface partial failures explicitly — silent drops were the symptom in
-    // #68. Even after the state-write race is fixed, server-side errors can
-    // still cause individual adds to fail; the user needs to know which.
-    if (failed > 0) {
+
+    if (toAdd.length === 0) {
+      if (skipped > 0) toastStore.info(t('favorites.syncAllNoneAdded'))
+      return
+    }
+
+    // Single bulk call — replaces the N-roundtrip loop that got truncated by
+    // the per-IP 'sync' rate limit (issue #70). One HTTP request, one server
+    // saveState, one rate-limit budget hit regardless of how many favorites
+    // the user has.
+    const configs = toAdd.map(p => ({
+      source: 'deezer' as const,
+      sourcePlaylistId: String(p.id),
+      sourcePlaylistName: p.title,
+      sourcePlaylistUrl: `https://www.deezer.com/playlist/${p.id}`,
+      schedule: '24h' as const,
+      downloadPath: settingsStore.settings.downloadPath,
+      origin: 'favorites' as const
+    }))
+    const result = await syncStore.addPlaylistsBulk(configs)
+    const added = result?.added ?? 0
+    const failed = result?.failed ?? (configs.length - added)
+
+    if (!result?.success) {
+      toastStore.error(result?.error || t('favorites.syncFailed'))
+    } else if (failed > 0) {
       toastStore.error(t('favorites.syncBulkPartial', { added, failed, skipped }))
+      console.error('[Favorites] Bulk sync partial — per-item errors:',
+        (result.results || []).filter(r => !r.ok))
     } else if (added > 0) {
       toastStore.success(t('favorites.syncBulkResult', { added, skipped }))
     } else if (skipped > 0) {
@@ -281,33 +292,42 @@ async function pinArtistToSync(artist: Artist) {
 async function syncAllFavoriteArtists() {
   if (isBulkSyncing.value) return
   isBulkSyncing.value = true
-  let added = 0
-  let skipped = 0
-  let failed = 0
   try {
+    const toAdd: Artist[] = []
+    let skipped = 0
     for (const artist of favoritesStore.favoriteArtists) {
       if (getArtistSyncEntry(artist.id)) {
         skipped++
         continue
       }
-      const result = await artistSyncStore.addArtist({
-        sourceArtistId: String(artist.id),
-        sourceArtistName: artist.name,
-        sourceArtistUrl: `https://www.deezer.com/artist/${artist.id}`,
-        schedule: '24h',
-        downloadPath: settingsStore.settings.downloadPath,
-        firstSyncMode: 'subscribe-forward',
-        origin: 'favorites'
-      })
-      if (result?.success) {
-        added++
-      } else {
-        failed++
-        console.error('[Favorites] Bulk artist sync add failed for', artist.id, artist.name, result?.error)
-      }
+      toAdd.push(artist)
     }
-    if (failed > 0) {
+
+    if (toAdd.length === 0) {
+      if (skipped > 0) toastStore.info(t('favorites.artistSyncAllNoneAdded'))
+      return
+    }
+
+    // Single bulk call — see syncAllFavorites for #70 rationale.
+    const configs = toAdd.map(a => ({
+      sourceArtistId: String(a.id),
+      sourceArtistName: a.name,
+      sourceArtistUrl: `https://www.deezer.com/artist/${a.id}`,
+      schedule: '24h' as const,
+      downloadPath: settingsStore.settings.downloadPath,
+      firstSyncMode: 'subscribe-forward' as const,
+      origin: 'favorites' as const
+    }))
+    const result = await artistSyncStore.addArtistsBulk(configs)
+    const added = result?.added ?? 0
+    const failed = result?.failed ?? (configs.length - added)
+
+    if (!result?.success) {
+      toastStore.error(result?.error || t('favorites.artistSyncFailed'))
+    } else if (failed > 0) {
       toastStore.error(t('favorites.artistSyncBulkPartial', { added, failed, skipped }))
+      console.error('[Favorites] Bulk artist sync partial — per-item errors:',
+        (result.results || []).filter(r => !r.ok))
     } else if (added > 0) {
       toastStore.success(t('favorites.artistSyncBulkResult', { added, skipped }))
     } else if (skipped > 0) {

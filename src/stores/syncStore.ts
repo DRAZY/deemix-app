@@ -145,6 +145,58 @@ export const useSyncStore = defineStore('sync', () => {
     }
   }
 
+  // Bulk add — one POST adds N playlists in a single rate-limit budget hit
+  // and a single backend saveState. Replaces the 300-roundtrip favorites-sync
+  // loop that got truncated by the 'sync' rate limit (issue #70).
+  async function addPlaylistsBulk(configs: Array<{
+    source: 'spotify' | 'deezer'
+    sourcePlaylistId: string
+    sourcePlaylistName: string
+    sourcePlaylistUrl: string
+    schedule: SyncSchedule
+    downloadPath: string
+    origin?: 'favorites' | 'manual'
+  }>): Promise<{
+    success: boolean
+    added: number
+    failed: number
+    results: Array<{ ok: boolean; playlist?: SyncedPlaylist; error?: string }>
+    error?: string
+  }> {
+    isLoading.value = true
+    try {
+      const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/sync/playlists/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: configs })
+      })
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}))
+        return {
+          success: false,
+          added: 0,
+          failed: configs.length,
+          results: configs.map(() => ({ ok: false, error: errData.error || `Server returned ${response.status}` })),
+          error: errData.error || `Server returned ${response.status}`
+        }
+      }
+      const data = await response.json()
+      // One re-fetch reflects the full batch in the UI (vs N fetches before).
+      fetchPlaylists().catch(err => console.warn('[SyncStore] post-bulk refresh failed:', err))
+      return data
+    } catch (e: any) {
+      return {
+        success: false,
+        added: 0,
+        failed: configs.length,
+        results: configs.map(() => ({ ok: false, error: e.message })),
+        error: e.message
+      }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function removePlaylist(id: string) {
     try {
       await fetch(`http://127.0.0.1:${serverPort.value}/api/sync/playlists`, {
@@ -241,6 +293,7 @@ export const useSyncStore = defineStore('sync', () => {
     init,
     fetchPlaylists,
     addPlaylist,
+    addPlaylistsBulk,
     removePlaylist,
     updatePlaylist,
     syncPlaylist,

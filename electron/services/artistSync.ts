@@ -291,6 +291,84 @@ class ArtistSyncEngine extends EventEmitter {
     return artist
   }
 
+  // Bulk add — see playlistSync.addPlaylistsBulk for the contract & rationale.
+  // Issue #70: bulk favorite-artist sync was being truncated by the per-IP
+  // 'sync' rate limit (120/60s); the fix is one HTTP call → one engine call
+  // → one saveState() → respect the 3-concurrency cap for initial syncs.
+  async addArtistsBulk(configs: Array<{
+    sourceArtistId: string
+    sourceArtistName: string
+    sourceArtistUrl: string
+    schedule: SyncSchedule
+    downloadPath: string
+    firstSyncMode?: FirstSyncMode
+    filters?: Partial<ArtistSyncFilters>
+    origin?: 'favorites' | 'manual'
+  }>): Promise<Array<{ ok: boolean; artist?: SyncedArtist; error?: string }>> {
+    const results: Array<{ ok: boolean; artist?: SyncedArtist; error?: string }> = []
+    const created: SyncedArtist[] = []
+
+    for (const config of configs) {
+      try {
+        if (!config.sourceArtistId || !config.sourceArtistName) {
+          results.push({ ok: false, error: 'Missing required fields' })
+          continue
+        }
+        // Idempotent: dedupe against in-memory state so bulk re-runs after
+        // partial success don't create duplicate entries.
+        const existing = this.state.artists.find(
+          a => a.source === 'deezer' && a.sourceArtistId === String(config.sourceArtistId)
+        )
+        if (existing) {
+          results.push({ ok: true, artist: existing })
+          continue
+        }
+        const origin: 'favorites' | 'manual' = config.origin ?? 'manual'
+        const nowIso = new Date().toISOString()
+        const artist: SyncedArtist = {
+          id: generateId(),
+          source: 'deezer',
+          sourceArtistId: String(config.sourceArtistId),
+          sourceArtistName: config.sourceArtistName,
+          sourceArtistUrl: config.sourceArtistUrl,
+          schedule: config.schedule,
+          enabled: true,
+          lastSyncAt: null,
+          lastSyncStatus: null,
+          lastSyncError: null,
+          knownAlbumIds: [],
+          failedAlbums: [],
+          totalAlbumsDownloaded: 0,
+          totalTracksDownloaded: 0,
+          downloadPath: config.downloadPath,
+          filters: { ...DEFAULT_ARTIST_FILTERS, ...(config.filters || {}) },
+          firstSyncMode: config.firstSyncMode || 'subscribe-forward',
+          createdAt: nowIso,
+          origin,
+          lastSeenInFavoritesAt: origin === 'favorites' ? nowIso : null
+        }
+        this.state.artists.push(artist)
+        created.push(artist)
+        results.push({ ok: true, artist })
+      } catch (err: any) {
+        results.push({ ok: false, error: err?.message || 'Failed to add' })
+      }
+    }
+
+    if (created.length > 0) {
+      await this.saveState()
+      this.emit('artists:changed', this.state.artists)
+    }
+
+    for (const artist of created) {
+      this.syncArtist(artist.id).catch(err =>
+        console.error(`[ArtistSync] Initial sync failed for ${artist.id}:`, err)
+      )
+    }
+
+    return results
+  }
+
   async removeArtist(id: string): Promise<void> {
     this.state.artists = this.state.artists.filter(a => a.id !== id)
     this.activeSyncs.delete(id)

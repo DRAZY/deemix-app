@@ -93,6 +93,11 @@ const RATE_LIMIT_MAX_ENTRIES = 10000 // Max entries to prevent memory exhaustion
 // Security: Request body size limit (1MB)
 const MAX_BODY_SIZE = 1024 * 1024
 
+// Bulk-sync batch cap — protects against megabatches that could push the
+// body over MAX_BODY_SIZE. 500 favorites ≈ 100KB, well under both ceilings;
+// libraries above this can chunk client-side without losing the bulk efficiency.
+const MAX_BULK_ITEMS = 500
+
 // Security: Request timeout (30 seconds)
 const REQUEST_TIMEOUT = 30000
 
@@ -835,6 +840,15 @@ export class DeemixServer extends EventEmitter {
         }
         break
 
+      case '/api/sync/playlists/bulk':
+        if (req.method === 'POST') {
+          await this.handleAddSyncPlaylistsBulk(req, res)
+        } else {
+          res.writeHead(405)
+          res.end('Method Not Allowed')
+        }
+        break
+
       case '/api/sync/run':
         await this.handleRunSync(req, res)
         break
@@ -869,6 +883,15 @@ export class DeemixServer extends EventEmitter {
           await this.handleUpdateSyncArtist(req, res)
         } else if (req.method === 'DELETE') {
           await this.handleDeleteSyncArtist(req, res)
+        }
+        break
+
+      case '/api/sync/artists/bulk':
+        if (req.method === 'POST') {
+          await this.handleAddSyncArtistsBulk(req, res)
+        } else {
+          res.writeHead(405)
+          res.end('Method Not Allowed')
         }
         break
 
@@ -3190,7 +3213,7 @@ export class DeemixServer extends EventEmitter {
   private async handleAddSyncPlaylist(req: IncomingMessage, res: ServerResponse): Promise<void> {
     try {
       const body = await this.parseBody(req)
-      const { source, sourcePlaylistId, sourcePlaylistName, sourcePlaylistUrl, schedule, downloadPath } = body
+      const { source, sourcePlaylistId, sourcePlaylistName, sourcePlaylistUrl, schedule, downloadPath, origin } = body
 
       if (!source || !sourcePlaylistId || !sourcePlaylistName) {
         this.sendJSON(res, { error: 'Missing required fields: source, sourcePlaylistId, sourcePlaylistName' }, 400)
@@ -3208,12 +3231,52 @@ export class DeemixServer extends EventEmitter {
         sourcePlaylistName: String(sourcePlaylistName),
         sourcePlaylistUrl: String(sourcePlaylistUrl || ''),
         schedule: schedule || '6h',
-        downloadPath: downloadPath || this.settings.downloadPath || ''
+        downloadPath: downloadPath || this.settings.downloadPath || '',
+        // Preserve favorites-origin tagging so the "no longer in your Deezer
+        // favorites" prompt fires for entries pinned from the Favorites view
+        // (was silently dropped by the destructure before).
+        ...(origin === 'favorites' || origin === 'manual' ? { origin } : {})
       })
 
       this.sendJSON(res, { success: true, playlist })
     } catch (error: any) {
       this.sendJSON(res, { error: error.message || 'Failed to add playlist' }, 500)
+    }
+  }
+
+  // Bulk add — one HTTP call adds N playlists in one engine pass, one save,
+  // one rate-limit budget hit. Replaces the N-roundtrip favorites-sync loop
+  // that got truncated by the 120/60s 'sync' rate limit (issue #70).
+  private async handleAddSyncPlaylistsBulk(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const items = Array.isArray(body?.items) ? body.items : null
+      if (!items) {
+        this.sendJSON(res, { error: 'Missing or invalid items array' }, 400)
+        return
+      }
+      // Sanity cap — protects against accidental megabatch + the 1MB body
+      // limit. 500 favorites per call is well under both ceilings; larger
+      // libraries can chunk client-side without losing the bulk efficiency.
+      if (items.length > MAX_BULK_ITEMS) {
+        this.sendJSON(res, { error: `Bulk batch too large; chunk to <=${MAX_BULK_ITEMS} items per request` }, 400)
+        return
+      }
+      const normalized = items.map((it: any) => ({
+        source: it.source,
+        sourcePlaylistId: String(it.sourcePlaylistId ?? ''),
+        sourcePlaylistName: String(it.sourcePlaylistName ?? ''),
+        sourcePlaylistUrl: String(it.sourcePlaylistUrl ?? ''),
+        schedule: it.schedule || '24h',
+        downloadPath: it.downloadPath || this.settings.downloadPath || '',
+        origin: (it.origin === 'favorites' || it.origin === 'manual') ? it.origin : 'manual'
+      }))
+      const results = await playlistSync.addPlaylistsBulk(normalized)
+      const added = results.filter(r => r.ok).length
+      const failed = results.length - added
+      this.sendJSON(res, { success: true, added, failed, results })
+    } catch (error: any) {
+      this.sendJSON(res, { error: error.message || 'Failed to bulk-add playlists' }, 500)
     }
   }
 
@@ -3374,7 +3437,7 @@ export class DeemixServer extends EventEmitter {
   private async handleAddSyncArtist(req: IncomingMessage, res: ServerResponse): Promise<void> {
     try {
       const body = await this.parseBody(req)
-      const { sourceArtistId, sourceArtistName, sourceArtistUrl, schedule, downloadPath, firstSyncMode, filters } = body
+      const { sourceArtistId, sourceArtistName, sourceArtistUrl, schedule, downloadPath, firstSyncMode, filters, origin } = body
       if (!sourceArtistId || !sourceArtistName) {
         this.sendJSON(res, { error: 'Missing required fields: sourceArtistId, sourceArtistName' }, 400)
         return
@@ -3389,11 +3452,45 @@ export class DeemixServer extends EventEmitter {
         schedule: schedule || '24h',
         downloadPath: downloadPath || this.settings.downloadPath || '',
         firstSyncMode: mode,
-        filters: filters as Partial<ArtistSyncFilters> | undefined
+        filters: filters as Partial<ArtistSyncFilters> | undefined,
+        // Preserve favorites-origin tagging — same fix as the playlist handler.
+        ...(origin === 'favorites' || origin === 'manual' ? { origin } : {})
       })
       this.sendJSON(res, { success: true, artist })
     } catch (error: any) {
       this.sendJSON(res, { error: error.message || 'Failed to add artist' }, 500)
+    }
+  }
+
+  private async handleAddSyncArtistsBulk(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const items = Array.isArray(body?.items) ? body.items : null
+      if (!items) {
+        this.sendJSON(res, { error: 'Missing or invalid items array' }, 400)
+        return
+      }
+      if (items.length > MAX_BULK_ITEMS) {
+        this.sendJSON(res, { error: `Bulk batch too large; chunk to <=${MAX_BULK_ITEMS} items per request` }, 400)
+        return
+      }
+      const validModes: FirstSyncMode[] = ['subscribe-forward', 'download-backlog', 'date-threshold']
+      const normalized = items.map((it: any) => ({
+        sourceArtistId: String(it.sourceArtistId ?? ''),
+        sourceArtistName: String(it.sourceArtistName ?? ''),
+        sourceArtistUrl: String(it.sourceArtistUrl || `https://www.deezer.com/artist/${it.sourceArtistId ?? ''}`),
+        schedule: it.schedule || '24h',
+        downloadPath: it.downloadPath || this.settings.downloadPath || '',
+        firstSyncMode: (validModes.includes(it.firstSyncMode) ? it.firstSyncMode : 'subscribe-forward') as FirstSyncMode,
+        filters: it.filters as Partial<ArtistSyncFilters> | undefined,
+        origin: (it.origin === 'favorites' || it.origin === 'manual') ? it.origin : 'manual'
+      }))
+      const results = await artistSync.addArtistsBulk(normalized)
+      const added = results.filter(r => r.ok).length
+      const failed = results.length - added
+      this.sendJSON(res, { success: true, added, failed, results })
+    } catch (error: any) {
+      this.sendJSON(res, { error: error.message || 'Failed to bulk-add artists' }, 500)
     }
   }
 

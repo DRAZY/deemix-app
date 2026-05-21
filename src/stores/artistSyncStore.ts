@@ -151,6 +151,56 @@ export const useArtistSyncStore = defineStore('artistSync', () => {
     }
   }
 
+  // Bulk add — see syncStore.addPlaylistsBulk for the contract & rationale (#70).
+  async function addArtistsBulk(configs: Array<{
+    sourceArtistId: string
+    sourceArtistName: string
+    sourceArtistUrl: string
+    schedule: SyncSchedule
+    downloadPath: string
+    firstSyncMode?: FirstSyncMode
+    filters?: Partial<ArtistSyncFilters>
+    origin?: 'favorites' | 'manual'
+  }>): Promise<{
+    success: boolean
+    added: number
+    failed: number
+    results: Array<{ ok: boolean; artist?: SyncedArtist; error?: string }>
+    error?: string
+  }> {
+    isLoading.value = true
+    try {
+      const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/sync/artists/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: configs })
+      })
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}))
+        return {
+          success: false,
+          added: 0,
+          failed: configs.length,
+          results: configs.map(() => ({ ok: false, error: errData.error || `Server returned ${response.status}` })),
+          error: errData.error || `Server returned ${response.status}`
+        }
+      }
+      const data = await response.json()
+      fetchArtists().catch(err => console.warn('[ArtistSyncStore] post-bulk refresh failed:', err))
+      return data
+    } catch (e: any) {
+      return {
+        success: false,
+        added: 0,
+        failed: configs.length,
+        results: configs.map(() => ({ ok: false, error: e.message })),
+        error: e.message
+      }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function removeArtist(id: string) {
     try {
       await fetch(`http://127.0.0.1:${serverPort.value}/api/sync/artists`, {
@@ -246,6 +296,7 @@ export const useArtistSyncStore = defineStore('artistSync', () => {
     init,
     fetchArtists,
     addArtist,
+    addArtistsBulk,
     removeArtist,
     updateArtist,
     syncArtist,

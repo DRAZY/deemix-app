@@ -33,6 +33,15 @@ interface ReleaseNotes {
 
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.7.5',
+    date: '2026-05-21',
+    items: [
+      'Bulk "Sync all favourite playlists/artists" at any scale (#70, third fix) -- After v1.7.3 fixed the state-write race and v1.7.4 surfaced bulk failures in the toast, the truncation still hit users with hundreds of favourites. Root cause turned out to live one layer higher: the local API\'s per-IP rate limit (120 requests/minute on /api/sync/*) was silently 429-ing the latter ~60% of the loop\'s sequential POSTs, because 300 favourites fire 300 round-trips inside a single 60-second window. The structural fix replaces the loop with a single bulk endpoint -- POST /api/sync/playlists/bulk and POST /api/sync/artists/bulk -- so one HTTP request adds N entries with one engine pass, one saveState, one rate-limit budget hit. Per-item success/failure surfaces in the toast as before. Works the same at 30, 300, or 3,000 favourites. Note on what to expect after the toast: every favourite is registered immediately, but actual downloads still respect the 3-concurrent-sync cap and drain through the 60-second scheduler -- so a 300-favourite bulk add will trickle in over the next few hours rather than fanning out into 300 simultaneous downloads. Watch the per-entry status on the Sync page; "added" is not the same as "fully downloaded yet."',
+      'Stale-favorite detection now works for entries pinned from Favorites (latent #64 bug) -- The single-add server handlers were silently dropping the origin field clients sent, so favourites-origin entries were getting stored as origin: \'manual\'. That meant the "no longer in your Deezer favourites" badge never lit up for entries you pinned via the Favourites view. Both handlers (playlist + artist) now thread origin through end-to-end.',
+      'Selectable release types for artist sync (#71) -- Every artist-sync entry on the Sync page now exposes a release-type filter in its edit dialog: Albums, Singles, EPs, Compilations, Features, plus an optional "only download releases after" date threshold. The engine already supported per-entry filters under the hood; this release surfaces them in the UI so you can have one artist sync albums-only while another pulls singles too. Existing entries keep their stored defaults (Albums + EPs).'
+    ]
+  },
+  {
     version: '1.7.4',
     date: '2026-05-20',
     items: [

@@ -317,6 +317,90 @@ class PlaylistSyncEngine extends EventEmitter {
     return playlist
   }
 
+  // Bulk add — one push pass, ONE saveState, ONE 'playlists:changed' emit,
+  // and initial syncs spawned respecting the 3-concurrency cap. Replaces the
+  // bulk-favorites loop that hammered /api/sync/playlists 300+ times in <60s
+  // and got truncated by the per-IP 'sync' rate limit (issue #70 — third fix).
+  // Per-item errors are surfaced in the result array instead of throwing,
+  // so one bad entry can't drop the whole batch.
+  async addPlaylistsBulk(configs: Array<{
+    source: 'spotify' | 'deezer'
+    sourcePlaylistId: string
+    sourcePlaylistName: string
+    sourcePlaylistUrl: string
+    schedule: SyncSchedule
+    downloadPath: string
+    origin?: 'favorites' | 'manual'
+  }>): Promise<Array<{ ok: boolean; playlist?: SyncedPlaylist; error?: string }>> {
+    const results: Array<{ ok: boolean; playlist?: SyncedPlaylist; error?: string }> = []
+    const created: SyncedPlaylist[] = []
+
+    for (const config of configs) {
+      try {
+        if (!config.source || !config.sourcePlaylistId || !config.sourcePlaylistName) {
+          results.push({ ok: false, error: 'Missing required fields' })
+          continue
+        }
+        if (!['spotify', 'deezer'].includes(config.source)) {
+          results.push({ ok: false, error: 'Invalid source' })
+          continue
+        }
+        // Idempotent: dedupe against in-memory state so callers can safely
+        // retry a partial-success bulk without duplicating entries that
+        // already landed. Mirrors artistSync.addArtistsBulk.
+        const existing = this.state.playlists.find(
+          p => p.source === config.source && p.sourcePlaylistId === String(config.sourcePlaylistId)
+        )
+        if (existing) {
+          results.push({ ok: true, playlist: existing })
+          continue
+        }
+        const { origin: originParam, ...rest } = config
+        const origin: 'favorites' | 'manual' = originParam ?? 'manual'
+        const nowIso = new Date().toISOString()
+        const playlist: SyncedPlaylist = {
+          id: generateId(),
+          ...rest,
+          enabled: true,
+          lastSyncAt: null,
+          lastSyncStatus: null,
+          lastSyncError: null,
+          knownTrackIds: [],
+          failedTracks: [],
+          totalTracksDownloaded: 0,
+          m3uPath: null,
+          createdAt: nowIso,
+          origin,
+          lastSeenInFavoritesAt: origin === 'favorites' ? nowIso : null
+        }
+        this.state.playlists.push(playlist)
+        created.push(playlist)
+        results.push({ ok: true, playlist })
+      } catch (err: any) {
+        results.push({ ok: false, error: err?.message || 'Failed to add' })
+      }
+    }
+
+    // Single saveState for the whole batch — the chain still serializes
+    // against concurrent in-flight syncs, but we don't enqueue N writes for
+    // N additions like the old per-item path did.
+    if (created.length > 0) {
+      await this.saveState()
+      this.emit('playlists:changed', this.state.playlists)
+    }
+
+    // Spawn initial syncs respecting the existing 3-concurrency cap. The
+    // scheduler picks up the rest at its next 60s tick (all bulk-added
+    // entries are 24h-or-similar, so `now - lastSync >= interval` is true).
+    for (const playlist of created) {
+      this.syncPlaylist(playlist.id).catch(err =>
+        console.error(`[PlaylistSync] Initial sync failed for ${playlist.id}:`, err)
+      )
+    }
+
+    return results
+  }
+
   async removePlaylist(id: string): Promise<void> {
     this.state.playlists = this.state.playlists.filter(p => p.id !== id)
     this.activeSyncs.delete(id)
