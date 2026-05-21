@@ -4,6 +4,18 @@ All notable changes to **Deemix Remastered** are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.3] — 2026-05-20
+
+### Fixed
+
+- **"Sync all favourite playlists" silently dropped 20-30 of 50+ entries on Windows ([#68](https://github.com/DRAZY/deemix-remastered/issues/68)).** Both `playlistSync` and `artistSync` called `saveState()` from multiple code paths without serialization. During a bulk-add, each new `addPlaylist` fired a `saveState()` *and* a fire-and-forget `syncPlaylist()` whose own `saveState()` checkpoints ran in the background — so multiple writers raced on the shared `.tmp` sibling of `safeWriteJson` (write to tmp + atomic rename). `saveState` swallowed errors with a single `console.error`, so torn writes and lost updates on NTFS surfaced as missing playlists in the user-visible sync list rather than as toasts. In-memory state held all 50; on-disk state held whatever the last successful rename had landed.
+- Fix in `electron/services/playlistSync.ts` and `electron/services/artistSync.ts`: each engine now serializes every `saveState()` call through a single Promise chain. Each chained `.then()` captures a fresh `JSON.stringify(this.state)` snapshot *after* the previous rename has landed, making "last write wins" deterministic and guaranteeing every push is included in some subsequent successful write. No two saves race on the same tmp path anymore.
+
+### Changed
+
+- **3-concurrent-sync cap no longer throws; soft-skips instead.** Previously `syncPlaylist`/`syncArtist` threw `Maximum concurrent syncs reached (3)` once the cap was hit, which under the bulk-add flow produced ~47 console errors per 50-favourites operation and broke fire-and-forget callers. Now over-cap calls return a no-op result and trust the 60-second scheduler to retry once active syncs drain. No behavior change for users — just quieter logs.
+- **Bulk "Sync all favourites" now surfaces failures.** The `syncAllFavorites()` and `syncAllFavoriteArtists()` handlers in `FavoritesView.vue` count failed adds alongside `added` and `skipped`, and show an error toast (`syncBulkPartial` / `artistSyncBulkPartial`) when any add fails. Before, failures were `console.error`'d but the toast only mentioned successes — the user had no way to know anything had gone wrong. New i18n keys land in `en.json`; other locales fall back to English until the next translation pass.
+
 ## [1.7.2] — 2026-05-20
 
 ### Fixed

@@ -184,6 +184,7 @@ async function syncAllFavorites() {
   isBulkSyncing.value = true
   let added = 0
   let skipped = 0
+  let failed = 0
   try {
     for (const playlist of favoritesStore.favoritePlaylists) {
       if (getSyncEntry(playlist.id)) {
@@ -202,10 +203,16 @@ async function syncAllFavorites() {
       if (result?.success) {
         added++
       } else {
-        console.error('[Favorites] Bulk sync add failed for', playlist.id, result?.error)
+        failed++
+        console.error('[Favorites] Bulk sync add failed for', playlist.id, playlist.title, result?.error)
       }
     }
-    if (added > 0) {
+    // Surface partial failures explicitly — silent drops were the symptom in
+    // #68. Even after the state-write race is fixed, server-side errors can
+    // still cause individual adds to fail; the user needs to know which.
+    if (failed > 0) {
+      toastStore.error(t('favorites.syncBulkPartial', { added, failed, skipped }))
+    } else if (added > 0) {
       toastStore.success(t('favorites.syncBulkResult', { added, skipped }))
     } else if (skipped > 0) {
       toastStore.info(t('favorites.syncAllNoneAdded'))
@@ -276,6 +283,7 @@ async function syncAllFavoriteArtists() {
   isBulkSyncing.value = true
   let added = 0
   let skipped = 0
+  let failed = 0
   try {
     for (const artist of favoritesStore.favoriteArtists) {
       if (getArtistSyncEntry(artist.id)) {
@@ -294,10 +302,13 @@ async function syncAllFavoriteArtists() {
       if (result?.success) {
         added++
       } else {
-        console.error('[Favorites] Bulk artist sync add failed for', artist.id, result?.error)
+        failed++
+        console.error('[Favorites] Bulk artist sync add failed for', artist.id, artist.name, result?.error)
       }
     }
-    if (added > 0) {
+    if (failed > 0) {
+      toastStore.error(t('favorites.artistSyncBulkPartial', { added, failed, skipped }))
+    } else if (added > 0) {
       toastStore.success(t('favorites.artistSyncBulkResult', { added, skipped }))
     } else if (skipped > 0) {
       toastStore.info(t('favorites.artistSyncAllNoneAdded'))

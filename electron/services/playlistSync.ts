@@ -232,12 +232,24 @@ class PlaylistSyncEngine extends EventEmitter {
     }
   }
 
+  // Serialize all saveState calls via a Promise chain. Without this, the
+  // bulk-add path (Favorites → Sync all) fires saveState concurrently with
+  // fire-and-forget syncPlaylist's own saveState calls — both target the
+  // same .tmp sibling of safeWriteJson, racing on writeFile + rename and
+  // silently losing entries on Windows where the loser threw EBUSY. Each
+  // chained .then() captures a fresh JSON.stringify(this.state) snapshot
+  // after the previous rename has landed, so the last-write-wins property
+  // becomes deterministic and includes every push made up to that point (#68).
+  private savePromise: Promise<void> = Promise.resolve()
   private async saveState(): Promise<void> {
-    try {
-      await safeWriteJson(this.getStatePath(), this.state)
-    } catch (err) {
-      console.error('[PlaylistSync] Failed to save state:', err)
-    }
+    this.savePromise = this.savePromise.then(async () => {
+      try {
+        await safeWriteJson(this.getStatePath(), this.state)
+      } catch (err) {
+        console.error('[PlaylistSync] Failed to save state:', err)
+      }
+    })
+    return this.savePromise
   }
 
   private startScheduler(): void {
@@ -391,9 +403,20 @@ class PlaylistSyncEngine extends EventEmitter {
       throw new Error(`Playlist ${id} is already syncing`)
     }
 
-    // Limit concurrent syncs
+    // Limit concurrent syncs. Soft-skip if at cap — the 60s scheduler will
+    // retry the unscheduled ones once active syncs drain. Previously this
+    // threw, which under bulk-add flooded logs with ~47 errors per 50-add
+    // operation. Throwing here also broke the fire-and-forget callers (#68).
     if (this.activeSyncs.size >= 3) {
-      throw new Error('Maximum concurrent syncs reached (3)')
+      console.log(`[PlaylistSync] Skipping initial sync for ${id} — at concurrency cap; scheduler will retry`)
+      return {
+        playlistId: id,
+        newTracks: 0,
+        failedTracks: 0,
+        totalTracks: 0,
+        m3uPath: null,
+        error: null
+      }
     }
 
     this.activeSyncs.set(id, true)

@@ -201,12 +201,20 @@ class ArtistSyncEngine extends EventEmitter {
     }
   }
 
+  // Serialize all saveState calls via a Promise chain. Without this, the
+  // bulk-add path raced fire-and-forget syncArtist's own saveState calls on
+  // the shared safeWriteJson tmp file, silently losing entries on Windows.
+  // See playlistSync.ts for the full explanation (#68).
+  private savePromise: Promise<void> = Promise.resolve()
   private async saveState(): Promise<void> {
-    try {
-      await safeWriteJson(this.getStatePath(), this.state)
-    } catch (err) {
-      console.error('[ArtistSync] Failed to save state:', err)
-    }
+    this.savePromise = this.savePromise.then(async () => {
+      try {
+        await safeWriteJson(this.getStatePath(), this.state)
+      } catch (err) {
+        console.error('[ArtistSync] Failed to save state:', err)
+      }
+    })
+    return this.savePromise
   }
 
   private startScheduler(): void {
@@ -415,8 +423,18 @@ class ArtistSyncEngine extends EventEmitter {
     const artist = this.state.artists.find(a => a.id === id)
     if (!artist) throw new Error(`Artist ${id} not found`)
     if (this.activeSyncs.has(id)) throw new Error(`Artist ${id} is already syncing`)
+    // Soft-skip at the concurrency cap — the 60s scheduler retries skipped
+    // entries once active syncs drain. See playlistSync.ts for context (#68).
     if (this.activeSyncs.size >= 3) {
-      throw new Error('Maximum concurrent artist syncs reached (3)')
+      console.log(`[ArtistSync] Skipping initial sync for ${id} — at concurrency cap; scheduler will retry`)
+      return {
+        artistId: id,
+        newAlbums: 0,
+        newTracks: 0,
+        failedAlbums: 0,
+        totalAlbumsSeen: 0,
+        error: null
+      }
     }
 
     this.activeSyncs.set(id, true)
