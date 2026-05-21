@@ -33,6 +33,37 @@ interface ReleaseNotes {
 
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.7.4',
+    date: '2026-05-20',
+    items: [
+      'Editable sync entries (#69) -- Every synced-playlist and synced-artist card on the Sync page now has a pencil-icon button. Click it to rename the entry, change the sync schedule, change the download folder, or (for artists) switch first-sync mode between Subscribe-forward, Download-backlog, and From-a-date. The backend already supported all of these updates; this release exposes them in the UI.',
+      'Folder-rename safety -- Renaming a sync entry only affects FUTURE downloads. Files already on disk stay in their original folder; the edit dialog says so in-line so renaming never silently orphans an existing library.'
+    ]
+  },
+  {
+    version: '1.7.3',
+    date: '2026-05-20',
+    items: [
+      '"Sync all favourite playlists" dropped 20-30 of 50+ entries on Windows (#68) -- Both sync engines called saveState() from multiple paths without serializing the writes. During a bulk add, each new addPlaylist fired its own saveState AND a fire-and-forget sync whose own saveState checkpoints ran in the background — multiple writers raced on the shared .tmp sibling of safeWriteJson, and on Windows NTFS the torn writes silently dropped recently-pushed entries from disk while the in-memory state held all of them. Fixed by serializing every saveState through a single Promise chain so the next JSON.stringify(this.state) only runs after the previous rename has landed.',
+      'Soft-skip when 3-concurrent-sync cap is hit -- Previously the engines threw "Maximum concurrent syncs reached (3)" which under bulk add produced ~47 console errors per 50-favourite run and broke fire-and-forget callers. The over-cap path now returns a no-op result and lets the 60-second scheduler retry once active syncs drain.',
+      'Bulk "Sync all favourites" now surfaces failures -- Before, failures were console.error\'d but the toast only mentioned successes, leaving you blind to silent drops. The bulk handlers now count failed adds alongside added/skipped and show an explicit error toast when any add fails.'
+    ]
+  },
+  {
+    version: '1.7.2',
+    date: '2026-05-20',
+    items: [
+      'Sync froze mid-run when existing files were skipped (#67) -- v1.7.1 wired the user\'s "skip existing files" setting through to sync, which made the downloader\'s skip-existing path get exercised inside sync for the first time. That path emitted only \'progress\' (with status: completed) and never \'complete\' — but both playlistSync and artistSync resolve their per-track Promise on the \'complete\' event. Each skipped track silently stranded its worker for the full 5-minute timeout, and with 3-5 parallel workers all hitting skipped files, the whole sync pool stalled. Fix is one line in the downloader: the skip path now emits \'complete\' after \'progress\', matching the success path\'s contract.'
+    ]
+  },
+  {
+    version: '1.7.1',
+    date: '2026-05-19',
+    items: [
+      'Honor "skip existing files" in scheduled sync (#66) -- The playlist and artist sync engines built DownloadOptions without threading the user\'s overwriteFiles setting. The downloader then defaulted overwriteMode to \'overwrite\', re-downloading every track on first sync and clobbering existing files — destroying externally-applied ReplayGain tags and making sync far slower than ad-hoc downloads. Fix is purely wiring: both engines now pass overwriteMode: settings.overwriteFiles ?? \'no\' through to the downloader, so scheduled/unattended sync respects the user\'s explicit "skip existing" choice and never destroys files without opt-in.'
+    ]
+  },
+  {
     version: '1.7.0',
     date: '2026-05-15',
     items: [
