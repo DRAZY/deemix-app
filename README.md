@@ -108,7 +108,7 @@
 - **Auto-Update Checker** -- Notifies you on startup when a new version is available
 - **Download Progress in Title Bar** -- See overall download progress in the window title
 - **Settings Profiles** -- Save, apply, export, and import named settings configurations (Audiophile / Quick / Balanced built-ins plus your own)
-- **Backup & Restore** -- New in v1.7.6. A single Backup file captures your entire local app state with per-segment selection: settings, profiles, synced playlists, synced artists, favourites, and (optionally) credentials. Restore shows a preview of what's in the file before applying, with the same per-segment selector — partial restores supported.
+- **Backup Settings** -- New in v1.7.6 (labels fixed in v1.7.7). A single backup file captures your entire local app data with per-segment selection: App preferences, Download profiles, Synced playlists, Synced artists, Favourites, and (optionally) Login info. Restore shows a preview of what's in the file before applying, with the same per-segment selector — partial restores supported.
 
 ### Supported Languages
 
@@ -248,7 +248,7 @@ The Settings page offers deep customization organized into these categories:
 | **Spotify** | Client ID, Client Secret, fallback search toggle |
 | **Playlist Sync** | Add Spotify/Deezer playlists, set sync schedule, enable/disable |
 | **Profiles** | Save, apply, export, import named settings configurations |
-| **Backup & Restore** | Full app-state backup file with per-segment selection (settings · profiles · synced playlists · synced artists · favourites · credentials) on both export and restore |
+| **Backup Settings** | Full app-data backup file with per-segment selection (app preferences · download profiles · synced playlists · synced artists · favourites · login info) on both export and restore |
 
 ---
 
@@ -320,7 +320,7 @@ Build output is written to the `release/` directory.
 ```
 deemix-remastered/
 ├── src/                        # Vue frontend
-│   ├── components/             # Reusable UI components (20)
+│   ├── components/             # Reusable UI components (21)
 │   ├── composables/            # Composition functions
 │   │   ├── useContextMenu.ts       # Right-click menu handling
 │   │   ├── useKeyboardShortcuts.ts # Global keyboard shortcuts
