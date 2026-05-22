@@ -42,15 +42,6 @@ const whatsNew: ReleaseNotes[] = [
     ]
   },
   {
-    version: '1.7.6 / 1.7.7',
-    date: '2026-05-22',
-    items: [
-      'Backup and Restore Settings (#72) — new section at the bottom of Settings that saves a snapshot of your app data to a single file. Pick what to include on the way out and on the way back in: app preferences, download profiles, synced playlists, synced artists, favourites, and (optionally) login info. The Restore dialog previews what\'s in the file before applying so you don\'t apply the wrong one by mistake. Restoring sync state keeps your downloads intact — the engine treats restored entries as already-known instead of re-resolving every track. Old configuration files (from v1.7.5 and earlier) still import via a fallback.',
-      'Login info is off by default on both sides — the checkbox for Deezer ARL + Spotify credentials starts unticked for both save and restore, and ticking it triggers an extra confirmation. Sharing a backup file with credentials baked in is a footgun; this keeps it explicit.',
-      'v1.7.7 patch (same day) — the labels in the new section were rendering as raw locale keys (`settings.backup.title`, etc.) because the strings landed in the wrong namespace in the translation file. Fixed the nesting and simplified every label while we were there ("App preferences" instead of "Settings", "Login info" instead of "Credentials", etc.) so the section reads in plain English.'
-    ]
-  },
-  {
     version: '1.7.5',
     date: '2026-05-21',
     items: [
