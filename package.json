@@ -1,6 +1,6 @@
 {
   "name": "deemix-app",
-  "version": "1.7.7",
+  "version": "1.7.8",
   "description": "Modern Deezer music downloader",
   "author": {
     "name": "Team MAXIMUS",
@@ -56,7 +56,8 @@
     "lodash": "^4.18.0",
     "@xmldom/xmldom": "^0.8.13",
     "ip-address": "^10.1.1",
-    "follow-redirects": "^1.16.0"
+    "follow-redirects": "^1.16.0",
+    "engine.io-client": "^6.6.5"
   },
   "build": {
     "appId": "app.deemix.remastered",

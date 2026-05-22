@@ -101,7 +101,7 @@ function formatExportDate(iso: string): string {
 // we still allow the restore but warn the user that unknown segments will drop.
 const appVersionWarning = computed(() => {
   if (!restoreFile.value) return false
-  const current = '1.7.7'
+  const current = '1.7.8'
   // Naive string compare is fine for "newer than" — semver-major bumps would
   // produce a sortable string here too.
   return restoreFile.value.appVersion !== 'unknown'
@@ -157,18 +157,24 @@ async function doRestore() {
   isRestoring.value = true
   try {
     const result = await backupStore.applyBackup(restoreFile.value, restoreSelected.value)
-    surfaceRestoreResult(result)
     // Refresh the sync views so the UI reflects the new state immediately
     // instead of waiting for the next manual fetch.
     if (result.syncedPlaylists === 'ok') await syncStore.fetchPlaylists().catch(() => {})
     if (result.syncedArtists === 'ok') await artistSyncStore.fetchArtists().catch(() => {})
     if (result.favourites === 'ok') favoritesStore.loadFavorites()
-    closeRestoreModal()
+    surfaceRestoreResult(result)
   } catch (e: any) {
     console.error('[Backup] Restore failed:', e)
     toastStore.error(t('settings.backup.restoreFailed'))
   } finally {
+    // Close the modal AND clear restore state regardless of success/error. The
+    // toast (success/partial/error/nothing) carries the completion signal —
+    // leaving the modal up would hide it behind the overlay.
     isRestoring.value = false
+    showRestoreModal.value = false
+    restoreFile.value = null
+    restoreCounts.value = null
+    restoreFileName.value = ''
   }
 }
 
@@ -197,7 +203,7 @@ function surfaceRestoreResult(result: ApplyResult) {
 <template>
   <div class="space-y-6">
     <!-- Description line — the outer collapsible already renders the
-         "Backup Settings" title, so we don't duplicate it here. -->
+         "Backup and Restore Settings" title, so we don't duplicate it here. -->
     <p class="text-sm text-foreground-muted">{{ t('settings.backup.description') }}</p>
 
     <!-- Export block -->

@@ -33,12 +33,21 @@ interface ReleaseNotes {
 
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.7.8',
+    date: '2026-05-22',
+    items: [
+      'Restore-modal now closes on completion (and surfaces a confirmation toast). In v1.7.6/1.7.7 the Restore preview modal stayed on screen after clicking "Restore selected" — the close call ran before the in-flight flag had a chance to flip, so the function\'s own guard silently no-op\'d. Cleaned up the lifecycle so the modal always closes and the toast (success / partial / nothing / error) carries the completion signal.',
+      'Renamed the section to "Backup and Restore Settings" so it\'s self-describing — the feature both saves and restores, and the previous title only said half of it.',
+      'Closed Dependabot GHSA-58qx-3vcg-4xpx (CVE-2026-45736) — uninitialized-memory disclosure in `ws` (medium, CVSS 4.4). The vulnerable `ws@8.18.3` was pulled in transitively via `socket.io-client → engine.io-client`; pinned to `ws@^8.20.1` via the package.json overrides block.'
+    ]
+  },
+  {
     version: '1.7.6 / 1.7.7',
     date: '2026-05-22',
     items: [
-      'Backup Settings (#72) — new section at the bottom of Settings that saves a snapshot of your app data to a single file. Pick what to include on the way out and on the way back in: app preferences, download profiles, synced playlists, synced artists, favourites, and (optionally) login info. The Restore dialog previews what\'s in the file before applying so you don\'t apply the wrong one by mistake. Restoring sync state keeps your downloads intact — the engine treats restored entries as already-known instead of re-resolving every track. Old configuration files (from v1.7.5 and earlier) still import via a fallback.',
+      'Backup and Restore Settings (#72) — new section at the bottom of Settings that saves a snapshot of your app data to a single file. Pick what to include on the way out and on the way back in: app preferences, download profiles, synced playlists, synced artists, favourites, and (optionally) login info. The Restore dialog previews what\'s in the file before applying so you don\'t apply the wrong one by mistake. Restoring sync state keeps your downloads intact — the engine treats restored entries as already-known instead of re-resolving every track. Old configuration files (from v1.7.5 and earlier) still import via a fallback.',
       'Login info is off by default on both sides — the checkbox for Deezer ARL + Spotify credentials starts unticked for both save and restore, and ticking it triggers an extra confirmation. Sharing a backup file with credentials baked in is a footgun; this keeps it explicit.',
-      'v1.7.7 patch (same day) — the labels in the new Backup Settings section were rendering as raw locale keys (`settings.backup.title`, etc.) because the strings landed in the wrong namespace in the translation file. Fixed the nesting and simplified every label while we were there ("App preferences" instead of "Settings", "Login info" instead of "Credentials", etc.) so the section reads in plain English.'
+      'v1.7.7 patch (same day) — the labels in the new section were rendering as raw locale keys (`settings.backup.title`, etc.) because the strings landed in the wrong namespace in the translation file. Fixed the nesting and simplified every label while we were there ("App preferences" instead of "Settings", "Login info" instead of "Credentials", etc.) so the section reads in plain English.'
     ]
   },
   {

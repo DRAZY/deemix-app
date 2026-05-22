@@ -455,7 +455,7 @@
       "howToEnable": "How do I enable Spotify Features?"
     },
     "backup": {
-      "title": "Backup Settings",
+      "title": "Backup and Restore Settings",
       "description": "Save a snapshot of your app data, or restore one you saved earlier.",
       "createTitle": "Create a backup",
       "createSubtitle": "Pick what to include. Everything is on by default except your login info.",
