@@ -33,6 +33,14 @@ interface ReleaseNotes {
 
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.7.6',
+    date: '2026-05-22',
+    items: [
+      'Full Backup & Restore with per-segment selection (#72) -- New Backup & Restore section in Settings produces a single .deemix-backup.json file containing your entire local app state: settings, download-quality profiles, synced playlists, synced artists, favourites, and (optionally) credentials. On both export and restore you can tick exactly which segments to include — defaults are everything except credentials. The restore-side modal previews the file (export date, app version, per-segment counts) before anything is applied so you can spot the wrong file before clicking apply. Restoring sync state preserves the engine\'s known-track and last-synced timestamps, so a restore doesn\'t trigger a re-download of music already on disk. Replaces the previous Export/Import buttons (which only covered settings + profiles) — old configuration files still import via a fallback for backward-compat.',
+      'Credentials are opt-in on both sides -- The Credentials checkbox (Deezer ARL + Spotify client ID/secret/username) defaults OFF for both export and restore, and triggers a confirmation modal when ticked. Sharing a backup file with credentials baked in is a footgun; this keeps it explicit.'
+    ]
+  },
+  {
     version: '1.7.5',
     date: '2026-05-21',
     items: [
@@ -59,112 +67,29 @@ const whatsNew: ReleaseNotes[] = [
     ]
   },
   {
-    version: '1.7.2',
-    date: '2026-05-20',
+    version: '1.7.0–1.7.2',
+    date: '2026-05-15 — 2026-05-20',
     items: [
-      'Sync froze mid-run when existing files were skipped (#67) -- v1.7.1 wired the user\'s "skip existing files" setting through to sync, which made the downloader\'s skip-existing path get exercised inside sync for the first time. That path emitted only \'progress\' (with status: completed) and never \'complete\' — but both playlistSync and artistSync resolve their per-track Promise on the \'complete\' event. Each skipped track silently stranded its worker for the full 5-minute timeout, and with 3-5 parallel workers all hitting skipped files, the whole sync pool stalled. Fix is one line in the downloader: the skip path now emits \'complete\' after \'progress\', matching the success path\'s contract.'
+      'Sync robustness pass (#66, #67) -- Scheduled sync now respects the "skip existing files" setting (it was clobbering ReplayGain-tagged files on first sync), and the sync pool no longer freezes when the downloader skips already-on-disk tracks (the skip path was emitting `progress` but not `complete`, stranding workers for the full 5-minute timeout).',
+      'Stack hygiene -- Electron 35 → 39 plus axios/vite/postcss bumps and pinned transitive deps. Closed 40 Dependabot alerts across both releases. Pure runtime/build-tool refresh — no app-code changes.'
     ]
   },
   {
-    version: '1.7.1',
-    date: '2026-05-19',
+    version: '1.6.x',
+    date: '2026-05-14 — 2026-05-15',
     items: [
-      'Honor "skip existing files" in scheduled sync (#66) -- The playlist and artist sync engines built DownloadOptions without threading the user\'s overwriteFiles setting. The downloader then defaulted overwriteMode to \'overwrite\', re-downloading every track on first sync and clobbering existing files — destroying externally-applied ReplayGain tags and making sync far slower than ad-hoc downloads. Fix is purely wiring: both engines now pass overwriteMode: settings.overwriteFiles ?? \'no\' through to the downloader, so scheduled/unattended sync respects the user\'s explicit "skip existing" choice and never destroys files without opt-in.'
+      'Sync engine launch -- One-click sync for favourite playlists (#60) and a new artist sync engine that watches Deezer discographies and auto-pulls new releases (#61). Per-artist release-type filters (Albums / Singles / EPs / Compilations / Features). Subscribe-forward default so pinning a prolific artist doesn\'t pull a 200-album backlog.',
+      'Parallel downloads inside sync -- Sync now downloads tracks in parallel up to your `maxConcurrentDownloads` setting, ~3-5× faster on large playlists (400-track playlist: ~30 min → ~6 min at default 5).',
+      'Sync state durability -- Atomic state-file writes (staged .tmp + rename), corrupt-file quarantine on the next launch, sync-badge progress (`Syncing 12/87`), and one-click unfavourite / unpin affordances on cards.',
+      'Favourites import upgraded -- "Import from Deezer" now prunes favourites you\'ve un-liked on the Deezer side (#64); the Sync page flags entries whose source playlist/artist is no longer in your Deezer favourites.'
     ]
   },
   {
-    version: '1.7.0',
-    date: '2026-05-15',
+    version: 'Earlier (1.5.x and below)',
+    date: '< 2026-05-14',
     items: [
-      'Security: Electron 35 → 39 (final batch of stack hygiene) -- Closes the remaining 16 Dependabot alerts (5 high, 8 medium, 3 low) by bumping the Electron runtime. With v1.6.6 + v1.7.0 combined, every open vulnerability the project had is now closed — the repo reports zero vulnerabilities locally. None of the CVE-listed Electron APIs are used by this codebase (confirmed via grep before the bump), and zero native modules ship in the app bundle, so the runtime swap is metadata-only on our side — no code changes, no behavior changes.',
-      'Minor-version bump (1.7.0) because the underlying Chromium and Node runtimes moved several majors, even though our application code is unchanged.'
-    ]
-  },
-  {
-    version: '1.6.6',
-    date: '2026-05-15',
-    items: [
-      'Security: 24 Dependabot alerts closed via dependency bumps -- axios 1.6 → 1.15.2 (closes 14 alerts including 5 highs around prototype pollution, header injection, SSRF), vite 6.0 → 6.4.2 (closes 2 alerts including a high-severity arbitrary file read via the dev-server WebSocket), postcss 8.4 → 8.5.10 (closes 1 XSS alert), plus an overrides block pinning four transitive build-time deps (lodash, @xmldom/xmldom, ip-address, follow-redirects) for 7 more alerts including 4 highs. None of these are runtime-shipped in the app — this is a pure stack hygiene pass. No API changes, no behavior changes.',
-      'Electron 35 → 39 major bump deliberately deferred to v1.7.0 to keep this release\'s rollback surface clean.'
-    ]
-  },
-  {
-    version: '1.6.5',
-    date: '2026-05-15',
-    items: [
-      'Sync list could be silently lost (Windows) -- Both sync engines used a non-atomic file write for their state. If the process was killed mid-write (Windows Update reboot, antivirus, sudden power loss), the on-disk JSON could end up truncated; the next launch silently reset state to empty and the next save overwrote the corrupt-but-recoverable file with the empty default — destroying the user\'s pinned playlists and artists. Fixed with two surgical changes: state JSON is now staged to a .tmp sibling and atomically renamed into place (rename is atomic on NTFS / APFS / ext4), and any unreadable state file is renamed to a .corrupt-<timestamp> sibling before in-memory state resets, so the bytes survive for forensic recovery.',
-      'Affected user note -- If you launched a previous build and saw your sync list go empty, those bytes were already overwritten by the previous version and cannot be auto-recovered. From 1.6.5 forward, any future corruption event is preserved next to the live state file.'
-    ]
-  },
-  {
-    version: '1.6.4',
-    date: '2026-05-15',
-    items: [
-      'Remove from favorites, directly from the card -- Every playlist and artist card on the Favorites tabs now has a small X button in the top-left corner. Click it to remove the item from your local favorites cache; any sync entry sourced from that item is auto-removed too. Doesn\'t touch Deezer — re-importing will bring it back if it\'s still favorited on Deezer\'s side.',
-      'Sync / Pin buttons are now toggles -- The Sync button on playlist cards and the Pin to Sync button on artist cards used to flip to a disabled "Synced" / "Pinned" state once added. Both are now toggles — click again to remove just the sync entry while keeping the item in favorites. Hover the button to see "Unsync" / "Unpin" to confirm what the click will do.'
-    ]
-  },
-  {
-    version: '1.6.3',
-    date: '2026-05-15',
-    items: [
-      'Un-favorited playlists/artists no longer linger (#64) -- "Import from Deezer" was additive-only; now it also prunes locally-cached favorites that you\'ve un-liked on Deezer. The Sync page surfaces a "No longer in your Deezer favorites" notice on sync entries whose source has been un-favorited, with a one-click Remove. Manual sync entries (added directly via the Sync page, not via Favorites → Pin to Sync) are never auto-flagged.',
-      'Smarter Import toast -- Was "Imported N favorites"; now shows {imported / pruned / unchanged} plus a follow-up count of any sync entries that just went stale.'
-    ]
-  },
-  {
-    version: '1.6.2',
-    date: '2026-05-14',
-    items: [
-      'Sync is 3-5x Faster -- Playlist sync and artist sync now download tracks in parallel up to your configured maxConcurrentDownloads (default 5). Previously sync was serialized to one track at a time regardless of the setting — a 400-track playlist took ~30 minutes; it now takes ~6 minutes at the default, or ~3 minutes if you bump maxConcurrentDownloads to 10. Per-track retry semantics, success/failure aggregation, and the "only mark successfully-downloaded tracks as known" rule are all preserved.',
-      'Artist Sync Parallelism -- Each artist sync now downloads its album\'s tracks in parallel (within-album). The cross-album loop stays sequential so the "Album X/Y, currently downloading Z" progress UI still tells you which album is active.'
-    ]
-  },
-  {
-    version: '1.6.1',
-    date: '2026-05-14',
-    items: [
-      'Sync Badge Progress -- The "Syncing…" badge on favorite playlist and artist cards now shows the actual progress (e.g., "Syncing 12/87") so you can tell at a glance that the engine is working through the tracklist instead of just spinning. Behaviour fix: previously the badge gave no indication of progress for long-running syncs.',
-      'About Page Refresh -- Reorganized "What\'s New" by version with clear date stamps; older releases are summarized for readability.'
-    ]
-  },
-  {
-    version: '1.6.0',
-    date: '2026-05-14',
-    items: [
-      'Favorite Playlist One-Click Sync (#60) -- Each row on Favorites → Playlists now has a Sync button that pins the playlist to the sync engine with a 24-hour schedule. A new "Sync all favorite playlists" button at the top bulk-pins everything not already in sync, skipping duplicates. Each card shows a 5-state status badge (Syncing / Synced / Partial / Sync error / Sync pending).',
-      'Artist Sync Engine (#61) -- New parallel sync engine that watches pinned Deezer artists\' discographies and auto-downloads new releases on a schedule. Pin an artist from Favorites → Artists; the engine compares the artist\'s /albums against album IDs you\'ve already seen.',
-      'Subscribe-Forward First Sync (default) -- On first sync of a newly-pinned artist, the engine captures the current discography as "already known" without downloading anything. From that point forward, only NEW releases trigger downloads. Prevents accidentally pulling a 200-album backlog for prolific artists. Two other first-sync modes available: download-backlog and date-threshold.',
-      'Default Artist Filters -- Albums on, EPs on, Singles off, Compilations off, Features off. Configurable per artist at pin time.',
-      'Synced Artists Section on Sync Page -- Live progress per artist (shows the current album being downloaded), failed-album expansion, force re-check (right-click), enable/disable, and remove.'
-    ]
-  },
-  {
-    version: '1.5.8',
-    date: '2026-05-11',
-    items: [
-      'Missing Cover Art Fix -- Album, playlist, and artist cover images no longer get stuck as the music-note placeholder after a transient network blip. Cards now fall through to the next available cover size and reset cleanly when reused for a different item.',
-      'macOS Unsigned-Build Gatekeeper Fix -- Unsigned .dmg artifacts now carry a proper ad-hoc bundle signature so Gatekeeper offers the "Open Anyway" override in System Settings.'
-    ]
-  },
-  {
-    version: '1.5.7',
-    date: '2026-05-11',
-    items: [
-      'Deezer CDN Migration Fix -- Resolves the "getaddrinfo ENOTFOUND e-cdns-proxy-*.dzcdn.net" download error introduced when Deezer retired its legacy sharded track CDN. All downloads now go exclusively through the modern Media API.',
-      'Clearer Track-Unavailable Errors -- Error message now correctly distinguishes between a missing track and a CDN/DNS failure.'
-    ]
-  },
-  {
-    version: 'Earlier',
-    date: '< 2026-05-11',
-    items: [
-      'Playlist Sync (M3U, force full sync, large-playlist support, sync toast fix)',
-      'Link Analyzer (timeout protection, region-restricted fallback, clearer errors)',
-      'Browse & Discovery (New Releases page, Charts, Spotify public/private badge)',
-      'Downloads (statistics dashboard, duplicate album detection, Download Next, retry grouping, default concurrency increase to 5)',
-      'Metadata & Files (playlist cover artwork, compilation album fix, track number preservation, delete-files fix)',
-      'Refreshed app icon (cobalt + lime paper-cut design)'
+      'Foundational features -- Playlist Sync (M3U, force full sync, large-playlist support), Spotify→Deezer playlist conversion, Link Analyzer, Charts, New Releases, Downloads dashboard with retry grouping, refreshed app icon.',
+      'For per-version detail on these releases, see the GitHub Releases page: https://github.com/DRAZY/deemix-remastered/releases'
     ]
   }
 ]

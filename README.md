@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.7.5-blue" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.7.6-blue" />
   <img alt="Electron" src="https://img.shields.io/badge/Electron-39-47848F?logo=electron&logoColor=white" />
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
@@ -83,12 +83,14 @@
 - **Settings-Aware** -- Uses your configured quality, folder structure, and metadata settings
 - **Real-Time Progress** -- Live progress bars and status updates during sync
 - **One-Click Pin from Favorites** -- Each favorited playlist gets a **Sync** button + a 5-state status badge (Syncing X/Y, Synced, Partial, Sync error, Sync pending). A **Sync all favorite playlists** button at the top bulk-pins everything not already in sync.
+- **Bulk Sync at Any Scale** -- A single bulk endpoint imports all favourite playlists in one request, so libraries with hundreds of favourites no longer get truncated by per-IP rate limits (v1.7.5+)
+- **Editable Sync Entries** -- Every synced-playlist card has a pencil-icon button to rename the entry, change the sync schedule, or change the download folder (v1.7.4+)
 
 ### Artist Sync
 
 - **Auto-Download New Releases** -- Pin an artist; the engine watches `/artist/{id}/albums` on a schedule and auto-downloads anything new
 - **Three First-Sync Modes** -- `subscribe-forward` (default; safest — captures current discography as already-known without downloading anything, only future releases trigger downloads), `download-backlog` (download the entire filtered discography on first sync), `date-threshold` (download everything from a chosen release date forward)
-- **Per-Artist Filters** -- Choose which release types to pull. Defaults: Albums ✓, EPs ✓, Singles ✗, Compilations ✗, Features ✗
+- **Per-Artist Filters** -- Choose which release types to pull. Defaults: Albums ✓, EPs ✓, Singles ✗, Compilations ✗, Features ✗. Editable per artist from the Sync page (v1.7.5+) — toggle release types and set an optional "only download releases after" date threshold without touching the engine.
 - **One-Click Pin from Favorites** -- Each favorited artist gets a **Pin to Sync** button + the same 5-state status badge as playlist sync. A **Sync all favorite artists** button bulk-pins everything.
 - **Synced Artists Section on the Sync Page** -- Live per-artist progress (shows the current album being downloaded), failed-album expansion, force re-check (right-click), enable/disable, and remove.
 - **Concurrent Sync Cap** -- Max 3 artists syncing in parallel; per-track downloads respect your existing `maxConcurrentDownloads` setting
@@ -105,8 +107,8 @@
 - **Toast Notifications** -- Non-intrusive feedback for all user actions
 - **Auto-Update Checker** -- Notifies you on startup when a new version is available
 - **Download Progress in Title Bar** -- See overall download progress in the window title
-- **Export/Import Settings** -- Transfer settings between machines via JSON file (credentials excluded)
-- **Settings Profiles** -- Save, apply, export, and import named settings configurations
+- **Settings Profiles** -- Save, apply, export, and import named settings configurations (Audiophile / Quick / Balanced built-ins plus your own)
+- **Backup & Restore** -- New in v1.7.6. A single Backup file captures your entire local app state with per-segment selection: settings, profiles, synced playlists, synced artists, favourites, and (optionally) credentials. Restore shows a preview of what's in the file before applying, with the same per-segment selector — partial restores supported.
 
 ### Supported Languages
 
@@ -246,7 +248,7 @@ The Settings page offers deep customization organized into these categories:
 | **Spotify** | Client ID, Client Secret, fallback search toggle |
 | **Playlist Sync** | Add Spotify/Deezer playlists, set sync schedule, enable/disable |
 | **Profiles** | Save, apply, export, import named settings configurations |
-| **Export/Import** | Transfer settings between machines via JSON file |
+| **Backup & Restore** | Full app-state backup file with per-segment selection (settings · profiles · synced playlists · synced artists · favourites · credentials) on both export and restore |
 
 ---
 
@@ -329,13 +331,14 @@ deemix-remastered/
 │   │   └── deezerAPI.ts            # Deezer API wrapper with caching
 │   ├── stores/                 # Pinia state stores
 │   │   ├── authStore.ts            # Authentication & session
+│   │   ├── backupStore.ts          # Backup & Restore (#72)
 │   │   ├── downloadStore.ts        # Download queue management & history
 │   │   ├── favoritesStore.ts       # Favorites tracking & Deezer import
 │   │   ├── playerStore.ts          # Audio preview playback
 │   │   ├── profileStore.ts         # Settings profiles
 │   │   ├── settingsStore.ts        # User preferences & export/import
-│   │   ├── syncStore.ts            # Playlist sync state
-│   │   ├── artistSyncStore.ts      # Artist sync state
+│   │   ├── syncStore.ts            # Playlist sync state (bulk + restore)
+│   │   ├── artistSyncStore.ts      # Artist sync state (bulk + restore)
 │   │   └── toastStore.ts           # Notification system
 │   ├── types/                  # TypeScript type definitions
 │   └── views/                  # Page components (13 pages)
