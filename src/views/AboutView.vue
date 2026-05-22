@@ -33,11 +33,12 @@ interface ReleaseNotes {
 
 const whatsNew: ReleaseNotes[] = [
   {
-    version: '1.7.6',
+    version: '1.7.6 / 1.7.7',
     date: '2026-05-22',
     items: [
-      'Full Backup & Restore with per-segment selection (#72) -- New Backup & Restore section in Settings produces a single .deemix-backup.json file containing your entire local app state: settings, download-quality profiles, synced playlists, synced artists, favourites, and (optionally) credentials. On both export and restore you can tick exactly which segments to include — defaults are everything except credentials. The restore-side modal previews the file (export date, app version, per-segment counts) before anything is applied so you can spot the wrong file before clicking apply. Restoring sync state preserves the engine\'s known-track and last-synced timestamps, so a restore doesn\'t trigger a re-download of music already on disk. Replaces the previous Export/Import buttons (which only covered settings + profiles) — old configuration files still import via a fallback for backward-compat.',
-      'Credentials are opt-in on both sides -- The Credentials checkbox (Deezer ARL + Spotify client ID/secret/username) defaults OFF for both export and restore, and triggers a confirmation modal when ticked. Sharing a backup file with credentials baked in is a footgun; this keeps it explicit.'
+      'Backup Settings (#72) — new section at the bottom of Settings that saves a snapshot of your app data to a single file. Pick what to include on the way out and on the way back in: app preferences, download profiles, synced playlists, synced artists, favourites, and (optionally) login info. The Restore dialog previews what\'s in the file before applying so you don\'t apply the wrong one by mistake. Restoring sync state keeps your downloads intact — the engine treats restored entries as already-known instead of re-resolving every track. Old configuration files (from v1.7.5 and earlier) still import via a fallback.',
+      'Login info is off by default on both sides — the checkbox for Deezer ARL + Spotify credentials starts unticked for both save and restore, and ticking it triggers an extra confirmation. Sharing a backup file with credentials baked in is a footgun; this keeps it explicit.',
+      'v1.7.7 patch (same day) — the labels in the new Backup Settings section were rendering as raw locale keys (`settings.backup.title`, etc.) because the strings landed in the wrong namespace in the translation file. Fixed the nesting and simplified every label while we were there ("App preferences" instead of "Settings", "Login info" instead of "Credentials", etc.) so the section reads in plain English.'
     ]
   },
   {

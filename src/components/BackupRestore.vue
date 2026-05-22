@@ -101,7 +101,7 @@ function formatExportDate(iso: string): string {
 // we still allow the restore but warn the user that unknown segments will drop.
 const appVersionWarning = computed(() => {
   if (!restoreFile.value) return false
-  const current = '1.7.6'
+  const current = '1.7.7'
   // Naive string compare is fine for "newer than" — semver-major bumps would
   // produce a sortable string here too.
   return restoreFile.value.appVersion !== 'unknown'
@@ -196,11 +196,9 @@ function surfaceRestoreResult(result: ApplyResult) {
 
 <template>
   <div class="space-y-6">
-    <!-- Section header -->
-    <div>
-      <h2 class="text-lg font-semibold mb-1">{{ t('settings.backup.title') }}</h2>
-      <p class="text-sm text-foreground-muted">{{ t('settings.backup.description') }}</p>
-    </div>
+    <!-- Description line — the outer collapsible already renders the
+         "Backup Settings" title, so we don't duplicate it here. -->
+    <p class="text-sm text-foreground-muted">{{ t('settings.backup.description') }}</p>
 
     <!-- Export block -->
     <div class="rounded-lg bg-background-main border border-zinc-800 p-4 space-y-3">
