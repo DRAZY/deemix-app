@@ -849,6 +849,15 @@ export class DeemixServer extends EventEmitter {
         }
         break
 
+      case '/api/sync/playlists/restore':
+        if (req.method === 'POST') {
+          await this.handleRestoreSyncPlaylists(req, res)
+        } else {
+          res.writeHead(405)
+          res.end('Method Not Allowed')
+        }
+        break
+
       case '/api/sync/run':
         await this.handleRunSync(req, res)
         break
@@ -889,6 +898,15 @@ export class DeemixServer extends EventEmitter {
       case '/api/sync/artists/bulk':
         if (req.method === 'POST') {
           await this.handleAddSyncArtistsBulk(req, res)
+        } else {
+          res.writeHead(405)
+          res.end('Method Not Allowed')
+        }
+        break
+
+      case '/api/sync/artists/restore':
+        if (req.method === 'POST') {
+          await this.handleRestoreSyncArtists(req, res)
         } else {
           res.writeHead(405)
           res.end('Method Not Allowed')
@@ -3280,6 +3298,31 @@ export class DeemixServer extends EventEmitter {
     }
   }
 
+  // Restore — replaces the entire playlist sync state from a backup file.
+  // Used by the backup/restore feature (#72). CRITICAL: does NOT fire initial
+  // syncs for restored entries; the backup carries `knownTrackIds` and
+  // `lastSyncAt`, so the engine should treat restored entries as already-known.
+  private async handleRestoreSyncPlaylists(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const playlists = Array.isArray(body?.playlists) ? body.playlists : null
+      if (!playlists) {
+        this.sendJSON(res, { error: 'Missing or invalid playlists array' }, 400)
+        return
+      }
+      // Same MAX_BULK_ITEMS ceiling as the bulk-add path — guards against
+      // megabatches pushing past MAX_BODY_SIZE.
+      if (playlists.length > MAX_BULK_ITEMS) {
+        this.sendJSON(res, { error: `Restore batch too large; chunk to <=${MAX_BULK_ITEMS} items per request` }, 400)
+        return
+      }
+      const result = await playlistSync.replaceState(playlists)
+      this.sendJSON(res, { success: true, ...result })
+    } catch (error: any) {
+      this.sendJSON(res, { error: error.message || 'Failed to restore playlists' }, 500)
+    }
+  }
+
   private async handleUpdateSyncPlaylist(req: IncomingMessage, res: ServerResponse): Promise<void> {
     try {
       const body = await this.parseBody(req)
@@ -3491,6 +3534,27 @@ export class DeemixServer extends EventEmitter {
       this.sendJSON(res, { success: true, added, failed, results })
     } catch (error: any) {
       this.sendJSON(res, { error: error.message || 'Failed to bulk-add artists' }, 500)
+    }
+  }
+
+  // Restore — see handleRestoreSyncPlaylists for the contract; same shape for
+  // artists (#72).
+  private async handleRestoreSyncArtists(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const artists = Array.isArray(body?.artists) ? body.artists : null
+      if (!artists) {
+        this.sendJSON(res, { error: 'Missing or invalid artists array' }, 400)
+        return
+      }
+      if (artists.length > MAX_BULK_ITEMS) {
+        this.sendJSON(res, { error: `Restore batch too large; chunk to <=${MAX_BULK_ITEMS} items per request` }, 400)
+        return
+      }
+      const result = await artistSync.replaceState(artists)
+      this.sendJSON(res, { success: true, ...result })
+    } catch (error: any) {
+      this.sendJSON(res, { error: error.message || 'Failed to restore artists' }, 500)
     }
   }
 

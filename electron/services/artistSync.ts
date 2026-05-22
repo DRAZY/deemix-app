@@ -369,6 +369,49 @@ class ArtistSyncEngine extends EventEmitter {
     return results
   }
 
+  // See playlistSync.replaceState — same contract, applied to artist sync.
+  // Backup/restore (#72) preserves knownAlbumIds + lastSyncAt verbatim so the
+  // engine does NOT re-resolve every album or schedule everything immediately
+  // after restore.
+  async replaceState(artists: any[]): Promise<{ accepted: number; rejected: number }> {
+    if (!Array.isArray(artists)) {
+      return { accepted: 0, rejected: 0 }
+    }
+    let rejected = 0
+    const cleaned: SyncedArtist[] = []
+    for (const raw of artists) {
+      if (!raw || typeof raw !== 'object') { rejected++; continue }
+      if (!raw.id || !raw.sourceArtistId) { rejected++; continue }
+      const entry: SyncedArtist = {
+        id: String(raw.id),
+        source: 'deezer',
+        sourceArtistId: String(raw.sourceArtistId),
+        sourceArtistName: String(raw.sourceArtistName ?? ''),
+        sourceArtistUrl: String(raw.sourceArtistUrl ?? `https://www.deezer.com/artist/${raw.sourceArtistId}`),
+        schedule: raw.schedule || '24h',
+        enabled: raw.enabled !== false,
+        lastSyncAt: raw.lastSyncAt ?? null,
+        lastSyncStatus: raw.lastSyncStatus ?? null,
+        lastSyncError: raw.lastSyncError ?? null,
+        knownAlbumIds: Array.isArray(raw.knownAlbumIds) ? raw.knownAlbumIds.map(String) : [],
+        failedAlbums: Array.isArray(raw.failedAlbums) ? raw.failedAlbums : [],
+        totalAlbumsDownloaded: Number(raw.totalAlbumsDownloaded) || 0,
+        totalTracksDownloaded: Number(raw.totalTracksDownloaded) || 0,
+        downloadPath: String(raw.downloadPath ?? ''),
+        filters: { ...DEFAULT_ARTIST_FILTERS, ...(raw.filters || {}) },
+        firstSyncMode: raw.firstSyncMode || 'subscribe-forward',
+        createdAt: raw.createdAt || new Date().toISOString(),
+        origin: raw.origin === 'favorites' ? 'favorites' : 'manual',
+        lastSeenInFavoritesAt: raw.lastSeenInFavoritesAt ?? null
+      }
+      cleaned.push(entry)
+    }
+    this.state.artists = cleaned
+    await this.saveState()
+    this.emit('artists:changed', this.state.artists)
+    return { accepted: cleaned.length, rejected }
+  }
+
   async removeArtist(id: string): Promise<void> {
     this.state.artists = this.state.artists.filter(a => a.id !== id)
     this.activeSyncs.delete(id)

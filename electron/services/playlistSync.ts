@@ -401,6 +401,57 @@ class PlaylistSyncEngine extends EventEmitter {
     return results
   }
 
+  // Replace the entire in-memory playlist-sync state with a passed-in array,
+  // persist once, emit once. Used by the backup/restore feature (#72) — the
+  // critical invariant is that we do NOT fire initial syncs for restored
+  // entries, because the backup already carries `knownTrackIds` and
+  // `lastSyncAt`; firing initial syncs would re-resolve every track and
+  // schedule everything for immediate re-download.
+  //
+  // Per-entry shape is validated minimally (id + source + sourcePlaylistId).
+  // Entries failing validation are dropped (not throwing the whole batch).
+  async replaceState(playlists: any[]): Promise<{ accepted: number; rejected: number }> {
+    if (!Array.isArray(playlists)) {
+      return { accepted: 0, rejected: 0 }
+    }
+    let rejected = 0
+    const cleaned: SyncedPlaylist[] = []
+    for (const raw of playlists) {
+      if (!raw || typeof raw !== 'object') { rejected++; continue }
+      if (!raw.id || !raw.source || !raw.sourcePlaylistId) { rejected++; continue }
+      if (raw.source !== 'spotify' && raw.source !== 'deezer') { rejected++; continue }
+      // Backfill any optional fields added in later versions so the engine
+      // doesn't trip over older backups.
+      const entry: SyncedPlaylist = {
+        id: String(raw.id),
+        source: raw.source,
+        sourcePlaylistId: String(raw.sourcePlaylistId),
+        sourcePlaylistName: String(raw.sourcePlaylistName ?? ''),
+        sourcePlaylistUrl: String(raw.sourcePlaylistUrl ?? ''),
+        schedule: raw.schedule || '24h',
+        enabled: raw.enabled !== false,
+        lastSyncAt: raw.lastSyncAt ?? null,
+        lastSyncStatus: raw.lastSyncStatus ?? null,
+        lastSyncError: raw.lastSyncError ?? null,
+        knownTrackIds: Array.isArray(raw.knownTrackIds) ? raw.knownTrackIds.map(String) : [],
+        failedTracks: Array.isArray(raw.failedTracks) ? raw.failedTracks : [],
+        totalTracksDownloaded: Number(raw.totalTracksDownloaded) || 0,
+        m3uPath: raw.m3uPath ?? null,
+        downloadPath: String(raw.downloadPath ?? ''),
+        createdAt: raw.createdAt || new Date().toISOString(),
+        origin: raw.origin === 'favorites' ? 'favorites' : 'manual',
+        lastSeenInFavoritesAt: raw.lastSeenInFavoritesAt ?? null
+      }
+      cleaned.push(entry)
+    }
+    this.state.playlists = cleaned
+    // Preserve activeProfileId and lastFavoritesRefreshAt if the engine had
+    // them — those are install-local and shouldn't be wiped by restore.
+    await this.saveState()
+    this.emit('playlists:changed', this.state.playlists)
+    return { accepted: cleaned.length, rejected }
+  }
+
   async removePlaylist(id: string): Promise<void> {
     this.state.playlists = this.state.playlists.filter(p => p.id !== id)
     this.activeSyncs.delete(id)

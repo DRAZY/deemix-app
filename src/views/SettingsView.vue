@@ -7,6 +7,7 @@ import { useToastStore } from '../stores/toastStore'
 import { SUPPORTED_LOCALES, setLocale, getCurrentLocale } from '../i18n'
 import FlagIcon from '../components/FlagIcon.vue'
 import ProfileSelector from '../components/ProfileSelector.vue'
+import BackupRestore from '../components/BackupRestore.vue'
 import { useContextMenu } from '../composables/useContextMenu'
 
 const { t } = useI18n()
@@ -29,7 +30,8 @@ const sectionSearchTerms: Record<string, string[]> = {
   tags: ['tags', 'id3', 'title', 'artist', 'album', 'genre', 'year', 'track number', 'disc', 'isrc', 'bpm', 'lyrics', 'composer', 'copyright'],
   other: ['other', 'update', 'compilation', 'separator', 'null', 'id3v1', 'various artists', 'casing', 'date format', 'preview', 'volume'],
   accounts: ['account', 'deezer', 'arl', 'login', 'token', 'authentication'],
-  spotify: ['spotify', 'client', 'secret', 'import', 'playlist', 'username']
+  spotify: ['spotify', 'client', 'secret', 'import', 'playlist', 'username'],
+  backup: ['backup', 'restore', 'export', 'import', 'recover', 'snapshot', 'segments', 'profile', 'sync', 'favourites', 'favorites', 'credentials', 'migrate']
 }
 
 const filteredSections = computed(() => {
@@ -153,7 +155,10 @@ const expandedSections = ref({
   tags: false,
   other: false,
   accounts: true,
-  spotify: true
+  spotify: true,
+  // Closed by default so it doesn't dominate the settings page; users open it
+  // intentionally when they need to back up or restore (#72).
+  backup: false
 })
 
 function toggleSection(section: keyof typeof expandedSections.value) {
@@ -1932,6 +1937,33 @@ function saveNow() {
             {{ t('settings.spotify.credentialsHelp') }}
           </p>
         </div>
+      </div>
+    </section>
+
+    <!-- Backup & Restore (#72) — last section before the destructive Reset
+         button so users naturally see "back up first" if they're considering
+         a reset. -->
+    <section v-if="isSectionVisible('backup')" class="card">
+      <h2
+        @click="toggleSection('backup')"
+        class="text-lg font-semibold border-b border-zinc-700 pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
+      >
+        <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+        {{ t('settings.backup.title') }}
+        <svg
+          class="w-4 h-4 ml-auto transition-transform"
+          :class="{ 'rotate-180': expandedSections.backup }"
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </h2>
+
+      <div v-show="expandedSections.backup" class="pt-6">
+        <BackupRestore />
       </div>
     </section>
 
