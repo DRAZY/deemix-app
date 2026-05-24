@@ -152,6 +152,12 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
   <em>Settings — Quick presets, custom profiles, export/import, and 8 color themes</em>
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/favorites-artists.png" alt="Favorites - Favorite Artists with sync state" width="800" />
+  <br />
+  <em>Favorites — Pull your Deezer favorites locally, pin individual artists to sync on a schedule, and run a one-click "Sync all favorite artists" pass. Per-artist "Pinned / Synced" pills show what's tracked; the queue panel on the right reports live per-album progress.</em>
+</p>
+
 ---
 
 ## Downloads
