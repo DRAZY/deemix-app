@@ -301,6 +301,7 @@
       "comma": "Virgule (,)",
       "slash": "Barre oblique (/)",
       "semicolon": "Point-virgule (;)",
+      "semicolonSpace": "Point-virgule + espace (; )",
       "ampersand": "Esperluette (&)"
     },
     "featOptions": {

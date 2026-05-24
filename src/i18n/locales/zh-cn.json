@@ -301,6 +301,7 @@
       "comma": "逗号 (,)",
       "slash": "斜杠 (/)",
       "semicolon": "分号 (;)",
+      "semicolonSpace": "分号 + 空格 (; )",
       "ampersand": "和号 (&)"
     },
     "featOptions": {

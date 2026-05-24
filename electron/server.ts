@@ -306,7 +306,7 @@ function validateDownloadPath(pathStr: string): boolean {
 type OverwriteMode = 'no' | 'overwrite' | 'rename'
 
 // Other settings types
-type ArtistSeparator = 'standard' | 'comma' | 'slash' | 'semicolon' | 'ampersand'
+type ArtistSeparator = 'standard' | 'comma' | 'slash' | 'semicolon' | 'semicolonSpace' | 'ampersand'
 type DateFormat = 'YYYY-MM-DD' | 'DD-MM-YYYY' | 'MM-DD-YYYY' | 'YYYY' | 'DD/MM/YYYY' | 'MM/DD/YYYY'
 type FeaturedArtistsHandling = 'nothing' | 'remove' | 'moveToTitle' | 'removeFromTitle'
 type CasingOption = 'unchanged' | 'lowercase' | 'uppercase' | 'titlecase' | 'sentencecase'
@@ -2125,7 +2125,7 @@ export class DeemixServer extends EventEmitter {
 
       // Validate artistSeparator
       if (body.artistSeparator !== undefined) {
-        const validSeparators: ArtistSeparator[] = ['standard', 'comma', 'slash', 'semicolon', 'ampersand']
+        const validSeparators: ArtistSeparator[] = ['standard', 'comma', 'slash', 'semicolon', 'semicolonSpace', 'ampersand']
         if (validSeparators.includes(body.artistSeparator)) {
           validatedSettings.artistSeparator = body.artistSeparator
         }

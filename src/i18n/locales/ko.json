@@ -301,6 +301,7 @@
       "comma": "쉼표 (,)",
       "slash": "슬래시 (/)",
       "semicolon": "세미콜론 (;)",
+      "semicolonSpace": "세미콜론 + 공백 (; )",
       "ampersand": "앰퍼샌드 (&)"
     },
     "featOptions": {

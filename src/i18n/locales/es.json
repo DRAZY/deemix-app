@@ -301,6 +301,7 @@
       "comma": "Coma (,)",
       "slash": "Barra (/)",
       "semicolon": "Punto y coma (;)",
+      "semicolonSpace": "Punto y coma + espacio (; )",
       "ampersand": "Ampersand (&)"
     },
     "featOptions": {

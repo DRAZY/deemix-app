@@ -335,6 +335,61 @@ export const useProfileStore = defineStore('profiles', () => {
     }
   }
 
+  // Restore profiles from a backup, deduplicating by name. Custom-name match
+  // overwrites in place (preserves id + createdAt; bumps updatedAt). Built-in
+  // name match falls back to a "(Restored)" suffix so the immutable preset is
+  // not clobbered. saveProfiles is called once after the full pass.
+  function applyBackupProfiles(incoming: SettingsProfile[]): { created: number; overwritten: number; renamed: number } {
+    const result = { created: 0, overwritten: 0, renamed: 0 }
+    if (!Array.isArray(incoming)) return result
+
+    const now = new Date().toISOString()
+    const builtInNames = new Set(BUILT_IN_PROFILES.map(p => p.name))
+
+    for (const p of incoming) {
+      if (!p || typeof p.name !== 'string' || !p.settings) continue
+
+      const mergedSettings = deepMerge(extractProfileSettings(defaultSettings), p.settings as Partial<ProfileSettings>)
+      const existing = profiles.value.find(local => !local.isBuiltIn && local.name === p.name)
+
+      if (existing) {
+        existing.settings = mergedSettings
+        existing.description = typeof p.description === 'string' ? p.description : existing.description
+        existing.updatedAt = now
+        result.overwritten++
+        continue
+      }
+
+      if (builtInNames.has(p.name)) {
+        profiles.value.push({
+          id: generateId(),
+          name: `${p.name} (Restored)`,
+          description: typeof p.description === 'string' ? p.description : '',
+          isBuiltIn: false,
+          createdAt: now,
+          updatedAt: now,
+          settings: mergedSettings
+        })
+        result.renamed++
+        continue
+      }
+
+      profiles.value.push({
+        id: generateId(),
+        name: p.name,
+        description: typeof p.description === 'string' ? p.description : '',
+        isBuiltIn: false,
+        createdAt: typeof p.createdAt === 'string' ? p.createdAt : now,
+        updatedAt: now,
+        settings: mergedSettings
+      })
+      result.created++
+    }
+
+    saveProfiles()
+    return result
+  }
+
   function resetToProfile() {
     if (activeProfileId.value) {
       applyProfile(activeProfileId.value)
@@ -357,6 +412,7 @@ export const useProfileStore = defineStore('profiles', () => {
     renameProfile,
     exportProfile,
     importProfile,
+    applyBackupProfiles,
     resetToProfile
   }
 })

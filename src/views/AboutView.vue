@@ -33,6 +33,14 @@ interface ReleaseNotes {
 
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.7.9',
+    date: '2026-05-24',
+    items: [
+      'Restore-from-backup no longer duplicates profiles when the name already exists. Before, restoring a backup whose profiles segment contained a name that already lived locally pushed a fresh copy with a new id, so you ended up with two identical entries (and a third on the next restore). Profile restore now matches by name: a custom-name collision overwrites in place — same id, same createdAt, fresh settings + updatedAt — so re-running the same backup converges to the same end state instead of multiplying. Backup-profile names that happen to collide with a built-in preset (e.g. "Audiophile") fall back to a "(Restored)" suffix so the immutable preset is never clobbered.',
+      'New "Semicolon + space" artist-separator option (issue #73). The existing "Semicolon" choice still emits ";" with no space — non-breaking for anyone already on it — and the new option emits "; " (semicolon followed by a space) for users who want the spaced form that original Deemix has. Translated into all 21 UI languages.'
+    ]
+  },
+  {
     version: '1.7.8',
     date: '2026-05-22',
     items: [

@@ -352,6 +352,7 @@
       "comma": "Зарез (,)",
       "slash": "Коса црта (/)",
       "semicolon": "Тачка зарез (;)",
+      "semicolonSpace": "Тачка-зарез + размак (; )",
       "ampersand": "Амперсанд (&)"
     },
     "featOptions": {

@@ -301,6 +301,7 @@
       "comma": "Przecinek (,)",
       "slash": "Ukośnik (/)",
       "semicolon": "Średnik (;)",
+      "semicolonSpace": "Średnik + spacja (; )",
       "ampersand": "Ampersand (&)"
     },
     "featOptions": {

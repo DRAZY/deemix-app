@@ -301,6 +301,7 @@
       "comma": "Kuwit (,)",
       "slash": "Slash (/)",
       "semicolon": "Semicolon (;)",
+      "semicolonSpace": "Tuldok-kuwit + espasyo (; )",
       "ampersand": "Ampersand (&)"
     },
     "featOptions": {

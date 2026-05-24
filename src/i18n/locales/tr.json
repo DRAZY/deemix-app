@@ -301,6 +301,7 @@
       "comma": "Virgül (,)",
       "slash": "Eğik çizgi (/)",
       "semicolon": "Noktalı virgül (;)",
+      "semicolonSpace": "Noktalı virgül + boşluk (; )",
       "ampersand": "Ve işareti (&)"
     },
     "featOptions": {

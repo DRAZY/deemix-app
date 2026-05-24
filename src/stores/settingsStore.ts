@@ -7,7 +7,7 @@ export type ColorTheme = 'violet' | 'spotify' | 'rose' | 'ocean' | 'sunset' | 'm
 export type OverwriteMode = 'no' | 'overwrite' | 'rename'
 
 // Other settings types
-export type ArtistSeparator = 'standard' | 'comma' | 'slash' | 'semicolon' | 'ampersand'
+export type ArtistSeparator = 'standard' | 'comma' | 'slash' | 'semicolon' | 'semicolonSpace' | 'ampersand'
 export type DateFormat = 'YYYY-MM-DD' | 'DD-MM-YYYY' | 'MM-DD-YYYY' | 'YYYY' | 'DD/MM/YYYY' | 'MM/DD/YYYY'
 export type FeaturedArtistsHandling = 'nothing' | 'remove' | 'moveToTitle' | 'removeFromTitle'
 export type CasingOption = 'unchanged' | 'lowercase' | 'uppercase' | 'titlecase' | 'sentencecase'

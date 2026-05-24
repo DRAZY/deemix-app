@@ -66,7 +66,7 @@ export interface AlbumCoverSettings {
   jpegImageQuality: number
 }
 
-export type ArtistSeparator = 'standard' | 'comma' | 'slash' | 'semicolon' | 'ampersand'
+export type ArtistSeparator = 'standard' | 'comma' | 'slash' | 'semicolon' | 'semicolonSpace' | 'ampersand'
 export type DateFormat = 'YYYY-MM-DD' | 'DD-MM-YYYY' | 'MM-DD-YYYY' | 'YYYY' | 'DD/MM/YYYY' | 'MM/DD/YYYY'
 
 export type FeaturedArtistsHandling = 'nothing' | 'remove' | 'moveToTitle' | 'removeFromTitle'
@@ -1820,6 +1820,7 @@ export class Downloader extends EventEmitter {
         'comma': ',',
         'slash': '/',
         'semicolon': ';',
+        'semicolonSpace': '; ',
         'ampersand': ' & '
       }
       const separator = separatorMap[artistSeparator] || ', '
@@ -2231,6 +2232,7 @@ export class Downloader extends EventEmitter {
         'comma': ',',
         'slash': '/',
         'semicolon': ';',
+        'semicolonSpace': '; ',
         'ampersand': ' & '
       }
       const separator = separatorMap[artistSeparator] || ', '

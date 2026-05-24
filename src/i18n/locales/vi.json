@@ -352,6 +352,7 @@
       "comma": "Dấu phẩy (,)",
       "slash": "Dấu gạch chéo (/)",
       "semicolon": "Dấu chấm phẩy (;)",
+      "semicolonSpace": "Dấu chấm phẩy + khoảng trắng (; )",
       "ampersand": "Dấu và (&)"
     },
     "featOptions": {

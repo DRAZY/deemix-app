@@ -301,6 +301,7 @@
       "comma": "Запятая (,)",
       "slash": "Слэш (/)",
       "semicolon": "Точка с запятой (;)",
+      "semicolonSpace": "Точка с запятой + пробел (; )",
       "ampersand": "Амперсанд (&)"
     },
     "featOptions": {

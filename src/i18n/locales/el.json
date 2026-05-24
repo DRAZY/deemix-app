@@ -301,6 +301,7 @@
       "comma": "Κόμμα (,)",
       "slash": "Κάθετος (/)",
       "semicolon": "Ερωτηματικό (;)",
+      "semicolonSpace": "Άνω τελεία + κενό (; )",
       "ampersand": "Ampersand (&)"
     },
     "featOptions": {

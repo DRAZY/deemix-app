@@ -412,6 +412,7 @@
       "comma": "Comma (,)",
       "slash": "Slash (/)",
       "semicolon": "Semicolon (;)",
+      "semicolonSpace": "Semicolon + space (; )",
       "ampersand": "Ampersand (&)"
     },
     "featOptions": {

@@ -1622,6 +1622,7 @@ function saveNow() {
             <option value="comma">{{ t('settings.separatorOptions.comma') }}</option>
             <option value="slash">{{ t('settings.separatorOptions.slash') }}</option>
             <option value="semicolon">{{ t('settings.separatorOptions.semicolon') }}</option>
+            <option value="semicolonSpace">{{ t('settings.separatorOptions.semicolonSpace') }}</option>
             <option value="ampersand">{{ t('settings.separatorOptions.ampersand') }}</option>
           </select>
         </div>

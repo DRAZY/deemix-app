@@ -301,6 +301,7 @@
       "comma": "فاصلة (,)",
       "slash": "شرطة مائلة (/)",
       "semicolon": "فاصلة منقوطة (;)",
+      "semicolonSpace": "فاصلة منقوطة + مسافة (; )",
       "ampersand": "علامة العطف (&)"
     },
     "featOptions": {

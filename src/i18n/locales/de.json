@@ -301,6 +301,7 @@
       "comma": "Komma (,)",
       "slash": "Schrägstrich (/)",
       "semicolon": "Semikolon (;)",
+      "semicolonSpace": "Semikolon + Leerzeichen (; )",
       "ampersand": "Und-Zeichen (&)"
     },
     "featOptions": {

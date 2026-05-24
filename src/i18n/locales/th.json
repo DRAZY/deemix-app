@@ -352,6 +352,7 @@
       "comma": "จุลภาค (,)",
       "slash": "ทับ (/)",
       "semicolon": "อัฒภาค (;)",
+      "semicolonSpace": "อัฒภาค + เว้นวรรค (; )",
       "ampersand": "เครื่องหมายและ (&)"
     },
     "featOptions": {

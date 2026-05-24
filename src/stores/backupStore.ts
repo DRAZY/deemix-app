@@ -86,7 +86,7 @@ export interface ApplyResult {
   errors: Partial<Record<SegmentKey, string>>
 }
 
-const BACKUP_APP_VERSION = '1.7.8'
+const BACKUP_APP_VERSION = '1.7.9'
 const FAVORITES_LOCALSTORAGE_KEY = 'favorites'
 
 export const useBackupStore = defineStore('backup', () => {
@@ -293,11 +293,10 @@ export const useBackupStore = defineStore('backup', () => {
 
       if (selected.profiles && file.segments.profiles) {
         try {
-          for (const p of file.segments.profiles) {
-            if (p && p.name && p.settings) {
-              profileStore.importProfile(JSON.stringify({ type: 'deemix-profile', version: 1, profile: p }))
-            }
-          }
+          // Dedup by name: custom-name match overwrites in place, built-in
+          // name match falls back to a "(Restored)" suffix. saveProfiles fires
+          // once at the end of the pass (not per-iteration).
+          profileStore.applyBackupProfiles(file.segments.profiles)
           result.profiles = 'ok'
         } catch (e: any) {
           result.profiles = 'error'

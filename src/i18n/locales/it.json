@@ -301,6 +301,7 @@
       "comma": "Virgola (,)",
       "slash": "Barra (/)",
       "semicolon": "Punto e virgola (;)",
+      "semicolonSpace": "Punto e virgola + spazio (; )",
       "ampersand": "E commerciale (&)"
     },
     "featOptions": {

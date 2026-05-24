@@ -352,6 +352,7 @@
       "comma": "逗號（,）",
       "slash": "斜線（/）",
       "semicolon": "分號（;）",
+      "semicolonSpace": "分號 + 空格 (; )",
       "ampersand": "和號（&）"
     },
     "featOptions": {

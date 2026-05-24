@@ -301,6 +301,7 @@
       "comma": "Zarez (,)",
       "slash": "Kosa crta (/)",
       "semicolon": "Točka-zarez (;)",
+      "semicolonSpace": "Točka-zarez + razmak (; )",
       "ampersand": "Ampersand (&)"
     },
     "featOptions": {

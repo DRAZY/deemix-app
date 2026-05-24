@@ -301,6 +301,7 @@
       "comma": "Koma (,)",
       "slash": "Garis miring (/)",
       "semicolon": "Titik koma (;)",
+      "semicolonSpace": "Titik koma + spasi (; )",
       "ampersand": "Ampersand (&)"
     },
     "featOptions": {
