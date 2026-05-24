@@ -491,7 +491,11 @@
         "syncedArtists": "Synced artists",
         "favourites": "Favourites",
         "credentials": "Login info (Deezer ARL, Spotify)"
-      }
+      },
+      "selectAll": "Select all",
+      "selectNone": "Select none",
+      "expandProfiles": "Show profiles list",
+      "subsetCount": "{n} of {total}"
     }
   },
   "login": {

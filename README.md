@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.7.9-blue" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.8.0-blue" />
   <img alt="Electron" src="https://img.shields.io/badge/Electron-39-47848F?logo=electron&logoColor=white" />
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
@@ -62,9 +62,10 @@
 - **Album Artwork** -- Embedded and local cover art with configurable size and format (JPEG/PNG)
 - **Playlist Artwork** -- Playlist cover image saved as `cover.jpg` in the playlist folder (Deezer, Spotify, and Playlist Sync)
 - **Synced Lyrics** -- Optional LRC file generation for synced lyrics
-- **Folder Structure** -- Customizable templates for artist, album, playlist, and CD folder organization with variables like `%artist%`, `%album%`, `%year%`, `%explicit%`, `%owner%`, `%date%`
+- **Folder Structure** -- Customizable templates for artist, album, playlist, and CD folder organization with variables like `%artist%`, `%album%`, `%year%`, `%explicit%`, `%owner%`, `%date%`, `%barcode%` / `%upc%`
 - **Track Naming** -- Template-based naming with variables like `%artist%`, `%title%`, `%tracknumber%`, `%explicit%`
 - **Explicit Tag** -- `%explicit%` variable in folder templates separates clean and explicit album versions into different folders
+- **Barcode Disambiguation** -- `%barcode%` (alias `%upc%`) variable in folder templates keeps same-titled singles and albums in distinct folders (e.g. `abcd 0123456789012` vs `abcd 9876543210987`)
 
 ### Spotify Integration
 
@@ -108,7 +109,7 @@
 - **Auto-Update Checker** -- Notifies you on startup when a new version is available
 - **Download Progress in Title Bar** -- See overall download progress in the window title
 - **Settings Profiles** -- Save, apply, export, and import named settings configurations (Audiophile / Quick / Balanced built-ins plus your own)
-- **Backup and Restore Settings** -- A single backup file captures your entire local app data with per-segment selection: App preferences, Download profiles, Synced playlists, Synced artists, Favourites, and (optionally) Login info. Restore shows a preview of what's in the file before applying, with the same per-segment selector — partial restores supported. The restore modal closes on completion and a toast confirms what was applied (v1.7.8 polish).
+- **Backup and Restore Settings** -- A single backup file captures your entire local app data with per-segment selection: App preferences, Download profiles, Synced playlists, Synced artists, Favourites, and (optionally) Login info. v1.8.0 adds an expandable **per-profile picker** so you can back up or restore just the profiles you choose (e.g. only "Maximus", leaving "Drew" untouched). Restoring a profile whose name already exists overwrites in place; built-in name collisions fall back to a "(Restored)" suffix.
 
 ### Supported Languages
 
@@ -254,7 +255,7 @@ The Settings page offers deep customization organized into these categories:
 | **Spotify** | Client ID, Client Secret, fallback search toggle |
 | **Playlist Sync** | Add Spotify/Deezer playlists, set sync schedule, enable/disable |
 | **Profiles** | Save, apply, export, import named settings configurations |
-| **Backup and Restore Settings** | Full app-data backup file with per-segment selection (app preferences · download profiles · synced playlists · synced artists · favourites · login info) on both export and restore |
+| **Backup and Restore Settings** | Full app-data backup file with per-segment selection (app preferences · download profiles · synced playlists · synced artists · favourites · login info) plus per-profile picker on both export and restore |
 
 ---
 

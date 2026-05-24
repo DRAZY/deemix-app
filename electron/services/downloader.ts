@@ -1228,6 +1228,10 @@ export class Downloader extends EventEmitter {
     // Template replacement helper for FOLDER names - uses album context for consistency
     const today = new Date()
     const dateStr = today.toISOString().split('T')[0] // YYYY-MM-DD
+    // Album-level UPC/barcode — same value the filename templates use as %upc%.
+    // Both %barcode% (user-facing term from #74) and %upc% (parity with filename
+    // templates) substitute to this. Empty string when missing — never `undefined`.
+    const folderUpc = trackInfo.ALB_UPC || ''
     const replaceFolderTemplate = (template: string): string => {
       return this.sanitizeFilename(
         template
@@ -1240,6 +1244,8 @@ export class Downloader extends EventEmitter {
           .replace(/%genre%/gi, genre)
           .replace(/%label%/gi, label)
           .replace(/%explicit%/gi, folderExplicit)
+          .replace(/%barcode%/gi, folderUpc)
+          .replace(/%upc%/gi, folderUpc)
       )
     }
 

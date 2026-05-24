@@ -4,6 +4,55 @@ All notable changes to **Deemix Remastered** are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
+
+## [1.8.0] — 2026-05-24
+
+### Added
+
+- **`%barcode%` / `%upc%` folder template variable ([#74](https://github.com/DRAZY/deemix-remastered/issues/74)).** Album UPC substitutes into folder templates so same-titled releases land in distinct folders. Both aliases work; the data is already fetched (`trackInfo.ALB_UPC`).
+- **Per-profile picker in Backup and Restore.** Expandable nested list on both Export and Restore previews. Pick only the profiles you want; full selection produces a backup file byte-identical to v1.7.9.
+
+### Changed
+
+- About > What's New section compacted — short bullets, older patch releases grouped into ranges, full detail linked to GitHub Releases.
+
+## [1.7.9] — 2026-05-24
+
+### Added
+
+- New "Semicolon + space" artist-separator option ([#73](https://github.com/DRAZY/deemix-remastered/issues/73)) emits `; `. Existing "Semicolon" choice unchanged.
+
+### Fixed
+
+- Restore-from-backup no longer duplicates profiles on name collision. Custom-name match overwrites in place; built-in name match renames to `(Restored)`.
+
+### Changed
+
+- CI workflow switched from `npm ci` to `bun install --frozen-lockfile`; deleted stale `package-lock.json`.
+
+## [1.7.8] — 2026-05-22
+
+### Fixed
+
+- Restore modal now closes on completion and surfaces a confirmation toast (v1.7.6/1.7.7 regression).
+- Closed Dependabot GHSA-58qx-3vcg-4xpx (CVE-2026-45736) in `ws` via `engine.io-client` override.
+
+### Changed
+
+- Backup section renamed to "Backup and Restore Settings" for clarity.
+
+## [1.7.5] — 2026-05-21
+
+### Added
+
+- Selectable release types for artist sync ([#71](https://github.com/DRAZY/deemix-remastered/issues/71)) — Albums / Singles / EPs / Compilations / Features filters per artist.
+
+### Fixed
+
+- Bulk "Sync all favourites" works at any scale ([#70](https://github.com/DRAZY/deemix-remastered/issues/70)) via new bulk endpoints (`POST /api/sync/playlists/bulk`, `POST /api/sync/artists/bulk`).
+- Stale-favourite detection now works for entries pinned from Favourites view (latent [#64](https://github.com/DRAZY/deemix-remastered/issues/64) bug).
+
 ## [1.7.4] — 2026-05-20
 
 ### Added

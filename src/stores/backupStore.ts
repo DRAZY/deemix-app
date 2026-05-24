@@ -41,6 +41,10 @@ export interface SelectedSegments {
   syncedArtists: boolean
   favourites: boolean
   credentials: boolean
+  // v1.8.0 — when profiles=true AND profileIds is a non-null array, only the
+  // listed profile ids are exported/restored. null or undefined = include all
+  // (preserves v1.7.9 behavior; v1.7.9 backup files have no field here).
+  profileIds?: string[] | null
 }
 
 export interface CredentialBundle {
@@ -86,7 +90,7 @@ export interface ApplyResult {
   errors: Partial<Record<SegmentKey, string>>
 }
 
-const BACKUP_APP_VERSION = '1.7.9'
+const BACKUP_APP_VERSION = '1.8.0'
 const FAVORITES_LOCALSTORAGE_KEY = 'favorites'
 
 export const useBackupStore = defineStore('backup', () => {
@@ -122,7 +126,14 @@ export const useBackupStore = defineStore('backup', () => {
       if (selected.profiles) {
         // Only export user-created profiles (built-ins are recreated by the
         // app on next launch anyway, and including them just adds noise).
-        segments.profiles = profileStore.profiles.filter(p => !p.isBuiltIn)
+        // v1.8.0: optionally filter to a subset by id (per-profile picker).
+        const allCustom = profileStore.profiles.filter(p => !p.isBuiltIn)
+        if (Array.isArray(selected.profileIds)) {
+          const idSet = new Set(selected.profileIds)
+          segments.profiles = allCustom.filter(p => idSet.has(p.id))
+        } else {
+          segments.profiles = allCustom
+        }
       }
 
       if (selected.syncedPlaylists) {
@@ -293,10 +304,18 @@ export const useBackupStore = defineStore('backup', () => {
 
       if (selected.profiles && file.segments.profiles) {
         try {
+          // v1.8.0: if the user picked a subset in the Restore preview, narrow
+          // the incoming array to just those ids before deduping. Matched on
+          // file-side id since that's what the picker checkboxes bind to.
+          let incoming = file.segments.profiles
+          if (Array.isArray(selected.profileIds)) {
+            const idSet = new Set(selected.profileIds)
+            incoming = incoming.filter(p => idSet.has(p.id))
+          }
           // Dedup by name: custom-name match overwrites in place, built-in
           // name match falls back to a "(Restored)" suffix. saveProfiles fires
           // once at the end of the pass (not per-iteration).
-          profileStore.applyBackupProfiles(file.segments.profiles)
+          profileStore.applyBackupProfiles(incoming)
           result.profiles = 'ok'
         } catch (e: any) {
           result.profiles = 'error'

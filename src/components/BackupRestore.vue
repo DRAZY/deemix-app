@@ -3,7 +3,7 @@
 // Defaults to "everything ticked" except Credentials, which is opt-in on both
 // sides because including ARL/Spotify in a shareable file is a footgun.
 
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBackupStore, type SegmentCounts, type SelectedSegments, type BackupFile, type ApplyResult } from '../stores/backupStore'
 import { useSyncStore } from '../stores/syncStore'
@@ -43,6 +43,67 @@ const exportCounts = computed(() => ({
 
 const isExporting = ref(false)
 
+// --- Per-profile picker (v1.8.0) -------------------------------------------
+// Lets the user narrow the Profiles segment to a chosen subset (e.g. only
+// "Maximus" out of {Maximus, Drew, Audiophile}). When all custom profiles
+// are selected (or the segment is off), the backup file is byte-identical to
+// what v1.7.9 produced — `profileIds` is omitted from SelectedSegments.
+
+const exportProfilePickerOpen = ref(false)
+const exportSelectedProfileIds = ref<Set<string>>(new Set())
+const exportProfilesParentRef = ref<HTMLInputElement | null>(null)
+
+const allCustomProfileIds = computed(() =>
+  profileStore.profiles.filter(p => !p.isBuiltIn).map(p => p.id)
+)
+
+// Seed selection = all-custom; auto-include newly-created profiles, drop
+// any that were deleted. Preserves explicit deselections across rerenders.
+watch(allCustomProfileIds, (curr, prev) => {
+  if (!prev) {
+    exportSelectedProfileIds.value = new Set(curr)
+    return
+  }
+  const next = new Set(exportSelectedProfileIds.value)
+  for (const id of curr) if (!prev.includes(id)) next.add(id)
+  for (const id of Array.from(next)) if (!curr.includes(id)) next.delete(id)
+  exportSelectedProfileIds.value = next
+}, { immediate: true })
+
+const exportProfileTotal = computed(() => allCustomProfileIds.value.length)
+const exportProfileCount = computed(() => exportSelectedProfileIds.value.size)
+const exportProfilesAllSelected = computed(() =>
+  exportProfileTotal.value > 0 && exportProfileCount.value === exportProfileTotal.value
+)
+const exportProfilesMixed = computed(() =>
+  exportProfileCount.value > 0 && exportProfileCount.value < exportProfileTotal.value
+)
+
+// indeterminate is a DOM-property-only attribute — set imperatively via ref.
+watch(
+  [() => exportSelected.value.profiles, exportProfilesMixed],
+  ([profilesOn, mixed]) => {
+    if (exportProfilesParentRef.value) {
+      exportProfilesParentRef.value.indeterminate = !!(profilesOn && mixed)
+    }
+  },
+  { immediate: true, flush: 'post' }
+)
+
+function toggleExportProfile(id: string) {
+  const next = new Set(exportSelectedProfileIds.value)
+  next.has(id) ? next.delete(id) : next.add(id)
+  exportSelectedProfileIds.value = next
+}
+
+function exportSelectAllProfiles() {
+  exportSelectedProfileIds.value = new Set(allCustomProfileIds.value)
+}
+
+function exportSelectNoneProfiles() {
+  exportSelectedProfileIds.value = new Set()
+}
+
 async function doExport() {
   if (isExporting.value) return
   // Soft confirmation when the user is about to write credentials into the file.
@@ -52,7 +113,16 @@ async function doExport() {
   }
   isExporting.value = true
   try {
-    const file = await backupStore.buildBackup(exportSelected.value)
+    // Pass profileIds only when the user has narrowed the picker; full
+    // selection sends undefined so the backup file is byte-identical to
+    // what v1.7.9 produced.
+    const selected: SelectedSegments = {
+      ...exportSelected.value,
+      profileIds: exportSelected.value.profiles && !exportProfilesAllSelected.value
+        ? Array.from(exportSelectedProfileIds.value)
+        : undefined
+    }
+    const file = await backupStore.buildBackup(selected)
     const json = JSON.stringify(file, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
@@ -89,6 +159,47 @@ const restoreSelected = ref<SelectedSegments>({
 const showRestoreModal = ref(false)
 const isRestoring = ref(false)
 
+// Restore-side per-profile picker. Populated from the loaded backup file.
+const restoreProfilePickerOpen = ref(false)
+const restoreSelectedProfileIds = ref<Set<string>>(new Set())
+const restoreProfilesParentRef = ref<HTMLInputElement | null>(null)
+
+const restoreFileProfileIds = computed(() =>
+  (restoreFile.value?.segments.profiles || []).map(p => p.id)
+)
+const restoreProfileTotal = computed(() => restoreFileProfileIds.value.length)
+const restoreProfileCount = computed(() => restoreSelectedProfileIds.value.size)
+const restoreProfilesAllSelected = computed(() =>
+  restoreProfileTotal.value > 0 && restoreProfileCount.value === restoreProfileTotal.value
+)
+const restoreProfilesMixed = computed(() =>
+  restoreProfileCount.value > 0 && restoreProfileCount.value < restoreProfileTotal.value
+)
+
+watch(
+  [() => restoreSelected.value.profiles, restoreProfilesMixed],
+  ([profilesOn, mixed]) => {
+    if (restoreProfilesParentRef.value) {
+      restoreProfilesParentRef.value.indeterminate = !!(profilesOn && mixed)
+    }
+  },
+  { immediate: true, flush: 'post' }
+)
+
+function toggleRestoreProfile(id: string) {
+  const next = new Set(restoreSelectedProfileIds.value)
+  next.has(id) ? next.delete(id) : next.add(id)
+  restoreSelectedProfileIds.value = next
+}
+
+function restoreSelectAllProfiles() {
+  restoreSelectedProfileIds.value = new Set(restoreFileProfileIds.value)
+}
+
+function restoreSelectNoneProfiles() {
+  restoreSelectedProfileIds.value = new Set()
+}
+
 function formatExportDate(iso: string): string {
   try {
     return new Date(iso).toLocaleString()
@@ -101,7 +212,7 @@ function formatExportDate(iso: string): string {
 // we still allow the restore but warn the user that unknown segments will drop.
 const appVersionWarning = computed(() => {
   if (!restoreFile.value) return false
-  const current = '1.7.9'
+  const current = '1.8.0'
   // Naive string compare is fine for "newer than" — semver-major bumps would
   // produce a sortable string here too.
   return restoreFile.value.appVersion !== 'unknown'
@@ -135,6 +246,10 @@ function pickRestoreFile() {
       favourites: parsed.counts.favourites > 0,
       credentials: false  // opt-in even when present
     }
+    // Seed the per-profile picker with everything in the file. The user can
+    // narrow it via the expandable picker before clicking Restore.
+    restoreSelectedProfileIds.value = new Set(restoreFileProfileIds.value)
+    restoreProfilePickerOpen.value = false
     showRestoreModal.value = true
   }
   input.click()
@@ -156,7 +271,16 @@ async function doRestore() {
   }
   isRestoring.value = true
   try {
-    const result = await backupStore.applyBackup(restoreFile.value, restoreSelected.value)
+    // Same narrowing rule as export — omit profileIds when the picker is
+    // fully checked so the restore-side code falls into the existing
+    // "include all" path.
+    const selected: SelectedSegments = {
+      ...restoreSelected.value,
+      profileIds: restoreSelected.value.profiles && !restoreProfilesAllSelected.value
+        ? Array.from(restoreSelectedProfileIds.value)
+        : undefined
+    }
+    const result = await backupStore.applyBackup(restoreFile.value, selected)
     // Refresh the sync views so the UI reflects the new state immediately
     // instead of waiting for the next manual fetch.
     if (result.syncedPlaylists === 'ok') await syncStore.fetchPlaylists().catch(() => {})
@@ -219,13 +343,58 @@ function surfaceRestoreResult(result: ApplyResult) {
           </span>
           <span class="text-xs text-foreground-muted" v-if="exportSelected.settings">1</span>
         </label>
-        <label class="flex items-center justify-between text-sm">
-          <span class="flex items-center gap-2">
-            <input type="checkbox" v-model="exportSelected.profiles" class="accent-primary-500" />
-            {{ t('settings.backup.segment.profiles') }}
-          </span>
-          <span class="text-xs text-foreground-muted" v-if="exportSelected.profiles">{{ exportCounts.profiles }}</span>
-        </label>
+        <div>
+          <label class="flex items-center justify-between text-sm">
+            <span class="flex items-center gap-2">
+              <input
+                ref="exportProfilesParentRef"
+                type="checkbox"
+                v-model="exportSelected.profiles"
+                class="accent-primary-500"
+              />
+              {{ t('settings.backup.segment.profiles') }}
+              <button
+                v-if="exportSelected.profiles && exportProfileTotal > 0"
+                type="button"
+                @click="exportProfilePickerOpen = !exportProfilePickerOpen"
+                class="text-foreground-muted hover:text-foreground transition-colors"
+                :aria-label="t('settings.backup.expandProfiles')"
+                :aria-expanded="exportProfilePickerOpen"
+              >
+                <svg class="w-3 h-3" :class="{ 'rotate-90': exportProfilePickerOpen }" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </span>
+            <span class="text-xs text-foreground-muted" v-if="exportSelected.profiles">
+              <template v-if="exportProfilesMixed">{{ t('settings.backup.subsetCount', { n: exportProfileCount, total: exportProfileTotal }) }}</template>
+              <template v-else>{{ exportProfileTotal }}</template>
+            </span>
+          </label>
+          <div
+            v-if="exportProfilePickerOpen && exportSelected.profiles && exportProfileTotal > 0"
+            class="ml-6 mt-2 space-y-1 rounded-md bg-zinc-900/40 border border-zinc-800 p-2"
+          >
+            <div class="flex gap-3 text-xs pb-1">
+              <button type="button" @click="exportSelectAllProfiles" class="text-primary-400 hover:text-primary-300 transition-colors">{{ t('settings.backup.selectAll') }}</button>
+              <span class="text-foreground-muted">·</span>
+              <button type="button" @click="exportSelectNoneProfiles" class="text-primary-400 hover:text-primary-300 transition-colors">{{ t('settings.backup.selectNone') }}</button>
+            </div>
+            <label
+              v-for="p in profileStore.profiles.filter(x => !x.isBuiltIn)"
+              :key="p.id"
+              class="flex items-center gap-2 text-xs cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                :checked="exportSelectedProfileIds.has(p.id)"
+                @change="toggleExportProfile(p.id)"
+                class="accent-primary-500"
+              />
+              {{ p.name }}
+            </label>
+          </div>
+        </div>
         <label class="flex items-center justify-between text-sm">
           <span class="flex items-center gap-2">
             <input type="checkbox" v-model="exportSelected.syncedPlaylists" class="accent-primary-500" />
@@ -314,13 +483,59 @@ function surfaceRestoreResult(result: ApplyResult) {
                 </span>
                 <span class="text-xs">{{ restoreCounts.settings > 0 ? t('settings.backup.present') : t('settings.backup.notPresent') }}</span>
               </label>
-              <label class="flex items-center justify-between text-sm" :class="{ 'opacity-40': restoreCounts.profiles === 0 }">
-                <span class="flex items-center gap-2">
-                  <input type="checkbox" v-model="restoreSelected.profiles" :disabled="restoreCounts.profiles === 0" class="accent-primary-500" />
-                  {{ t('settings.backup.segment.profiles') }}
-                </span>
-                <span class="text-xs">{{ restoreCounts.profiles }}</span>
-              </label>
+              <div :class="{ 'opacity-40': restoreCounts.profiles === 0 }">
+                <label class="flex items-center justify-between text-sm">
+                  <span class="flex items-center gap-2">
+                    <input
+                      ref="restoreProfilesParentRef"
+                      type="checkbox"
+                      v-model="restoreSelected.profiles"
+                      :disabled="restoreCounts.profiles === 0"
+                      class="accent-primary-500"
+                    />
+                    {{ t('settings.backup.segment.profiles') }}
+                    <button
+                      v-if="restoreSelected.profiles && restoreProfileTotal > 0"
+                      type="button"
+                      @click="restoreProfilePickerOpen = !restoreProfilePickerOpen"
+                      class="text-foreground-muted hover:text-foreground transition-colors"
+                      :aria-label="t('settings.backup.expandProfiles')"
+                      :aria-expanded="restoreProfilePickerOpen"
+                    >
+                      <svg class="w-3 h-3" :class="{ 'rotate-90': restoreProfilePickerOpen }" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                  </span>
+                  <span class="text-xs">
+                    <template v-if="restoreSelected.profiles && restoreProfilesMixed">{{ t('settings.backup.subsetCount', { n: restoreProfileCount, total: restoreProfileTotal }) }}</template>
+                    <template v-else>{{ restoreCounts.profiles }}</template>
+                  </span>
+                </label>
+                <div
+                  v-if="restoreProfilePickerOpen && restoreSelected.profiles && restoreProfileTotal > 0"
+                  class="ml-6 mt-2 space-y-1 rounded-md bg-zinc-900/40 border border-zinc-800 p-2"
+                >
+                  <div class="flex gap-3 text-xs pb-1">
+                    <button type="button" @click="restoreSelectAllProfiles" class="text-primary-400 hover:text-primary-300 transition-colors">{{ t('settings.backup.selectAll') }}</button>
+                    <span class="text-foreground-muted">·</span>
+                    <button type="button" @click="restoreSelectNoneProfiles" class="text-primary-400 hover:text-primary-300 transition-colors">{{ t('settings.backup.selectNone') }}</button>
+                  </div>
+                  <label
+                    v-for="p in (restoreFile?.segments.profiles || [])"
+                    :key="p.id"
+                    class="flex items-center gap-2 text-xs cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="restoreSelectedProfileIds.has(p.id)"
+                      @change="toggleRestoreProfile(p.id)"
+                      class="accent-primary-500"
+                    />
+                    {{ p.name }}
+                  </label>
+                </div>
+              </div>
               <label class="flex items-center justify-between text-sm" :class="{ 'opacity-40': restoreCounts.syncedPlaylists === 0 }">
                 <span class="flex items-center gap-2">
                   <input type="checkbox" v-model="restoreSelected.syncedPlaylists" :disabled="restoreCounts.syncedPlaylists === 0" class="accent-primary-500" />

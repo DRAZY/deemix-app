@@ -31,74 +31,64 @@ interface ReleaseNotes {
   items: string[]
 }
 
+// Compact format: 1-3 short bullets per entry, lump older patch releases
+// into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
+  {
+    version: '1.8.0',
+    date: '2026-05-24',
+    items: [
+      'New %barcode% / %upc% folder template variable (closes #74) — distinguishes same-titled releases (e.g. a single "abcd" vs an album "abcd") so they don\'t collide on disk.',
+      'Per-profile picker in Backup and Restore — expand the Profiles row to back up or restore only the profiles you choose. v1.7.9 backup files keep working unchanged.'
+    ]
+  },
   {
     version: '1.7.9',
     date: '2026-05-24',
     items: [
-      'Restore-from-backup no longer duplicates profiles when the name already exists. Before, restoring a backup whose profiles segment contained a name that already lived locally pushed a fresh copy with a new id, so you ended up with two identical entries (and a third on the next restore). Profile restore now matches by name: a custom-name collision overwrites in place — same id, same createdAt, fresh settings + updatedAt — so re-running the same backup converges to the same end state instead of multiplying. Backup-profile names that happen to collide with a built-in preset (e.g. "Audiophile") fall back to a "(Restored)" suffix so the immutable preset is never clobbered.',
-      'New "Semicolon + space" artist-separator option (issue #73). The existing "Semicolon" choice still emits ";" with no space — non-breaking for anyone already on it — and the new option emits "; " (semicolon followed by a space) for users who want the spaced form that original Deemix has. Translated into all 21 UI languages.'
+      'Restore no longer duplicates profiles on name collision — custom-name match overwrites in place, built-in name match renames to "(Restored)".',
+      'New "Semicolon + space" artist-separator option (closes #73). Existing "Semicolon" unchanged.'
     ]
   },
   {
     version: '1.7.8',
     date: '2026-05-22',
     items: [
-      'Restore-modal now closes on completion (and surfaces a confirmation toast). In v1.7.6/1.7.7 the Restore preview modal stayed on screen after clicking "Restore selected" — the close call ran before the in-flight flag had a chance to flip, so the function\'s own guard silently no-op\'d. Cleaned up the lifecycle so the modal always closes and the toast (success / partial / nothing / error) carries the completion signal.',
-      'Renamed the section to "Backup and Restore Settings" so it\'s self-describing — the feature both saves and restores, and the previous title only said half of it.',
-      'Closed Dependabot GHSA-58qx-3vcg-4xpx (CVE-2026-45736) — uninitialized-memory disclosure in `ws` (medium, CVSS 4.4). The vulnerable `ws@8.18.3` was pulled in transitively via `socket.io-client → engine.io-client`; pinned to `ws@^8.20.1` via the package.json overrides block.'
+      'Restore modal now closes on completion with a confirmation toast.',
+      'Section renamed to "Backup and Restore Settings" for clarity. Closed ws CVE GHSA-58qx-3vcg-4xpx via overrides.'
     ]
   },
   {
-    version: '1.7.5',
-    date: '2026-05-21',
+    version: '1.7.3 – 1.7.5',
+    date: '2026-05-20 — 2026-05-21',
     items: [
-      'Bulk "Sync all favourite playlists/artists" at any scale (#70, third fix) -- After v1.7.3 fixed the state-write race and v1.7.4 surfaced bulk failures in the toast, the truncation still hit users with hundreds of favourites. Root cause turned out to live one layer higher: the local API\'s per-IP rate limit (120 requests/minute on /api/sync/*) was silently 429-ing the latter ~60% of the loop\'s sequential POSTs, because 300 favourites fire 300 round-trips inside a single 60-second window. The structural fix replaces the loop with a single bulk endpoint -- POST /api/sync/playlists/bulk and POST /api/sync/artists/bulk -- so one HTTP request adds N entries with one engine pass, one saveState, one rate-limit budget hit. Per-item success/failure surfaces in the toast as before. Works the same at 30, 300, or 3,000 favourites. Note on what to expect after the toast: every favourite is registered immediately, but actual downloads still respect the 3-concurrent-sync cap and drain through the 60-second scheduler -- so a 300-favourite bulk add will trickle in over the next few hours rather than fanning out into 300 simultaneous downloads. Watch the per-entry status on the Sync page; "added" is not the same as "fully downloaded yet."',
-      'Stale-favorite detection now works for entries pinned from Favorites (latent #64 bug) -- The single-add server handlers were silently dropping the origin field clients sent, so favourites-origin entries were getting stored as origin: \'manual\'. That meant the "no longer in your Deezer favourites" badge never lit up for entries you pinned via the Favourites view. Both handlers (playlist + artist) now thread origin through end-to-end.',
-      'Selectable release types for artist sync (#71) -- Every artist-sync entry on the Sync page now exposes a release-type filter in its edit dialog: Albums, Singles, EPs, Compilations, Features, plus an optional "only download releases after" date threshold. The engine already supported per-entry filters under the hood; this release surfaces them in the UI so you can have one artist sync albums-only while another pulls singles too. Existing entries keep their stored defaults (Albums + EPs).'
+      'Bulk "Sync all favourites" works at any scale (#68, #70) — replaced per-item loop with bulk endpoints; serialized state writes fix Windows drops.',
+      'Editable sync entries with pencil icon (#69) — rename, reschedule, change folder, or change first-sync mode per entry.',
+      'Selectable release types for artist sync (#71) — Albums / Singles / EPs / Compilations / Features filters per artist.'
     ]
   },
   {
-    version: '1.7.4',
-    date: '2026-05-20',
-    items: [
-      'Editable sync entries (#69) -- Every synced-playlist and synced-artist card on the Sync page now has a pencil-icon button. Click it to rename the entry, change the sync schedule, change the download folder, or (for artists) switch first-sync mode between Subscribe-forward, Download-backlog, and From-a-date. The backend already supported all of these updates; this release exposes them in the UI.',
-      'Folder-rename safety -- Renaming a sync entry only affects FUTURE downloads. Files already on disk stay in their original folder; the edit dialog says so in-line so renaming never silently orphans an existing library.'
-    ]
-  },
-  {
-    version: '1.7.3',
-    date: '2026-05-20',
-    items: [
-      '"Sync all favourite playlists" dropped 20-30 of 50+ entries on Windows (#68) -- Both sync engines called saveState() from multiple paths without serializing the writes. During a bulk add, each new addPlaylist fired its own saveState AND a fire-and-forget sync whose own saveState checkpoints ran in the background — multiple writers raced on the shared .tmp sibling of safeWriteJson, and on Windows NTFS the torn writes silently dropped recently-pushed entries from disk while the in-memory state held all of them. Fixed by serializing every saveState through a single Promise chain so the next JSON.stringify(this.state) only runs after the previous rename has landed.',
-      'Soft-skip when 3-concurrent-sync cap is hit -- Previously the engines threw "Maximum concurrent syncs reached (3)" which under bulk add produced ~47 console errors per 50-favourite run and broke fire-and-forget callers. The over-cap path now returns a no-op result and lets the 60-second scheduler retry once active syncs drain.',
-      'Bulk "Sync all favourites" now surfaces failures -- Before, failures were console.error\'d but the toast only mentioned successes, leaving you blind to silent drops. The bulk handlers now count failed adds alongside added/skipped and show an explicit error toast when any add fails.'
-    ]
-  },
-  {
-    version: '1.7.0–1.7.2',
+    version: '1.7.0 – 1.7.2',
     date: '2026-05-15 — 2026-05-20',
     items: [
-      'Sync robustness pass (#66, #67) -- Scheduled sync now respects the "skip existing files" setting (it was clobbering ReplayGain-tagged files on first sync), and the sync pool no longer freezes when the downloader skips already-on-disk tracks (the skip path was emitting `progress` but not `complete`, stranding workers for the full 5-minute timeout).',
-      'Stack hygiene -- Electron 35 → 39 plus axios/vite/postcss bumps and pinned transitive deps. Closed 40 Dependabot alerts across both releases. Pure runtime/build-tool refresh — no app-code changes.'
+      'Sync robustness pass (#66, #67) — scheduled sync respects "skip existing"; downloader no longer strands workers on skip.',
+      'Stack hygiene — Electron 35 → 39, axios/vite/postcss bumps, 40 Dependabot alerts closed.'
     ]
   },
   {
     version: '1.6.x',
     date: '2026-05-14 — 2026-05-15',
     items: [
-      'Sync engine launch -- One-click sync for favourite playlists (#60) and a new artist sync engine that watches Deezer discographies and auto-pulls new releases (#61). Per-artist release-type filters (Albums / Singles / EPs / Compilations / Features). Subscribe-forward default so pinning a prolific artist doesn\'t pull a 200-album backlog.',
-      'Parallel downloads inside sync -- Sync now downloads tracks in parallel up to your `maxConcurrentDownloads` setting, ~3-5× faster on large playlists (400-track playlist: ~30 min → ~6 min at default 5).',
-      'Sync state durability -- Atomic state-file writes (staged .tmp + rename), corrupt-file quarantine on the next launch, sync-badge progress (`Syncing 12/87`), and one-click unfavourite / unpin affordances on cards.',
-      'Favourites import upgraded -- "Import from Deezer" now prunes favourites you\'ve un-liked on the Deezer side (#64); the Sync page flags entries whose source playlist/artist is no longer in your Deezer favourites.'
+      'Sync engine launch — one-click sync for favourite playlists (#60) and artist discographies (#61) with per-artist release-type filters.',
+      'Parallel downloads inside sync, atomic state-file writes, corrupt-file quarantine, sync-badge progress, and "no longer in favourites" detection (#64).'
     ]
   },
   {
-    version: 'Earlier (1.5.x and below)',
+    version: 'Earlier',
     date: '< 2026-05-14',
     items: [
-      'Foundational features -- Playlist Sync (M3U, force full sync, large-playlist support), Spotify→Deezer playlist conversion, Link Analyzer, Charts, New Releases, Downloads dashboard with retry grouping, refreshed app icon.',
-      'For per-version detail on these releases, see the GitHub Releases page: https://github.com/DRAZY/deemix-remastered/releases'
+      'Foundational features — Playlist Sync, Spotify→Deezer conversion, Link Analyzer, Charts, New Releases, Downloads dashboard.',
+      'Full per-version detail: https://github.com/DRAZY/deemix-remastered/releases'
     ]
   }
 ]

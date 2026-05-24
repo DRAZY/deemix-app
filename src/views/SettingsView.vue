@@ -340,7 +340,7 @@ const showPlaylistTrackVars = ref(false)
 const templateVariables = [
   '%title%', '%artist%', '%artists%', '%allartists%', '%mainartists%', '%featartists%',
   '%album%', '%albumartist%', '%tracknumber%', '%tracktotal%', '%discnumber%', '%disctotal%',
-  '%genre%', '%year%', '%date%', '%bpm%', '%label%', '%isrc%', '%upc%',
+  '%genre%', '%year%', '%date%', '%bpm%', '%label%', '%isrc%', '%upc%', '%barcode%',
   '%explicit%', '%track_id%', '%album_id%', '%artist_id%', '%playlist_id%', '%position%'
 ]
 
