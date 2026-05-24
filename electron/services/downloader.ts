@@ -130,6 +130,7 @@ export interface DownloadOptions {
     totalDiscs?: number      // Total number of discs in the album
     explicitLyrics?: boolean // Album-level explicit flag for consistent folder naming
     isCompilation?: boolean  // Whether album is a compilation (Deezer record_type "compile")
+    upc?: string             // Album UPC/barcode — drives %barcode% / %upc% template substitution
   }
   // Error logging
   createErrorLog?: boolean
@@ -139,6 +140,7 @@ export interface DownloadOptions {
   _resolvedAlbumExplicit?: boolean
   _resolvedAlbumArtist?: string        // Album-level artist from public API (for consistent folder naming)
   _resolvedAlbumIsCompilation?: boolean // Whether the album is a compilation (record_type === 'compile')
+  _resolvedAlbumUpc?: string           // Album UPC from public API — falls through to trackInfo.ALB_UPC (which is always empty for private-API track fetches)
   // M3U tracker ID — unique key for the playlist M3U tracker (avoids name collisions)
   _m3uTrackerId?: string
 }
@@ -214,7 +216,7 @@ export class Downloader extends EventEmitter {
   // Album info cache: stores album-level metadata per album ID
   // Fetched from public API once per unique album, prevents duplicate lookups
   // Used for explicit status, album artist (for consistent folder naming), and compilation detection
-  private albumInfoCache: Map<string, Promise<{ explicit: boolean, artist: string, isCompilation: boolean }>> = new Map()
+  private albumInfoCache: Map<string, Promise<{ explicit: boolean, artist: string, isCompilation: boolean, upc: string }>> = new Map()
   // Reserved paths: tracks output paths currently being used by in-progress downloads
   // This prevents concurrent downloads from overwriting each other's files
   private reservedPaths: Set<string> = new Set()
@@ -962,10 +964,13 @@ export class Downloader extends EventEmitter {
               // Album-level artist from public API (e.g., "Various Artists" for compilations)
               artist: albumData.artist?.name || '',
               // Deezer record_type "compile" = compilation/sampler
-              isCompilation: albumData.record_type === 'compile'
+              isCompilation: albumData.record_type === 'compile',
+              // Album UPC/barcode — Deezer's private song.getData omits this field, so
+              // %barcode%/%upc% template substitution relies on this public-API pull.
+              upc: typeof albumData.upc === 'string' ? albumData.upc : ''
             }
           } catch {
-            return { explicit: false, artist: '', isCompilation: false }
+            return { explicit: false, artist: '', isCompilation: false, upc: '' }
           }
         })())
       }
@@ -974,10 +979,12 @@ export class Downloader extends EventEmitter {
         options._resolvedAlbumExplicit = albumInfo?.explicit
         options._resolvedAlbumArtist = albumInfo?.artist || undefined
         options._resolvedAlbumIsCompilation = albumInfo?.isCompilation
+        options._resolvedAlbumUpc = albumInfo?.upc || undefined
       } catch {
         options._resolvedAlbumExplicit = undefined
         options._resolvedAlbumArtist = undefined
         options._resolvedAlbumIsCompilation = undefined
+        options._resolvedAlbumUpc = undefined
       }
     }
 
@@ -1228,10 +1235,14 @@ export class Downloader extends EventEmitter {
     // Template replacement helper for FOLDER names - uses album context for consistency
     const today = new Date()
     const dateStr = today.toISOString().split('T')[0] // YYYY-MM-DD
-    // Album-level UPC/barcode — same value the filename templates use as %upc%.
-    // Both %barcode% (user-facing term from #74) and %upc% (parity with filename
-    // templates) substitute to this. Empty string when missing — never `undefined`.
-    const folderUpc = trackInfo.ALB_UPC || ''
+    // Album-level UPC/barcode. v1.8.1: source from the public-API resolver
+    // because Deezer's private song.getData (which populates trackInfo) does
+    // NOT include ALB_UPC — the field is undefined on every track fetch. Use
+    // the same cascade folderArtist/folderExplicit use: albumContext first
+    // (album-download path), then _resolvedAlbumUpc (single-track public-API
+    // fetch), then trackInfo.ALB_UPC (always empty today; kept for forward
+    // compat). Empty string when missing — never undefined.
+    const folderUpc = albumContext?.upc || options._resolvedAlbumUpc || trackInfo.ALB_UPC || ''
     const replaceFolderTemplate = (template: string): string => {
       return this.sanitizeFilename(
         template
@@ -1341,7 +1352,10 @@ export class Downloader extends EventEmitter {
     const date = trackInfo.PHYSICAL_RELEASE_DATE || ''
     const bpm = trackInfo.BPM?.toString() || ''
     const isrc = trackInfo.ISRC || ''
-    const upc = trackInfo.ALB_UPC || ''
+    // v1.8.1: same cascade as folderUpc — trackInfo.ALB_UPC is always empty
+    // (private song.getData omits it), so the real value comes from the
+    // public-API resolver populated in processDownload.
+    const upc = options.albumContext?.upc || options._resolvedAlbumUpc || trackInfo.ALB_UPC || ''
     const explicit = (trackInfo.EXPLICIT_LYRICS === 1 || trackInfo.EXPLICIT_LYRICS === '1' || trackInfo.EXPLICIT_LYRICS === true) ? 'Explicit' : ''
     const trackId = trackInfo.SNG_ID?.toString() || ''
     const albumId = trackInfo.ALB_ID?.toString() || ''

@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.8.1',
+    date: '2026-05-24',
+    items: [
+      '%barcode% / %upc% in folder + filename templates now actually substitute the album UPC (fixes #75). v1.8.0 wired the variable but read it from the private track API, which omits the field — sources the value from the public album API instead.'
+    ]
+  },
+  {
     version: '1.8.0',
     date: '2026-05-24',
     items: [

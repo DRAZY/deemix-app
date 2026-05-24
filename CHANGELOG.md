@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.8.1] — 2026-05-24
+
+### Fixed
+
+- **`%barcode%` / `%upc%` template substitution returned empty for every download ([#75](https://github.com/DRAZY/deemix-remastered/issues/75)).** v1.8.0 wired the substitution but read `trackInfo.ALB_UPC`, a field the Deezer private `song.getData` API does not populate. Now sourced from the public album API via `albumContext.upc` / `_resolvedAlbumUpc` — same cascade as `folderArtist`. Latent filename `%upc%` bug fixed by the same cascade.
+
 ## [1.8.0] — 2026-05-24
 
 ### Added

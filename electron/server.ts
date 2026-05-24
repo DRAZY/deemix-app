@@ -1595,7 +1595,11 @@ export class DeemixServer extends EventEmitter {
         artistPicture: albumInfo.artist?.picture_xl || albumInfo.artist?.picture_big || albumInfo.artist?.picture_medium || undefined,
         totalDiscs: totalDiscs,
         explicitLyrics: hasExplicitTracks,
-        isCompilation: albumInfo.record_type === 'compile'
+        isCompilation: albumInfo.record_type === 'compile',
+        // v1.8.1: surface UPC so %barcode% / %upc% folder + filename templates
+        // have a value. Without this the downloader's cascade falls through to
+        // trackInfo.ALB_UPC, which is undefined on private-API track fetches.
+        upc: typeof albumInfo.upc === 'string' ? albumInfo.upc : ''
       }
 
       for (const track of albumTracks.data) {
