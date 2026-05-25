@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.8.2',
+    date: '2026-05-25',
+    items: [
+      'UPC and Label now write correctly into file tags when selected (fixes #76). The embedded-tag path still read the empty private-API fields; it now sources both from the public album API, same as the v1.8.1 template fix.'
+    ]
+  },
+  {
     version: '1.8.1',
     date: '2026-05-24',
     items: [

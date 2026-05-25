@@ -1599,7 +1599,10 @@ export class DeemixServer extends EventEmitter {
         // v1.8.1: surface UPC so %barcode% / %upc% folder + filename templates
         // have a value. Without this the downloader's cascade falls through to
         // trackInfo.ALB_UPC, which is undefined on private-API track fetches.
-        upc: typeof albumInfo.upc === 'string' ? albumInfo.upc : ''
+        upc: typeof albumInfo.upc === 'string' ? albumInfo.upc : '',
+        // v1.8.2: surface label for the same reason — the BARCODE/LABEL embedded
+        // tags read these resolved values; trackInfo.LABEL_NAME is empty here too.
+        label: typeof albumInfo.label === 'string' ? albumInfo.label : ''
       }
 
       for (const track of albumTracks.data) {

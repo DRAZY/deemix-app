@@ -131,6 +131,7 @@ export interface DownloadOptions {
     explicitLyrics?: boolean // Album-level explicit flag for consistent folder naming
     isCompilation?: boolean  // Whether album is a compilation (Deezer record_type "compile")
     upc?: string             // Album UPC/barcode — drives %barcode% / %upc% template substitution
+    label?: string           // Album record label — public API only; trackInfo.LABEL_NAME is empty on private-API fetches
   }
   // Error logging
   createErrorLog?: boolean
@@ -141,6 +142,7 @@ export interface DownloadOptions {
   _resolvedAlbumArtist?: string        // Album-level artist from public API (for consistent folder naming)
   _resolvedAlbumIsCompilation?: boolean // Whether the album is a compilation (record_type === 'compile')
   _resolvedAlbumUpc?: string           // Album UPC from public API — falls through to trackInfo.ALB_UPC (which is always empty for private-API track fetches)
+  _resolvedAlbumLabel?: string         // Album label from public API — falls through to trackInfo.LABEL_NAME (empty on private-API fetches)
   // M3U tracker ID — unique key for the playlist M3U tracker (avoids name collisions)
   _m3uTrackerId?: string
 }
@@ -216,7 +218,7 @@ export class Downloader extends EventEmitter {
   // Album info cache: stores album-level metadata per album ID
   // Fetched from public API once per unique album, prevents duplicate lookups
   // Used for explicit status, album artist (for consistent folder naming), and compilation detection
-  private albumInfoCache: Map<string, Promise<{ explicit: boolean, artist: string, isCompilation: boolean, upc: string }>> = new Map()
+  private albumInfoCache: Map<string, Promise<{ explicit: boolean, artist: string, isCompilation: boolean, upc: string, label: string }>> = new Map()
   // Reserved paths: tracks output paths currently being used by in-progress downloads
   // This prevents concurrent downloads from overwriting each other's files
   private reservedPaths: Set<string> = new Set()
@@ -966,11 +968,13 @@ export class Downloader extends EventEmitter {
               // Deezer record_type "compile" = compilation/sampler
               isCompilation: albumData.record_type === 'compile',
               // Album UPC/barcode — Deezer's private song.getData omits this field, so
-              // %barcode%/%upc% template substitution relies on this public-API pull.
-              upc: typeof albumData.upc === 'string' ? albumData.upc : ''
+              // %barcode%/%upc% template substitution + the BARCODE tag rely on this public-API pull.
+              upc: typeof albumData.upc === 'string' ? albumData.upc : '',
+              // Album label — also omitted by private song.getData; the LABEL/publisher tag needs it.
+              label: typeof albumData.label === 'string' ? albumData.label : ''
             }
           } catch {
-            return { explicit: false, artist: '', isCompilation: false, upc: '' }
+            return { explicit: false, artist: '', isCompilation: false, upc: '', label: '' }
           }
         })())
       }
@@ -980,11 +984,13 @@ export class Downloader extends EventEmitter {
         options._resolvedAlbumArtist = albumInfo?.artist || undefined
         options._resolvedAlbumIsCompilation = albumInfo?.isCompilation
         options._resolvedAlbumUpc = albumInfo?.upc || undefined
+        options._resolvedAlbumLabel = albumInfo?.label || undefined
       } catch {
         options._resolvedAlbumExplicit = undefined
         options._resolvedAlbumArtist = undefined
         options._resolvedAlbumIsCompilation = undefined
         options._resolvedAlbumUpc = undefined
+        options._resolvedAlbumLabel = undefined
       }
     }
 
@@ -1213,7 +1219,9 @@ export class Downloader extends EventEmitter {
     const albumName = trackInfo.ALB_TITLE || 'Unknown Album'
     const year = trackInfo.PHYSICAL_RELEASE_DATE?.split('-')[0] || ''
     const genre = '' // Would need async lookup
-    const label = trackInfo.LABEL_NAME || ''
+    // v1.8.2: %label% template — same dead-field story as %barcode%. trackInfo.LABEL_NAME
+    // is empty on private-API fetches, so cascade through the public-API resolver first.
+    const label = albumContext?.label || options._resolvedAlbumLabel || trackInfo.LABEL_NAME || ''
     // For folder naming, determine explicit status consistently:
     // 1. albumContext (from album downloads) — scans all tracks
     // 2. Pre-resolved from public API (fetched before buildOutputPath) — most reliable
@@ -1987,17 +1995,22 @@ export class Downloader extends EventEmitter {
         tags.ISRC = trackInfo.ISRC
       }
 
-      if (tagSettings.albumBarcode && trackInfo.ALB_UPC) {
+      // UPC/label live on the public album API, not private song.getData — v1.8.2 sources
+      // them from the same resolver the templates use (trackInfo.* is always empty here).
+      const tagUpc = options.albumContext?.upc || options._resolvedAlbumUpc || trackInfo.ALB_UPC || ''
+      const tagLabel = options.albumContext?.label || options._resolvedAlbumLabel || trackInfo.LABEL_NAME || ''
+
+      if (tagSettings.albumBarcode && tagUpc) {
         // Store UPC in TXXX frame
         tags.userDefinedText = tags.userDefinedText || []
         tags.userDefinedText.push({
           description: 'BARCODE',
-          value: trackInfo.ALB_UPC
+          value: tagUpc
         })
       }
 
-      if (tagSettings.albumLabel && trackInfo.LABEL_NAME) {
-        tags.publisher = trackInfo.LABEL_NAME
+      if (tagSettings.albumLabel && tagLabel) {
+        tags.publisher = tagLabel
       }
 
       if (tagSettings.copyright && trackInfo.COPYRIGHT) {
@@ -2421,12 +2434,16 @@ export class Downloader extends EventEmitter {
         comments.push(`ISRC=${trackInfo.ISRC}`)
       }
 
-      if (tagSettings.albumBarcode && trackInfo.ALB_UPC) {
-        comments.push(`BARCODE=${trackInfo.ALB_UPC}`)
+      // Same public-API resolver cascade as the ID3 path (v1.8.2) — trackInfo.* is empty here.
+      const vorbisUpc = options.albumContext?.upc || options._resolvedAlbumUpc || trackInfo.ALB_UPC || ''
+      const vorbisLabel = options.albumContext?.label || options._resolvedAlbumLabel || trackInfo.LABEL_NAME || ''
+
+      if (tagSettings.albumBarcode && vorbisUpc) {
+        comments.push(`BARCODE=${vorbisUpc}`)
       }
 
-      if (tagSettings.albumLabel && trackInfo.LABEL_NAME) {
-        comments.push(`LABEL=${trackInfo.LABEL_NAME}`)
+      if (tagSettings.albumLabel && vorbisLabel) {
+        comments.push(`LABEL=${vorbisLabel}`)
       }
 
       if (tagSettings.copyright && trackInfo.COPYRIGHT) {

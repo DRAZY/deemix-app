@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.8.2] — 2026-05-25
+
+### Fixed
+
+- **UPC and Label tags were never written into downloaded files even when selected ([#76](https://github.com/DRAZY/deemix-remastered/issues/76)).** The embedded-tag writers (ID3 `BARCODE`/`publisher` and FLAC Vorbis `BARCODE`/`LABEL`) were gated on `trackInfo.ALB_UPC` / `trackInfo.LABEL_NAME`, fields the Deezer private `song.getData` API leaves empty — so the guard was always false. Now sourced from the public album API via the same `albumContext` / `_resolvedAlbum*` cascade the v1.8.1 template fix uses. Verified against live album data (UPC + label both populate).
+
 ## [1.8.1] — 2026-05-24
 
 ### Fixed
