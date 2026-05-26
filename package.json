@@ -1,6 +1,6 @@
 {
   "name": "deemix-app",
-  "version": "1.8.2",
+  "version": "1.9.0",
   "description": "Modern Deezer music downloader",
   "author": {
     "name": "Team MAXIMUS",
@@ -27,6 +27,7 @@
     "axios": "^1.15.2",
     "egoroof-blowfish": "^4.0.2",
     "flac-metadata": "^0.1.1",
+    "music-metadata": "^11.12.3",
     "node-id3": "^0.2.9",
     "pinia": "^2.1.0",
     "socket.io-client": "^4.7.0",

@@ -11,6 +11,7 @@ import { spotifyAPI } from './services/spotifyAPI'
 import { spotifyConverter } from './services/spotifyConverter'
 import { playlistSync } from './services/playlistSync'
 import { artistSync, type FirstSyncMode, type ArtistSyncFilters } from './services/artistSync'
+import { scanFolder, retagFile, type RetagFields } from './services/retagger'
 
 // File-based cache for discography (persists across app restarts)
 const DISCOGRAPHY_FILE_CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
@@ -931,6 +932,15 @@ export class DeemixServer extends EventEmitter {
 
       case '/api/sync/refresh-favorites':
         await this.handleRefreshFavoriteMembership(req, res)
+        break
+
+      // Retag routes — metadata-only rewrite of existing local files
+      case '/api/retag/scan':
+        await this.handleRetagScan(req, res)
+        break
+
+      case '/api/retag/file':
+        await this.handleRetagFile(req, res)
         break
 
       default:
@@ -2810,6 +2820,42 @@ export class DeemixServer extends EventEmitter {
   private sendJSON(res: ServerResponse, data: any, status = 200): void {
     res.writeHead(status, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify(data))
+  }
+
+  // ==================== Retag Handlers ====================
+
+  // Scan a folder for .mp3/.flac files and read each one's ISRC. The frontend
+  // then drives retagging one file at a time (natural progress + cancel) via
+  // /api/retag/file, so there is no long-lived server-side job to track.
+  private async handleRetagScan(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    if (req.method !== 'POST') { res.writeHead(405); res.end('Method Not Allowed'); return }
+    try {
+      const { folder } = await this.parseBody(req)
+      if (!folder || typeof folder !== 'string') {
+        this.sendJSON(res, { error: 'folder is required' }, 400)
+        return
+      }
+      const files = await scanFolder(folder)
+      this.sendJSON(res, { files })
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  // Retag (or dry-run preview) a single file. Public Deezer API only — no ARL.
+  private async handleRetagFile(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    if (req.method !== 'POST') { res.writeHead(405); res.end('Method Not Allowed'); return }
+    try {
+      const { path: filePath, fields, dryRun } = await this.parseBody(req)
+      if (!filePath || typeof filePath !== 'string') {
+        this.sendJSON(res, { error: 'path is required' }, 400)
+        return
+      }
+      const result = await retagFile(filePath, (fields || {}) as RetagFields, dryRun === true)
+      this.sendJSON(res, result)
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
   }
 
   // ==================== Spotify Handlers ====================

@@ -29,6 +29,7 @@ const navItems = computed(() => {
     { path: '/favorites', icon: 'heart', label: t('nav.favorites') },
     { path: '/analyzer', icon: 'link', label: t('nav.linkAnalyzer') },
     { path: '/sync', icon: 'sync', label: t('nav.playlistSync') },
+    { path: '/retag', icon: 'tag', label: t('nav.retag') },
     { path: '/settings', icon: 'settings', label: t('nav.settings') },
     { path: '/about', icon: 'info', label: t('nav.about') }
   ]
@@ -128,6 +129,12 @@ function handleAuthClick() {
           <svg v-else-if="item.icon === 'sync'" class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+
+          <!-- Tag icon -->
+          <svg v-else-if="item.icon === 'tag'" class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-5 5a2 2 0 01-2.828 0l-7-7A2 2 0 013 11V6a3 3 0 013-3z" />
           </svg>
 
           <!-- Settings icon -->

@@ -34,6 +34,11 @@ const router = createRouter({
       component: () => import('./views/SyncView.vue')
     },
     {
+      path: '/retag',
+      name: 'retag',
+      component: () => import('./views/RetagView.vue')
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: () => import('./views/SettingsView.vue')

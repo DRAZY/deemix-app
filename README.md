@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.8.2-blue" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.9.0-blue" />
   <img alt="Electron" src="https://img.shields.io/badge/Electron-39-47848F?logo=electron&logoColor=white" />
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
@@ -66,6 +66,14 @@
 - **Track Naming** -- Template-based naming with variables like `%artist%`, `%title%`, `%tracknumber%`, `%explicit%`
 - **Explicit Tag** -- `%explicit%` variable in folder templates separates clean and explicit album versions into different folders
 - **Barcode Disambiguation** -- `%barcode%` (alias `%upc%`) variable in folder templates keeps same-titled singles and albums in distinct folders (e.g. `abcd 0123456789012` vs `abcd 9876543210987`)
+
+### Retag Library
+
+- **Metadata-Only Retag** -- Point the Retag Library tool at a folder and it rewrites tags on your *existing* `.mp3`/`.flac` files — no re-download, and the audio stream is left byte-identical. Ideal for backfilling fields like UPC/Label onto files downloaded before they were supported (#77)
+- **ISRC Matching** -- Each file is matched to Deezer by the ISRC already stored in its tags; files without an ISRC are listed and skipped (never guessed)
+- **Public Catalog, No Account** -- Looks up metadata via Deezer's public API, so retagging needs no ARL/login and won't burn your download quota
+- **Merge, Never Replace** -- Only the tags you enable are rewritten; all other tags and embedded artwork are preserved. UPC and Label are enabled by default
+- **Dry-Run Preview** -- Preview exactly which tags would change, per file, before writing anything
 
 ### Spotify Integration
 
@@ -348,14 +356,15 @@ deemix-remastered/
 │   │   ├── artistSyncStore.ts      # Artist sync state (bulk + restore)
 │   │   └── toastStore.ts           # Notification system
 │   ├── types/                  # TypeScript type definitions
-│   └── views/                  # Page components (13 pages)
+│   └── views/                  # Page components (14 pages)
 ├── electron/                   # Electron main process
 │   ├── main.ts                 # Window management & IPC
 │   ├── preload.ts              # Context bridge
 │   ├── server.ts               # Backend server
 │   └── services/               # Backend services
 │       ├── deezerAuth.ts           # Deezer authentication
-│       ├── downloader.ts           # Download engine
+│       ├── downloader.ts           # Download engine (writes tags on download)
+│       ├── retagger.ts             # Retag engine — metadata-only rewrite of existing files (#77)
 │       ├── playlistSync.ts         # Playlist sync engine
 │       ├── artistSync.ts           # Artist sync engine (#61)
 │       ├── spotifyAPI.ts           # Spotify API client

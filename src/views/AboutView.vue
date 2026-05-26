@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.9.0',
+    date: '2026-05-26',
+    items: [
+      'New Retag Library tool (closes #77) — point it at a folder and it rewrites tags on your existing files from Deezer, no re-download and the audio is left untouched. Great for backfilling UPC/Label on older downloads. Matches by ISRC; uses the public catalog (no account needed).'
+    ]
+  },
+  {
     version: '1.8.2',
     date: '2026-05-25',
     items: [

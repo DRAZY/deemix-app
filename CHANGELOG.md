@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.9.0] — 2026-05-26
+
+### Added
+
+- **Retag Library — metadata-only rewrite of existing files ([#77](https://github.com/DRAZY/deemix-remastered/issues/77)).** A new sidebar tool that scans a folder of `.mp3`/`.flac` files, matches each by its ISRC against Deezer's **public** catalog (no account, no re-download), and rewrites only the tags you select. Audio bytes are left byte-identical and existing tags/artwork are preserved (merge, not replace). UPC and Label are enabled by default so libraries downloaded before v1.8.2 can be backfilled in place. Files without an ISRC are reported and skipped (fuzzy matching planned for a later release). Includes a dry-run preview. New dependency: `music-metadata` (pure-JS tag reader).
+
 ## [1.8.2] — 2026-05-25
 
 ### Fixed
