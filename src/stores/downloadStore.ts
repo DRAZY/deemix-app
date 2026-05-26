@@ -485,11 +485,12 @@ export const useDownloadStore = defineStore('downloads', () => {
     }
   }
 
-  async function addAlbumDownload(album: Album, tracks: Track[]) {
+  async function addAlbumDownload(album: Album, tracks: Track[], refreshTags = false) {
     const toastStore = useToastStore()
 
-    // Check if already downloaded (completed)
-    if (isAlbumCompleted(album.id)) {
+    // Check if already downloaded (completed). Refresh-tags intentionally
+    // re-processes existing files, so it bypasses this guard.
+    if (!refreshTags && isAlbumCompleted(album.id)) {
       toastStore.info(`"${album.title}" was already downloaded`)
       console.log(`[DownloadStore] Album ${album.id} already completed, skipping`)
       return // Early return - already downloaded
@@ -544,7 +545,7 @@ export const useDownloadStore = defineStore('downloads', () => {
       const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/download/album`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ albumId: album.id })
+        body: JSON.stringify({ albumId: album.id, refreshTags })
       })
 
       if (!response.ok) {
@@ -582,11 +583,12 @@ export const useDownloadStore = defineStore('downloads', () => {
     }
   }
 
-  async function addPlaylistDownload(playlist: Playlist, tracks: Track[]) {
+  async function addPlaylistDownload(playlist: Playlist, tracks: Track[], refreshTags = false) {
     const toastStore = useToastStore()
 
-    // Check if already downloaded (completed)
-    if (isPlaylistCompleted(playlist.id)) {
+    // Check if already downloaded (completed). Refresh-tags re-processes
+    // existing files on purpose, so it bypasses this guard.
+    if (!refreshTags && isPlaylistCompleted(playlist.id)) {
       toastStore.info(`"${playlist.title}" was already downloaded`)
       console.log(`[DownloadStore] Playlist ${playlist.id} already completed, skipping`)
       return // Early return - already downloaded
@@ -632,7 +634,7 @@ export const useDownloadStore = defineStore('downloads', () => {
       const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/download/playlist`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playlistId: playlist.id })
+        body: JSON.stringify({ playlistId: playlist.id, refreshTags })
       })
 
       if (!response.ok) {

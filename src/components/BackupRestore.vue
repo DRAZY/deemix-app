@@ -212,7 +212,7 @@ function formatExportDate(iso: string): string {
 // we still allow the restore but warn the user that unknown segments will drop.
 const appVersionWarning = computed(() => {
   if (!restoreFile.value) return false
-  const current = '1.9.0'
+  const current = '1.10.0'
   // Naive string compare is fine for "newer than" — semver-major bumps would
   // produce a sortable string here too.
   return restoreFile.value.appVersion !== 'unknown'

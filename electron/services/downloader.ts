@@ -5,6 +5,7 @@ import * as https from 'https'
 import * as crypto from 'crypto'
 import { Blowfish } from 'egoroof-blowfish'
 import { deezerAuth } from './deezerAuth'
+import { applyMergeFromMeta, type ResolvedMeta, type RetagFields } from './retagger'
 
 export interface FolderSettings {
   createPlaylistFolder: boolean
@@ -135,8 +136,9 @@ export interface DownloadOptions {
   }
   // Error logging
   createErrorLog?: boolean
-  // Overwrite behavior: 'no' = skip existing, 'overwrite' = replace, 'rename' = add suffix
-  overwriteMode?: 'no' | 'overwrite' | 'rename'
+  // Overwrite behavior: 'no' = skip existing, 'overwrite' = replace, 'rename' = add suffix,
+  // 'refresh-tags' = don't download; if the file already exists, merge-rewrite its tags only
+  overwriteMode?: 'no' | 'overwrite' | 'rename' | 'refresh-tags'
   // Pre-resolved album info (set by processDownload before buildOutputPath)
   _resolvedAlbumExplicit?: boolean
   _resolvedAlbumArtist?: string        // Album-level artist from public API (for consistent folder naming)
@@ -998,6 +1000,14 @@ export class Downloader extends EventEmitter {
     const initialOutputPath = this.buildOutputPath(trackInfo, options, actualFormat)
     console.log(`[Downloader] Initial output path: ${initialOutputPath}`)
 
+    // Refresh-tags mode: never download. If the file already exists, merge-rewrite
+    // its tags from the authoritative track + album data we already hold (exact IDs,
+    // correct UPC/label via albumContext — no ISRC reverse-lookup ambiguity, #77).
+    if (options.overwriteMode === 'refresh-tags') {
+      await this.refreshExistingFileTags(initialOutputPath, trackInfo, options, progress)
+      return
+    }
+
     // Reserve a unique output path to prevent concurrent download collisions
     // Returns null if overwrite mode is 'no' and file already exists (skip download)
     const outputPath = this.reserveOutputPath(initialOutputPath, trackInfo.SNG_ID, options.overwriteMode)
@@ -1186,6 +1196,85 @@ export class Downloader extends EventEmitter {
           console.log(`[Downloader] Cleaned up encrypted file in finally block`)
         } catch (e) {}
       }
+    }
+  }
+
+  // Refresh-tags path: merge-rewrite an existing file's tags from authoritative
+  // track + album data (no re-download, audio untouched). Reuses the v1.9.0
+  // retagger merge writers via applyMergeFromMeta. See #77.
+  private async refreshExistingFileTags(
+    filePath: string,
+    trackInfo: any,
+    options: DownloadOptions,
+    progress: DownloadProgress
+  ): Promise<void> {
+    try {
+      if (!fs.existsSync(filePath)) {
+        console.log(`[Downloader] Refresh-tags: file not found, skipping: ${filePath}`)
+        progress.status = 'completed'
+        progress.progress = 100
+        this.emit('progress', progress)
+        this.emit('complete', { ...progress, path: filePath, retagSkipped: true })
+        return
+      }
+
+      progress.status = 'tagging'
+      this.emit('progress', progress)
+
+      // Genre via the same ID→name mapping the download writer uses.
+      let genre = ''
+      try {
+        const genres = (await this.getGenresForTrack(trackInfo)).filter(g => g.toLowerCase() !== 'all')
+        genre = genres.join('; ')
+      } catch { /* genre optional */ }
+
+      const releaseDate: string = trackInfo.PHYSICAL_RELEASE_DATE || ''
+      const s = (v: any) => (v === null || v === undefined ? '' : String(v))
+      const meta: ResolvedMeta = {
+        title: s(trackInfo.SNG_TITLE),
+        artist: s(trackInfo.ART_NAME),
+        album: s(options.albumContext?.albumTitle || trackInfo.ALB_TITLE),
+        albumArtist: s(options.albumContext?.albumArtist || trackInfo.ALB_ART_NAME || trackInfo.ART_NAME),
+        trackNumber: s(trackInfo.TRACK_NUMBER),
+        trackTotal: s(trackInfo.TRACKS_COUNT),
+        discNumber: s(trackInfo.DISK_NUMBER),
+        isrc: s(trackInfo.ISRC),
+        // Authoritative album UPC/label — the whole point of the refresh path.
+        upc: s(options.albumContext?.upc || options._resolvedAlbumUpc || ''),
+        label: s(options.albumContext?.label || options._resolvedAlbumLabel || ''),
+        year: releaseDate ? releaseDate.split('-')[0] : '',
+        date: releaseDate,
+        bpm: trackInfo.BPM ? s(trackInfo.BPM) : '',
+        genre,
+        duration: trackInfo.DURATION ? s(trackInfo.DURATION) : '',
+        explicit: trackInfo.EXPLICIT_LYRICS === true || trackInfo.EXPLICIT_LYRICS === 1
+      }
+
+      // Which tags to write = the user's configured tag settings (the retagger
+      // ignores keys it can't source). Merge semantics preserve everything else.
+      const fields = (options.metadataSettings?.tags || {}) as RetagFields
+      const result = applyMergeFromMeta(filePath, meta, fields, false)
+      console.log(`[Downloader] Refresh-tags ${result.status} (${result.changes.length} changed): ${filePath}`)
+
+      progress.status = 'completed'
+      progress.progress = 100
+      if (options.isFromPlaylist && options.playlistName) {
+        this.recordM3UEntry(options._m3uTrackerId || options.playlistName || "", {
+          position: options.playlistPosition || 0,
+          duration: trackInfo.DURATION || 0,
+          artist: trackInfo.ART_NAME || 'Unknown Artist',
+          title: progress.trackTitle || trackInfo.SNG_TITLE || 'Unknown Track',
+          absolutePath: filePath
+        })
+      }
+      this.emit('progress', progress)
+      this.emit('complete', { ...progress, path: filePath })
+    } catch (error: any) {
+      console.error('[Downloader] Refresh-tags failed:', error)
+      progress.status = 'error'
+      progress.error = error?.message || String(error)
+      this.emit('progress', progress)
+      this.emit('error', progress)
     }
   }
 

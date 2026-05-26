@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.0] — 2026-05-26
+
+### Added
+
+- **"Refresh tags" on albums & playlists — exact-match, no re-download ([#77](https://github.com/DRAZY/deemix-remastered/issues/77) follow-up).** A new button on every Album and Playlist view rewrites tags on the files you already have, using the **exact** Deezer release you're viewing. Because it uses the authoritative album/track IDs (not a reverse ISRC guess), the barcode/label/genre come from the right edition every time — fixing the "matching doesn't always line up" cases from the standalone scanner. Audio is untouched and existing tags are preserved (merge). Driven by the download engine's new `refresh-tags` mode (skips download/decrypt; tags the existing file in place).
+- **More retaggable fields.** Genre, Track Length, and Explicit are now writable by the retag tools, sourced from Deezer's public catalog (no account). ReplayGain was intentionally excluded — Deezer's gain value isn't standard ReplayGain and the app doesn't write it on download.
+
 ## [1.9.0] — 2026-05-26
 
 ### Added

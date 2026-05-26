@@ -114,6 +114,13 @@ async function downloadPlaylist() {
   }
 }
 
+// Refresh tags on already-downloaded playlist files (no re-download).
+async function refreshPlaylistTags() {
+  if (playlist.value && tracks.value.length > 0) {
+    await downloadStore.addPlaylistDownload(playlist.value, tracks.value, true)
+  }
+}
+
 // Context menu
 const { menuState, openMenu, closeMenu, copyToClipboard } = useContextMenu()
 
@@ -189,6 +196,17 @@ const contextMenuItems = computed(() => {
                   d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
               {{ playlistDownloadState === 'downloading' ? t('playlistView.inQueue') : playlistDownloadState === 'completed' ? t('playlistView.alreadyDownloaded') : t('playlistView.downloadPlaylist') }}
+            </button>
+            <button
+              @click="refreshPlaylistTags"
+              class="btn btn-secondary flex items-center gap-2"
+              :title="t('retag.refreshTagsHint')"
+            >
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {{ t('retag.refreshTagsAction') }}
             </button>
             <span v-if="trackDiff" class="text-xs text-foreground-muted flex items-center gap-1">
               <svg class="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>

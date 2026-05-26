@@ -40,7 +40,9 @@
     "resultSkipped": "skipped",
     "resultFailed": "failed",
     "noChanges": "No changes — tags already match Deezer.",
-    "summary": "{updated} updated · {skipped} skipped · {failed} failed"
+    "summary": "{updated} updated · {skipped} skipped · {failed} failed",
+    "refreshTagsAction": "Refresh tags",
+    "refreshTagsHint": "Rewrite tags on already-downloaded files from this exact release — no re-download, audio untouched"
   },
   "sidebar": {
     "appName": "Deemix Remastered",

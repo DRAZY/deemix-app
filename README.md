@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.9.0-blue" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.10.0-blue" />
   <img alt="Electron" src="https://img.shields.io/badge/Electron-39-47848F?logo=electron&logoColor=white" />
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
@@ -74,6 +74,8 @@
 - **Public Catalog, No Account** -- Looks up metadata via Deezer's public API, so retagging needs no ARL/login and won't burn your download quota
 - **Merge, Never Replace** -- Only the tags you enable are rewritten; all other tags and embedded artwork are preserved. UPC and Label are enabled by default
 - **Dry-Run Preview** -- Preview exactly which tags would change, per file, before writing anything
+- **Refresh Tags from an Album/Playlist** -- A "Refresh tags" button on every Album and Playlist view rewrites tags on files you already have, using the **exact** Deezer release you're viewing — so the barcode/label/genre always come from the right edition (no ISRC guesswork), with no re-download and audio untouched
+- **Retaggable Fields** -- UPC, Label, Genre, Track Length, Explicit, ISRC, Year, Date, BPM, track/disc numbers, album/artist/title — all from Deezer's public catalog
 
 ### Spotify Integration
 

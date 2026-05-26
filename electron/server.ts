@@ -1549,6 +1549,10 @@ export class DeemixServer extends EventEmitter {
       return
     }
 
+    // Per-request "Refresh tags" action: rewrite tags on existing files only,
+    // no re-download. Overrides the global overwrite setting for this request.
+    const overwriteMode = body.refreshTags === true ? 'refresh-tags' : this.settings.overwriteFiles
+
     // Security: Validate download path
     if (!validateDownloadPath(this.settings.downloadPath)) {
       this.sendJSON(res, { error: 'Invalid download path configured' }, 400)
@@ -1663,7 +1667,7 @@ export class DeemixServer extends EventEmitter {
           discNumber: track.disk_number,
           albumContext: albumContext,
           createErrorLog: this.settings.createErrorLog,
-          overwriteMode: this.settings.overwriteFiles
+          overwriteMode
         })
         downloadIds.push(downloadId)
       }
@@ -1690,6 +1694,9 @@ export class DeemixServer extends EventEmitter {
       this.sendJSON(res, { error: 'Valid Playlist ID is required' }, 400)
       return
     }
+
+    // Per-request "Refresh tags" action: rewrite tags on existing files only.
+    const overwriteMode = body.refreshTags === true ? 'refresh-tags' : this.settings.overwriteFiles
 
     // Security: Validate download path
     if (!validateDownloadPath(this.settings.downloadPath)) {
@@ -1806,7 +1813,7 @@ export class DeemixServer extends EventEmitter {
           },
           savePlaylistAsCompilation: this.settings.savePlaylistAsCompilation,
           createErrorLog: this.settings.createErrorLog,
-          overwriteMode: this.settings.overwriteFiles
+          overwriteMode
         })
         downloadIds.push(downloadId)
       }

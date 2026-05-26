@@ -35,6 +35,14 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.0',
+    date: '2026-05-26',
+    items: [
+      'Retag now has a "Refresh tags" button on any album or playlist — it rewrites tags on the files you already have from that exact release (correct barcode/label every time), with no re-download.',
+      'Retag can now write more fields: Genre, Track Length, and Explicit — all from Deezer\'s public catalog.'
+    ]
+  },
+  {
     version: '1.9.0',
     date: '2026-05-26',
     items: [

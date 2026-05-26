@@ -35,14 +35,14 @@ const progress = reactive({ current: 0, total: 0 })
 // Fields the public API can source. UPC + Label default ON (the gap users hit);
 // the rest are opt-in so we never silently overwrite carefully-tagged data.
 const fieldKeys = [
-  'albumBarcode', 'albumLabel', 'isrc', 'year', 'date', 'bpm',
-  'trackNumber', 'trackTotal', 'discNumber', 'albumArtist', 'album', 'artist', 'title'
+  'albumBarcode', 'albumLabel', 'genre', 'isrc', 'year', 'date', 'bpm', 'trackLength',
+  'trackNumber', 'trackTotal', 'discNumber', 'explicitLyrics', 'albumArtist', 'album', 'artist', 'title'
 ] as const
 type FieldKey = typeof fieldKeys[number]
 const fields = reactive<Record<FieldKey, boolean>>({
-  albumBarcode: true, albumLabel: true, isrc: false, year: false, date: false, bpm: false,
-  trackNumber: false, trackTotal: false, discNumber: false, albumArtist: false,
-  album: false, artist: false, title: false
+  albumBarcode: true, albumLabel: true, genre: false, isrc: false, year: false, date: false,
+  bpm: false, trackLength: false, trackNumber: false, trackTotal: false, discNumber: false,
+  explicitLyrics: false, albumArtist: false, album: false, artist: false, title: false
 })
 
 const matchedFiles = computed(() => files.value.filter(f => f.status === 'matched'))

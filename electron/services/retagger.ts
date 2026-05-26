@@ -43,12 +43,16 @@ export interface RetagFields {
   year?: boolean
   date?: boolean
   bpm?: boolean
+  genre?: boolean
+  trackLength?: boolean
   explicitLyrics?: boolean
   albumBarcode?: boolean // UPC
   albumLabel?: boolean
 }
 
-// Normalized metadata resolved from the public Deezer endpoints.
+// Normalized metadata resolved from the public Deezer endpoints (or supplied
+// directly by the download flow, which already holds authoritative track/album
+// data — see applyMergeFromMeta).
 export interface ResolvedMeta {
   title: string
   artist: string
@@ -63,6 +67,8 @@ export interface ResolvedMeta {
   year: string
   date: string
   bpm: string
+  genre: string      // joined with "; " — split into multiple Vorbis GENRE comments for FLAC
+  duration: string   // seconds (track length); written as TLEN ms (MP3) / LENGTH s (FLAC)
   explicit: boolean
 }
 
@@ -138,6 +144,11 @@ export async function resolveByIsrc(isrc: string): Promise<ResolvedMeta | null> 
   const releaseDate: string = album.release_date || track.release_date || ''
   const str = (v: any) => (v === null || v === undefined ? '' : String(v))
 
+  // Album genres live on the public album endpoint; "All" (id 0) is noise.
+  const genreNames: string[] = Array.isArray(album.genres?.data)
+    ? album.genres.data.map((g: any) => str(g?.name)).filter((n: string) => n && n.toLowerCase() !== 'all')
+    : []
+
   return {
     title: str(track.title),
     artist: str(track.artist?.name),
@@ -152,6 +163,8 @@ export async function resolveByIsrc(isrc: string): Promise<ResolvedMeta | null> 
     year: releaseDate ? releaseDate.split('-')[0] : '',
     date: releaseDate,
     bpm: track.bpm ? str(track.bpm) : '',
+    genre: genreNames.join('; '),
+    duration: track.duration ? str(track.duration) : '',
     explicit: track.explicit_lyrics === true
   }
 }
@@ -180,6 +193,8 @@ function planFields(meta: ResolvedMeta, fields: RetagFields): PlannedField[] {
   add(fields.year, 'year', meta.year)
   add(fields.date, 'date', meta.date)
   add(fields.bpm, 'bpm', meta.bpm)
+  add(fields.genre, 'genre', meta.genre)
+  add(fields.trackLength, 'trackLength', meta.duration)
   // explicit is a boolean we always represent as 1/0 when enabled
   if (fields.explicitLyrics) plan.push({ field: 'explicitLyrics', value: meta.explicit ? '1' : '0' })
   add(fields.albumBarcode, 'albumBarcode', meta.upc)
@@ -220,6 +235,12 @@ function applyMp3(filePath: string, plan: PlannedField[], dryRun: boolean): TagC
       case 'year': record(changes, field, existing.year, value); tags.year = value; break
       case 'date': record(changes, field, existing.date, value); tags.date = value; break
       case 'bpm': record(changes, field, existing.bpm, value); tags.bpm = value; break
+      case 'genre': record(changes, field, existing.genre, value); tags.genre = value; break
+      case 'trackLength': {
+        // TLEN frame is milliseconds; the resolved value is seconds (matches download writer).
+        const ms = (parseInt(value, 10) * 1000).toString()
+        record(changes, 'trackLength', existing.length, ms); tags.length = ms; break
+      }
       case 'albumLabel': record(changes, field, existing.publisher, value); tags.publisher = value; break
       case 'albumBarcode': {
         const prev = udt.find((e) => e.description === 'BARCODE')
@@ -229,7 +250,15 @@ function applyMp3(filePath: string, plan: PlannedField[], dryRun: boolean): TagC
         tags.userDefinedText = udt
         break
       }
-      // explicitLyrics: the app does not write an ID3 explicit frame; skip for MP3.
+      case 'explicitLyrics': {
+        // iTunes advisory TXXX frame (matches download writer's ITUNESADVISORY).
+        const prev = udt.find((e) => e.description === 'ITUNESADVISORY')
+        record(changes, 'explicitLyrics', prev?.value ?? null, value)
+        if (prev) prev.value = value
+        else udt.push({ description: 'ITUNESADVISORY', value })
+        tags.userDefinedText = udt
+        break
+      }
     }
   }
 
@@ -253,7 +282,8 @@ interface FlacBlock { type: number; isLast: boolean; data: Buffer }
 const FLAC_FIELD_TO_KEY: Record<string, string> = {
   title: 'TITLE', artist: 'ARTIST', album: 'ALBUM', albumArtist: 'ALBUMARTIST',
   trackNumber: 'TRACKNUMBER', trackTotal: 'TRACKTOTAL', discNumber: 'DISCNUMBER',
-  isrc: 'ISRC', year: 'YEAR', date: 'DATE', bpm: 'BPM', explicitLyrics: 'EXPLICIT',
+  isrc: 'ISRC', year: 'YEAR', date: 'DATE', bpm: 'BPM', genre: 'GENRE',
+  trackLength: 'LENGTH', explicitLyrics: 'EXPLICIT',
   albumBarcode: 'BARCODE', albumLabel: 'LABEL'
 }
 
@@ -297,11 +327,22 @@ function applyFlac(filePath: string, plan: PlannedField[], dryRun: boolean): Tag
   for (const { field, value } of plan) {
     const key = FLAC_FIELD_TO_KEY[field]
     if (!key) continue
-    const prevEntry = comments.find((c) => c.toUpperCase().startsWith(key + '='))
+    const matches = (c: string) => c.toUpperCase().startsWith(key + '=')
+    if (field === 'genre') {
+      // FLAC natively supports multiple GENRE comments; the resolved value is
+      // "; "-joined, so split it back out (matches the download writer).
+      const prev = comments.filter(matches).map((c) => c.slice(key.length + 1)).join('; ') || null
+      if (prev === value) continue
+      changes.push({ field, from: prev, to: value })
+      comments = comments.filter((c) => !matches(c))
+      for (const g of value.split('; ')) comments.push(`${key}=${g}`)
+      continue
+    }
+    const prevEntry = comments.find(matches)
     const prev = prevEntry ? prevEntry.slice(key.length + 1) : null
     if (prev === value) continue
     changes.push({ field, from: prev, to: value })
-    comments = comments.filter((c) => !c.toUpperCase().startsWith(key + '='))
+    comments = comments.filter((c) => !matches(c))
     comments.push(`${key}=${value}`)
   }
 
@@ -355,7 +396,29 @@ function serializeVorbis(vendor: string, comments: string[]): Buffer {
 
 // --- Orchestration --------------------------------------------------------
 
-/** Retag (or preview) a single file. Resolves by ISRC, then merge-writes. */
+/**
+ * Merge-write tags onto an existing file from already-resolved metadata.
+ * The download flow calls this directly with authoritative track/album data
+ * (exact IDs — no ISRC reverse-lookup ambiguity); the standalone retag calls it
+ * after resolving by ISRC.
+ */
+export function applyMergeFromMeta(filePath: string, meta: ResolvedMeta, fields: RetagFields, dryRun: boolean): RetagResult {
+  const fmt = formatOf(filePath)
+  if (!fmt) return { path: filePath, status: 'skipped', changes: [], reason: 'unsupported format' }
+
+  const plan = planFields(meta, fields)
+  if (plan.length === 0) return { path: filePath, status: 'skipped', changes: [], reason: 'no selected tags available to write' }
+
+  try {
+    const changes = fmt === 'flac' ? applyFlac(filePath, plan, dryRun) : applyMp3(filePath, plan, dryRun)
+    if (changes.length === 0) return { path: filePath, status: 'skipped', changes: [], reason: 'tags already up to date' }
+    return { path: filePath, status: dryRun ? 'preview' : 'updated', changes }
+  } catch (e: any) {
+    return { path: filePath, status: 'failed', changes: [], error: e?.message || String(e) }
+  }
+}
+
+/** Retag (or preview) a single file by reverse ISRC lookup, then merge-write. */
 export async function retagFile(filePath: string, fields: RetagFields, dryRun: boolean): Promise<RetagResult> {
   const fmt = formatOf(filePath)
   if (!fmt) return { path: filePath, status: 'skipped', changes: [], reason: 'unsupported format' }
@@ -368,16 +431,7 @@ export async function retagFile(filePath: string, fields: RetagFields, dryRun: b
   try { meta = await resolveByIsrc(isrc) } catch (e: any) { return { path: filePath, status: 'failed', changes: [], error: `lookup failed: ${e?.message || e}` } }
   if (!meta) return { path: filePath, status: 'failed', changes: [], error: `no Deezer match for ISRC ${isrc}` }
 
-  const plan = planFields(meta, fields)
-  if (plan.length === 0) return { path: filePath, status: 'skipped', changes: [], reason: 'no selected tags available to write' }
-
-  try {
-    const changes = fmt === 'flac' ? applyFlac(filePath, plan, dryRun) : applyMp3(filePath, plan, dryRun)
-    if (changes.length === 0) return { path: filePath, status: 'skipped', changes: [], reason: 'tags already up to date' }
-    return { path: filePath, status: dryRun ? 'preview' : 'updated', changes }
-  } catch (e: any) {
-    return { path: filePath, status: 'failed', changes: [], error: e?.message || String(e) }
-  }
+  return applyMergeFromMeta(filePath, meta, fields, dryRun)
 }
 
 /** Recursively scan a folder for .mp3/.flac files and read each one's ISRC. */

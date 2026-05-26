@@ -138,6 +138,14 @@ async function downloadAlbum() {
   }
 }
 
+// Refresh tags on already-downloaded files (no re-download). Uses the exact
+// album the user is viewing, so the UPC/label come from the right release (#77).
+async function refreshAlbumTags() {
+  if (album.value && tracks.value.length > 0) {
+    await downloadStore.addAlbumDownload(album.value, tracks.value, true)
+  }
+}
+
 async function downloadSelectedTracks() {
   if (selectedTracks.value.size === 0) return
 
@@ -251,6 +259,17 @@ const contextMenuItems = computed(() => {
                   d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
               {{ albumDownloadState === 'downloading' ? t('albumView.inQueue') : albumDownloadState === 'completed' ? t('albumView.alreadyDownloaded') : t('albumView.downloadAlbum') }}
+            </button>
+            <button
+              @click="refreshAlbumTags"
+              class="btn btn-secondary flex items-center gap-2"
+              :title="t('retag.refreshTagsHint')"
+            >
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {{ t('retag.refreshTagsAction') }}
             </button>
             <button
               @click="toggleSelectionMode"
