@@ -158,6 +158,29 @@ function getAlbum(albumId: string | number): Promise<any> {
   return p
 }
 
+/**
+ * Join every credited artist from a public-API track. The `contributors` array
+ * carries all artists (Main + Featured) — e.g. "Loyal" → Chris Brown, Lil Wayne,
+ * Tyga — whereas `track.artist.name` is only the main artist. Dedupe by name and
+ * keep source order; fall back to the main artist when contributors are absent.
+ */
+function joinContributors(track: any): string {
+  if (Array.isArray(track?.contributors) && track.contributors.length > 0) {
+    const seen = new Set<string>()
+    const names = track.contributors
+      .map((c: any) => str(c?.name).trim())
+      .filter((n: string) => {
+        if (!n) return false
+        const k = n.toLowerCase()
+        if (seen.has(k)) return false
+        seen.add(k)
+        return true
+      })
+    if (names.length > 0) return names.join(', ')
+  }
+  return str(track?.artist?.name)
+}
+
 /** Normalize a public-API track + album object into our tag shape. */
 function buildMeta(track: any, album: any): ResolvedMeta {
   const releaseDate: string = album.release_date || track.release_date || ''
@@ -167,7 +190,7 @@ function buildMeta(track: any, album: any): ResolvedMeta {
     : []
   return {
     title: str(track.title),
-    artist: str(track.artist?.name),
+    artist: joinContributors(track),
     album: str(album.title || track.album?.title),
     albumArtist: str(album.artist?.name || track.artist?.name),
     trackNumber: str(track.track_position),

@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.4] — 2026-05-27
+
+### Fixed
+
+- **"Refresh tags" now respects your tag selection.** Previously the album/playlist *Refresh tags* action wrote the full set of available tags regardless of which ones you'd disabled in Settings — so a disabled tag like Genre still got written. It now writes only the tags you have enabled (a tag missing from older saved settings still defaults to enabled, so nothing is silently dropped).
+- **All credited artists are now written, not just the main one.** Both *Refresh tags* and the standalone Retag Library wrote only the primary artist. They now write every credited artist (main + featured) — e.g. "Chris Brown, Lil Wayne, Tyga" — honoring your artist-separator and *Save only main artist* / *Remove artist combinations* settings.
+
 ## [1.10.3] — 2026-05-27
 
 ### Fixed

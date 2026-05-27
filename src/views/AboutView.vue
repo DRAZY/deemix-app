@@ -35,7 +35,7 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
-    version: '1.10.3',
+    version: '1.10.4',
     date: '2026-05-27',
     items: [
       'Retag Library is now album-aware: it tags every file in an album folder from the one real Deezer album, so track numbers and totals are correct even for songs that were also released as singles (which previously got mis-tagged as 1-of-1).',

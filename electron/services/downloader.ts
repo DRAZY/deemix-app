@@ -1230,9 +1230,41 @@ export class Downloader extends EventEmitter {
 
       const releaseDate: string = trackInfo.PHYSICAL_RELEASE_DATE || ''
       const s = (v: any) => (v === null || v === undefined ? '' : String(v))
+
+      // Build the artist string the same way the download writer does: every
+      // credited artist (main + featured), not just ART_NAME — honoring
+      // saveOnlyMainArtist + artistSeparator. Fixes issue #78 (only the main
+      // artist was written on refresh).
+      let refreshArtist = s(trackInfo.ART_NAME)
+      if (!options.metadataSettings?.saveOnlyMainArtist) {
+        const sepMap: Record<string, string> = {
+          standard: ', ', comma: ',', slash: '/',
+          semicolon: ';', semicolonSpace: '; ', ampersand: ' & '
+        }
+        // NOTE: deliberately NOT honoring useNullSeparator here. The merge writer
+        // (applyMp3/applyFlac) writes a single tag string and does not emit
+        // ID3v2.4/Vorbis multi-value frames, so a NUL separator corrupts the
+        // artist tag (verified: MP3 → "AB" concatenated, FLAC → literal \0).
+        // The visible separator is the only safe choice on the refresh path.
+        const sep = sepMap[options.metadataSettings?.artistSeparator || 'standard'] || ', '
+        const removeArtistCombinations = (options.metadataSettings as any)?.removeArtistCombinations || false
+        let artists: string[] | null = null
+        if (trackInfo.ARTISTS?.length > 0) {
+          artists = trackInfo.ARTISTS.map((a: any) => a.ART_NAME).filter(Boolean)
+        } else if (trackInfo.SNG_CONTRIBUTORS?.main_artist?.length > 0) {
+          artists = [...trackInfo.SNG_CONTRIBUTORS.main_artist]
+          if (trackInfo.SNG_CONTRIBUTORS.featartist?.length > 0) artists.push(...trackInfo.SNG_CONTRIBUTORS.featartist)
+          artists = artists.filter(Boolean)
+        }
+        if (artists && artists.length > 0) {
+          if (removeArtistCombinations) artists = this.filterArtistCombinations(artists)
+          refreshArtist = artists.join(sep)
+        }
+      }
+
       const meta: ResolvedMeta = {
         title: s(trackInfo.SNG_TITLE),
-        artist: s(trackInfo.ART_NAME),
+        artist: refreshArtist,
         album: s(options.albumContext?.albumTitle || trackInfo.ALB_TITLE),
         albumArtist: s(options.albumContext?.albumArtist || trackInfo.ALB_ART_NAME || trackInfo.ART_NAME),
         trackNumber: s(trackInfo.TRACK_NUMBER),
@@ -1250,11 +1282,24 @@ export class Downloader extends EventEmitter {
         explicit: trackInfo.EXPLICIT_LYRICS === true || trackInfo.EXPLICIT_LYRICS === 1
       }
 
-      // Refresh writes the FULL freemode tag set (everything Deezer can provide),
-      // independent of the download tag settings — "refresh" means "make this match
-      // the authoritative release". Merge semantics preserve anything Deezer lacks;
-      // the standalone Retag Library page is where users pick individual tags.
-      const fields: RetagFields = {
+      // Refresh honors the user's tag selection (Settings → Metadata tags): a tag
+      // the user disabled is NOT written. Issue #78: refresh previously wrote the
+      // full freemode set unconditionally, so disabled fields (e.g. Genre) still
+      // landed. Map the user's TagSettings onto the retaggable subset; only fall
+      // back to the full set when no settings were supplied (legacy/programmatic
+      // callers). Merge semantics still preserve anything Deezer lacks.
+      const ts = options.metadataSettings?.tags
+      // Only an EXPLICIT false disables a tag. A key missing from a stale saved
+      // settings blob (predating a newer tag key) must NOT silently disable that
+      // field — default to enabled, matching the user's intent ("I disabled X").
+      const on = (v: boolean | undefined) => v !== false
+      const fields: RetagFields = ts ? {
+        title: on(ts.title), artist: on(ts.artist), album: on(ts.album), albumArtist: on(ts.albumArtist),
+        trackNumber: on(ts.trackNumber), trackTotal: on(ts.trackTotal), discNumber: on(ts.discNumber),
+        isrc: on(ts.isrc), year: on(ts.year), date: on(ts.date), bpm: on(ts.bpm), genre: on(ts.genre),
+        trackLength: on(ts.trackLength), explicitLyrics: on(ts.explicitLyrics),
+        albumBarcode: on(ts.albumBarcode), albumLabel: on(ts.albumLabel)
+      } : {
         title: true, artist: true, album: true, albumArtist: true,
         trackNumber: true, trackTotal: true, discNumber: true, isrc: true,
         year: true, date: true, bpm: true, genre: true, trackLength: true,
