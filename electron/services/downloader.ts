@@ -1250,9 +1250,16 @@ export class Downloader extends EventEmitter {
         explicit: trackInfo.EXPLICIT_LYRICS === true || trackInfo.EXPLICIT_LYRICS === 1
       }
 
-      // Which tags to write = the user's configured tag settings (the retagger
-      // ignores keys it can't source). Merge semantics preserve everything else.
-      const fields = (options.metadataSettings?.tags || {}) as RetagFields
+      // Refresh writes the FULL freemode tag set (everything Deezer can provide),
+      // independent of the download tag settings — "refresh" means "make this match
+      // the authoritative release". Merge semantics preserve anything Deezer lacks;
+      // the standalone Retag Library page is where users pick individual tags.
+      const fields: RetagFields = {
+        title: true, artist: true, album: true, albumArtist: true,
+        trackNumber: true, trackTotal: true, discNumber: true, isrc: true,
+        year: true, date: true, bpm: true, genre: true, trackLength: true,
+        explicitLyrics: true, albumBarcode: true, albumLabel: true
+      }
       const result = applyMergeFromMeta(filePath, meta, fields, false)
       console.log(`[Downloader] Refresh-tags ${result.status} (${result.changes.length} changed): ${filePath}`)
 

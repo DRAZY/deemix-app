@@ -35,6 +35,14 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.2',
+    date: '2026-05-27',
+    items: [
+      'The "Refresh tags" button on albums/playlists now fills in every tag Deezer offers for that release, instead of only the ones enabled in Settings.',
+      'The Retag Library now tells you why a tag didn\'t change — "Already up to date" or "Not available on Deezer" (some albums genuinely have no genre on Deezer) — instead of a silent skip.'
+    ]
+  },
+  {
     version: '1.10.1',
     date: '2026-05-26',
     items: [

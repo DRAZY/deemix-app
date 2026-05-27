@@ -82,6 +82,9 @@ export interface RetagResult {
   path: string
   status: 'updated' | 'skipped' | 'failed' | 'preview'
   changes: TagChange[]
+  // Selected fields Deezer had no value for (e.g. an album with no genre).
+  // Lets the UI say "not available on Deezer" instead of silently skipping.
+  unavailable?: string[]
   reason?: string
   error?: string
 }
@@ -176,11 +179,18 @@ interface PlannedField {
   value: string // non-empty new value
 }
 
-/** Build the list of fields to overlay, honoring user selection and skipping empties. */
-function planFields(meta: ResolvedMeta, fields: RetagFields): PlannedField[] {
+/**
+ * Build the list of fields to overlay, honoring user selection.
+ * A selected field whose Deezer value is empty goes to `unavailable` (so the UI
+ * can say "not available on Deezer" instead of silently doing nothing).
+ */
+function planFields(meta: ResolvedMeta, fields: RetagFields): { plan: PlannedField[]; unavailable: string[] } {
   const plan: PlannedField[] = []
+  const unavailable: string[] = []
   const add = (on: boolean | undefined, field: string, value: string) => {
-    if (on && value) plan.push({ field, value })
+    if (!on) return
+    if (value) plan.push({ field, value })
+    else unavailable.push(field)
   }
   add(fields.title, 'title', meta.title)
   add(fields.artist, 'artist', meta.artist)
@@ -195,11 +205,11 @@ function planFields(meta: ResolvedMeta, fields: RetagFields): PlannedField[] {
   add(fields.bpm, 'bpm', meta.bpm)
   add(fields.genre, 'genre', meta.genre)
   add(fields.trackLength, 'trackLength', meta.duration)
-  // explicit is a boolean we always represent as 1/0 when enabled
+  // explicit is a boolean we always represent as 1/0 when enabled — always available.
   if (fields.explicitLyrics) plan.push({ field: 'explicitLyrics', value: meta.explicit ? '1' : '0' })
   add(fields.albumBarcode, 'albumBarcode', meta.upc)
   add(fields.albumLabel, 'albumLabel', meta.label)
-  return plan
+  return { plan, unavailable }
 }
 
 // --- MP3 merge writer (read-all -> mutate targeted -> write-all) ----------
@@ -406,15 +416,20 @@ export function applyMergeFromMeta(filePath: string, meta: ResolvedMeta, fields:
   const fmt = formatOf(filePath)
   if (!fmt) return { path: filePath, status: 'skipped', changes: [], reason: 'unsupported format' }
 
-  const plan = planFields(meta, fields)
-  if (plan.length === 0) return { path: filePath, status: 'skipped', changes: [], reason: 'no selected tags available to write' }
+  const { plan, unavailable } = planFields(meta, fields)
+  if (plan.length === 0) {
+    return {
+      path: filePath, status: 'skipped', changes: [], unavailable,
+      reason: unavailable.length ? 'selected tags not available on Deezer' : 'no tags selected'
+    }
+  }
 
   try {
     const changes = fmt === 'flac' ? applyFlac(filePath, plan, dryRun) : applyMp3(filePath, plan, dryRun)
-    if (changes.length === 0) return { path: filePath, status: 'skipped', changes: [], reason: 'tags already up to date' }
-    return { path: filePath, status: dryRun ? 'preview' : 'updated', changes }
+    if (changes.length === 0) return { path: filePath, status: 'skipped', changes: [], unavailable, reason: 'tags already up to date' }
+    return { path: filePath, status: dryRun ? 'preview' : 'updated', changes, unavailable }
   } catch (e: any) {
-    return { path: filePath, status: 'failed', changes: [], error: e?.message || String(e) }
+    return { path: filePath, status: 'failed', changes: [], unavailable, error: e?.message || String(e) }
   }
 }
 

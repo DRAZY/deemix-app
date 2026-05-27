@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.2] — 2026-05-27
+
+### Changed
+
+- **"Refresh tags" on albums/playlists now writes the full freemode tag set** (barcode, label, genre, BPM, track length, etc.) from the exact release you're viewing, independent of the Settings → Metadata toggles. "Refresh" now means "make this match the authoritative Deezer release." Merge semantics still preserve anything Deezer doesn't provide; the Retag Library page remains the place for per-tag control.
+
+### Fixed
+
+- **Retag results now explain non-changes instead of silently skipping.** Each file reports "Already up to date" when its tags match Deezer, and "Not available on Deezer: <fields>" when Deezer has no value for a selected tag (e.g. albums with no genre — `genres:{data:[]}`). This resolves the confusion where a genre that doesn't exist upstream looked like a broken write.
+
 ## [1.10.1] — 2026-05-26
 
 ### Fixed

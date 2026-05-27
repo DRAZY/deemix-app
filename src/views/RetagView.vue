@@ -24,6 +24,7 @@ interface TagChange { field: string; from: string | null; to: string }
 interface FileResult {
   status: 'updated' | 'skipped' | 'failed' | 'preview' | 'pending'
   changes: TagChange[]
+  unavailable?: string[]
   reason?: string
   error?: string
 }
@@ -124,7 +125,7 @@ async function run(preview: boolean) {
       const data = await res.json()
       results[f.path] = data.error
         ? { status: 'failed', changes: [], error: data.error }
-        : { status: data.status, changes: data.changes || [], reason: data.reason, error: data.error }
+        : { status: data.status, changes: data.changes || [], unavailable: data.unavailable || [], reason: data.reason, error: data.error }
     } catch (e: any) {
       results[f.path] = { status: 'failed', changes: [], error: e?.message || 'request failed' }
     }
@@ -257,11 +258,22 @@ function resultClass(status?: string) {
                 → <span class="text-green-400">{{ c.to }}</span>
               </p>
             </div>
-            <p v-else-if="results[f.path]?.reason" class="text-xs text-foreground-muted mt-1">
-              {{ results[f.path].reason }}
+            <!-- "Already up to date" when nothing changed and nothing was unavailable -->
+            <p
+              v-else-if="results[f.path] && results[f.path].status === 'skipped' && !results[f.path].unavailable?.length && f.status === 'matched'"
+              class="text-xs text-foreground-muted mt-1"
+            >
+              {{ t('retag.upToDate') }}
             </p>
             <p v-else-if="results[f.path]?.error" class="text-xs text-red-400 mt-1">
               {{ results[f.path].error }}
+            </p>
+            <!-- Fields Deezer has no value for — shown even alongside changes -->
+            <p
+              v-if="results[f.path]?.unavailable?.length"
+              class="text-xs text-amber-400/80 mt-1"
+            >
+              {{ t('retag.notOnDeezer') }}: {{ (results[f.path]?.unavailable || []).map(k => t('settings.tags.' + k)).join(', ') }}
             </p>
           </div>
           <span
