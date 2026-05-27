@@ -51,6 +51,18 @@ const matchedFiles = computed(() => files.value.filter(f => f.status === 'matche
 const skippedCount = computed(() => files.value.filter(f => f.status !== 'matched').length)
 const anyFieldSelected = computed(() => fieldKeys.some(k => fields[k]))
 
+// Per-file selection — lets users retag a subset of the folder, or just the
+// file(s) that errored, instead of re-running the whole list.
+const selected = reactive<Record<string, boolean>>({})
+const selectedFiles = computed(() => matchedFiles.value.filter(f => selected[f.path]))
+const allSelected = computed<boolean>({
+  get: () => matchedFiles.value.length > 0 && matchedFiles.value.every(f => selected[f.path]),
+  set: (v: boolean) => { matchedFiles.value.forEach(f => { selected[f.path] = v }) }
+})
+function selectFailedOnly() {
+  matchedFiles.value.forEach(f => { selected[f.path] = results[f.path]?.status === 'failed' })
+}
+
 const summary = computed(() => {
   let updated = 0, skipped = 0, failed = 0
   for (const r of Object.values(results)) {
@@ -74,6 +86,7 @@ async function pickFolder() {
     folder.value = picked
     files.value = []
     Object.keys(results).forEach(k => delete results[k])
+    Object.keys(selected).forEach(k => delete selected[k])
   }
 }
 
@@ -91,6 +104,9 @@ async function scan() {
     const data = await res.json()
     if (data.error) { toastStore.error(data.error); return }
     files.value = data.files || []
+    // Default to all matched files selected — one click still retags everything.
+    Object.keys(selected).forEach(k => delete selected[k])
+    matchedFiles.value.forEach(f => { selected[f.path] = true })
     if (matchedFiles.value.length === 0) {
       toastStore.info(t('retag.noIsrcWarning'))
     }
@@ -101,35 +117,46 @@ async function scan() {
   }
 }
 
-async function run(preview: boolean) {
-  if (matchedFiles.value.length === 0 || !anyFieldSelected.value) return
+function buildSelectedFields(): Record<string, boolean> {
+  const selectedFields: Record<string, boolean> = {}
+  fieldKeys.forEach(k => { if (fields[k]) selectedFields[k] = true })
+  return selectedFields
+}
+
+// Retag one file, writing its result. Shared by the full run, "retry failed",
+// and per-file retry — so a transient Deezer timeout on one track doesn't force
+// a re-run of the whole list.
+async function retagOne(path: string, preview: boolean, selectedFields: Record<string, boolean>) {
+  results[path] = { status: 'pending', changes: [] }
+  try {
+    const res = await fetch(apiUrl('/api/retag/file'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path, folder: folder.value, fields: selectedFields, dryRun: preview })
+    })
+    const data = await res.json()
+    results[path] = data.error
+      ? { status: 'failed', changes: [], error: data.error }
+      : { status: data.status, changes: data.changes || [], unavailable: data.unavailable || [], unchanged: data.unchanged || [], reason: data.reason, error: data.error }
+  } catch (e: any) {
+    results[path] = { status: 'failed', changes: [], error: e?.message || 'request failed' }
+  }
+}
+
+// Sequentially retag a set of files (does NOT clear existing results, so a retry
+// leaves the already-succeeded rows alone). The full run clears first; retries don't.
+async function runTargets(targets: ScannedFile[], preview: boolean) {
+  if (targets.length === 0 || !anyFieldSelected.value) return
   dryRun.value = preview
   isRunning.value = true
   cancelRequested.value = false
-  Object.keys(results).forEach(k => delete results[k])
-  const targets = matchedFiles.value
   progress.current = 0
   progress.total = targets.length
-
-  const selectedFields: Record<string, boolean> = {}
-  fieldKeys.forEach(k => { if (fields[k]) selectedFields[k] = true })
+  const selectedFields = buildSelectedFields()
 
   for (const f of targets) {
     if (cancelRequested.value) break
-    results[f.path] = { status: 'pending', changes: [] }
-    try {
-      const res = await fetch(apiUrl('/api/retag/file'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: f.path, folder: folder.value, fields: selectedFields, dryRun: preview })
-      })
-      const data = await res.json()
-      results[f.path] = data.error
-        ? { status: 'failed', changes: [], error: data.error }
-        : { status: data.status, changes: data.changes || [], unavailable: data.unavailable || [], unchanged: data.unchanged || [], reason: data.reason, error: data.error }
-    } catch (e: any) {
-      results[f.path] = { status: 'failed', changes: [], error: e?.message || 'request failed' }
-    }
+    await retagOne(f.path, preview, selectedFields)
     progress.current++
     // Politeness: small gap between public-API calls to avoid hammering Deezer.
     await new Promise(r => setTimeout(r, 250))
@@ -139,6 +166,26 @@ async function run(preview: boolean) {
   if (!cancelRequested.value && !preview) {
     toastStore.success(t('retag.summary', summary.value))
   }
+}
+
+async function run(preview: boolean) {
+  if (selectedFiles.value.length === 0 || !anyFieldSelected.value) return
+  await runTargets(selectedFiles.value, preview)
+}
+
+// Files that errored (e.g. a Deezer timeout) in the last run.
+const failedFiles = computed(() => matchedFiles.value.filter(f => results[f.path]?.status === 'failed'))
+
+// Re-run only the failed files, reusing the last preview/write mode.
+async function retryFailed() {
+  if (failedFiles.value.length === 0 || isRunning.value) return
+  await runTargets([...failedFiles.value], dryRun.value)
+}
+
+// Re-run a single file without disturbing the rest (no full progress bar).
+async function retryOne(f: ScannedFile) {
+  if (isRunning.value || results[f.path]?.status === 'pending' || !anyFieldSelected.value) return
+  await retagOne(f.path, dryRun.value, buildSelectedFields())
 }
 
 function cancel() { cancelRequested.value = true }
@@ -203,19 +250,26 @@ function resultClass(status?: string) {
       <div v-if="matchedFiles.length" class="flex items-center gap-2">
         <button
           class="btn btn-secondary"
-          :disabled="isRunning || !anyFieldSelected"
+          :disabled="isRunning || !anyFieldSelected || !selectedFiles.length"
           @click="run(true)"
         >
           {{ isRunning && dryRun ? t('retag.previewing') : t('retag.preview') }}
         </button>
         <button
           class="btn btn-primary"
-          :disabled="isRunning || !anyFieldSelected"
+          :disabled="isRunning || !anyFieldSelected || !selectedFiles.length"
           @click="run(false)"
         >
-          {{ isRunning && !dryRun ? t('retag.running') : t('retag.run', { count: matchedFiles.length }) }}
+          {{ isRunning && !dryRun ? t('retag.running') : t('retag.run', { count: selectedFiles.length }) }}
         </button>
         <button v-if="isRunning" class="btn btn-ghost" @click="cancel">{{ t('retag.cancel') }}</button>
+        <button
+          v-if="!isRunning && failedFiles.length"
+          class="btn btn-ghost text-red-400"
+          @click="retryFailed"
+        >
+          {{ t('retag.retryFailed', { count: failedFiles.length }) }}
+        </button>
         <div v-if="isRunning" class="text-sm text-foreground-muted ml-2">
           {{ progress.current }} / {{ progress.total }}
         </div>
@@ -231,18 +285,39 @@ function resultClass(status?: string) {
 
       <!-- Summary -->
       <div v-if="Object.keys(results).length" class="text-sm">
-        <span class="text-green-400">{{ summary.updated }} {{ dryRun ? t('retag.preview') : t('retag.resultUpdated') }}</span>
+        <span class="text-green-400">{{ summary.updated }} {{ dryRun ? t('retag.previewWouldChange') : t('retag.resultUpdated') }}</span>
         · <span class="text-foreground-muted">{{ summary.skipped }} {{ t('retag.resultSkipped') }}</span>
         · <span class="text-red-400">{{ summary.failed }} {{ t('retag.resultFailed') }}</span>
       </div>
 
       <!-- Per-file results -->
       <div v-if="matchedFiles.length" class="bg-background-secondary rounded-xl border border-zinc-800 divide-y divide-zinc-800">
+        <!-- Selection header: pick a subset, or just the failed ones, to retag -->
+        <div class="p-3 flex items-center gap-3 text-xs text-foreground-muted">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" v-model="allSelected" :disabled="isRunning" class="accent-primary-500" />
+            <span>{{ t('retag.selectAll') }}</span>
+          </label>
+          <span>· {{ t('retag.selectedCount', { count: selectedFiles.length }) }}</span>
+          <button
+            v-if="failedFiles.length && !isRunning"
+            class="text-red-400 hover:underline"
+            @click="selectFailedOnly"
+          >
+            {{ t('retag.selectFailed', { count: failedFiles.length }) }}
+          </button>
+        </div>
         <div
           v-for="f in matchedFiles"
           :key="f.path"
           class="p-3 flex items-start justify-between gap-3"
         >
+          <input
+            type="checkbox"
+            v-model="selected[f.path]"
+            :disabled="isRunning"
+            class="accent-primary-500 mt-1 flex-shrink-0"
+          />
           <div class="min-w-0 flex-1">
             <p class="text-sm truncate">{{ f.name }}</p>
             <p class="text-xs text-foreground-muted truncate">
@@ -277,15 +352,23 @@ function resultClass(status?: string) {
               {{ t('retag.notOnDeezer') }}: {{ (results[f.path]?.unavailable || []).map(k => t('settings.tags.' + k)).join(', ') }}
             </p>
           </div>
-          <span
-            v-if="results[f.path]"
-            class="text-xs font-medium flex-shrink-0"
-            :class="resultClass(results[f.path].status)"
-          >
-            {{ results[f.path].status === 'pending' ? '…' :
-               results[f.path].status === 'preview' ? t('retag.preview') :
-               t('retag.result' + results[f.path].status.charAt(0).toUpperCase() + results[f.path].status.slice(1)) }}
-          </span>
+          <div v-if="results[f.path]" class="flex items-center gap-2 flex-shrink-0">
+            <button
+              v-if="results[f.path].status === 'failed' && !isRunning"
+              class="text-xs text-primary-400 hover:underline"
+              @click="retryOne(f)"
+            >
+              {{ t('retag.retry') }}
+            </button>
+            <span
+              class="text-xs font-medium"
+              :class="resultClass(results[f.path].status)"
+            >
+              {{ results[f.path].status === 'pending' ? '…' :
+                 results[f.path].status === 'preview' ? t('retag.previewed') :
+                 t('retag.result' + results[f.path].status.charAt(0).toUpperCase() + results[f.path].status.slice(1)) }}
+            </span>
+          </div>
         </div>
       </div>
 

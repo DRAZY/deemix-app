@@ -6,6 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.6] — 2026-05-27
+
+### Added
+
+- **Retag Library: pick exactly which files to retag.** Every scanned file now has a checkbox (all selected by default, so one click still retags the whole folder). "Preview" and "Retag" act only on the files you've selected, with a **Select all** toggle and a live selected-count.
+- **Recover from a Deezer timeout without redoing the list.** If a track errors mid-scan, each failed row has an inline **Retry**, plus **Select failed (N)** and **Retry failed (N)** shortcuts — retag just the affected files, reusing your last preview/write mode, without disturbing the rows that already succeeded.
+
+### Changed
+
+- The per-file status on the right no longer repeats "Preview changes" on every row — it now reads **"Preview"**, and the summary reads "N would change" in preview mode.
+
 ## [1.10.5] — 2026-05-27
 
 ### Fixed
