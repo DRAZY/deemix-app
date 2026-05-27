@@ -1004,7 +1004,12 @@ export class Downloader extends EventEmitter {
     // its tags from the authoritative track + album data we already hold (exact IDs,
     // correct UPC/label via albumContext — no ISRC reverse-lookup ambiguity, #77).
     if (options.overwriteMode === 'refresh-tags') {
-      await this.refreshExistingFileTags(initialOutputPath, trackInfo, options, progress)
+      // Don't trust the single recomputed path — locate the file across candidate
+      // layouts (playlist folder, album folder, prefix-agnostic glob) so a playlist
+      // refresh doesn't silently skip files that live in album folders or whose
+      // playlist position shifted (issue #79).
+      const located = this.locateExistingTrackFile(trackInfo, options, initialOutputPath, actualFormat)
+      await this.refreshExistingFileTags(located || initialOutputPath, trackInfo, options, progress)
       return
     }
 
@@ -1549,6 +1554,83 @@ export class Downloader extends EventEmitter {
     }
 
     return finalPath
+  }
+
+  /**
+   * Refresh-tags only: find the track's EXISTING file on disk. The refresh path
+   * recomputes where the file *should* be from current settings, but a playlist
+   * refresh recomputes a playlist-layout path (`%playlist%/%position% - %artist%
+   * - %title%`) that frequently does NOT match where the file actually lives —
+   * the same track may sit in an album folder (downloaded via album), or the
+   * playlist order shifted so the `%position%` prefix changed. Checking only the
+   * one recomputed path made playlist refresh silently skip and rewrite nothing
+   * (issue #79). Returns the first existing candidate path, or null.
+   */
+  private locateExistingTrackFile(
+    trackInfo: any,
+    options: DownloadOptions,
+    primaryPath: string,
+    actualFormat?: string
+  ): string | null {
+    const ext = (actualFormat || options.quality) === 'FLAC' ? '.flac' : '.mp3'
+    const candidates: string[] = [primaryPath]
+
+    // Album-layout candidate: recompute as if this were an album download. Most
+    // playlist tracks were originally downloaded (and organized) by album.
+    if (options.isFromPlaylist) {
+      try {
+        const albumOpts: DownloadOptions = {
+          ...options,
+          isFromPlaylist: false,
+          playlistName: undefined,
+          playlistPosition: undefined,
+          playlistContext: undefined,
+          albumContext: options.albumContext || {
+            albumId: trackInfo.ALB_ID,
+            albumTitle: trackInfo.ALB_TITLE || 'Unknown Album',
+            albumArtist: trackInfo.ALB_ART_NAME || trackInfo.ART_NAME || 'Unknown Artist'
+          }
+        }
+        candidates.push(this.buildOutputPath(trackInfo, albumOpts, actualFormat))
+      } catch { /* candidate optional */ }
+    }
+
+    for (const c of candidates) {
+      if (c && fs.existsSync(c)) return c
+    }
+
+    // Prefix-agnostic glob: every filename template ends with %title%, so the
+    // file name ends with the (sanitized) title regardless of the `NN - ` /
+    // `position - artist - ` prefix. Scan the candidate directories and match on
+    // the title suffix — handles playlist reordering and template changes.
+    const baseTitle = trackInfo.SNG_TITLE || 'Unknown Track'   // parity with buildOutputPath
+    const titleBase = trackInfo.VERSION
+      ? `${baseTitle} (${String(trackInfo.VERSION).replace(/^\((.+)\)$/, '$1')})`
+      : baseTitle
+    const wantTitle = this.sanitizeFilename(titleBase).toLowerCase()
+    const wantTrackNum = trackInfo.TRACK_NUMBER?.toString().padStart(2, '0')
+    if (wantTitle) {
+      const dirs = Array.from(new Set(candidates.map(c => path.dirname(c)).filter(Boolean)))
+      for (const dir of dirs) {
+        let entries: string[] = []
+        try { entries = fs.readdirSync(dir) } catch { continue }
+        const matches = entries.filter(name => {
+          if (path.extname(name).toLowerCase() !== ext) return false
+          const stem = name.slice(0, -ext.length).toLowerCase()
+          return stem === wantTitle || stem.endsWith(`- ${wantTitle}`)
+        })
+        if (matches.length === 1) return path.join(dir, matches[0])
+        if (matches.length > 1 && wantTrackNum) {
+          // Ambiguous (e.g. an album with two same-titled tracks). Disambiguate by
+          // the track-number prefix; if still not unique, do NOT guess — skip this
+          // dir rather than risk retagging the wrong file.
+          const byNum = matches.filter(n => n.startsWith(`${wantTrackNum} `))
+          if (byNum.length === 1) return path.join(dir, byNum[0])
+        }
+        // matches.length > 1 and not uniquely resolvable → fall through (no guess)
+      }
+    }
+    return null
   }
 
   sanitizeFilename(name: string): string {

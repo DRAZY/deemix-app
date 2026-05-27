@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.5] — 2026-05-27
+
+### Fixed
+
+- **Playlist "Refresh tags" now actually finds your files.** Refresh recomputes where a track's file should be from your current settings, but for a playlist it built a playlist-layout path (`Playlist/NNN - Artist - Title`). When the track actually lived in an **album folder** (downloaded via album) or the **playlist order had shifted** (changing the position prefix), that path didn't exist — so refresh silently did nothing, which looked like "it ignored my tag settings / dropped artists." Refresh now locates the real file across layouts: the album-folder location and a position-agnostic match by title, in addition to the playlist path. Same-title tracks in one folder are disambiguated by track number, and a genuinely ambiguous match is skipped rather than risk retagging the wrong file. (The tag-writing itself was already correct in 1.10.4 — this was a file-location bug, playlist-only.)
+
 ## [1.10.4] — 2026-05-27
 
 ### Fixed
