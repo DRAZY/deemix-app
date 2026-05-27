@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.3] — 2026-05-27
+
+### Fixed
+
+- **Retag Library is now album-aware — fixes wrong track numbers/totals for tracks also released as singles.** Previously the scanner looked up each file's ISRC independently, and Deezer returns whatever release it ties to that ISRC — for songs pre-released as singles, that's the *single* (1 track, position 1, the single's barcode), which mangled track number, track total, album title, and UPC. Now, for an album folder, Deemix resolves the **one authoritative Deezer album** the files belong to and maps every track into it by ISRC — so all tracks get the album's UPC/label/genre, the correct track total, and their real sequential track numbers, regardless of single releases. Files genuinely not part of that album fall back to per-file lookup.
+
+### Added
+
+- **"✓ Already correct" indicator.** The Retag Library now shows which selected tags already match Deezer (instead of a silent skip), alongside the existing "Not available on Deezer" note.
+
 ## [1.10.2] — 2026-05-27
 
 ### Changed

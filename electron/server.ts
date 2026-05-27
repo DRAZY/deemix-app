@@ -11,7 +11,7 @@ import { spotifyAPI } from './services/spotifyAPI'
 import { spotifyConverter } from './services/spotifyConverter'
 import { playlistSync } from './services/playlistSync'
 import { artistSync, type FirstSyncMode, type ArtistSyncFilters } from './services/artistSync'
-import { scanFolder, retagFile, type RetagFields } from './services/retagger'
+import { scanFolder, retagFile, retagFileInFolder, type RetagFields } from './services/retagger'
 
 // File-based cache for discography (persists across app restarts)
 const DISCOGRAPHY_FILE_CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
@@ -2853,12 +2853,16 @@ export class DeemixServer extends EventEmitter {
   private async handleRetagFile(req: IncomingMessage, res: ServerResponse): Promise<void> {
     if (req.method !== 'POST') { res.writeHead(405); res.end('Method Not Allowed'); return }
     try {
-      const { path: filePath, fields, dryRun } = await this.parseBody(req)
+      const { path: filePath, folder, fields, dryRun } = await this.parseBody(req)
       if (!filePath || typeof filePath !== 'string') {
         this.sendJSON(res, { error: 'path is required' }, 400)
         return
       }
-      const result = await retagFile(filePath, (fields || {}) as RetagFields, dryRun === true)
+      // Album-aware when a folder is supplied (resolves the whole folder against
+      // its one authoritative Deezer album); per-file ISRC lookup otherwise.
+      const result = folder && typeof folder === 'string'
+        ? await retagFileInFolder(filePath, folder, (fields || {}) as RetagFields, dryRun === true)
+        : await retagFile(filePath, (fields || {}) as RetagFields, dryRun === true)
       this.sendJSON(res, result)
     } catch (error: any) {
       this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)

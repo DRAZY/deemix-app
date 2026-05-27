@@ -44,6 +44,7 @@
     "refreshTagsAction": "Refresh tags",
     "refreshTagsHint": "Rewrite tags on already-downloaded files from this exact release — no re-download, audio untouched",
     "upToDate": "Already up to date — tags match Deezer.",
+    "alreadyCorrect": "Already correct",
     "notOnDeezer": "Not available on Deezer"
   },
   "sidebar": {
