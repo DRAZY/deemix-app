@@ -40,6 +40,10 @@ export const useDownloadStore = defineStore('downloads', () => {
     playlistIdToStatus.clear()
 
     for (const d of downloads.value) {
+      // Refresh-tags items are not downloads — they must not contribute to the
+      // downloaded/in-queue status maps (otherwise refreshing an album would
+      // make it look downloaded).
+      if (d.refresh) continue
       if (d.track?.id) {
         trackIdToStatus.set(d.track.id, d.status)
       }
@@ -273,6 +277,10 @@ export const useDownloadStore = defineStore('downloads', () => {
   }
 
   function recordHistory(item: DownloadItem) {
+    // A "Refresh tags" run is not a download — keep it out of history (and
+    // therefore out of stats, which are derived from history). Single chokepoint
+    // so no call site can accidentally log a refresh.
+    if (item.refresh) return
     const entry: DownloadHistoryEntry = {
       id: item.id,
       title: item.title,
@@ -531,12 +539,14 @@ export const useDownloadStore = defineStore('downloads', () => {
       totalTracks: tracks.length,
       completedTracks: 0,
       failedTracks: [],
-      trackIds: []
+      trackIds: [],
+      refresh: refreshTags
     }
 
     downloads.value = [item, ...downloads.value]
-    // Update O(1) lookup Map immediately
-    if (album.id) {
+    // Update O(1) lookup Map immediately — but a refresh must NOT touch the
+    // album's downloaded-status (it's a tag operation, not a download).
+    if (album.id && !refreshTags) {
       albumIdToStatus.set(album.id, 'pending')
     }
     saveDownloads()
@@ -620,12 +630,13 @@ export const useDownloadStore = defineStore('downloads', () => {
       totalTracks: tracks.length,
       completedTracks: 0,
       failedTracks: [],
-      trackIds: []
+      trackIds: [],
+      refresh: refreshTags
     }
 
     downloads.value = [item, ...downloads.value]
-    // Update O(1) lookup Map immediately
-    if (playlist.id) {
+    // Update O(1) lookup Map immediately — refresh must not touch downloaded-status.
+    if (playlist.id && !refreshTags) {
       playlistIdToStatus.set(playlist.id, 'pending')
     }
     saveDownloads()
@@ -891,10 +902,10 @@ export const useDownloadStore = defineStore('downloads', () => {
       if (previousStatus !== 'completed' && previousStatus !== 'error') {
         const toastStore = useToastStore()
         if (serverItem.status === 'completed') {
-          toastStore.success(`Downloaded "${item.title}"`)
+          toastStore.success(item.refresh ? `Refreshed tags for "${item.title}"` : `Downloaded "${item.title}"`)
           recordHistory(item)
         } else if (serverItem.status === 'error') {
-          toastStore.error(`Download failed: "${item.title}"`)
+          toastStore.error(item.refresh ? `Tag refresh failed: "${item.title}"` : `Download failed: "${item.title}"`)
           recordHistory(item)
         }
       }
@@ -1049,14 +1060,22 @@ export const useDownloadStore = defineStore('downloads', () => {
 
         // Show toast notification and record history
         const toastStore = useToastStore()
-        if (newStatus === 'completed') {
+        if (item.refresh) {
+          if (newStatus === 'completed') {
+            toastStore.success(`Refreshed tags for "${item.title}"`)
+          } else if (errorCount === trackIds.length) {
+            toastStore.error(`Tag refresh failed: "${item.title}"`)
+          } else {
+            toastStore.warning(`Refreshed tags for "${item.title}" (${errorCount} track${errorCount > 1 ? 's' : ''} skipped)`)
+          }
+        } else if (newStatus === 'completed') {
           toastStore.success(`Downloaded "${item.title}"`)
         } else if (errorCount === trackIds.length) {
           toastStore.error(`Download failed: "${item.title}"`)
         } else {
           toastStore.warning(`Downloaded "${item.title}" with ${errorCount} failed track${errorCount > 1 ? 's' : ''}`)
         }
-        recordHistory(item)
+        recordHistory(item) // no-ops for refresh items
       }
     }
 
@@ -1068,15 +1087,17 @@ export const useDownloadStore = defineStore('downloads', () => {
     if (item) {
       item.status = status
       if (error) item.error = error
-      // Update O(1) lookup Maps
-      if (item.track?.id) {
-        trackIdToStatus.set(item.track.id, status)
-      }
-      if (item.type === 'album' && item.album?.id) {
-        albumIdToStatus.set(item.album.id, status)
-      }
-      if (item.type === 'playlist' && item.playlist?.id) {
-        playlistIdToStatus.set(item.playlist.id, status)
+      // Update O(1) lookup Maps — refresh items never affect downloaded-status.
+      if (!item.refresh) {
+        if (item.track?.id) {
+          trackIdToStatus.set(item.track.id, status)
+        }
+        if (item.type === 'album' && item.album?.id) {
+          albumIdToStatus.set(item.album.id, status)
+        }
+        if (item.type === 'playlist' && item.playlist?.id) {
+          playlistIdToStatus.set(item.playlist.id, status)
+        }
       }
       saveDownloads()
     }

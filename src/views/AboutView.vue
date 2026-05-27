@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.1',
+    date: '2026-05-26',
+    items: [
+      'Polish: "Refresh tags" now reads as a tag refresh in the queue (not a download), and is kept out of your download history and stats. Refreshing an album you haven\'t downloaded no longer marks it as downloaded.'
+    ]
+  },
+  {
     version: '1.10.0',
     date: '2026-05-26',
     items: [

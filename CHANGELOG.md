@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.1] — 2026-05-26
+
+### Fixed
+
+- **"Refresh tags" no longer behaves like a download in the queue.** Refresh runs are now labeled "Refreshing tags / Tags refreshed", are excluded from download history and stats, and never set an album/playlist's "downloaded" status. In particular, refreshing an album whose files aren't on disk no longer falsely marks it as downloaded. Playlist M3U files are left untouched during a refresh. Normal downloads are unaffected.
+
 ## [1.10.0] — 2026-05-26
 
 ### Added

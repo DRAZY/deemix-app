@@ -290,7 +290,16 @@ function getStatusColor(status: string): string {
   }
 }
 
-function getStatusText(status: string): string {
+function getStatusText(status: string, refresh = false): string {
+  // Refresh-tags items reuse the download queue but must read as a tag refresh.
+  if (refresh) {
+    switch (status) {
+      case 'pending':
+      case 'downloading': return t('downloads.status.refreshing')
+      case 'completed': return t('downloads.status.refreshed')
+      case 'error': return t('downloads.status.refreshFailed')
+    }
+  }
   switch (status) {
     case 'pending': return t('downloads.status.pending')
     case 'downloading': return t('downloads.status.downloading')
@@ -660,7 +669,7 @@ function copyAllErrorDetails() {
             </div>
             <div v-else>
               <p :class="[getStatusColor(item.status), isSlim ? 'text-xs' : 'text-sm']" class="font-medium">
-                {{ getStatusText(item.status) }}
+                {{ getStatusText(item.status, item.refresh) }}
                 <span v-if="(item.status === 'completed' || item.status === 'error') && (item.totalTracks || item.originalTotalTracks)" class="text-foreground-muted font-normal">
                   ({{ (item.previouslyCompletedTracks || 0) + (item.completedTracks || 0) }}/{{ item.originalTotalTracks || item.totalTracks }})
                 </span>

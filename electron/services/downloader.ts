@@ -1258,15 +1258,8 @@ export class Downloader extends EventEmitter {
 
       progress.status = 'completed'
       progress.progress = 100
-      if (options.isFromPlaylist && options.playlistName) {
-        this.recordM3UEntry(options._m3uTrackerId || options.playlistName || "", {
-          position: options.playlistPosition || 0,
-          duration: trackInfo.DURATION || 0,
-          artist: trackInfo.ART_NAME || 'Unknown Artist',
-          title: progress.trackTitle || trackInfo.SNG_TITLE || 'Unknown Track',
-          absolutePath: filePath
-        })
-      }
+      // Note: no M3U regeneration on refresh — we're only touching tag blocks,
+      // not changing files or paths, so the existing playlist file is left alone.
       this.emit('progress', progress)
       this.emit('complete', { ...progress, path: filePath })
     } catch (error: any) {

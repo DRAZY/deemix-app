@@ -129,6 +129,10 @@ export interface DownloadItem {
   speed?: number        // Bytes per second (if server provides it)
   bytesDownloaded?: number
   totalBytes?: number
+  // True when this queue item is a "Refresh tags" operation, not a download.
+  // Refresh items are excluded from download history/stats and never set the
+  // album/playlist "downloaded" status. See deemix-v1.10.1-refresh-polish.
+  refresh?: boolean
 }
 
 export interface DownloadHistoryEntry {

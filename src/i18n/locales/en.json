@@ -132,7 +132,10 @@
       "completed": "Completed",
       "error": "Failed",
       "paused": "Paused",
-      "converting": "Converting..."
+      "converting": "Converting...",
+      "refreshing": "Refreshing tags...",
+      "refreshed": "Tags refreshed",
+      "refreshFailed": "Tag refresh failed"
     },
     "remove": "Remove",
     "retry": "Retry",
