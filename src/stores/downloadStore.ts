@@ -259,8 +259,31 @@ export const useDownloadStore = defineStore('downloads', () => {
     if (saved) {
       try {
         downloads.value = JSON.parse(saved)
+        // Any item still marked in-flight was interrupted by the app closing —
+        // the download queue restarts empty, so nothing is actually running and
+        // it would otherwise sit as a permanent "downloading" zombie with no way
+        // to resume except deleting and re-adding the link (issue #81). Flip it
+        // to `error` so the existing per-item retry control appears and
+        // retryDownload()/retryFailedTracks() can re-run it (already-downloaded
+        // files are skipped, so it effectively resumes). Refresh (retag) items
+        // are skipped — retrying one routes through addAlbumDownload WITHOUT the
+        // refresh flag, which would re-download instead of re-tag.
+        let interrupted = 0
+        for (const d of downloads.value) {
+          if ((d.status === 'downloading' || d.status === 'pending') && !d.refresh) {
+            d.status = 'error'
+            d.error = 'Interrupted — the app closed before this finished. Click retry to resume (already-downloaded tracks are skipped).'
+            d.speed = 0
+            interrupted++
+          }
+        }
         // Rebuild O(1) lookup Maps after loading
         rebuildLookupMaps()
+        // Persist the corrected statuses so a second restart stays consistent.
+        if (interrupted > 0) {
+          console.log(`[DownloadStore] Marked ${interrupted} interrupted download(s) as retryable on startup`)
+          saveDownloads()
+        }
       } catch (e) {
         console.error('Failed to load downloads:', e)
       }

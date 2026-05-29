@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.7] — 2026-05-29
+
+### Fixed
+
+- **Interrupted downloads are now retryable instead of getting stuck.** If you closed the app mid-download (common with large queues), those items came back showing "downloading" forever with no way to continue — you had to delete and re-add the link. On startup, any download that was still in progress is now marked as interrupted so the existing **Retry** button appears; retrying re-runs it and skips already-downloaded tracks, so it effectively resumes. (Refresh-tags operations are left alone.)
+
 ## [1.10.6] — 2026-05-27
 
 ### Added

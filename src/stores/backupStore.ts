@@ -90,7 +90,7 @@ export interface ApplyResult {
   errors: Partial<Record<SegmentKey, string>>
 }
 
-const BACKUP_APP_VERSION = '1.10.6'
+const BACKUP_APP_VERSION = '1.10.7'
 const FAVORITES_LOCALSTORAGE_KEY = 'favorites'
 
 export const useBackupStore = defineStore('backup', () => {
