@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.8',
+    date: '2026-05-30',
+    items: [
+      'Fixed downloads that failed with "Track unavailable on Deezer" even though the song plays fine — common on compilation/playlist versions of a track. The app now falls back to the original single release (matched by ISRC) and downloads that instead, the same move you\'d make by hand.'
+    ]
+  },
+  {
     version: '1.10.7',
     date: '2026-05-27',
     items: [

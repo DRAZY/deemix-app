@@ -1509,6 +1509,25 @@ export class DeezerAuth extends EventEmitter {
       }
     }
 
+    // Attempt 4: Public-API ISRC resolution (last resort).
+    // The private song.getListByIsrc often surfaces only the restricted master
+    // itself (e.g. a compilation/playlist version with limited streaming rights),
+    // so attempts 1-3 all fail. Deezer's PUBLIC catalog endpoint resolves the same
+    // ISRC to its canonical track ID — usually the original single — which is
+    // frequently streamable when the compilation master is not. This mirrors what
+    // a user does by hand: find the original single and download that instead.
+    if (trackInfo.ISRC) {
+      const publicId = await this.resolvePublicTrackIdByIsrc(trackInfo.ISRC)
+      if (publicId && String(publicId) !== String(trackId) && String(publicId) !== String(fallbackId || '')) {
+        console.log(`[DeezerAuth] Trying public-API ISRC alternative: ${publicId}`)
+        result = await tryGetUrl(publicId)
+        if (result) {
+          console.log('[DeezerAuth] Got media URL via public-API ISRC alternative', publicId, 'format:', result.format)
+          return { ...result, resolvedTrackId: publicId }
+        }
+      }
+    }
+
     throw new Error(
       'Track unavailable on Deezer. The Media API rejected the original track, ' +
       'its FALLBACK version, and every ISRC-matched alternative — this usually means ' +
@@ -1649,6 +1668,39 @@ export class DeezerAuth extends EventEmitter {
       })
       req.on('error', reject)
       req.write(postData)
+      req.end()
+    })
+  }
+
+  /**
+   * Resolve an ISRC to its canonical track ID via Deezer's PUBLIC catalog API
+   * (no auth required). Last-resort fallback for getTrackUrl: when the private
+   * song.getListByIsrc lookup surfaces no streamable alternative, the public
+   * endpoint reliably returns the original-single master, which is often
+   * downloadable even when a compilation/playlist master is rights-restricted.
+   * Never throws — resolves to null on any error, timeout, or no-match so the
+   * caller falls through to the final "Track unavailable" error unchanged.
+   */
+  private resolvePublicTrackIdByIsrc(isrc: string): Promise<string | number | null> {
+    return new Promise((resolve) => {
+      const req = https.request(
+        `https://api.deezer.com/track/isrc:${encodeURIComponent(isrc)}`,
+        { method: 'GET', agent: httpsAgent, timeout: 15000 },
+        (res) => {
+          let data = ''
+          res.on('data', chunk => data += chunk)
+          res.on('end', () => {
+            try {
+              const json = JSON.parse(data)
+              resolve(json && json.id && !json.error ? json.id : null)
+            } catch {
+              resolve(null)
+            }
+          })
+        }
+      )
+      req.on('timeout', () => { req.destroy(); resolve(null) })
+      req.on('error', () => resolve(null))
       req.end()
     })
   }

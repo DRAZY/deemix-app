@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.8] — 2026-05-30
+
+### Fixed
+
+- **Tracks that failed with "Track unavailable on Deezer" despite being playable now download.** This typically hit the compilation/playlist version of a song whose streaming rights are restricted on that specific release (the public catalog still shows it as available). The download fallback chain gains a final rung: it resolves the track's ISRC against Deezer's public catalog to find the canonical original-single release and downloads that instead — the same workaround you'd do by hand. Metadata is refreshed from the resolved track while the original album/playlist track position is preserved. (`deezerAuth.getTrackUrl`)
+
 ## [1.10.7] — 2026-05-29
 
 ### Fixed
