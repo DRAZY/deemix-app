@@ -487,6 +487,36 @@ Entries from v1.7.5 onward use a compact format — short bullets, one line each
 
 - Initial release.
 
+[1.10.9]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.10.9
+[1.10.8]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.10.8
+[1.10.7]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.10.7
+[1.10.6]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.10.6
+[1.10.5]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.10.5
+[1.10.4]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.10.4
+[1.10.3]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.10.3
+[1.10.2]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.10.2
+[1.10.1]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.10.1
+[1.10.0]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.10.0
+[1.9.0]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.9.0
+[1.8.2]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.8.2
+[1.8.1]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.8.1
+[1.8.0]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.8.0
+[1.7.9]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.7.9
+[1.7.8]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.7.8
+[1.7.5]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.7.5
+[1.7.4]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.7.4
+[1.7.3]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.7.3
+[1.7.2]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.7.2
+[1.7.0]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.7.0
+[1.6.6]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.6.6
+[1.6.5]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.6.5
+[1.6.4]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.6.4
+[1.6.3]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.6.3
+[1.6.2]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.6.2
+[1.6.1]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.6.1
+[1.6.0]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.6.0
+[1.5.8]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.5.8
+[1.5.7]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.5.7
 [1.5.6]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.5.6
 [1.5.5]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.5.5
 [1.5.4]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.5.4
