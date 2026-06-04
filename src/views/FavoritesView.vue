@@ -352,16 +352,45 @@ async function downloadAllFavorites() {
         queued++
       }
     } else if (activeTab.value === 'albums') {
+      // Pace each album lookup and retry quota-failed albums in a second pass so
+      // a large favorites list doesn't burst past Deezer's rate limit and drop
+      // albums silently (issue #84).
+      const pending: typeof favoritesStore.favoriteAlbums = []
       for (const album of favoritesStore.favoriteAlbums) {
         try {
           const tracks = await deezerAPI.getAlbumTracks(album.id)
           if (tracks?.length > 0) {
             await downloadStore.addAlbumDownload(album, tracks)
             queued++
+          } else {
+            pending.push(album)
           }
         } catch (e) {
-          console.error(`[Favorites] Failed to download album ${album.id}:`, e)
+          console.warn(`[Favorites] Album ${album.id} failed (will retry):`, e)
+          pending.push(album)
         }
+        await deezerAPI.pace()
+      }
+      const stillFailed: typeof favoritesStore.favoriteAlbums = []
+      if (pending.length > 0) {
+        await deezerAPI.cooldown()
+        for (const album of pending) {
+          try {
+            const tracks = await deezerAPI.getAlbumTracks(album.id)
+            if (tracks?.length > 0) {
+              await downloadStore.addAlbumDownload(album, tracks)
+              queued++
+            } else {
+              stillFailed.push(album)
+            }
+          } catch {
+            stillFailed.push(album)
+          }
+          await deezerAPI.pace()
+        }
+      }
+      if (stillFailed.length > 0) {
+        toastStore.warning(`${stillFailed.length} album${stillFailed.length > 1 ? 's' : ''} couldn't be loaded (Deezer rate limit) — try again to grab the rest`)
       }
     } else if (activeTab.value === 'playlists') {
       let skipped = 0
@@ -379,6 +408,7 @@ async function downloadAllFavorites() {
           console.error(`[Favorites] Failed to download playlist ${playlist.id}:`, e)
           skipped++
         }
+        await deezerAPI.pace()
       }
       if (skipped > 0) {
         toastStore.info(`${skipped} playlist${skipped > 1 ? 's' : ''} skipped (empty or unavailable)`)

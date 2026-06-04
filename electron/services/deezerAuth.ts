@@ -33,17 +33,26 @@ async function withRetry<T>(
       return await operation()
     } catch (error: any) {
       lastError = error
+      // Retry transient network errors AND Deezer rate-limit/quota responses on
+      // the gateway path — mirrors the public-API client's quota awareness (#84).
+      const msg = (error.message || '').toLowerCase()
       const isRetryable = error.code === 'ENOTFOUND' ||
                           error.code === 'ETIMEDOUT' ||
                           error.code === 'ECONNRESET' ||
                           error.code === 'ECONNREFUSED' ||
-                          error.code === 'EAI_AGAIN'
+                          error.code === 'EAI_AGAIN' ||
+                          msg.includes('quota') ||
+                          msg.includes('rate limit') ||
+                          msg.includes('too many requests')
 
       if (!isRetryable || attempt === maxRetries) {
         throw error
       }
 
-      const delay = baseDelayMs * Math.pow(2, attempt - 1)
+      // Exponential backoff with jitter so a burst of quota errors doesn't retry
+      // in lockstep and re-trip the limit together (issue #84).
+      const target = baseDelayMs * Math.pow(2, attempt - 1)
+      const delay = Math.round(target * (0.5 + Math.random()))
       console.log(`[DeezerAuth] ${operationName} failed (attempt ${attempt}/${maxRetries}): ${error.code || error.message}. Retrying in ${delay}ms...`)
       await new Promise(resolve => setTimeout(resolve, delay))
     }

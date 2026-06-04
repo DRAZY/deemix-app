@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.11',
+    date: '2026-06-04',
+    items: [
+      'Extended the v1.10.10 quota fix to the rest of the app: downloading all your favorite albums, downloading selected search results, and pasting a batch of links are now paced the same way, with the same retry-and-report behavior so nothing gets silently dropped. The download path itself also now backs off on rate-limit errors.'
+    ]
+  },
+  {
     version: '1.10.10',
     date: '2026-06-04',
     items: [

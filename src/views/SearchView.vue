@@ -96,16 +96,42 @@ async function downloadSelected() {
       }
     }
 
-    // Download selected albums
-    for (const albumId of selectedAlbums.value) {
-      const album = results.value.albums.find(a => a.id === albumId)
-      if (album) {
-        const tracks = await deezerAPI.getAlbumTracks(albumId)
+    // Download selected albums — paced, with a second-pass retry for releases
+    // that trip Deezer's rate limit, so a large selection doesn't burst past the
+    // limit and silently drop albums (issue #84).
+    const selectedAlbumObjs = [...selectedAlbums.value]
+      .map(albumId => results.value.albums.find(a => a.id === albumId))
+      .filter((a): a is NonNullable<typeof a> => !!a)
+    const pendingAlbums: typeof selectedAlbumObjs = []
+    for (const album of selectedAlbumObjs) {
+      try {
+        const tracks = await deezerAPI.getAlbumTracks(album.id)
         await downloadStore.addAlbumDownload(album, tracks)
+      } catch (e) {
+        console.warn(`[Search] Selected album ${album.id} failed (will retry):`, e)
+        pendingAlbums.push(album)
+      }
+      await deezerAPI.pace()
+    }
+    const failedAlbums: typeof selectedAlbumObjs = []
+    if (pendingAlbums.length > 0) {
+      await deezerAPI.cooldown()
+      for (const album of pendingAlbums) {
+        try {
+          const tracks = await deezerAPI.getAlbumTracks(album.id)
+          await downloadStore.addAlbumDownload(album, tracks)
+        } catch {
+          failedAlbums.push(album)
+        }
+        await deezerAPI.pace()
       }
     }
 
-    toastStore.success(`Added ${trackCount + albumCount} item${trackCount + albumCount > 1 ? 's' : ''} to download queue`)
+    const addedCount = trackCount + albumCount - failedAlbums.length
+    toastStore.success(`Added ${addedCount} item${addedCount > 1 ? 's' : ''} to download queue`)
+    if (failedAlbums.length > 0) {
+      toastStore.warning(`${failedAlbums.length} album${failedAlbums.length > 1 ? 's' : ''} couldn't be loaded (Deezer rate limit) — try again to grab the rest`)
+    }
 
     // Clear selection and exit selection mode
     clearSelection()
@@ -465,6 +491,8 @@ async function handlePaste(e: ClipboardEvent) {
       console.error(`[Search] Bulk download failed for ${link.type}/${link.id}:`, err)
       failed++
     }
+    // Pace between pasted links so a big batch doesn't burst Deezer's API (#84).
+    await deezerAPI.pace()
   }
 
   isBulkDownloading.value = false

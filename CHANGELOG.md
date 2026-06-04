@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.11] — 2026-06-04
+
+### Fixed
+
+- Extended the #84 quota fix to every remaining bulk-enumeration path. v1.10.10 paced the artist-page discography download and the pasted-artist-link flow; this release applies the same pacing, second-pass retry, and "couldn't load N releases" reporting to **Favorites → Download all** (albums and playlists), **Search → download selected**, and the **bulk paste-links** loop. The gateway/download path (`deezerAuth.withRetry`) now also retries Deezer rate-limit/quota responses with jittered backoff, not just network errors.
+
 ## [1.10.10] — 2026-06-04
 
 ### Fixed
