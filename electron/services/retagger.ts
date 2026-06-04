@@ -52,6 +52,7 @@ export interface RetagFields {
   explicitLyrics?: boolean
   albumBarcode?: boolean // UPC
   albumLabel?: boolean
+  releaseType?: boolean  // RELEASETYPE (album/single/EP/compilation) — #82 retag backfill
 }
 
 // Normalized metadata resolved from the public Deezer endpoints (or supplied
@@ -74,6 +75,7 @@ export interface ResolvedMeta {
   genre: string      // joined with "; " — split into multiple Vorbis GENRE comments for FLAC
   duration: string   // seconds (track length); written as TLEN ms (MP3) / LENGTH s (FLAC)
   explicit: boolean
+  recordType: string // Deezer record_type (album/single/ep/compile) → RELEASETYPE tag (#82)
 }
 
 export interface TagChange {
@@ -204,7 +206,24 @@ function buildMeta(track: any, album: any): ResolvedMeta {
     bpm: track.bpm ? str(track.bpm) : '',
     genre: genreNames.join('; '),
     duration: track.duration ? str(track.duration) : '',
-    explicit: track.explicit_lyrics === true
+    explicit: track.explicit_lyrics === true,
+    recordType: typeof album.record_type === 'string' ? album.record_type : ''
+  }
+}
+
+/**
+ * Map Deezer's record_type to the MusicBrainz RELEASETYPE value Navidrome/Picard
+ * expect. Returns '' for unknown/missing so we never write a junk tag (#82).
+ * Mirrors Downloader.mapReleaseType. NOTE: Deezer mislabels many EPs, so EP
+ * detection here is best-effort — same source-data caveat as the download path.
+ */
+function mapReleaseType(recordType: string): string {
+  switch ((recordType || '').toLowerCase()) {
+    case 'album': return 'Album'
+    case 'single': return 'Single'
+    case 'ep': return 'EP'
+    case 'compile': return 'Compilation'
+    default: return ''
   }
 }
 
@@ -261,6 +280,7 @@ function planFields(meta: ResolvedMeta, fields: RetagFields): { plan: PlannedFie
   if (fields.explicitLyrics) plan.push({ field: 'explicitLyrics', value: meta.explicit ? '1' : '0' })
   add(fields.albumBarcode, 'albumBarcode', meta.upc)
   add(fields.albumLabel, 'albumLabel', meta.label)
+  add(fields.releaseType, 'releaseType', mapReleaseType(meta.recordType))
   return { plan, unavailable }
 }
 
@@ -327,6 +347,19 @@ function applyMp3(filePath: string, plan: PlannedField[], dryRun: boolean): { ch
         tags.userDefinedText = udt
         break
       }
+      case 'releaseType': {
+        // Two TXXX frames so it matches both Navidrome aliases — "releasetype"
+        // and "txxx:musicbrainz album type" (matches the download writer, #82).
+        const prevRt = udt.find((e) => e.description === 'RELEASETYPE')
+        record('releaseType', prevRt?.value ?? null, value)
+        if (prevRt) prevRt.value = value
+        else udt.push({ description: 'RELEASETYPE', value })
+        const prevMb = udt.find((e) => e.description === 'MusicBrainz Album Type')
+        if (prevMb) prevMb.value = value
+        else udt.push({ description: 'MusicBrainz Album Type', value })
+        tags.userDefinedText = udt
+        break
+      }
     }
   }
 
@@ -388,6 +421,19 @@ function applyFlac(filePath: string, plan: PlannedField[], dryRun: boolean): { c
   const changes: TagChange[] = []
   const unchanged: string[] = []
   for (const { field, value } of plan) {
+    if (field === 'releaseType') {
+      // Two Vorbis keys so it matches both Navidrome aliases (releasetype +
+      // musicbrainz_albumtype), mirroring the download writer (#82).
+      const rtMatch = (c: string) => c.toUpperCase().startsWith('RELEASETYPE=')
+      const prev = comments.find(rtMatch)
+      const prevVal = prev ? prev.slice('RELEASETYPE='.length) : null
+      if (prevVal === value) { unchanged.push(field); continue }
+      changes.push({ field, from: prevVal, to: value })
+      comments = comments.filter((c) => !rtMatch(c) && !c.toUpperCase().startsWith('MUSICBRAINZ_ALBUMTYPE='))
+      comments.push(`RELEASETYPE=${value}`)
+      comments.push(`MUSICBRAINZ_ALBUMTYPE=${value}`)
+      continue
+    }
     const key = FLAC_FIELD_TO_KEY[field]
     if (!key) continue
     const matches = (c: string) => c.toUpperCase().startsWith(key + '=')

@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.13] — 2026-06-04
+
+### Added
+
+- **Backfill RELEASETYPE onto existing libraries (#82 follow-up).** The retag path now writes the release type too, so the v1.10.12 tag isn't limited to new downloads. Both **Retag Library** (with a new "Release Type" field checkbox) and the album/playlist **Refresh tags** action now embed `RELEASETYPE` + `MusicBrainz Album Type` (MP3) / `RELEASETYPE` + `MUSICBRAINZ_ALBUMTYPE` (FLAC), derived from Deezer's `record_type`. Retag-in-folder uses the authoritative album, so it can be more accurate than a bare single lookup. Same EP caveat as v1.10.12 (Deezer mislabels many EPs). Verified end-to-end on real MP3 and FLAC files.
+
 ## [1.10.12] — 2026-06-04
 
 ### Added

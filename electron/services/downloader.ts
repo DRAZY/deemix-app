@@ -1307,7 +1307,8 @@ export class Downloader extends EventEmitter {
         bpm: trackInfo.BPM ? s(trackInfo.BPM) : '',
         genre,
         duration: trackInfo.DURATION ? s(trackInfo.DURATION) : '',
-        explicit: trackInfo.EXPLICIT_LYRICS === true || trackInfo.EXPLICIT_LYRICS === 1
+        explicit: trackInfo.EXPLICIT_LYRICS === true || trackInfo.EXPLICIT_LYRICS === 1,
+        recordType: s(options.albumContext?.recordType || options._resolvedAlbumRecordType || '')
       }
 
       // Refresh honors the user's tag selection (Settings → Metadata tags): a tag
@@ -1326,12 +1327,14 @@ export class Downloader extends EventEmitter {
         trackNumber: on(ts.trackNumber), trackTotal: on(ts.trackTotal), discNumber: on(ts.discNumber),
         isrc: on(ts.isrc), year: on(ts.year), date: on(ts.date), bpm: on(ts.bpm), genre: on(ts.genre),
         trackLength: on(ts.trackLength), explicitLyrics: on(ts.explicitLyrics),
-        albumBarcode: on(ts.albumBarcode), albumLabel: on(ts.albumLabel)
+        albumBarcode: on(ts.albumBarcode), albumLabel: on(ts.albumLabel),
+        releaseType: on(ts.releaseType)
       } : {
         title: true, artist: true, album: true, albumArtist: true,
         trackNumber: true, trackTotal: true, discNumber: true, isrc: true,
         year: true, date: true, bpm: true, genre: true, trackLength: true,
-        explicitLyrics: true, albumBarcode: true, albumLabel: true
+        explicitLyrics: true, albumBarcode: true, albumLabel: true,
+        releaseType: true
       }
       const result = applyMergeFromMeta(filePath, meta, fields, false)
       console.log(`[Downloader] Refresh-tags ${result.status} (${result.changes.length} changed): ${filePath}`)

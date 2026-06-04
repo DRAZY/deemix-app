@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.13',
+    date: '2026-06-04',
+    items: [
+      'You can now backfill the Release Type tag onto music you already downloaded. The Retag Library and the album/playlist "Refresh tags" actions now write RELEASETYPE too, so existing libraries get the same album/single/EP separation in Navidrome without re-downloading. (Same EP caveat applies — Deezer sometimes mislabels EPs.)'
+    ]
+  },
+  {
     version: '1.10.12',
     date: '2026-06-04',
     items: [
