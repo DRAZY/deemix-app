@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.9] — 2026-06-03
+
+### Fixed
+
+- **"Various Artists" releases now write the correct ALBUMARTIST tag.** On a compilation download, the folder was named "Various Artists" correctly but the embedded `ALBUMARTIST` tag was getting the individual track's performer instead. The folder and tag were computed from two different sources — folder naming consults the public-API album artist (via `albumContext`), while the MP3/FLAC tag writers only read the private-API per-track fields. The tag writers now use the same album-artist precedence as folder naming (`albumContext.albumArtist` → public-API resolved → private track fields), so the tag matches the folder. Normal single-artist albums are unaffected, and the "keep Various Artists" opt-out still works. (#83, `downloader.ts`)
+
 ## [1.10.8] — 2026-05-30
 
 ### Fixed

@@ -2150,7 +2150,11 @@ export class Downloader extends EventEmitter {
         if (isPlaylistCompilation) {
           tags.performerInfo = 'Various Artists'
         } else {
-          const rawAlbumArtist = trackInfo.ALB_ART_NAME || trackInfo.ART_NAME || ''
+          // Use the SAME album-artist source the folder naming uses (albumContext →
+          // public-API resolved → private track fields). Without this, a "Various
+          // Artists" release lands in a correct folder but the ALBUMARTIST tag gets
+          // the per-track performer from the private API (issue #83).
+          const rawAlbumArtist = options.albumContext?.albumArtist || options._resolvedAlbumArtist || trackInfo.ALB_ART_NAME || trackInfo.ART_NAME || ''
           const albumArtist = this.handleVariousArtists(rawAlbumArtist, keepVariousArtists)
           tags.performerInfo = albumArtist || processedArtist || rawAlbumArtist
         }
@@ -2566,7 +2570,10 @@ export class Downloader extends EventEmitter {
           comments.push(`ALBUMARTIST=Various Artists`)
           comments.push(`COMPILATION=1`)
         } else {
-          const rawAlbumArtist = trackInfo.ALB_ART_NAME || trackInfo.ART_NAME || ''
+          // Mirror the folder naming's album-artist source (albumContext →
+          // public-API resolved → private track fields) so a "Various Artists"
+          // release tags ALBUMARTIST consistently with its folder (issue #83).
+          const rawAlbumArtist = options.albumContext?.albumArtist || options._resolvedAlbumArtist || trackInfo.ALB_ART_NAME || trackInfo.ART_NAME || ''
           const albumArtist = this.handleVariousArtists(rawAlbumArtist, keepVariousArtists)
           const finalAlbumArtist = albumArtist || processedArtist || rawAlbumArtist
           if (finalAlbumArtist) {

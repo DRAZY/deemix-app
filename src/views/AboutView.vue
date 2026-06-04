@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.9',
+    date: '2026-06-03',
+    items: [
+      'Fixed the album artist tag on "Various Artists" releases: the folder was already named correctly, but the ALBUMARTIST tag was getting the individual track\'s artist instead of "Various Artists". Tags now match the folder.'
+    ]
+  },
+  {
     version: '1.10.8',
     date: '2026-05-30',
     items: [
