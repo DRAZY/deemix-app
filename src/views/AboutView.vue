@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.12',
+    date: '2026-06-04',
+    items: [
+      'Added a Release Type tag (RELEASETYPE) so servers like Navidrome can automatically separate albums, singles, and EPs. Enabled by default; toggle it under Settings → Metadata tags. Note: the type comes from Deezer, which is reliable for albums/singles/compilations but sometimes mislabels EPs — so EP detection is best-effort.'
+    ]
+  },
+  {
     version: '1.10.11',
     date: '2026-06-04',
     items: [

@@ -447,6 +447,7 @@
       "bpm": "BPM",
       "replayGain": "Replay Gain",
       "albumLabel": "Album Label",
+      "releaseType": "Release Type (RELEASETYPE)",
       "unsyncLyrics": "Unsynchronized Lyrics",
       "syncLyrics": "Synchronized Lyrics",
       "copyright": "Copyright",

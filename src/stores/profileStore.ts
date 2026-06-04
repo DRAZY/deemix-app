@@ -88,7 +88,7 @@ const BUILT_IN_PROFILES: SettingsProfile[] = [
         explicitLyrics: true, isrc: true, trackLength: true, albumBarcode: true,
         bpm: true, replayGain: true, albumLabel: true,
         unsyncLyrics: true, syncLyrics: true, copyright: true,
-        composer: true, involvedPeople: true, sourceId: true
+        composer: true, involvedPeople: true, sourceId: true, releaseType: true
       },
       albumCovers: {
         saveCovers: true,
@@ -129,7 +129,7 @@ const BUILT_IN_PROFILES: SettingsProfile[] = [
         explicitLyrics: false, isrc: false, trackLength: false, albumBarcode: false,
         bpm: false, replayGain: false, albumLabel: false,
         unsyncLyrics: false, syncLyrics: false, copyright: false,
-        composer: false, involvedPeople: false, sourceId: false
+        composer: false, involvedPeople: false, sourceId: false, releaseType: false
       },
       albumCovers: {
         saveCovers: false,

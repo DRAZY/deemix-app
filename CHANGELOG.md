@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.12] — 2026-06-04
+
+### Added
+
+- **RELEASETYPE tag for Navidrome album/single/EP separation (#82).** Downloads now embed the release type (`Album` / `Single` / `EP` / `Compilation`) derived from Deezer's `record_type`. Written for MP3 as `TXXX:RELEASETYPE` + `TXXX:MusicBrainz Album Type`, and for FLAC as `RELEASETYPE` + `MUSICBRAINZ_ALBUMTYPE` Vorbis comments — matching Navidrome's releasetype tag aliases so it auto-separates releases. New **Release Type** toggle under Settings → Metadata tags (on by default). Caveat: Deezer's type is reliable for albums/singles/compilations but frequently mislabels EPs, so EP detection is best-effort. Verified end-to-end on real MP3 and FLAC downloads.
+
 ## [1.10.11] — 2026-06-04
 
 ### Fixed

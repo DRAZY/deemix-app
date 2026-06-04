@@ -39,6 +39,7 @@ export interface TagSettings {
   composer: boolean
   involvedPeople: boolean
   sourceId: boolean
+  releaseType: boolean
 }
 
 export interface AppearanceSettings {
@@ -191,7 +192,8 @@ export const defaultSettings: Settings = {
     copyright: false,
     composer: false,
     involvedPeople: false,
-    sourceId: false
+    sourceId: false,
+    releaseType: true
   },
   // Appearance settings
   appearance: {

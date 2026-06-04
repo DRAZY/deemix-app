@@ -1610,6 +1610,8 @@ export class DeemixServer extends EventEmitter {
         totalDiscs: totalDiscs,
         explicitLyrics: hasExplicitTracks,
         isCompilation: albumInfo.record_type === 'compile',
+        // Full record_type (album/single/ep/compile) for the RELEASETYPE tag (#82)
+        recordType: typeof albumInfo.record_type === 'string' ? albumInfo.record_type : '',
         // v1.8.1: surface UPC so %barcode% / %upc% folder + filename templates
         // have a value. Without this the downloader's cascade falls through to
         // trackInfo.ALB_UPC, which is undefined on private-API track fetches.

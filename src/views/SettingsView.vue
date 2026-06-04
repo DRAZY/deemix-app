@@ -1463,6 +1463,14 @@ function saveNow() {
           <label class="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
+              v-model="settingsStore.settings.tags.releaseType"
+              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+            />
+            <span class="text-sm">{{ t('settings.tags.releaseType') }}</span>
+          </label>
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
               v-model="settingsStore.settings.tags.unsyncLyrics"
               class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
             />

@@ -51,6 +51,7 @@ export interface TagSettings {
   composer: boolean
   involvedPeople: boolean
   sourceId: boolean
+  releaseType: boolean
 }
 
 export type LocalArtworkFormat = 'jpeg' | 'png' | 'both'
@@ -131,6 +132,7 @@ export interface DownloadOptions {
     totalDiscs?: number      // Total number of discs in the album
     explicitLyrics?: boolean // Album-level explicit flag for consistent folder naming
     isCompilation?: boolean  // Whether album is a compilation (Deezer record_type "compile")
+    recordType?: string      // Deezer record_type (album/single/ep/compile) — drives the RELEASETYPE tag (#82)
     upc?: string             // Album UPC/barcode — drives %barcode% / %upc% template substitution
     label?: string           // Album record label — public API only; trackInfo.LABEL_NAME is empty on private-API fetches
   }
@@ -143,6 +145,7 @@ export interface DownloadOptions {
   _resolvedAlbumExplicit?: boolean
   _resolvedAlbumArtist?: string        // Album-level artist from public API (for consistent folder naming)
   _resolvedAlbumIsCompilation?: boolean // Whether the album is a compilation (record_type === 'compile')
+  _resolvedAlbumRecordType?: string    // Album record_type from public API — drives the RELEASETYPE tag for single-track downloads (#82)
   _resolvedAlbumUpc?: string           // Album UPC from public API — falls through to trackInfo.ALB_UPC (which is always empty for private-API track fetches)
   _resolvedAlbumLabel?: string         // Album label from public API — falls through to trackInfo.LABEL_NAME (empty on private-API fetches)
   // M3U tracker ID — unique key for the playlist M3U tracker (avoids name collisions)
@@ -220,7 +223,7 @@ export class Downloader extends EventEmitter {
   // Album info cache: stores album-level metadata per album ID
   // Fetched from public API once per unique album, prevents duplicate lookups
   // Used for explicit status, album artist (for consistent folder naming), and compilation detection
-  private albumInfoCache: Map<string, Promise<{ explicit: boolean, artist: string, isCompilation: boolean, upc: string, label: string }>> = new Map()
+  private albumInfoCache: Map<string, Promise<{ explicit: boolean, artist: string, isCompilation: boolean, recordType: string, upc: string, label: string }>> = new Map()
   // Reserved paths: tracks output paths currently being used by in-progress downloads
   // This prevents concurrent downloads from overwriting each other's files
   private reservedPaths: Set<string> = new Set()
@@ -548,6 +551,23 @@ export class Downloader extends EventEmitter {
       }
     }
     return albumArtist
+  }
+
+  /**
+   * Map Deezer's record_type to the MusicBrainz RELEASETYPE value that Navidrome
+   * (and Picard) expect, so libraries can separate albums/singles/EPs (#82).
+   * Returns '' for unknown/missing types so we never write a junk tag.
+   * NOTE: Deezer's type is imperfect — EPs are frequently labelled "single" or
+   * "album" upstream, so EP detection is best-effort, not authoritative.
+   */
+  private mapReleaseType(recordType?: string): string {
+    switch ((recordType || '').toLowerCase()) {
+      case 'album': return 'Album'
+      case 'single': return 'Single'
+      case 'ep': return 'EP'
+      case 'compile': return 'Compilation'
+      default: return ''
+    }
   }
 
   /**
@@ -969,6 +989,8 @@ export class Downloader extends EventEmitter {
               artist: albumData.artist?.name || '',
               // Deezer record_type "compile" = compilation/sampler
               isCompilation: albumData.record_type === 'compile',
+              // Full record_type (album/single/ep/compile) for the RELEASETYPE tag (#82)
+              recordType: typeof albumData.record_type === 'string' ? albumData.record_type : '',
               // Album UPC/barcode — Deezer's private song.getData omits this field, so
               // %barcode%/%upc% template substitution + the BARCODE tag rely on this public-API pull.
               upc: typeof albumData.upc === 'string' ? albumData.upc : '',
@@ -976,7 +998,7 @@ export class Downloader extends EventEmitter {
               label: typeof albumData.label === 'string' ? albumData.label : ''
             }
           } catch {
-            return { explicit: false, artist: '', isCompilation: false, upc: '', label: '' }
+            return { explicit: false, artist: '', isCompilation: false, recordType: '', upc: '', label: '' }
           }
         })())
       }
@@ -985,6 +1007,7 @@ export class Downloader extends EventEmitter {
         options._resolvedAlbumExplicit = albumInfo?.explicit
         options._resolvedAlbumArtist = albumInfo?.artist || undefined
         options._resolvedAlbumIsCompilation = albumInfo?.isCompilation
+        options._resolvedAlbumRecordType = albumInfo?.recordType
         options._resolvedAlbumUpc = albumInfo?.upc || undefined
         options._resolvedAlbumLabel = albumInfo?.label || undefined
       } catch {
@@ -2169,6 +2192,18 @@ export class Downloader extends EventEmitter {
         })
       }
 
+      // RELEASETYPE — lets Navidrome separate albums/singles/EPs (#82). Written as
+      // two TXXX frames so it matches both of Navidrome's tag aliases
+      // ("releasetype" and "txxx:musicbrainz album type"). See mapReleaseType().
+      if (tagSettings.releaseType) {
+        const releaseType = this.mapReleaseType(options.albumContext?.recordType || options._resolvedAlbumRecordType)
+        if (releaseType) {
+          tags.userDefinedText = tags.userDefinedText || []
+          tags.userDefinedText.push({ description: 'RELEASETYPE', value: releaseType })
+          tags.userDefinedText.push({ description: 'MusicBrainz Album Type', value: releaseType })
+        }
+      }
+
       if (tagSettings.trackNumber && trackInfo.TRACK_NUMBER) {
         if (tagSettings.trackTotal && trackInfo.TRACKS_COUNT) {
           tags.trackNumber = `${trackInfo.TRACK_NUMBER}/${trackInfo.TRACKS_COUNT}`
@@ -2579,6 +2614,16 @@ export class Downloader extends EventEmitter {
           if (finalAlbumArtist) {
             comments.push(`ALBUMARTIST=${finalAlbumArtist}`)
           }
+        }
+      }
+
+      // RELEASETYPE — lets Navidrome separate albums/singles/EPs (#82). Both keys
+      // are in Navidrome's releasetype alias list (Vorbis). See mapReleaseType().
+      if (tagSettings.releaseType) {
+        const releaseType = this.mapReleaseType(options.albumContext?.recordType || options._resolvedAlbumRecordType)
+        if (releaseType) {
+          comments.push(`RELEASETYPE=${releaseType}`)
+          comments.push(`MUSICBRAINZ_ALBUMTYPE=${releaseType}`)
         }
       }
 
