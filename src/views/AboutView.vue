@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.10',
+    date: '2026-06-04',
+    items: [
+      'Fixed "Quota limit exceeded" errors when downloading a large artist discography. The app was firing metadata requests too fast while building the list, tripping Deezer\'s rate limit — which could silently drop some releases from the download queue (even with concurrent downloads set to 1). Requests are now paced, retried with smarter backoff, and any release that still can\'t be loaded is reported instead of vanishing.'
+    ]
+  },
+  {
     version: '1.10.9',
     date: '2026-06-03',
     items: [

@@ -398,36 +398,64 @@ async function handlePaste(e: ClipboardEvent) {
           failed++
         }
       } else if (link.type === 'artist') {
-        // Download full discography — fetch artist info + all albums
+        // Download full discography — fetch artist info + all albums.
+        // The list-build fires one /album/{id}/tracks per release; pacing each
+        // request and retrying quota-failed releases in a second pass keeps a
+        // large discography from bursting past Deezer's rate limit and silently
+        // dropping releases from the queue (issue #84).
         const artistInfo = await deezerAPI.getArtist(id)
         const albums = await deezerAPI.getArtistAlbums(id)
         if (albums.length > 0) {
           let albumsQueued = 0
-          let albumsFailed = 0
+
+          const tryQueue = async (album: typeof albums[number]): Promise<boolean> => {
+            // Inject artist info — /artist/{id}/albums doesn't include it
+            if (!album.artist && artistInfo) {
+              album.artist = { id: artistInfo.id, name: artistInfo.name }
+            }
+            const tracks = await deezerAPI.getAlbumTracks(album.id)
+            if (tracks?.length > 0) {
+              await downloadStore.addAlbumDownload(album, tracks)
+              return true
+            }
+            return false
+          }
+
+          // First pass — paced.
+          const pending: typeof albums = []
           for (const album of albums) {
             if (bulkAborted.value) break
             try {
-              // Inject artist info — /artist/{id}/albums doesn't include it
-              if (!album.artist && artistInfo) {
-                album.artist = { id: artistInfo.id, name: artistInfo.name }
-              }
-              const tracks = await deezerAPI.getAlbumTracks(album.id)
-              if (tracks?.length > 0) {
-                await downloadStore.addAlbumDownload(album, tracks)
-                albumsQueued++
-              } else {
-                console.warn(`[Search] Album ${album.id} "${album.title}" has no tracks — skipping`)
-                albumsFailed++
-              }
+              if (await tryQueue(album)) albumsQueued++
+              else pending.push(album)
             } catch (e: any) {
-              console.error(`[Search] Failed to queue album ${album.id} "${album.title}":`, e.message || e)
-              albumsFailed++
+              console.warn(`[Search] Album ${album.id} "${album.title}" failed (will retry):`, e.message || e)
+              pending.push(album)
+            }
+            await deezerAPI.pace()
+          }
+
+          // Second pass — after Deezer's quota window resets, retry the stragglers.
+          const stillFailed: typeof albums = []
+          if (pending.length > 0 && !bulkAborted.value) {
+            await deezerAPI.cooldown()
+            for (const album of pending) {
+              if (bulkAborted.value) break
+              try {
+                if (await tryQueue(album)) albumsQueued++
+                else stillFailed.push(album)
+              } catch {
+                stillFailed.push(album)
+              }
+              await deezerAPI.pace()
             }
           }
+
           if (albumsQueued > 0) queued++
           else failed++
-          if (albumsFailed > 0) {
-            console.warn(`[Search] Artist ${artistInfo?.name}: ${albumsQueued} albums queued, ${albumsFailed} failed/skipped`)
+          if (stillFailed.length > 0) {
+            console.warn(`[Search] Artist ${artistInfo?.name}: ${albumsQueued} queued, ${stillFailed.length} could not be loaded`)
+            toastStore.warning(`${stillFailed.length} release${stillFailed.length > 1 ? 's' : ''} from ${artistInfo?.name || 'this artist'} couldn't be loaded (Deezer rate limit) — run it again to grab the rest`)
           }
         } else {
           failed++

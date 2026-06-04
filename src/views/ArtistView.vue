@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { deezerAPI } from '../services/deezerAPI'
 import { useFavoritesStore } from '../stores/favoritesStore'
 import { useDownloadStore } from '../stores/downloadStore'
+import { useToastStore } from '../stores/toastStore'
 import TrackCard from '../components/TrackCard.vue'
 import BackButton from '../components/BackButton.vue'
 import ErrorState from '../components/ErrorState.vue'
@@ -17,6 +18,7 @@ const { t } = useI18n()
 const route = useRoute()
 const favoritesStore = useFavoritesStore()
 const downloadStore = useDownloadStore()
+const toastStore = useToastStore()
 
 const artist = ref<Artist | null>(null)
 const topTracks = ref<Track[]>([])
@@ -303,9 +305,42 @@ async function downloadFilteredAlbums() {
   if (isDownloadingAll.value) return
   isDownloadingAll.value = true
 
+  // Pace each album's track lookup and retry quota-failed releases in a second
+  // pass, so a large discography doesn't burst past Deezer's rate limit and
+  // silently drop releases from the queue (issue #84).
+  const queueAlbum = async (album: Album): Promise<void> => {
+    const tracks = await deezerAPI.getAlbumTracks(album.id)
+    await downloadStore.addAlbumDownload(album, tracks)
+  }
+
   try {
+    const pending: Album[] = []
     for (const album of filteredAlbums.value) {
-      await downloadAlbum(album)
+      try {
+        await queueAlbum(album)
+      } catch (e) {
+        console.warn(`[ArtistView] Album ${album.id} "${album.title}" failed (will retry):`, e)
+        pending.push(album)
+      }
+      await deezerAPI.pace()
+    }
+
+    // Second pass — after the quota window resets, retry the stragglers.
+    const stillFailed: Album[] = []
+    if (pending.length > 0) {
+      await deezerAPI.cooldown()
+      for (const album of pending) {
+        try {
+          await queueAlbum(album)
+        } catch {
+          stillFailed.push(album)
+        }
+        await deezerAPI.pace()
+      }
+    }
+
+    if (stillFailed.length > 0) {
+      toastStore.warning(`${stillFailed.length} release${stillFailed.length > 1 ? 's' : ''} couldn't be loaded (Deezer rate limit) — click download again to grab the rest`)
     }
   } catch (error) {
     console.error('Failed to download albums:', error)

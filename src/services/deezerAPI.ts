@@ -28,9 +28,12 @@ class DeezerAPI {
   // Cache for featured-in albums (search results can vary, so cache them)
   private featuredInCache = new Map<string, { data: Album[]; timestamp: number }>()
 
-  // Retry configuration for transient failures
-  private readonly MAX_RETRIES = 3
-  private readonly INITIAL_RETRY_DELAY = 500 // ms
+  // Retry configuration for transient failures.
+  // Quota errors get more attempts and a longer base than 429/network because
+  // Deezer's per-IP quota cooldown can outlast a short backoff (issue #84).
+  private readonly MAX_RETRIES = 4
+  private readonly INITIAL_RETRY_DELAY = 600 // ms — base for 429/network
+  private readonly QUOTA_RETRY_DELAY = 1100 // ms — base for Deezer "Quota limit exceeded"
 
   constructor() {
     this.baseUrl = CORS_PROXY + DEEZER_API_BASE
@@ -39,6 +42,29 @@ class DeezerAPI {
   // Helper for delay between retries
   private delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms))
+  }
+
+  // Exponential backoff with full jitter. The jitter is essential: when a burst
+  // of parallel requests all trip Deezer's quota at once, a fixed backoff makes
+  // them retry in lockstep and re-trip the limit together. Randomizing each
+  // wait spreads the retries so the quota window can actually drain (issue #84).
+  private jitteredBackoff(base: number, attempt: number): number {
+    const target = base * Math.pow(2, attempt)
+    return Math.round(target * (0.5 + Math.random())) // 50%–150% of target
+  }
+
+  // Inter-request pacing for bulk discography list-builds. The download queue
+  // fires one metadata lookup per release; without a gap, a large discography
+  // bursts past Deezer's ~50-req/5s public-API limit. Callers await this between
+  // releases to stay under the limit (issue #84).
+  async pace(): Promise<void> {
+    await this.delay(180 + Math.random() * 120) // ~180–300ms
+  }
+
+  // Longer pause before a second pass retries releases that still failed after
+  // the first list-build, giving Deezer's quota window time to fully reset.
+  async cooldown(ms = 6000): Promise<void> {
+    await this.delay(ms)
   }
 
   // Get cached album or null if expired/missing
@@ -67,7 +93,7 @@ class DeezerAPI {
         // Handle rate limiting (429) with retry
         if (response.status === 429) {
           if (attempt < retries) {
-            const retryDelay = this.INITIAL_RETRY_DELAY * Math.pow(2, attempt)
+            const retryDelay = this.jitteredBackoff(this.INITIAL_RETRY_DELAY, attempt)
             console.warn(`[DeezerAPI] Rate limited, retrying in ${retryDelay}ms (attempt ${attempt + 1}/${retries})`)
             await this.delay(retryDelay)
             continue
@@ -83,13 +109,22 @@ class DeezerAPI {
 
         // Deezer API returns error object with 200 status for some errors
         if (data && data.error) {
-          // Some errors are transient (quota, etc.) - retry these
+          // Detect quota by message AND code, not just type — Deezer's quota
+          // error is {type:"Exception", code:4, message:"Quota limit exceeded"}
+          // and the type string alone is unreliable (issue #84).
           const errorType = data.error.type || ''
-          const isTransient = errorType.includes('Quota') || errorType.includes('Exception')
+          const errorMsg = data.error.message || ''
+          const errorCode = data.error.code
+          const isQuota = /quota/i.test(errorType) ||
+                          /quota limit exceeded/i.test(errorMsg) ||
+                          errorCode === 4
+          const isTransient = isQuota || errorType.includes('Exception')
 
           if (isTransient && attempt < retries) {
-            const retryDelay = this.INITIAL_RETRY_DELAY * Math.pow(2, attempt)
-            console.warn(`[DeezerAPI] Transient error (${errorType}), retrying in ${retryDelay}ms`)
+            // Quota gets the longer base; other transient errors the shorter one.
+            const base = isQuota ? this.QUOTA_RETRY_DELAY : this.INITIAL_RETRY_DELAY
+            const retryDelay = this.jitteredBackoff(base, attempt)
+            console.warn(`[DeezerAPI] ${isQuota ? 'Quota' : 'Transient'} error (${errorType || errorMsg}), retrying in ${retryDelay}ms (attempt ${attempt + 1}/${retries})`)
             await this.delay(retryDelay)
             continue
           }
@@ -107,7 +142,7 @@ class DeezerAPI {
                                lastError.message.includes('NetworkError')
 
         if (isNetworkError && attempt < retries) {
-          const retryDelay = this.INITIAL_RETRY_DELAY * Math.pow(2, attempt)
+          const retryDelay = this.jitteredBackoff(this.INITIAL_RETRY_DELAY, attempt)
           console.warn(`[DeezerAPI] Network error, retrying in ${retryDelay}ms (attempt ${attempt + 1}/${retries})`)
           await this.delay(retryDelay)
           continue
@@ -455,9 +490,11 @@ class DeezerAPI {
 
     console.log(`[DeezerAPI] Fetching details for ${albumsNeedingFetch.length} albums (${detailedAlbums.size} cached)`)
 
-    // Fetch full details in batches (optimized for speed)
-    const batchSize = 20  // Increased from 10 for faster loading
-    const batchDelay = 25 // Reduced from 50ms - still safe for rate limits
+    // Fetch full details in paced batches. Smaller batches + a jittered gap keep
+    // this public-API fallback under Deezer's ~50-req/5s limit; the old 20-wide
+    // @25ms burst tripped "Quota limit exceeded" on large discographies (#84).
+    const batchSize = 8
+    const baseBatchDelay = 700 // ms between batches (jittered at the call site)
     let successCount = 0
     let failCount = 0
 
@@ -498,7 +535,7 @@ class DeezerAPI {
       }
 
       if (i + batchSize < albumsNeedingFetch.length) {
-        await new Promise(resolve => setTimeout(resolve, batchDelay))
+        await new Promise(resolve => setTimeout(resolve, baseBatchDelay + Math.random() * 300))
       }
     }
 

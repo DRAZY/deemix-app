@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.10] — 2026-06-04
+
+### Fixed
+
+- Discography downloads no longer trip Deezer's "Quota limit exceeded" rate limit while building the queue (#84). The list-build fired metadata requests in an un-paced burst — independent of the "max concurrent downloads" setting — which on large discographies exceeded Deezer's limit and silently dropped releases. Requests are now paced, retried with longer jittered backoff, and the 20-wide detail fetch is throttled; any release that still fails after a second pass is surfaced to the user instead of disappearing.
+
 ## [1.10.9] — 2026-06-03
 
 ### Fixed
