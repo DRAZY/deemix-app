@@ -418,15 +418,74 @@ Entries from v1.7.5 onward use a compact format — short bullets, one line each
 - Fixed all 8 outstanding npm dependency vulnerabilities.
 - Expanded path-traversal blocked patterns; Spotify Client ID is masked in logs and error output.
 
-## Earlier Releases
+## [1.4.0] — 2026-03-29
 
-For releases before v1.5.0, see the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases). Highlights:
+### Added
 
-- **v1.4.0** (2026-03-29) — Auto-update checker, download progress in title bar, global paste, download history, settings export/import, playlist diff, retry-only-failed-tracks for partial playlists.
-- **v1.3.0** — Spotify integration (playlist conversion via ISRC matching), playlist sync engine.
-- **v1.2.0** — Security hardening (SSRF protection, sandboxed login window, error sanitization, ARL cookie domain hardening).
-- **v1.1.x** — Multi-language support (22 languages), additional color themes.
-- **v1.0.0** — Initial release.
+- Auto-update checker on startup; live download progress shown in the window title bar.
+- Global paste — paste a Deezer link anywhere to route it to Search and start a bulk download.
+- Download history (last 500 entries), settings export/import (credentials excluded), and playlist diff (already-downloaded vs. new).
+- Bulk link paste in the Search bar, including artist links that expand to the full discography with correct artist naming.
+- Sorting for Favorites and Artist Discography, persisted across navigation.
+- Customizable M3U playlist filename template; `%owner%` folder-template variable for playlists.
+- Track count on playlist and album cards; playlist cards show full title and creator name (2-line wrap).
+
+### Fixed
+
+- Three-tier track resolution with fresh-token retry and legacy CDN fallback for unavailable playlist tracks.
+- M3U now mirrors the actual folder structure and real track/disc numbers instead of reconstructed guesses; added a safety timeout for bulk playlists.
+- Album titles wrap to 2 lines instead of truncating; album-level explicit data drives folder naming for playlist tracks.
+- Cancel-all stops bulk-paste downloads and resets the queue; unavailable albums in bulk artist downloads are handled gracefully.
+
+## [1.3.0] — 2026-03-23
+
+### Added
+
+- Batch favorites download; `%explicit%` and `%date%` folder-template variables with hint chips.
+
+### Fixed
+
+- Explicit status is derived from actual track data (`explicit_content_lyrics` code) rather than the album flag, fixing the explicit tag being wrongly applied to non-explicit albums.
+- Deezer favorites import paginates for large libraries; saved language setting is restored on launch.
+- Tag defaults, M3U paths, and playlist naming corrected; empty brackets are auto-removed from template variables.
+
+## [1.2.1] — 2026-03-22
+
+### Security
+
+- Hardened Electron configuration — fixed SSRF and tightened CSP and CORS.
+
+### Fixed
+
+- Restored `unsafe-inline`/CORS for Electron `file://` compatibility after the CSP hardening regressed it.
+
+## [1.2.0] — 2026-03-22
+
+### Added
+
+- Import Deezer account favorites into the Favorites tab.
+
+### Fixed
+
+- Deezer share links resolve in the Link Analyzer; charts view shows all tabs when navigating from Home.
+
+## [1.1.1] — 2026-03-17
+
+### Fixed
+
+- Playlist cards now download as playlists instead of failing.
+- Spotify username persists in credentials storage; settings load before syncing to the server.
+
+## [1.1.0] — 2026-03-17
+
+### Added
+
+- Playlist sync engine with Spotify and Deezer support.
+- Link Analyzer batch downloads with cover art and retry support, plus a batch download endpoint that applies user settings.
+
+## [1.0.0] — 2026-03-03
+
+- Initial release.
 
 [1.5.6]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.5.6
 [1.5.5]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.5.5
@@ -435,3 +494,10 @@ For releases before v1.5.0, see the [GitHub Releases page](https://github.com/DR
 [1.5.2]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.5.2
 [1.5.1]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.5.1
 [1.5.0]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.5.0
+[1.4.0]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.4.0
+[1.3.0]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.3.0
+[1.2.1]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.2.1
+[1.2.0]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.2.0
+[1.1.1]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.1.1
+[1.1.0]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.1.0
+[1.0.0]: https://github.com/DRAZY/deemix-remastered/releases/tag/v1.0.0
