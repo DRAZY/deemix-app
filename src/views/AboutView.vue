@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.14',
+    date: '2026-06-05',
+    items: [
+      'Fixed the Release Type tag not being written on downloads (it only appeared if you retagged afterward). The setting was being dropped before it reached the downloader, so new downloads silently skipped it. RELEASETYPE is now written on download as intended; existing retagging is unchanged.'
+    ]
+  },
+  {
     version: '1.10.13',
     date: '2026-06-04',
     items: [

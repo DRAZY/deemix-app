@@ -2198,7 +2198,10 @@ export class Downloader extends EventEmitter {
       // RELEASETYPE — lets Navidrome separate albums/singles/EPs (#82). Written as
       // two TXXX frames so it matches both of Navidrome's tag aliases
       // ("releasetype" and "txxx:musicbrainz album type"). See mapReleaseType().
-      if (tagSettings.releaseType) {
+      // Default-on when the key is absent (e.g. settings synced before this tag
+      // existed) — matches the refresh path's `!== false` semantics; only an
+      // explicit opt-out suppresses it (issue #85).
+      if (tagSettings.releaseType !== false) {
         const releaseType = this.mapReleaseType(options.albumContext?.recordType || options._resolvedAlbumRecordType)
         if (releaseType) {
           tags.userDefinedText = tags.userDefinedText || []
@@ -2622,7 +2625,9 @@ export class Downloader extends EventEmitter {
 
       // RELEASETYPE — lets Navidrome separate albums/singles/EPs (#82). Both keys
       // are in Navidrome's releasetype alias list (Vorbis). See mapReleaseType().
-      if (tagSettings.releaseType) {
+      // Default-on when the key is absent (settings synced before this tag
+      // existed) — matches the refresh path; only an explicit opt-out suppresses it (#85).
+      if (tagSettings.releaseType !== false) {
         const releaseType = this.mapReleaseType(options.albumContext?.recordType || options._resolvedAlbumRecordType)
         if (releaseType) {
           comments.push(`RELEASETYPE=${releaseType}`)

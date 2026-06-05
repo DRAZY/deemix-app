@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.14] — 2026-06-05
+
+### Fixed
+
+- **RELEASETYPE tag now actually written on download (#85).** The tag only appeared after a manual retag. Root cause: the server's `/api/settings` handler validated incoming tags against a hardcoded key allowlist that didn't include `releaseType`, so the setting was silently dropped when the frontend synced settings — the downloader then saw no `releaseType` and skipped it (retag paths bypass that allowlist, which is why retagging worked). Fixed by adding `releaseType` to the settings allowlist and the server's default tags, and making the download writer default the tag on when the key is absent (only an explicit opt-out suppresses it). Verified end-to-end on real MP3 and FLAC downloads.
+
 ## [1.10.13] — 2026-06-04
 
 ### Added

@@ -475,7 +475,8 @@ export class DeemixServer extends EventEmitter {
       copyright: false,
       composer: false,
       involvedPeople: false,
-      sourceId: false
+      sourceId: false,
+      releaseType: true
     },
     // Album cover settings
     albumCovers: {
@@ -2071,7 +2072,7 @@ export class DeemixServer extends EventEmitter {
           'discNumber', 'discTotal', 'albumArtist', 'genre', 'year', 'date',
           'explicitLyrics', 'isrc', 'trackLength', 'albumBarcode', 'bpm',
           'replayGain', 'albumLabel', 'unsyncLyrics', 'syncLyrics', 'copyright',
-          'composer', 'involvedPeople', 'sourceId'
+          'composer', 'involvedPeople', 'sourceId', 'releaseType'
         ]
         const validatedTags: Partial<TagSettings> = {}
         for (const key of tagKeys) {
