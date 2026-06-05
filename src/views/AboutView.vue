@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.15',
+    date: '2026-06-05',
+    items: [
+      'Fixed applying your ARL token in Settings not actually logging the app in. The Settings panel would show "Logged in as <you>", but the sidebar still said "Login with Deezer / Login required to download" and downloads stayed blocked — because the Apply button logged in the server session without updating the app\'s shared login state. Apply now logs in app-wide.'
+    ]
+  },
+  {
     version: '1.10.14',
     date: '2026-06-05',
     items: [

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useSettingsStore, type ColorTheme } from '../stores/settingsStore'
 import { useProfileStore } from '../stores/profileStore'
 import { useToastStore } from '../stores/toastStore'
+import { useAuthStore } from '../stores/authStore'
 import { SUPPORTED_LOCALES, setLocale, getCurrentLocale } from '../i18n'
 import FlagIcon from '../components/FlagIcon.vue'
 import ProfileSelector from '../components/ProfileSelector.vue'
@@ -12,6 +13,7 @@ import { useContextMenu } from '../composables/useContextMenu'
 
 const { t } = useI18n()
 const settingsStore = useSettingsStore()
+const authStore = useAuthStore()
 const profileStore = useProfileStore()
 
 // Settings search
@@ -185,16 +187,15 @@ onMounted(async () => {
   await checkSpotifyStatus()
 })
 
-async function checkAuthStatus() {
-  try {
-    const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/auth/status`)
-    const data = await response.json()
-    if (data.authenticated && data.user) {
-      arlStatus.value = 'success'
-      arlMessage.value = `Logged in as ${data.user.name || 'User'}`
-    }
-  } catch (e) {
-    // Ignore errors on status check
+function checkAuthStatus() {
+  // Mirror the global auth store — the single source of truth that the sidebar
+  // and download gating also read (authStore.init() establishes it at app
+  // startup via auto-login). Previously this hit /api/auth/status and set only
+  // local state, which let Settings show "Logged in" while the rest of the app
+  // stayed logged out.
+  if (authStore.isLoggedIn) {
+    arlStatus.value = 'success'
+    arlMessage.value = `Logged in as ${authStore.user?.name || 'User'}`
   }
 }
 
@@ -211,21 +212,21 @@ async function applyArl() {
   arlMessage.value = ''
 
   try {
-    const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ arl })
-    })
-
-    const data = await response.json()
-
-    if (response.ok && data.success) {
+    // Log in through the SHARED auth store so the WHOLE app reflects it — the
+    // sidebar's "Login with Deezer" button and download gating both read
+    // authStore.isLoggedIn. The old code did its own fetch to /api/auth/login and
+    // updated only this panel's local state, so the server session was valid
+    // (Settings showed "Logged in as X") while authStore stayed logged out and
+    // the sidebar kept showing "Login required to download". authStore.login also
+    // persists the ARL via settingsStore.setArl (encrypted), so saveSettings()
+    // is no longer needed here.
+    const ok = await authStore.login(arl)
+    if (ok) {
       arlStatus.value = 'success'
-      arlMessage.value = `Logged in as ${data.user?.name || 'User'}`
-      settingsStore.saveSettings()
+      arlMessage.value = `Logged in as ${authStore.user?.name || 'User'}`
     } else {
       arlStatus.value = 'error'
-      arlMessage.value = data.error || 'Authentication failed'
+      arlMessage.value = authStore.error || 'Authentication failed'
     }
   } catch (error: any) {
     arlStatus.value = 'error'

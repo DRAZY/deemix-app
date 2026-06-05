@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.15] — 2026-06-05
+
+### Fixed
+
+- **Applying an ARL token in Settings now logs the app in everywhere.** The Deezer Account panel showed "Logged in as &lt;user&gt;" after Apply, but the sidebar still showed "Login with Deezer / Login required to download" and downloads stayed gated. Root cause (present since v1.0.0): `SettingsView`'s Apply handler made its own `POST /api/auth/login` and updated only the panel's local state — it never touched the shared `authStore` that the sidebar and download gating read, so the server session was valid while the app's global auth state stayed logged out. Apply (and the on-mount status) now go through `authStore.login()`, so a successful Apply flips the whole app to logged-in (and persists the ARL via the encrypted credential store).
+
 ## [1.10.14] — 2026-06-05
 
 ### Fixed
