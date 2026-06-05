@@ -105,6 +105,10 @@ Streams encrypted track audio from Deezer's CDN, decrypts it (Blowfish, key deri
 
 Three-tier track resolution: when a requested track isn't available in the requested quality, the downloader falls back to (1) bitrate fallback (lower quality of the same track), (2) FALLBACK ID (the alternative track ID that Deezer's own client uses), (3) ISRC search (find the same recording on a different track ID). Each fallback level is configurable in Settings.
 
+#### Retagger — `electron/services/retagger.ts`
+
+Rewrites tags on *existing* `.mp3`/`.flac` files without re-downloading — the audio stream is left byte-identical (merge semantics: only enabled fields are touched, everything else and embedded artwork is preserved). Resolves metadata from Deezer's **public** API (no ARL/login), matching each file by the ISRC stored in its tags; for an album folder it resolves the one authoritative album and maps tracks into it so track numbers/totals come from the right edition rather than a single-release lookup. Powers both the standalone **Retag Library** page and the per-album/playlist **Refresh tags** action (which the downloader calls directly with the data it already holds). Tag-writing mirrors the download path field-for-field, so a tag added to downloads (e.g. `RELEASETYPE`) is backfillable here too.
+
 #### Spotify Client — `electron/services/spotifyAPI.ts` + `spotifyConverter.ts`
 
 Client Credentials OAuth (no user login — uses the developer's own Client ID/Secret to fetch public playlists and tracks). Converter takes a Spotify track and finds the best Deezer match: ISRC first (exact), then `track.search` with title+artist (best-effort with confidence scoring).

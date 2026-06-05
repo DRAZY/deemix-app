@@ -67,6 +67,18 @@ Known. If you download a sampler/compilation, individual tracks may end up under
 
 **Fix:** This is corrected in v1.5.0+ for new downloads via the Compilation Album fix (compilation tracks now use the album-level artist for folder naming). If you're seeing it on an older version, update to v1.5.2.
 
+### "Quota limit exceeded" when downloading a large discography
+
+Deezer's public API enforces a per-IP rate limit. When the app builds the download queue for a big artist discography it fetches each release's metadata, and on large discographies that burst can briefly trip Deezer's limit. These messages are **transient** — the app paces requests and retries with backoff, so they usually recover on their own.
+
+**Fix:** Update to v1.10.10+ (paced list-building, jittered retry, and a second-pass retry so releases aren't silently dropped). If on an older version, grab the discography in smaller batches or just re-run it — already-downloaded tracks are skipped. This is independent of the "Max concurrent downloads" setting (the limit is hit while building the list, not while downloading).
+
+### The `RELEASETYPE` tag isn't written on downloads
+
+`RELEASETYPE` (Album / Single / EP / Compilation, for Navidrome separation) is written on download starting in v1.10.12, but a settings-sync bug in v1.10.12–v1.10.13 caused it to be dropped on the download path (it only appeared if you retagged afterward).
+
+**Fix:** Update to **v1.10.14+**, where it's written on download as intended (on by default; toggle under Settings → Metadata tags). To add it to music downloaded earlier, run **Retag Library** over the folder. Note: the type comes from Deezer, which is reliable for albums/singles/compilations but often mislabels EPs, so EP detection is best-effort.
+
 ---
 
 ## Spotify Integration
@@ -167,9 +179,9 @@ The ARL token and Spotify Client Secret are encrypted via Electron's `safeStorag
 
 ### Some albums don't appear in New Releases despite being available in my region
 
-Known limitation (issue #57). The "New Releases" feed uses Deezer's public editorial endpoint, which appears to serve a single global feed regardless of `Accept-Language` or country query parameters. Tracking this — see the issue for the investigation log.
+Known limitation (issue #57). The "New Releases" page is backed by Deezer's public **editorial** endpoint (`/editorial/0/releases`) — a *curated* selection, not a complete feed of everything released, and it appears to serve a single global feed regardless of `Accept-Language` or country query parameters. So a brand-new release can be genuinely absent from the feed even on release day if Deezer didn't include it in their editorial picks. The page also fetches live each time you open it (there's no cached list or refresh interval to clear), so re-opening or waiting won't surface a release the endpoint isn't returning.
 
-**Workaround:** Use **Search** by artist or album name, or visit the artist's page directly (full discographies are region-aware via different API paths).
+**Workaround:** Use **Search** by artist or album name, or visit the artist's page directly (full discographies come from `/artist/{id}/albums`, the complete chronological list — so a release missing from New Releases will still show there).
 
 ### "Track not available - may be geo-restricted or require Premium subscription"
 

@@ -56,7 +56,8 @@
 
 ### Metadata & Organization
 
-- **ID3 Tagging** -- 21 configurable tag fields including title, artist, album, lyrics, ISRC, BPM, and more
+- **ID3 Tagging** -- 26 configurable tag fields including title, artist, album, lyrics, ISRC, BPM, and more
+- **Release Type Tag** -- Writes `RELEASETYPE` (Album / Single / EP / Compilation) so servers like Navidrome automatically separate albums, singles, and EPs; on by default and toggleable under Settings → Metadata tags (#82)
 - **Featured Artists** -- All credited artists (main + featured) included in tags with configurable separator
 - **M3U Playlists** -- Automatic M3U8 playlist file generation with paths matching actual downloaded files and customizable filename template (`%playlist%`, `%date%`, `%year%`)
 - **Album Artwork** -- Embedded and local cover art with configurable size and format (JPEG/PNG)
@@ -69,14 +70,14 @@
 
 ### Retag Library
 
-- **Metadata-Only Retag** -- Point the Retag Library tool at a folder and it rewrites tags on your *existing* `.mp3`/`.flac` files — no re-download, and the audio stream is left byte-identical. Ideal for backfilling fields like UPC/Label onto files downloaded before they were supported (#77)
+- **Metadata-Only Retag** -- Point the Retag Library tool at a folder and it rewrites tags on your *existing* `.mp3`/`.flac` files — no re-download, and the audio stream is left byte-identical. Ideal for backfilling fields like UPC/Label or Release Type onto files downloaded before they were supported (#77, #82)
 - **ISRC Matching** -- Each file is matched to Deezer by the ISRC already stored in its tags; files without an ISRC are listed and skipped (never guessed)
 - **Public Catalog, No Account** -- Looks up metadata via Deezer's public API, so retagging needs no ARL/login and won't burn your download quota
 - **Merge, Never Replace** -- Only the tags you enable are rewritten; all other tags and embedded artwork are preserved. UPC and Label are enabled by default
 - **Dry-Run Preview** -- Preview exactly which tags would change, per file, before writing anything
 - **Refresh Tags from an Album/Playlist** -- A "Refresh tags" button on every Album and Playlist view rewrites tags on files you already have, using the **exact** Deezer release you're viewing — so the barcode/label/genre always come from the right edition (no ISRC guesswork), with no re-download and audio untouched. It fills in every tag Deezer offers for that release; merge semantics preserve anything Deezer doesn't have
 - **Clear Retag Results** -- The Retag Library reports per file whether each tag was written, was "Already up to date", or is "Not available on Deezer" (some albums genuinely have no genre upstream) — no silent skips
-- **Retaggable Fields** -- UPC, Label, Genre, Track Length, Explicit, ISRC, Year, Date, BPM, track/disc numbers, album/artist/title — all from Deezer's public catalog
+- **Retaggable Fields** -- UPC, Label, Release Type (RELEASETYPE), Genre, Track Length, Explicit, ISRC, Year, Date, BPM, track/disc numbers, album/artist/title — all from Deezer's public catalog
 
 ### Spotify Integration
 
@@ -344,7 +345,7 @@ deemix-remastered/
 │   │   ├── useKeyboardShortcuts.ts # Global keyboard shortcuts
 │   │   ├── useNetworkStatus.ts     # Online/offline detection
 │   │   └── useSearchHistory.ts     # Search history management
-│   ├── i18n/locales/           # Translation files (22 languages)
+│   ├── i18n/locales/           # Translation files (21 languages)
 │   ├── services/               # API services
 │   │   └── deezerAPI.ts            # Deezer API wrapper with caching
 │   ├── stores/                 # Pinia state stores
