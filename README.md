@@ -50,7 +50,7 @@
 - **Download History** -- Persistent log of all completed and failed downloads (last 500 entries)
 - **Smart Fallbacks** -- Automatic bitrate and format fallback when preferred quality is unavailable
 - **Concurrent Downloads** -- Configurable from 2 to 50 simultaneous downloads (default: 5)
-- **Natural Download Pacing** -- Optional on/off switch that adds small random delays between downloads so a large batch doesn't hit Deezer as one burst, reducing the chance of an "unusual activity" account flag (off by default; full speed unless enabled)
+- **Natural Download Pacing** -- Optional Off/Balanced/Cautious setting that adds small random delays between downloads so a large batch doesn't hit Deezer as one burst, reducing the chance of an "unusual activity" account flag (off by default; full speed unless enabled)
 - **Conflict Handling** -- Skip, overwrite, or rename when files already exist
 - **Playlist Diff** -- See how many tracks are new vs already downloaded before re-downloading a playlist
 - **Timeout Protection** -- All HTTP calls have connection and stall timeouts to prevent downloads from hanging

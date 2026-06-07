@@ -65,10 +65,10 @@ export interface Settings {
   downloadPath: string
   quality: '128' | '320' | 'flac'
   maxConcurrentDownloads: number
-  // Download pacing (issue #86): on/off switch. false (default) = full speed;
-  // true spaces out download starts with jittered delays to avoid bursty
-  // patterns Deezer may flag
-  downloadPacing: boolean
+  // Download pacing (issue #86): tiered opt-in. 'off' (default) = full speed;
+  // 'balanced'/'cautious' space out download starts with jittered delays to
+  // avoid bursty patterns Deezer may flag
+  downloadPacing: 'off' | 'balanced' | 'cautious'
   // Download behavior settings
   overwriteFiles: OverwriteMode
   bitrateFallback: boolean
@@ -138,7 +138,7 @@ export const defaultSettings: Settings = {
   downloadPath: '',
   quality: '320',
   maxConcurrentDownloads: 5,
-  downloadPacing: false,
+  downloadPacing: 'off',
   // Download behavior settings
   overwriteFiles: 'no',
   bitrateFallback: true,

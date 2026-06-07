@@ -212,17 +212,19 @@ export class Downloader extends EventEmitter {
   private currentDownloads = 0
   // Queue pause state - when paused, no new downloads start (current ones complete)
   private _isPaused = false
-  // Download pacing (issue #86): a simple on/off switch. When ON, space out the
-  // rate of NEW download starts with a jittered delay, so a large discography
-  // doesn't hit Deezer as one detectable burst. When OFF (default) this is a true
-  // no-op — the gate is fully bypassed and the queue drains exactly as it always
-  // has. Only manual opt-in changes timing.
-  private downloadPacing = false
+  // Download pacing (issue #86): a tiered opt-in. 'off' (default) is a true no-op —
+  // the gate is fully bypassed and the queue drains exactly as it always has.
+  // 'balanced'/'cautious' space out the rate of NEW download starts with a jittered
+  // delay, so a large discography doesn't hit Deezer as one detectable burst.
+  private downloadPacing: 'off' | 'balanced' | 'cautious' = 'off'
   private lastDownloadStartAt = 0
   private pacingTimer: ReturnType<typeof setTimeout> | null = null
-  // Base gap between download starts when pacing is on (ms). The actual gap is
-  // jittered ±50% so the cadence isn't a fixed, machine-like interval.
-  private readonly PACING_BASE_MS = 2500 // ~15-30 starts/min — calms bursts, still reasonable
+  // Base gap between download starts per tier (ms). The actual gap is jittered
+  // ±50% around this base so the cadence isn't a fixed, machine-like interval.
+  private readonly PACING_BASE_MS: Record<'balanced' | 'cautious', number> = {
+    balanced: 2500,  // ~15-30 starts/min — calms bursts, still reasonably quick
+    cautious: 7000   // ~6-12 starts/min — closest to natural listening cadence
+  }
   // Artwork cache: stores downloaded artwork buffers keyed by album picture hash
   // This prevents re-downloading the same cover for each track in an album
   private artworkCache: Map<string, Promise<Buffer>> = new Map()
@@ -753,8 +755,9 @@ export class Downloader extends EventEmitter {
     // enabled, hold back NEW starts until a jittered minimum gap has elapsed since
     // the last start, so a big queue trickles out instead of hitting Deezer as a
     // single detectable burst. Concurrency is untouched — only the start rate.
-    if (this.downloadPacing && this.downloadQueue.length > 0) {
-      const requiredGap = Math.round(this.PACING_BASE_MS * (0.5 + Math.random())) // jitter ±50%
+    if (this.downloadPacing !== 'off' && this.downloadQueue.length > 0) {
+      const base = this.PACING_BASE_MS[this.downloadPacing]
+      const requiredGap = Math.round(base * (0.5 + Math.random())) // jitter ±50%
       const elapsed = Date.now() - this.lastDownloadStartAt
       if (this.lastDownloadStartAt > 0 && elapsed < requiredGap) {
         // Too soon — schedule a single re-check; don't start, don't recurse.
@@ -3804,14 +3807,16 @@ export class Downloader extends EventEmitter {
   }
 
   /**
-   * Toggle download pacing (issue #86). false restores full-speed behavior;
-   * true spaces out new download starts with a jittered delay to avoid bursty,
-   * easily-detected download patterns.
+   * Set the download pacing tier (issue #86). 'off' restores full-speed behavior;
+   * 'balanced'/'cautious' space out new download starts with a jittered delay to
+   * avoid bursty, easily-detected download patterns.
    */
-  setPacing(enabled: boolean): void {
-    this.downloadPacing = enabled === true
-    console.log(`[Downloader] Download pacing ${this.downloadPacing ? 'enabled' : 'disabled'}`)
-    // Drop any pending pacing timer so the new state takes effect now.
+  setPacing(profile: string): void {
+    const valid: 'off' | 'balanced' | 'cautious' =
+      profile === 'balanced' || profile === 'cautious' ? profile : 'off'
+    this.downloadPacing = valid
+    console.log(`[Downloader] Download pacing set to: ${valid}`)
+    // Drop any pending pacing timer so the new tier (or 'off') takes effect now.
     if (this.pacingTimer) {
       clearTimeout(this.pacingTimer)
       this.pacingTimer = null
@@ -3819,7 +3824,7 @@ export class Downloader extends EventEmitter {
     this.processQueue()
   }
 
-  getPacing(): boolean {
+  getPacing(): 'off' | 'balanced' | 'cautious' {
     return this.downloadPacing
   }
 

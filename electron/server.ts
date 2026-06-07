@@ -357,8 +357,8 @@ interface ServerSettings {
   downloadPath: string
   quality: 'MP3_128' | 'MP3_320' | 'FLAC'
   maxConcurrentDownloads: number
-  // Download pacing (issue #86): on/off switch — space out download starts to avoid bursty patterns
-  downloadPacing: boolean
+  // Download pacing (issue #86): tiered — space out download starts to avoid bursty patterns
+  downloadPacing: 'off' | 'balanced' | 'cautious'
   // Download behavior settings
   overwriteFiles: OverwriteMode
   bitrateFallback: boolean
@@ -420,7 +420,7 @@ export class DeemixServer extends EventEmitter {
     downloadPath: (process.env.HOME || process.env.USERPROFILE || '.') + (process.platform === 'win32' ? '\\Music\\Deemix' : '/Music/Deemix'),
     quality: 'MP3_320',
     maxConcurrentDownloads: 5,
-    downloadPacing: false,
+    downloadPacing: 'off',
     // Download behavior settings
     overwriteFiles: 'no',
     bitrateFallback: true,
@@ -2023,9 +2023,12 @@ export class DeemixServer extends EventEmitter {
         }
       }
 
-      // Validate downloadPacing (issue #86) — simple on/off boolean
-      if (typeof body.downloadPacing === 'boolean') {
-        validatedSettings.downloadPacing = body.downloadPacing
+      // Validate downloadPacing (issue #86) — must be one of the known tiers
+      if (body.downloadPacing !== undefined) {
+        const validPacing = ['off', 'balanced', 'cautious']
+        if (validPacing.includes(body.downloadPacing)) {
+          validatedSettings.downloadPacing = body.downloadPacing
+        }
       }
 
       // Validate overwriteFiles setting

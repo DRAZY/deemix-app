@@ -671,15 +671,16 @@ function saveNow() {
 
       <!-- Download Pacing (issue #86) -->
       <div>
-        <label class="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            v-model="settingsStore.settings.downloadPacing"
-            @change="saveNow"
-            class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
-          />
-          <span class="text-sm font-medium">{{ t('settings.downloadPacing') }}</span>
-        </label>
+        <label class="block text-sm font-medium mb-2">{{ t('settings.downloadPacing') }}</label>
+        <select
+          v-model="settingsStore.settings.downloadPacing"
+          @change="saveNow"
+          class="input w-full bg-background-main"
+        >
+          <option value="off">{{ t('settings.pacingOptions.off') }}</option>
+          <option value="balanced">{{ t('settings.pacingOptions.balanced') }}</option>
+          <option value="cautious">{{ t('settings.pacingOptions.cautious') }}</option>
+        </select>
         <p class="text-xs text-zinc-400 mt-1">{{ t('settings.downloadPacingHelp') }}</p>
       </div>
 

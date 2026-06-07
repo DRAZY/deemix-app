@@ -6,11 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
-## [1.10.16] — 2026-06-07
+## [1.10.17] — 2026-06-07
 
 ### Added
 
-- **Natural download pacing — optional on/off switch (#86).** A new "Natural download pacing" toggle under Settings → Downloads (off by default). When enabled, the downloader spaces out the start of each new download with a small randomized (jittered) delay instead of firing them back-to-back, so a large discography or sync run doesn't hit Deezer as a single burst — the pattern that can trip Deezer's "unusual activity" detection and force a password reset. Off is a true no-op: the pacing gate is bypassed entirely and downloads behave exactly as before at full speed. The gate lives in the shared download queue, so it also covers Artist Sync and Playlist Sync automatically. Concurrency is untouched; for the most natural pattern, pair it with Concurrent Downloads set to 1. Honest scope: this reduces burst volume (the main trigger), it does not make downloading undetectable.
+- **Natural download pacing — tiered opt-in (#86).** A new "Natural Download Pacing" setting under Settings → Downloads with three tiers: **Off** (default), **Balanced**, and **Cautious**. When set to Balanced or Cautious, the downloader spaces out the start of each new download with a small randomized (jittered) delay instead of firing them back-to-back, so a large discography or sync run doesn't hit Deezer as a single burst — the pattern that can trip Deezer's "unusual activity" detection and force a password reset. Balanced spaces starts ~2.5s apart (jittered); Cautious ~7s apart for the most natural cadence. Off is a true no-op: the pacing gate is bypassed entirely and downloads behave exactly as before at full speed. The gate lives in the shared download queue, so it also covers Artist Sync and Playlist Sync automatically. Concurrency is untouched; for the most natural pattern, pair Cautious with Concurrent Downloads set to 1. Honest scope: this reduces burst volume (the main trigger), it does not make downloading undetectable.
 
 ## [1.10.15] — 2026-06-05
 
