@@ -4,7 +4,7 @@ import { useSettingsStore, defaultSettings, deepMerge, type Settings } from './s
 
 // Profile settings exclude credentials, appearance, and personal preferences
 type ProfileSettingsKeys =
-  | 'downloadPath' | 'quality' | 'maxConcurrentDownloads'
+  | 'downloadPath' | 'quality' | 'maxConcurrentDownloads' | 'downloadPacing'
   | 'overwriteFiles' | 'bitrateFallback' | 'searchFallback' | 'isrcFallback'
   | 'createErrorLog' | 'createSearchLog' | 'gambleCDNs' | 'createLrcFiles'
   | 'createPlaylistFile' | 'clearQueueOnClose'
@@ -32,7 +32,7 @@ export interface SettingsProfile {
 }
 
 const PROFILE_SETTINGS_KEYS: ProfileSettingsKeys[] = [
-  'downloadPath', 'quality', 'maxConcurrentDownloads',
+  'downloadPath', 'quality', 'maxConcurrentDownloads', 'downloadPacing',
   'overwriteFiles', 'bitrateFallback', 'searchFallback', 'isrcFallback',
   'createErrorLog', 'createSearchLog', 'gambleCDNs', 'createLrcFiles',
   'createPlaylistFile', 'clearQueueOnClose',

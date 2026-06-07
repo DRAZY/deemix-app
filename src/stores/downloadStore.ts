@@ -353,6 +353,7 @@ export const useDownloadStore = defineStore('downloads', () => {
       const settingsToSync: Record<string, any> = {
         quality: qualityMap[settingsStore.settings.quality] || 'MP3_320',
         maxConcurrentDownloads: settingsStore.settings.maxConcurrentDownloads,
+        downloadPacing: settingsStore.settings.downloadPacing,
         overwriteFiles: settingsStore.settings.overwriteFiles,
         bitrateFallback: settingsStore.settings.bitrateFallback,
         searchFallback: settingsStore.settings.searchFallback,

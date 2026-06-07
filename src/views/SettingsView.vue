@@ -24,7 +24,7 @@ const sectionSearchTerms: Record<string, string[]> = {
   profiles: ['profile', 'preset', 'audiophile', 'quick', 'balanced', 'flac', 'mp3', 'import', 'export', 'save profile'],
   appearance: ['appearance', 'theme', 'color', 'violet', 'spotify', 'rose', 'ocean', 'sunset', 'mint', 'dracula', 'nord', 'slim', 'sidebar', 'download tab', 'quality tag', 'search button'],
   languages: ['language', 'languages', 'locale', 'translation'],
-  downloads: ['download', 'path', 'location', 'folder', 'concurrent', 'bitrate', 'quality', 'mp3', 'flac', '128', '320', 'overwrite', 'fallback', 'isrc', 'log', 'cdn', 'lrc', 'lyrics', 'playlist', 'queue'],
+  downloads: ['download', 'path', 'location', 'folder', 'concurrent', 'pacing', 'speed', 'rate', 'delay', 'natural', 'bitrate', 'quality', 'mp3', 'flac', '128', '320', 'overwrite', 'fallback', 'isrc', 'log', 'cdn', 'lrc', 'lyrics', 'playlist', 'queue'],
   folders: ['folder', 'structure', 'template', 'artist', 'album', 'playlist', 'cd', 'singles'],
   templates: ['template', 'trackname', 'filename', 'format', 'variable', 'pattern'],
   metadata: ['metadata', 'artwork', 'embed', 'lyrics', 'save'],
@@ -667,6 +667,20 @@ function saveNow() {
           v-model.number="settingsStore.settings.maxConcurrentDownloads"
           class="input w-full"
         />
+      </div>
+
+      <!-- Download Pacing (issue #86) -->
+      <div>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            v-model="settingsStore.settings.downloadPacing"
+            @change="saveNow"
+            class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+          />
+          <span class="text-sm font-medium">{{ t('settings.downloadPacing') }}</span>
+        </label>
+        <p class="text-xs text-zinc-400 mt-1">{{ t('settings.downloadPacingHelp') }}</p>
       </div>
 
       <!-- Preferred Bitrate -->

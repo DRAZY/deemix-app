@@ -212,6 +212,17 @@ export class Downloader extends EventEmitter {
   private currentDownloads = 0
   // Queue pause state - when paused, no new downloads start (current ones complete)
   private _isPaused = false
+  // Download pacing (issue #86): a simple on/off switch. When ON, space out the
+  // rate of NEW download starts with a jittered delay, so a large discography
+  // doesn't hit Deezer as one detectable burst. When OFF (default) this is a true
+  // no-op — the gate is fully bypassed and the queue drains exactly as it always
+  // has. Only manual opt-in changes timing.
+  private downloadPacing = false
+  private lastDownloadStartAt = 0
+  private pacingTimer: ReturnType<typeof setTimeout> | null = null
+  // Base gap between download starts when pacing is on (ms). The actual gap is
+  // jittered ±50% so the cadence isn't a fixed, machine-like interval.
+  private readonly PACING_BASE_MS = 2500 // ~15-30 starts/min — calms bursts, still reasonable
   // Artwork cache: stores downloaded artwork buffers keyed by album picture hash
   // This prevents re-downloading the same cover for each track in an album
   private artworkCache: Map<string, Promise<Buffer>> = new Map()
@@ -737,6 +748,26 @@ export class Downloader extends EventEmitter {
       return
     }
 
+    // Download pacing gate (issue #86) — opt-in only. When 'off' this block is
+    // skipped entirely and the queue drains exactly as before (true no-op). When
+    // enabled, hold back NEW starts until a jittered minimum gap has elapsed since
+    // the last start, so a big queue trickles out instead of hitting Deezer as a
+    // single detectable burst. Concurrency is untouched — only the start rate.
+    if (this.downloadPacing && this.downloadQueue.length > 0) {
+      const requiredGap = Math.round(this.PACING_BASE_MS * (0.5 + Math.random())) // jitter ±50%
+      const elapsed = Date.now() - this.lastDownloadStartAt
+      if (this.lastDownloadStartAt > 0 && elapsed < requiredGap) {
+        // Too soon — schedule a single re-check; don't start, don't recurse.
+        if (!this.pacingTimer) {
+          this.pacingTimer = setTimeout(() => {
+            this.pacingTimer = null
+            this.processQueue()
+          }, requiredGap - elapsed)
+        }
+        return
+      }
+    }
+
     const next = this.downloadQueue.shift()
     if (!next) {
       console.log('[Downloader] processQueue: queue is empty')
@@ -745,6 +776,7 @@ export class Downloader extends EventEmitter {
 
     console.log(`[Downloader] processQueue: starting download ${next.id}`)
     this.currentDownloads++
+    this.lastDownloadStartAt = Date.now() // pacing reference (no-op when pacing 'off')
     this.processDownload(next.id, next.options)
       .catch(error => {
         console.error(`[Downloader] processDownload error for ${next.id}:`, error.message)
@@ -3769,6 +3801,26 @@ export class Downloader extends EventEmitter {
 
   getMaxConcurrent(): number {
     return this.maxConcurrent
+  }
+
+  /**
+   * Toggle download pacing (issue #86). false restores full-speed behavior;
+   * true spaces out new download starts with a jittered delay to avoid bursty,
+   * easily-detected download patterns.
+   */
+  setPacing(enabled: boolean): void {
+    this.downloadPacing = enabled === true
+    console.log(`[Downloader] Download pacing ${this.downloadPacing ? 'enabled' : 'disabled'}`)
+    // Drop any pending pacing timer so the new state takes effect now.
+    if (this.pacingTimer) {
+      clearTimeout(this.pacingTimer)
+      this.pacingTimer = null
+    }
+    this.processQueue()
+  }
+
+  getPacing(): boolean {
+    return this.downloadPacing
   }
 
   /**

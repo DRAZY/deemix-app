@@ -50,6 +50,7 @@
 - **Download History** -- Persistent log of all completed and failed downloads (last 500 entries)
 - **Smart Fallbacks** -- Automatic bitrate and format fallback when preferred quality is unavailable
 - **Concurrent Downloads** -- Configurable from 2 to 50 simultaneous downloads (default: 5)
+- **Natural Download Pacing** -- Optional on/off switch that adds small random delays between downloads so a large batch doesn't hit Deezer as one burst, reducing the chance of an "unusual activity" account flag (off by default; full speed unless enabled)
 - **Conflict Handling** -- Skip, overwrite, or rename when files already exist
 - **Playlist Diff** -- See how many tracks are new vs already downloaded before re-downloading a playlist
 - **Timeout Protection** -- All HTTP calls have connection and stall timeouts to prevent downloads from hanging
@@ -256,7 +257,7 @@ The Settings page offers deep customization organized into these categories:
 | Category | Key Options |
 |----------|-------------|
 | **Appearance** | Theme (8 color themes), dark/light/system mode, slim sidebar, slim downloads |
-| **Downloads** | Quality (128/320/FLAC), max concurrent, overwrite mode, bitrate fallback, M3U filename template |
+| **Downloads** | Quality (128/320/FLAC), max concurrent, natural download pacing, overwrite mode, bitrate fallback, M3U filename template |
 | **Folder Structure** | Create artist/album/playlist/CD folders, templates with `%explicit%`, `%owner%`, `%date%` support |
 | **Track Naming** | Templates for single tracks, album tracks, and playlist tracks |
 | **Metadata Tags** | Toggle 21 individual ID3 tag fields (title, artist, album, lyrics, ISRC, BPM, etc.) |

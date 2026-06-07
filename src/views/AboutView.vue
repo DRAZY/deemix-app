@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.16',
+    date: '2026-06-07',
+    items: [
+      'Added an optional "Natural download pacing" switch (Settings → Downloads, off by default). When on, it adds small random delays between downloads so a large batch doesn\'t hit Deezer all at once — which can reduce the chance Deezer flags your account for unusual activity and prompts a password reset. Leave it off and downloads behave exactly as before at full speed; turn it on for extra caution (downloads will be slower). For the most natural pattern, also set Concurrent Downloads to 1.'
+    ]
+  },
+  {
     version: '1.10.15',
     date: '2026-06-05',
     items: [

@@ -344,6 +344,8 @@
       "flac_desc": "Lossless, highest quality"
     },
     "concurrentDownloads": "Concurrent Downloads",
+    "downloadPacing": "Natural download pacing",
+    "downloadPacingHelp": "Adds small random delays between downloads so a large batch doesn't hit Deezer as one burst, reducing the chance your account gets flagged for unusual activity. Off by default — turn it on for extra caution; it makes downloads slower. For the most natural pattern, also set Concurrent Downloads to 1.",
     "overwriteFiles": "Should I overwrite the files?",
     "overwriteOptions": {
       "no": "No",
