@@ -770,6 +770,10 @@ export class DeemixServer extends EventEmitter {
         await this.handleQueuePriority(req, res)
         break
 
+      case '/api/queue/reorder':
+        await this.handleQueueReorder(req, res)
+        break
+
       case '/api/queue/clear':
         downloader.clearAll()
         this.sendJSON(res, { success: true })
@@ -1971,6 +1975,17 @@ export class DeemixServer extends EventEmitter {
 
     const moved = downloader.moveToFront(id)
     this.sendJSON(res, { success: moved })
+  }
+
+  private async handleQueueReorder(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const body = await this.parseBody(req)
+    const ids = Array.isArray(body.ids) ? body.ids.map((x: any) => String(x)) : null
+    if (!ids) {
+      this.sendJSON(res, { error: 'ids array is required' }, 400)
+      return
+    }
+    const matched = downloader.reorderPending(ids)
+    this.sendJSON(res, { success: true, matched })
   }
 
   private handlePauseQueue(res: ServerResponse): void {

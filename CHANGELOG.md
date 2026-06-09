@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.18] — 2026-06-09
+
+### Fixed
+
+- **Slow skip of already-downloaded files with pacing on (#88).** When Natural Download Pacing (v1.10.17) was set to Balanced/Cautious, the pacing gate sat in `processQueue()` and delayed *every* queued item before the downloader checked whether the file already existed — so re-downloading a library you already had crawled (each skip waited the full ~2.5s/~7s jittered gap), even though a skip makes no Deezer request. Pacing now lives in `processDownload()`, **after** the skip check and right before the actual CDN fetch (via a concurrency-safe `awaitPacingSlot`), so already-downloaded files skip instantly and only genuinely-new downloads are paced.
+- **Pause button on the bottom download bar did nothing.** The Pause control in `DownloadBar.vue` had no click handler wired. It now pauses/resumes the queue and shows a play icon while paused (matching the Downloads page).
+
+### Changed
+
+- **Drag-and-drop in the download list now reprioritizes for real.** Previously dragging only rearranged the on-screen list; the actual download order was unchanged. A drag now pushes the new order to the backend queue (`POST /api/queue/reorder` → `downloader.reorderPending`), flattening album/playlist rows into their track IDs, so the order you see is the order that downloads. The ↑ "Download next" button still jumps a track to the front.
+- **Clearer Release Type tag label.** Settings → Metadata tags now shows "Release Type (Album / Single / EP)" with an info tooltip, instead of the cryptic "Release Type (RELEASETYPE)".
+
 ## [1.10.17] — 2026-06-07
 
 ### Added

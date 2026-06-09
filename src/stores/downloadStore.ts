@@ -1309,6 +1309,27 @@ export const useDownloadStore = defineStore('downloads', () => {
     // Insert at the new position
     downloads.value.splice(newIndex, 0, draggedItem)
     saveDownloads()
+    // Make the reorder real: push the new order to the backend queue so the actual
+    // download order matches the list (not just the view). Issue #88 follow-up.
+    syncQueueOrder()
+  }
+
+  // Push the current visual order of still-queued items to the backend, so dragging
+  // a download actually reprioritizes it. Flattens album/playlist rows into their
+  // track download IDs (same id model the "Download next" button uses).
+  function syncQueueOrder() {
+    const ids: string[] = []
+    for (const d of downloads.value) {
+      if (d.status !== 'pending' && d.status !== 'downloading') continue
+      if (Array.isArray(d.trackIds) && d.trackIds.length) ids.push(...d.trackIds.map(String))
+      else ids.push(String(d.id))
+    }
+    if (!ids.length) return
+    fetch(`http://127.0.0.1:${serverPort.value}/api/queue/reorder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    }).catch(() => { /* best-effort; view order already updated */ })
   }
 
   // Debounced save with requestIdleCallback for better performance

@@ -1476,13 +1476,14 @@ function saveNow() {
             />
             <span class="text-sm">{{ t('settings.tags.albumLabel') }}</span>
           </label>
-          <label class="flex items-center gap-3 cursor-pointer">
+          <label class="flex items-center gap-3 cursor-pointer" :title="t('settings.tags.releaseTypeHelp')">
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.releaseType"
               class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
             />
             <span class="text-sm">{{ t('settings.tags.releaseType') }}</span>
+            <span class="text-xs text-zinc-500 cursor-help" :title="t('settings.tags.releaseTypeHelp')">ⓘ</span>
           </label>
           <label class="flex items-center gap-3 cursor-pointer">
             <input

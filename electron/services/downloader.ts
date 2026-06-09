@@ -218,7 +218,9 @@ export class Downloader extends EventEmitter {
   // delay, so a large discography doesn't hit Deezer as one detectable burst.
   private downloadPacing: 'off' | 'balanced' | 'cautious' = 'off'
   private lastDownloadStartAt = 0
-  private pacingTimer: ReturnType<typeof setTimeout> | null = null
+  // Serializes the jittered pacing wait across concurrent download workers, so even
+  // with maxConcurrent > 1 the actual CDN fetches start one-jittered-gap apart.
+  private pacingChain: Promise<void> = Promise.resolve()
   // Base gap between download starts per tier (ms). The actual gap is jittered
   // ±50% around this base so the cadence isn't a fixed, machine-like interval.
   private readonly PACING_BASE_MS: Record<'balanced' | 'cautious', number> = {
@@ -750,26 +752,12 @@ export class Downloader extends EventEmitter {
       return
     }
 
-    // Download pacing gate (issue #86) — opt-in only. When 'off' this block is
-    // skipped entirely and the queue drains exactly as before (true no-op). When
-    // enabled, hold back NEW starts until a jittered minimum gap has elapsed since
-    // the last start, so a big queue trickles out instead of hitting Deezer as a
-    // single detectable burst. Concurrency is untouched — only the start rate.
-    if (this.downloadPacing !== 'off' && this.downloadQueue.length > 0) {
-      const base = this.PACING_BASE_MS[this.downloadPacing]
-      const requiredGap = Math.round(base * (0.5 + Math.random())) // jitter ±50%
-      const elapsed = Date.now() - this.lastDownloadStartAt
-      if (this.lastDownloadStartAt > 0 && elapsed < requiredGap) {
-        // Too soon — schedule a single re-check; don't start, don't recurse.
-        if (!this.pacingTimer) {
-          this.pacingTimer = setTimeout(() => {
-            this.pacingTimer = null
-            this.processQueue()
-          }, requiredGap - elapsed)
-        }
-        return
-      }
-    }
+    // Download pacing (issue #86) is NOT applied here. It used to gate every queue
+    // start, which made already-downloaded files wait the full jittered delay before
+    // being skipped (issue #88) — even though a skip makes no Deezer request. Pacing
+    // now happens inside processDownload, AFTER the skip check and right before the
+    // actual CDN fetch (see awaitPacingSlot), so skips stay instant and only real
+    // audio downloads are paced.
 
     const next = this.downloadQueue.shift()
     if (!next) {
@@ -779,7 +767,6 @@ export class Downloader extends EventEmitter {
 
     console.log(`[Downloader] processQueue: starting download ${next.id}`)
     this.currentDownloads++
-    this.lastDownloadStartAt = Date.now() // pacing reference (no-op when pacing 'off')
     this.processDownload(next.id, next.options)
       .catch(error => {
         console.error(`[Downloader] processDownload error for ${next.id}:`, error.message)
@@ -1124,6 +1111,11 @@ export class Downloader extends EventEmitter {
         // No CD folder, album folder is the same as track folder
         progress.albumRootFolder = dir
       }
+
+      // Pace the actual CDN fetch (issue #86/#88). This is past the skip check, so
+      // already-existing files never wait here — only genuinely-new downloads are
+      // spaced out. No-op when pacing is 'off'.
+      await this.awaitPacingSlot()
 
       // Download the encrypted file
       // Use track ID in encrypted filename to prevent collisions when downloading
@@ -3775,6 +3767,32 @@ export class Downloader extends EventEmitter {
   }
 
   /**
+   * Reorder the pending queue to match a desired id order (issue #88 follow-up:
+   * make drag-and-drop actually reprioritize, not just rearrange the view). Items
+   * whose id appears in `orderedIds` are placed in that order at the front; any
+   * queue items not listed keep their existing relative order afterward (stable).
+   * Returns the number of listed ids that matched real pending downloads.
+   */
+  reorderPending(orderedIds: string[]): number {
+    if (!Array.isArray(orderedIds) || orderedIds.length === 0) return 0
+    const rank = new Map<string, number>()
+    orderedIds.forEach((id, i) => { if (!rank.has(String(id))) rank.set(String(id), i) })
+    let matched = 0
+    this.downloadQueue = this.downloadQueue
+      .map((item, i) => ({ item, i }))
+      .sort((a, b) => {
+        const ra = rank.has(a.item.id) ? rank.get(a.item.id)! : Infinity
+        const rb = rank.has(b.item.id) ? rank.get(b.item.id)! : Infinity
+        if (ra !== rb) return ra - rb
+        return a.i - b.i // stable: preserve original order for ties / unlisted items
+      })
+      .map(x => x.item)
+    for (const id of rank.keys()) if (this.downloadQueue.some(d => d.id === id)) matched++
+    console.log(`[Downloader] reorderPending: ${matched} pending downloads reordered`)
+    return matched
+  }
+
+  /**
    * Clear all downloads — reset queue, active downloads, and counters.
    * Called when user cancels all downloads to ensure clean state.
    */
@@ -3816,16 +3834,35 @@ export class Downloader extends EventEmitter {
       profile === 'balanced' || profile === 'cautious' ? profile : 'off'
     this.downloadPacing = valid
     console.log(`[Downloader] Download pacing set to: ${valid}`)
-    // Drop any pending pacing timer so the new tier (or 'off') takes effect now.
-    if (this.pacingTimer) {
-      clearTimeout(this.pacingTimer)
-      this.pacingTimer = null
-    }
     this.processQueue()
   }
 
   getPacing(): 'off' | 'balanced' | 'cautious' {
     return this.downloadPacing
+  }
+
+  /**
+   * Pacing gate (issue #86/#88). Called by each real audio download right before
+   * the CDN fetch — AFTER the skip check, so already-downloaded files never reach
+   * here and skip instantly. When pacing is off it's a true no-op. When on, it
+   * serializes concurrent workers via a promise chain and waits out the remaining
+   * jittered gap since the last actual download start.
+   */
+  private async awaitPacingSlot(): Promise<void> {
+    if (this.downloadPacing === 'off') return
+    const prev = this.pacingChain
+    let release!: () => void
+    this.pacingChain = new Promise<void>(r => { release = r })
+    try {
+      await prev
+      const base = this.PACING_BASE_MS[this.downloadPacing as 'balanced' | 'cautious']
+      const gap = Math.round(base * (0.5 + Math.random())) // jitter ±50%
+      const wait = this.lastDownloadStartAt ? gap - (Date.now() - this.lastDownloadStartAt) : 0
+      if (wait > 0) await new Promise(r => setTimeout(r, wait))
+      this.lastDownloadStartAt = Date.now()
+    } finally {
+      release()
+    }
   }
 
   /**

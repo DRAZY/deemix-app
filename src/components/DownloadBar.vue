@@ -97,10 +97,16 @@ function getArtistName(item: any): string {
       <div class="flex items-center gap-2">
         <button
           class="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          title="Pause"
+          :title="downloadStore.isPaused ? 'Resume' : 'Pause'"
+          @click="downloadStore.isPaused ? downloadStore.resumeQueue() : downloadStore.pauseQueue()"
         >
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <!-- Pause icon (when running) -->
+          <svg v-if="!downloadStore.isPaused" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6" />
+          </svg>
+          <!-- Play/Resume icon (when paused) -->
+          <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
           </svg>
         </button>
         <button

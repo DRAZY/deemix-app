@@ -35,6 +35,16 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.18',
+    date: '2026-06-09',
+    items: [
+      'Fixed slow skipping of already-downloaded files when Natural Download Pacing was on. Pacing was delaying every track before checking whether it already existed, so re-downloading a library you already have crawled. Skips are now instant again — pacing only applies to tracks actually being downloaded.',
+      'Dragging a download up or down the list now actually reorders the download queue, not just the on-screen list — so it really does change what downloads next. (The ↑ "Download next" button still jumps a track straight to the front.)',
+      'Fixed the Pause button on the bottom download bar, which previously did nothing. It now pauses and resumes downloads, and shows a play icon while paused.',
+      'Clarified the "Release Type" tag label in Settings — it now reads "Release Type (Album / Single / EP)" with a tooltip explaining it, instead of the cryptic "(RELEASETYPE)".'
+    ]
+  },
+  {
     version: '1.10.17',
     date: '2026-06-07',
     items: [
