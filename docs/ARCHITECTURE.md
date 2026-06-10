@@ -109,6 +109,8 @@ Concurrency and pacing: `processQueue()` drains the queue up to `maxConcurrentDo
 
 Queue reordering: the ↑ "Download next" button calls `moveToFront(id)` (jump to front). Drag-and-drop in the Downloads list calls `reorderPending(orderedIds)` (`POST /api/queue/reorder`), which stable-sorts the pending queue to match the dragged order so the visual order and the real download order stay in sync.
 
+Pause/resume: `pauseQueue()` blocks new starts **and** aborts in-flight CDN fetches via per-download `AbortController`s (tracked in `downloadAborts`), re-queuing each aborted track (`pausedDownloadIds`) so it isn't marked failed. `resumeQueue()` clears the flag and re-drains the queue, restarting paused tracks from the beginning (no byte-level resume — negligible for small audio files).
+
 #### Retagger — `electron/services/retagger.ts`
 
 Rewrites tags on *existing* `.mp3`/`.flac` files without re-downloading — the audio stream is left byte-identical (merge semantics: only enabled fields are touched, everything else and embedded artwork is preserved). Resolves metadata from Deezer's **public** API (no ARL/login), matching each file by the ISRC stored in its tags; for an album folder it resolves the one authoritative album and maps tracks into it so track numbers/totals come from the right edition rather than a single-release lookup. Powers both the standalone **Retag Library** page and the per-album/playlist **Refresh tags** action (which the downloader calls directly with the data it already holds). Tag-writing mirrors the download path field-for-field, so a tag added to downloads (e.g. `RELEASETYPE`) is backfillable here too.

@@ -210,8 +210,16 @@ export class Downloader extends EventEmitter {
   private isProcessing = false
   private maxConcurrent = 5
   private currentDownloads = 0
-  // Queue pause state - when paused, no new downloads start (current ones complete)
+  // Queue pause state - when paused, no new downloads start AND in-flight downloads
+  // are aborted and re-queued so they resume from the queue (true mid-download pause).
   private _isPaused = false
+  // Abort handles for in-flight CDN fetches, keyed by downloadId — lets pauseQueue
+  // actually stop a download mid-stream. Populated in downloadFromUrl, cleared in
+  // processDownload's finally.
+  private downloadAborts: Map<string, AbortController> = new Map()
+  // Downloads that were aborted specifically by a pause (so their catch re-queues
+  // them for resume instead of marking them failed).
+  private pausedDownloadIds: Set<string> = new Set()
   // Download pacing (issue #86): a tiered opt-in. 'off' (default) is a true no-op —
   // the gate is fully bypassed and the queue drains exactly as it always has.
   // 'balanced'/'cautious' space out the rate of NEW download starts with a jittered
@@ -281,6 +289,16 @@ export class Downloader extends EventEmitter {
     if (!this._isPaused) {
       this._isPaused = true
       console.log('[Downloader] Queue paused')
+      // Actually stop in-flight downloads mid-stream. Each aborted download is
+      // re-queued for resume by its own catch in processDownload, so resuming
+      // restarts it. Without this, pause only blocked NEW downloads while the
+      // active track streamed to completion.
+      const inFlight = Array.from(this.downloadAborts.entries())
+      for (const [id, controller] of inFlight) {
+        this.pausedDownloadIds.add(id)
+        try { controller.abort() } catch (e) {}
+      }
+      if (inFlight.length) console.log(`[Downloader] Paused — aborted ${inFlight.length} in-flight download(s) for resume`)
       this.emit('paused')
     }
   }
@@ -1135,6 +1153,20 @@ export class Downloader extends EventEmitter {
             fs.unlinkSync(encryptedPath)
           }
         } catch (e) {}
+        // If this download was aborted by a queue pause, re-queue it for resume
+        // instead of failing it. The finally block releases the reserved path, so
+        // resume re-reserves and re-downloads cleanly.
+        if (this.pausedDownloadIds.has(downloadId)) {
+          this.pausedDownloadIds.delete(downloadId)
+          progress.status = 'pending'
+          progress.progress = 0
+          progress.downloaded = 0
+          progress.speed = 0
+          this.downloadQueue.unshift({ id: downloadId, options })
+          this.emit('progress', progress)
+          console.log(`[Downloader] Download ${downloadId} paused mid-stream — re-queued for resume`)
+          return // exit cleanly (finally releases path + cleans partial); no error emitted
+        }
         throw new Error(`Download error: ${error.message}`)
       }
 
@@ -1243,6 +1275,8 @@ export class Downloader extends EventEmitter {
     } finally {
       // Always release the reserved path when done (success or failure)
       this.releaseOutputPath(outputPath)
+      // Drop the abort handle for this download (no longer in-flight)
+      this.downloadAborts.delete(downloadId)
 
       // Clean up encrypted file if it still exists (in case of error before cleanup)
       if (encryptedPath && fs.existsSync(encryptedPath)) {
@@ -1778,6 +1812,10 @@ export class Downloader extends EventEmitter {
     console.log(`[Downloader] Output path: ${outputPath}`)
     console.log(`[Downloader] URL: ${url.substring(0, 100)}...`)
 
+    // Register an abort handle so pauseQueue can stop this fetch mid-stream.
+    const abortController = new AbortController()
+    this.downloadAborts.set(progress.id, abortController)
+
     return new Promise((resolve, reject) => {
       let file: fs.WriteStream
       let fileReady = false
@@ -1812,7 +1850,8 @@ export class Downloader extends EventEmitter {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           'Cookie': deezerAuth.getCookieString()
         },
-        timeout: 30000 // 30s connection timeout
+        timeout: 30000, // 30s connection timeout
+        signal: abortController.signal // pauseQueue can abort mid-stream
       }, (response) => {
         console.log(`[Downloader] Response status: ${response.statusCode}`)
 
@@ -1822,7 +1861,8 @@ export class Downloader extends EventEmitter {
           console.log(`[Downloader] Redirect to: ${redirectUrl?.substring(0, 80)}...`)
           if (redirectUrl) {
             const redirectReq = https.get(redirectUrl, {
-              timeout: 30000
+              timeout: 30000,
+              signal: abortController.signal // pauseQueue can abort mid-stream
             }, (redirectResponse) => {
               console.log(`[Downloader] Redirect response status: ${redirectResponse.statusCode}`)
               // Check redirect response status

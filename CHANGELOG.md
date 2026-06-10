@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.19] — 2026-06-10
+
+### Fixed
+
+- **Pause now actually stops an in-progress download.** v1.10.18 wired up the Pause button, but the app's pause only set a flag that blocked *new* downloads from starting — the in-flight track had no abort hook, so it streamed to completion (you could pause and the current download would still finish). Each active CDN fetch now gets an `AbortController`; `pauseQueue()` aborts the in-flight download(s) mid-stream and re-queues them, and `resumeQueue()` restarts them. Verified end-to-end on a real FLAC download: paused at 44% → download aborted and re-queued (no completion) → resume → downloaded to completion. (Paused tracks restart from the beginning on resume — near-instant for music files; true byte-level resume was intentionally not pursued as over-engineering for small files.)
+
 ## [1.10.18] — 2026-06-09
 
 ### Fixed

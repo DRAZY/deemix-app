@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.19',
+    date: '2026-06-10',
+    items: [
+      'Pause now actually pauses a download in progress. Previously the Pause button only stopped the next tracks in the queue from starting — whatever was already downloading streamed to the end. Now pressing Pause stops the current download(s) mid-stream, and Resume picks them back up and finishes them. (Paused tracks restart from the beginning on resume, which is near-instant for music files.)'
+    ]
+  },
+  {
     version: '1.10.18',
     date: '2026-06-09',
     items: [
