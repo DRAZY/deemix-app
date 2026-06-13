@@ -348,7 +348,7 @@
       "sourceId": "แหล่งและ ID เพลง"
     },
     "separatorOptions": {
-      "standard": "ข้อกำหนดมาตรฐาน (null byte)",
+      "standard": "จุลภาค + เว้นวรรค (, ) — ค่าเริ่มต้น",
       "comma": "จุลภาค (,)",
       "slash": "ทับ (/)",
       "semicolon": "อัฒภาค (;)",

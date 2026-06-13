@@ -297,7 +297,7 @@
       "sourceId": "来源和歌曲 ID"
     },
     "separatorOptions": {
-      "standard": "标准规范（空字节）",
+      "standard": "逗号 + 空格 (, ) — 默认",
       "comma": "逗号 (,)",
       "slash": "斜杠 (/)",
       "semicolon": "分号 (;)",

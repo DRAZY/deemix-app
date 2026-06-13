@@ -297,7 +297,7 @@
       "sourceId": "Sumber dan ID lagu"
     },
     "separatorOptions": {
-      "standard": "Spesifikasi standar (null byte)",
+      "standard": "Koma + spasi (, ) — default",
       "comma": "Koma (,)",
       "slash": "Garis miring (/)",
       "semicolon": "Titik koma (;)",

@@ -297,7 +297,7 @@
       "sourceId": "Source et ID de la chanson"
     },
     "separatorOptions": {
-      "standard": "Spécification standard (octet null)",
+      "standard": "Virgule + espace (, ) — par défaut",
       "comma": "Virgule (,)",
       "slash": "Barre oblique (/)",
       "semicolon": "Point-virgule (;)",

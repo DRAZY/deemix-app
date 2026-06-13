@@ -297,7 +297,7 @@
       "sourceId": "Fonte e ID da música"
     },
     "separatorOptions": {
-      "standard": "Especificação padrão (byte nulo)",
+      "standard": "Vírgula + espaço (, ) — padrão",
       "comma": "Vírgula (,)",
       "slash": "Barra (/)",
       "semicolon": "Ponto e vírgula (;)",

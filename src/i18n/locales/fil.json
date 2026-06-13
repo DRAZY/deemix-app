@@ -297,7 +297,7 @@
       "sourceId": "Pinagmulan at song ID"
     },
     "separatorOptions": {
-      "standard": "Standard na specification (null byte)",
+      "standard": "Kuwit + espasyo (, ) — default",
       "comma": "Kuwit (,)",
       "slash": "Slash (/)",
       "semicolon": "Semicolon (;)",

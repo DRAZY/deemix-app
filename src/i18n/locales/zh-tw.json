@@ -348,7 +348,7 @@
       "sourceId": "來源和歌曲 ID"
     },
     "separatorOptions": {
-      "standard": "標準規格（空位元組）",
+      "standard": "逗號 + 空格 (, ) — 預設",
       "comma": "逗號（,）",
       "slash": "斜線（/）",
       "semicolon": "分號（;）",

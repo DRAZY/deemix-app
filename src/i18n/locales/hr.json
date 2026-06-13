@@ -297,7 +297,7 @@
       "sourceId": "Izvor i ID pjesme"
     },
     "separatorOptions": {
-      "standard": "Standardna specifikacija (null bajt)",
+      "standard": "Zarez + razmak (, ) — zadano",
       "comma": "Zarez (,)",
       "slash": "Kosa crta (/)",
       "semicolon": "Točka-zarez (;)",

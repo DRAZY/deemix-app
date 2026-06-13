@@ -297,7 +297,7 @@
       "sourceId": "Πηγή και ID τραγουδιού"
     },
     "separatorOptions": {
-      "standard": "Τυπική προδιαγραφή (null byte)",
+      "standard": "Κόμμα + διάστημα (, ) — προεπιλογή",
       "comma": "Κόμμα (,)",
       "slash": "Κάθετος (/)",
       "semicolon": "Ερωτηματικό (;)",

@@ -297,7 +297,7 @@
       "sourceId": "Kaynak ve şarkı ID"
     },
     "separatorOptions": {
-      "standard": "Standart belirtim (null byte)",
+      "standard": "Virgül + boşluk (, ) — varsayılan",
       "comma": "Virgül (,)",
       "slash": "Eğik çizgi (/)",
       "semicolon": "Noktalı virgül (;)",

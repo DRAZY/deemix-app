@@ -297,7 +297,7 @@
       "sourceId": "Sorgente e ID canzone"
     },
     "separatorOptions": {
-      "standard": "Specifica standard (byte nullo)",
+      "standard": "Virgola + spazio (, ) — predefinito",
       "comma": "Virgola (,)",
       "slash": "Barra (/)",
       "semicolon": "Punto e virgola (;)",

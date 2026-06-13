@@ -297,7 +297,7 @@
       "sourceId": "Źródło i ID utworu"
     },
     "separatorOptions": {
-      "standard": "Specyfikacja standardowa (bajt null)",
+      "standard": "Przecinek + spacja (, ) — domyślne",
       "comma": "Przecinek (,)",
       "slash": "Ukośnik (/)",
       "semicolon": "Średnik (;)",

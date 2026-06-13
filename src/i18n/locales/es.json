@@ -297,7 +297,7 @@
       "sourceId": "Fuente e ID de la canción"
     },
     "separatorOptions": {
-      "standard": "Especificación estándar (byte nulo)",
+      "standard": "Coma + espacio (, ) — predeterminado",
       "comma": "Coma (,)",
       "slash": "Barra (/)",
       "semicolon": "Punto y coma (;)",

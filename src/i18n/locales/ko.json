@@ -297,7 +297,7 @@
       "sourceId": "소스 및 곡 ID"
     },
     "separatorOptions": {
-      "standard": "표준 사양 (널 바이트)",
+      "standard": "쉼표 + 공백 (, ) — 기본값",
       "comma": "쉼표 (,)",
       "slash": "슬래시 (/)",
       "semicolon": "세미콜론 (;)",

@@ -297,7 +297,7 @@
       "sourceId": "Quelle und Song-ID"
     },
     "separatorOptions": {
-      "standard": "Standardspezifikation (Null-Byte)",
+      "standard": "Komma + Leerzeichen (, ) — Standard",
       "comma": "Komma (,)",
       "slash": "Schrägstrich (/)",
       "semicolon": "Semikolon (;)",

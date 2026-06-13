@@ -348,7 +348,7 @@
       "sourceId": "Nguồn và ID bài hát"
     },
     "separatorOptions": {
-      "standard": "Đặc tả chuẩn (null byte)",
+      "standard": "Dấu phẩy + khoảng trắng (, ) — mặc định",
       "comma": "Dấu phẩy (,)",
       "slash": "Dấu gạch chéo (/)",
       "semicolon": "Dấu chấm phẩy (;)",
