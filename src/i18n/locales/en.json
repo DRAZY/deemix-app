@@ -464,7 +464,7 @@
       "sourceId": "Source and song ID"
     },
     "separatorOptions": {
-      "standard": "Standard specification (null byte)",
+      "standard": "Comma + space (, ) — default",
       "comma": "Comma (,)",
       "slash": "Slash (/)",
       "semicolon": "Semicolon (;)",
