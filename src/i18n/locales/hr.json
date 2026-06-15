@@ -474,5 +474,15 @@
     "addedToQueue": "Dodano u red čekanja",
     "settingsSaved": "Postavke spremljene",
     "copiedToClipboard": "Kopirano u međuspremnik"
+  },
+  "sync": {
+    "sortBy": "Razvrstaj po",
+    "sortAdded": "Datum dodavanja",
+    "sortName": "Naziv",
+    "sortLastSync": "Zadnja sinkronizacija",
+    "sortStatus": "Status",
+    "sortTracks": "Preuzete pjesme",
+    "filterPlaceholder": "Filtriraj po nazivu…",
+    "noMatches": "Nema rezultata"
   }
 }

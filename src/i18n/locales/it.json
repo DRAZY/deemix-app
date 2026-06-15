@@ -474,5 +474,15 @@
     "addedToQueue": "Aggiunto alla coda",
     "settingsSaved": "Impostazioni salvate",
     "copiedToClipboard": "Copiato negli appunti"
+  },
+  "sync": {
+    "sortBy": "Ordina per",
+    "sortAdded": "Data di aggiunta",
+    "sortName": "Nome",
+    "sortLastSync": "Ultima sincronizzazione",
+    "sortStatus": "Stato",
+    "sortTracks": "Brani scaricati",
+    "filterPlaceholder": "Filtra per nome…",
+    "noMatches": "Nessun risultato"
   }
 }

@@ -411,5 +411,15 @@
     "addedToQueue": "Добавлено в очередь",
     "settingsSaved": "Настройки сохранены",
     "copiedToClipboard": "Скопировано в буфер обмена"
+  },
+  "sync": {
+    "sortBy": "Сортировать по",
+    "sortAdded": "Дата добавления",
+    "sortName": "Название",
+    "sortLastSync": "Последняя синхронизация",
+    "sortStatus": "Статус",
+    "sortTracks": "Загруженные треки",
+    "filterPlaceholder": "Фильтр по названию…",
+    "noMatches": "Ничего не найдено"
   }
 }

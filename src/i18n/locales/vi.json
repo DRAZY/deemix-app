@@ -556,5 +556,15 @@
     "minimizeWindow": "Thu nhỏ cửa sổ",
     "maximizeWindow": "Phóng to cửa sổ",
     "closeWindow": "Đóng cửa sổ"
+  },
+  "sync": {
+    "sortBy": "Sắp xếp theo",
+    "sortAdded": "Ngày thêm",
+    "sortName": "Tên",
+    "sortLastSync": "Đồng bộ lần cuối",
+    "sortStatus": "Trạng thái",
+    "sortTracks": "Bản nhạc đã tải",
+    "filterPlaceholder": "Lọc theo tên…",
+    "noMatches": "Không có kết quả"
   }
 }

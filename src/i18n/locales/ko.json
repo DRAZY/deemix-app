@@ -474,5 +474,15 @@
     "addedToQueue": "대기열에 추가됨",
     "settingsSaved": "설정 저장됨",
     "copiedToClipboard": "클립보드에 복사됨"
+  },
+  "sync": {
+    "sortBy": "정렬 기준",
+    "sortAdded": "추가된 날짜",
+    "sortName": "이름",
+    "sortLastSync": "마지막 동기화",
+    "sortStatus": "상태",
+    "sortTracks": "다운로드한 트랙",
+    "filterPlaceholder": "이름으로 필터…",
+    "noMatches": "일치하는 항목 없음"
   }
 }

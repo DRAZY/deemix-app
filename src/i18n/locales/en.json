@@ -795,7 +795,15 @@
     "filterEPs": "EPs",
     "filterCompilations": "Compilations",
     "filterFeatures": "Featured releases",
-    "editMinReleaseDate": "Only download releases after"
+    "editMinReleaseDate": "Only download releases after",
+    "sortBy": "Sort by",
+    "sortAdded": "Date added",
+    "sortName": "Name",
+    "sortLastSync": "Last synced",
+    "sortStatus": "Status",
+    "sortTracks": "Tracks downloaded",
+    "filterPlaceholder": "Filter by name…",
+    "noMatches": "No matches"
   },
   "about": {
     "appName": "Deemix Remastered",

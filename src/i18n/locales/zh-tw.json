@@ -556,5 +556,15 @@
     "minimizeWindow": "最小化視窗",
     "maximizeWindow": "最大化視窗",
     "closeWindow": "關閉視窗"
+  },
+  "sync": {
+    "sortBy": "排序方式",
+    "sortAdded": "新增日期",
+    "sortName": "名稱",
+    "sortLastSync": "上次同步",
+    "sortStatus": "狀態",
+    "sortTracks": "已下載曲目",
+    "filterPlaceholder": "依名稱篩選…",
+    "noMatches": "無相符項目"
   }
 }

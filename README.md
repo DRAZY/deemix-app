@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.10.15-blue" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.10.20-blue" />
   <img alt="Electron" src="https://img.shields.io/badge/Electron-39-47848F?logo=electron&logoColor=white" />
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
@@ -99,6 +99,7 @@
 - **One-Click Pin from Favorites** -- Each favorited playlist gets a **Sync** button + a 5-state status badge (Syncing X/Y, Synced, Partial, Sync error, Sync pending). A **Sync all favorite playlists** button at the top bulk-pins everything not already in sync.
 - **Bulk Sync at Any Scale** -- A single bulk endpoint imports all favourite playlists in one request, so libraries with hundreds of favourites no longer get truncated by per-IP rate limits (v1.7.5+)
 - **Editable Sync Entries** -- Every synced-playlist card has a pencil-icon button to rename the entry, change the sync schedule, or change the download folder (v1.7.4+)
+- **Sort & Filter** -- Both the synced-playlists and synced-artists lists have their own name filter and sort menu (date added, name, last synced, status, or tracks downloaded) with an ascending/descending toggle, so a specific entry is easy to find in a long list. Sort choice is remembered between visits (v1.10.20+, #90)
 
 ### Artist Sync
 

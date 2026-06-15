@@ -59,7 +59,7 @@ Where the UI runs. Sandboxed, no Node.js access, no filesystem access. Pure brow
 
 - **Stack:** Vue 3 + Pinia stores + Vue Router + vue-i18n + Tailwind
 - **State:** Pinia stores in `src/stores/` (auth, download queue, settings, profiles, playlist sync, artist sync, toast notifications, favorites, player)
-- **Pages:** 13 view components in `src/views/` (Home, Search, Charts, Downloads, Favorites, Album, Artist, Playlist, Link Analyzer, New Releases, Sync, Settings, About)
+- **Pages:** 13 view components in `src/views/` (Home, Search, Charts, Downloads, Favorites, Album, Artist, Playlist, Link Analyzer, New Releases, Sync, Settings, About). The Sync page sorts/filters its playlist and artist lists entirely client-side via computed views over the Pinia store arrays — no backend round-trip; sort preference persists in `localStorage` (#90).
 - **Components:** 20 reusable UI pieces in `src/components/`
 - **Talks to backend** via two channels: HTTP fetch to `127.0.0.1:6595` for queryable data, or the `window.electronAPI` bridge for OS-level operations (file dialog, deep link, encrypt secret)
 

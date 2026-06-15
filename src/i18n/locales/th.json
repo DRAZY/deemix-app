@@ -556,5 +556,15 @@
     "minimizeWindow": "ย่อหน้าต่าง",
     "maximizeWindow": "ขยายหน้าต่าง",
     "closeWindow": "ปิดหน้าต่าง"
+  },
+  "sync": {
+    "sortBy": "เรียงตาม",
+    "sortAdded": "วันที่เพิ่ม",
+    "sortName": "ชื่อ",
+    "sortLastSync": "ซิงค์ล่าสุด",
+    "sortStatus": "สถานะ",
+    "sortTracks": "เพลงที่ดาวน์โหลด",
+    "filterPlaceholder": "กรองตามชื่อ…",
+    "noMatches": "ไม่พบรายการ"
   }
 }

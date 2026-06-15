@@ -474,5 +474,15 @@
     "addedToQueue": "Zur Warteschlange hinzugefügt",
     "settingsSaved": "Einstellungen gespeichert",
     "copiedToClipboard": "In Zwischenablage kopiert"
+  },
+  "sync": {
+    "sortBy": "Sortieren nach",
+    "sortAdded": "Hinzugefügt am",
+    "sortName": "Name",
+    "sortLastSync": "Zuletzt synchronisiert",
+    "sortStatus": "Status",
+    "sortTracks": "Heruntergeladene Titel",
+    "filterPlaceholder": "Nach Name filtern…",
+    "noMatches": "Keine Treffer"
   }
 }

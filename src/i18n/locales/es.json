@@ -474,5 +474,15 @@
     "addedToQueue": "Agregado a la cola",
     "settingsSaved": "Configuración guardada",
     "copiedToClipboard": "Copiado al portapapeles"
+  },
+  "sync": {
+    "sortBy": "Ordenar por",
+    "sortAdded": "Fecha de adición",
+    "sortName": "Nombre",
+    "sortLastSync": "Última sincronización",
+    "sortStatus": "Estado",
+    "sortTracks": "Pistas descargadas",
+    "filterPlaceholder": "Filtrar por nombre…",
+    "noMatches": "Sin resultados"
   }
 }

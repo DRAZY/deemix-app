@@ -474,5 +474,15 @@
     "addedToQueue": "Kuyruğa eklendi",
     "settingsSaved": "Ayarlar kaydedildi",
     "copiedToClipboard": "Panoya kopyalandı"
+  },
+  "sync": {
+    "sortBy": "Sıralama ölçütü",
+    "sortAdded": "Eklenme tarihi",
+    "sortName": "Ad",
+    "sortLastSync": "Son eşitleme",
+    "sortStatus": "Durum",
+    "sortTracks": "İndirilen parçalar",
+    "filterPlaceholder": "Ada göre filtrele…",
+    "noMatches": "Eşleşme yok"
   }
 }

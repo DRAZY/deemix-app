@@ -35,6 +35,14 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.20',
+    date: '2026-06-15',
+    items: [
+      'The Sync page can now be sorted and filtered. Each list (synced playlists and synced artists) has its own search box and a sort menu — by date added, name, last synced, status, or number of tracks downloaded — plus an ascending/descending toggle, so finding a specific playlist or artist in a long list is fast. Your sort choice is remembered between visits; the default order is unchanged.',
+      'Clearer artist-separator label (#89). The comma+space option that outputs "Artist A, Artist B" was confusingly labeled "Standard specification (null byte)" — it\'s now "Comma + space (, ) — default" so it\'s easy to find. The separator itself works exactly as before.'
+    ]
+  },
+  {
     version: '1.10.19',
     date: '2026-06-10',
     items: [

@@ -474,5 +474,15 @@
     "addedToQueue": "已添加到队列",
     "settingsSaved": "设置已保存",
     "copiedToClipboard": "已复制到剪贴板"
+  },
+  "sync": {
+    "sortBy": "排序方式",
+    "sortAdded": "添加日期",
+    "sortName": "名称",
+    "sortLastSync": "上次同步",
+    "sortStatus": "状态",
+    "sortTracks": "已下载曲目",
+    "filterPlaceholder": "按名称筛选…",
+    "noMatches": "无匹配项"
   }
 }

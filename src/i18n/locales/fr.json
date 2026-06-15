@@ -474,5 +474,15 @@
     "addedToQueue": "Ajouté à la file d'attente",
     "settingsSaved": "Paramètres enregistrés",
     "copiedToClipboard": "Copié dans le presse-papier"
+  },
+  "sync": {
+    "sortBy": "Trier par",
+    "sortAdded": "Date d'ajout",
+    "sortName": "Nom",
+    "sortLastSync": "Dernière synchronisation",
+    "sortStatus": "Statut",
+    "sortTracks": "Titres téléchargés",
+    "filterPlaceholder": "Filtrer par nom…",
+    "noMatches": "Aucun résultat"
   }
 }

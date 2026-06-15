@@ -474,5 +474,15 @@
     "addedToQueue": "تمت الإضافة إلى قائمة الانتظار",
     "settingsSaved": "تم حفظ الإعدادات",
     "copiedToClipboard": "تم النسخ إلى الحافظة"
+  },
+  "sync": {
+    "sortBy": "ترتيب حسب",
+    "sortAdded": "تاريخ الإضافة",
+    "sortName": "الاسم",
+    "sortLastSync": "آخر مزامنة",
+    "sortStatus": "الحالة",
+    "sortTracks": "المقاطع المُنزّلة",
+    "filterPlaceholder": "تصفية حسب الاسم…",
+    "noMatches": "لا توجد نتائج"
   }
 }

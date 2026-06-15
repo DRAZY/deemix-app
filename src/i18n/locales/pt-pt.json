@@ -474,5 +474,15 @@
     "addedToQueue": "Adicionado à fila",
     "settingsSaved": "Definições guardadas",
     "copiedToClipboard": "Copiado para a área de transferência"
+  },
+  "sync": {
+    "sortBy": "Ordenar por",
+    "sortAdded": "Data de adição",
+    "sortName": "Nome",
+    "sortLastSync": "Última sincronização",
+    "sortStatus": "Estado",
+    "sortTracks": "Faixas transferidas",
+    "filterPlaceholder": "Filtrar por nome…",
+    "noMatches": "Sem resultados"
   }
 }

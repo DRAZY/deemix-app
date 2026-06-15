@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.20] — 2026-06-15
+
+### Added
+
+- **Sort and filter the Sync view (#90).** Finding a specific playlist or artist in a long sync list is now quick. Each section (synced playlists and synced artists) gets its own controls: a name filter box and a sort dropdown — by date added (default, unchanged from before), name, last synced, status, or tracks downloaded — plus an ascending/descending toggle. Sort choice persists between sessions; the filter resets each visit. Controls only appear once a section has more than one entry, and an empty filter shows a "No matches" line. Sort/filter labels are translated across all 21 locales.
+
+### Changed
+
+- **Clearer artist-separator label (#89).** The default comma+space separator was labeled "Standard specification (null byte)," which hid it from users looking for `Artist A, Artist B` output. Renamed to "Comma + space (, ) — default" and translated across all locales. Label only — separator behavior is unchanged.
+
 ## [1.10.19] — 2026-06-10
 
 ### Fixed

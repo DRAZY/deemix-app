@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useSyncStore, type SyncSchedule, type SyncedPlaylist } from '../stores/syncStore'
 import { useArtistSyncStore, type SyncedArtist, type FirstSyncMode, type ArtistSyncFilters } from '../stores/artistSyncStore'
@@ -22,6 +22,87 @@ const detectedId = ref('')
 const addLoading = ref(false)
 const resolving = ref(false)
 const expandedErrors = ref<Set<string>>(new Set())
+
+// Sort & filter for the sync lists (#90). Playlists and artists each get an
+// independent control set. Sort field/direction persist via localStorage;
+// the name filter is intentionally NOT persisted (resets each visit).
+type SortField = 'added' | 'name' | 'lastSync' | 'status' | 'tracks'
+type SortDir = 'asc' | 'desc'
+
+const sortFieldOptions: { value: SortField; labelKey: string }[] = [
+  { value: 'added', labelKey: 'sync.sortAdded' },
+  { value: 'name', labelKey: 'sync.sortName' },
+  { value: 'lastSync', labelKey: 'sync.sortLastSync' },
+  { value: 'status', labelKey: 'sync.sortStatus' },
+  { value: 'tracks', labelKey: 'sync.sortTracks' }
+]
+
+// Status ordering: surface entries that need attention first (error → success).
+const STATUS_RANK: Record<string, number> = { error: 0, partial: 1, success: 2 }
+
+const playlistSort = ref<SortField>((localStorage.getItem('sync.playlistSort') as SortField) || 'added')
+const playlistSortDir = ref<SortDir>((localStorage.getItem('sync.playlistSortDir') as SortDir) || 'asc')
+const playlistFilter = ref('')
+const artistSort = ref<SortField>((localStorage.getItem('sync.artistSort') as SortField) || 'added')
+const artistSortDir = ref<SortDir>((localStorage.getItem('sync.artistSortDir') as SortDir) || 'asc')
+const artistFilter = ref('')
+
+watch([playlistSort, playlistSortDir], ([s, d]) => {
+  localStorage.setItem('sync.playlistSort', s)
+  localStorage.setItem('sync.playlistSortDir', d)
+})
+watch([artistSort, artistSortDir], ([s, d]) => {
+  localStorage.setItem('sync.artistSort', s)
+  localStorage.setItem('sync.artistSortDir', d)
+})
+
+// Generic sort+filter shared by both lists. 'added' preserves store insertion
+// order (the historical default), so existing users see no change until they
+// opt into a sort. A copy is always returned — never mutate the store array.
+interface Sortable {
+  sourcePlaylistName?: string
+  sourceArtistName?: string
+  lastSyncAt: string | null
+  lastSyncStatus: 'success' | 'partial' | 'error' | null
+  totalTracksDownloaded: number
+}
+
+function sortFilterList<T extends Sortable>(items: T[], sort: SortField, dir: SortDir, filter: string): T[] {
+  const getName = (i: T) => i.sourcePlaylistName ?? i.sourceArtistName ?? ''
+  const q = filter.trim().toLowerCase()
+  let out = q ? items.filter(i => getName(i).toLowerCase().includes(q)) : [...items]
+
+  if (sort === 'added') {
+    return dir === 'desc' ? out.reverse() : out
+  }
+
+  const sign = dir === 'asc' ? 1 : -1
+  return out.sort((a, b) => {
+    let cmp = 0
+    switch (sort) {
+      case 'name':
+        cmp = getName(a).localeCompare(getName(b))
+        break
+      case 'lastSync':
+        cmp = (a.lastSyncAt ? Date.parse(a.lastSyncAt) : 0) - (b.lastSyncAt ? Date.parse(b.lastSyncAt) : 0)
+        break
+      case 'status':
+        cmp = (STATUS_RANK[a.lastSyncStatus ?? ''] ?? 3) - (STATUS_RANK[b.lastSyncStatus ?? ''] ?? 3)
+        break
+      case 'tracks':
+        cmp = a.totalTracksDownloaded - b.totalTracksDownloaded
+        break
+    }
+    return cmp * sign
+  })
+}
+
+const visiblePlaylists = computed(() =>
+  sortFilterList(syncStore.playlists, playlistSort.value, playlistSortDir.value, playlistFilter.value)
+)
+const visibleArtists = computed(() =>
+  sortFilterList(artistSyncStore.artists, artistSort.value, artistSortDir.value, artistFilter.value)
+)
 
 const scheduleOptions: { value: SyncSchedule; label: string }[] = [
   { value: 'launch', label: 'On app launch' },
@@ -329,8 +410,33 @@ function getScheduleLabel(schedule: SyncSchedule): string {
       </button>
     </div>
 
+    <!-- Sort & filter controls (playlists) — #90 -->
+    <div v-if="syncStore.playlists.length > 1" class="flex flex-wrap items-center gap-2">
+      <input
+        v-model="playlistFilter"
+        class="flex-1 min-w-[160px] px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+        :placeholder="t('sync.filterPlaceholder')"
+      />
+      <select
+        v-model="playlistSort"
+        :aria-label="t('sync.sortBy')"
+        class="px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+      >
+        <option v-for="opt in sortFieldOptions" :key="opt.value" :value="opt.value">{{ t(opt.labelKey) }}</option>
+      </select>
+      <button
+        @click="playlistSortDir = playlistSortDir === 'asc' ? 'desc' : 'asc'"
+        class="p-2 rounded-lg bg-background-main border border-zinc-700 text-foreground-muted hover:text-foreground transition-colors"
+        :title="t('sync.sortBy')"
+      >
+        <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': playlistSortDir === 'desc' }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        </svg>
+      </button>
+    </div>
+
     <!-- Playlist Cards -->
-    <div v-for="playlist in syncStore.playlists" :key="playlist.id" class="card">
+    <div v-for="playlist in visiblePlaylists" :key="playlist.id" class="card">
       <div class="flex items-start gap-4">
         <!-- Source Icon -->
         <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -484,6 +590,11 @@ function getScheduleLabel(schedule: SyncSchedule): string {
       </div>
     </div>
 
+    <!-- No playlists match the active filter (#90) -->
+    <div v-if="syncStore.playlists.length > 0 && visiblePlaylists.length === 0" class="text-center text-sm text-foreground-muted py-6">
+      {{ t('sync.noMatches') }}
+    </div>
+
     <!-- Synced Artists Section (U1 layout: appended below the playlist list) -->
     <div v-if="artistSyncStore.artists.length > 0" class="space-y-3 pt-4 border-t border-zinc-800">
       <div class="flex items-center justify-between">
@@ -499,7 +610,37 @@ function getScheduleLabel(schedule: SyncSchedule): string {
         </button>
       </div>
 
-      <div v-for="artist in artistSyncStore.artists" :key="artist.id" class="card">
+      <!-- Sort & filter controls (artists) — #90 -->
+      <div v-if="artistSyncStore.artists.length > 1" class="flex flex-wrap items-center gap-2">
+        <input
+          v-model="artistFilter"
+          class="flex-1 min-w-[160px] px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+          :placeholder="t('sync.filterPlaceholder')"
+        />
+        <select
+          v-model="artistSort"
+          :aria-label="t('sync.sortBy')"
+          class="px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+        >
+          <option v-for="opt in sortFieldOptions" :key="opt.value" :value="opt.value">{{ t(opt.labelKey) }}</option>
+        </select>
+        <button
+          @click="artistSortDir = artistSortDir === 'asc' ? 'desc' : 'asc'"
+          class="p-2 rounded-lg bg-background-main border border-zinc-700 text-foreground-muted hover:text-foreground transition-colors"
+          :title="t('sync.sortBy')"
+        >
+          <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': artistSortDir === 'desc' }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- No artists match the active filter (#90) -->
+      <div v-if="visibleArtists.length === 0" class="text-center text-sm text-foreground-muted py-6">
+        {{ t('sync.noMatches') }}
+      </div>
+
+      <div v-for="artist in visibleArtists" :key="artist.id" class="card">
         <div class="flex items-start gap-4">
           <!-- Source icon: artist (mic) -->
           <div class="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center flex-shrink-0">

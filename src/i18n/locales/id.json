@@ -411,5 +411,15 @@
     "addedToQueue": "Ditambahkan ke antrian",
     "settingsSaved": "Pengaturan disimpan",
     "copiedToClipboard": "Disalin ke clipboard"
+  },
+  "sync": {
+    "sortBy": "Urutkan berdasarkan",
+    "sortAdded": "Tanggal ditambahkan",
+    "sortName": "Nama",
+    "sortLastSync": "Sinkronisasi terakhir",
+    "sortStatus": "Status",
+    "sortTracks": "Lagu yang diunduh",
+    "filterPlaceholder": "Filter berdasarkan nama…",
+    "noMatches": "Tidak ada hasil"
   }
 }

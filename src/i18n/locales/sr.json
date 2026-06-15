@@ -556,5 +556,15 @@
     "minimizeWindow": "Минимизуј прозор",
     "maximizeWindow": "Максимизуј прозор",
     "closeWindow": "Затвори прозор"
+  },
+  "sync": {
+    "sortBy": "Сортирај по",
+    "sortAdded": "Датум додавања",
+    "sortName": "Назив",
+    "sortLastSync": "Последња синхронизација",
+    "sortStatus": "Статус",
+    "sortTracks": "Преузете песме",
+    "filterPlaceholder": "Филтрирај по називу…",
+    "noMatches": "Нема резултата"
   }
 }

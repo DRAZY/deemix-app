@@ -474,5 +474,15 @@
     "addedToQueue": "Naidagdag sa pila",
     "settingsSaved": "Na-save ang mga setting",
     "copiedToClipboard": "Nakopya sa clipboard"
+  },
+  "sync": {
+    "sortBy": "Ayusin ayon sa",
+    "sortAdded": "Petsa ng pagdagdag",
+    "sortName": "Pangalan",
+    "sortLastSync": "Huling pag-sync",
+    "sortStatus": "Katayuan",
+    "sortTracks": "Na-download na mga track",
+    "filterPlaceholder": "I-filter ayon sa pangalan…",
+    "noMatches": "Walang tugma"
   }
 }

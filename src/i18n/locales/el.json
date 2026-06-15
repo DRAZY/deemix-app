@@ -474,5 +474,15 @@
     "addedToQueue": "Προστέθηκε στην ουρά",
     "settingsSaved": "Οι ρυθμίσεις αποθηκεύτηκαν",
     "copiedToClipboard": "Αντιγράφηκε στο πρόχειρο"
+  },
+  "sync": {
+    "sortBy": "Ταξινόμηση κατά",
+    "sortAdded": "Ημερομηνία προσθήκης",
+    "sortName": "Όνομα",
+    "sortLastSync": "Τελευταίος συγχρονισμός",
+    "sortStatus": "Κατάσταση",
+    "sortTracks": "Ληφθέντα κομμάτια",
+    "filterPlaceholder": "Φιλτράρισμα κατά όνομα…",
+    "noMatches": "Κανένα αποτέλεσμα"
   }
 }
