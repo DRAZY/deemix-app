@@ -195,6 +195,12 @@
       "rename": "Renombrar",
       "rename_desc": "Agregar sufijo numérico a nuevos archivos"
     },
+    "skipDuplicateTracks": "Omitir pistas que ya tengo en mi biblioteca",
+    "skipDuplicateTracksHelp": "Antes de descargar, omite cualquier grabación que ya tengas (identificada por ISRC), aunque sea de otro álbum o lista. Las pistas sin ISRC siempre se descargan. Desactivado por defecto.",
+    "reindexLibrary": "Indexar biblioteca existente",
+    "reindexingLibrary": "Indexando…",
+    "reindexDone": "Se indexaron {indexed} de {total} pistas ({noIsrc} sin ISRC omitidas).",
+    "reindexFailed": "Error al indexar — consulta los registros.",
     "bitrateFallback": "Respaldo de tasa de bits",
     "bitrateFallbackDesc": "Descargar menor calidad si la preferida no está disponible",
     "searchFallback": "Respaldo de búsqueda",

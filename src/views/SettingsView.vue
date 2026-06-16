@@ -368,6 +368,31 @@ function saveNow() {
   console.log('[SettingsView] Saving settings...')
   settingsStore.saveSettings()
 }
+
+// One-time backfill: scan the existing download library so the "skip duplicates"
+// feature can match files downloaded before it was turned on.
+const reindexing = ref(false)
+const reindexResult = ref('')
+async function reindexLibrary() {
+  if (reindexing.value) return
+  reindexing.value = true
+  reindexResult.value = ''
+  try {
+    const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/library/reindex`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}'
+    })
+    const data = await response.json()
+    if (data.error) throw new Error(data.error)
+    reindexResult.value = t('settings.reindexDone', { indexed: data.indexed ?? 0, total: data.total ?? 0, noIsrc: data.noIsrc ?? 0 })
+  } catch (e: any) {
+    reindexResult.value = t('settings.reindexFailed')
+    console.error('[SettingsView] Library reindex failed:', e)
+  } finally {
+    reindexing.value = false
+  }
+}
 </script>
 
 <template>
@@ -710,6 +735,30 @@ function saveNow() {
           <option value="overwrite">{{ t('settings.overwriteOptions.overwrite') }}</option>
           <option value="rename">{{ t('settings.overwriteOptions.rename') }}</option>
         </select>
+      </div>
+
+      <!-- Skip duplicate tracks (de-dup by ISRC) -->
+      <div>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            v-model="settingsStore.settings.skipDuplicateTracks"
+            @change="saveNow"
+            class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+          />
+          <span class="text-sm font-medium">{{ t('settings.skipDuplicateTracks') }}</span>
+        </label>
+        <p class="text-xs text-foreground-muted mt-1 ml-7">{{ t('settings.skipDuplicateTracksHelp') }}</p>
+        <div v-if="settingsStore.settings.skipDuplicateTracks" class="ml-7 mt-2 flex items-center gap-3">
+          <button
+            @click="reindexLibrary"
+            :disabled="reindexing"
+            class="px-3 py-1.5 text-xs rounded bg-background-main border border-zinc-700 hover:border-primary-500 disabled:opacity-50 transition-colors"
+          >
+            {{ reindexing ? t('settings.reindexingLibrary') : t('settings.reindexLibrary') }}
+          </button>
+          <span v-if="reindexResult" class="text-xs text-foreground-muted">{{ reindexResult }}</span>
+        </div>
       </div>
 
       <!-- Download Options Grid -->

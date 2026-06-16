@@ -195,6 +195,12 @@
       "rename": "Zmień nazwę",
       "rename_desc": "Dodaj sufiks numeryczny do nowych plików"
     },
+    "skipDuplicateTracks": "Pomijaj utwory, które już mam w bibliotece",
+    "skipDuplicateTracksHelp": "Przed pobraniem pomiń każde nagranie, które już masz (dopasowane wg ISRC), nawet jeśli pochodzi z innego albumu lub playlisty. Utwory bez ISRC są zawsze pobierane. Domyślnie wyłączone.",
+    "reindexLibrary": "Zindeksuj istniejącą bibliotekę",
+    "reindexingLibrary": "Indeksowanie…",
+    "reindexDone": "Zindeksowano {indexed} z {total} utworów (pominięto {noIsrc} bez ISRC).",
+    "reindexFailed": "Indeksowanie nie powiodło się — zobacz logi.",
     "bitrateFallback": "Zapasowy bitrate",
     "bitrateFallbackDesc": "Pobierz niższą jakość, jeśli preferowana niedostępna",
     "searchFallback": "Zapasowe wyszukiwanie",

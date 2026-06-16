@@ -195,6 +195,12 @@
       "rename": "Palitan ng Pangalan",
       "rename_desc": "Magdagdag ng number suffix sa mga bagong file"
     },
+    "skipDuplicateTracks": "Laktawan ang mga track na nasa library ko na",
+    "skipDuplicateTracksHelp": "Bago mag-download, laktawan ang anumang recording na mayroon ka na (tinutugma sa pamamagitan ng ISRC), kahit galing sa ibang album o playlist. Ang mga track na walang ISRC ay palaging dina-download. Naka-off bilang default.",
+    "reindexLibrary": "I-index ang kasalukuyang library",
+    "reindexingLibrary": "Ini-index…",
+    "reindexDone": "Na-index ang {indexed} sa {total} na track ({noIsrc} na walang ISRC ang nilaktawan).",
+    "reindexFailed": "Nabigo ang pag-index — tingnan ang logs.",
     "bitrateFallback": "Bitrate Fallback",
     "bitrateFallbackDesc": "Mag-download ng mas mababang kalidad kung hindi available ang preferred",
     "searchFallback": "Search Fallback",

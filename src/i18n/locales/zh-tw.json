@@ -246,6 +246,12 @@
       "rename": "重新命名",
       "rename_desc": "為新檔案添加數字後綴"
     },
+    "skipDuplicateTracks": "略過媒體庫中已有的曲目",
+    "skipDuplicateTracksHelp": "下載前，略過你已擁有的任何錄音（依 ISRC 比對），即使來自不同的專輯或播放清單。沒有 ISRC 的曲目一律下載。預設關閉。",
+    "reindexLibrary": "索引現有媒體庫",
+    "reindexingLibrary": "正在索引…",
+    "reindexDone": "已索引 {total} 首中的 {indexed} 首（略過 {noIsrc} 首無 ISRC）。",
+    "reindexFailed": "索引失敗——請查看記錄。",
     "bitrateFallback": "位元率備援",
     "bitrateFallbackDesc": "如果偏好的位元率不可用則下載較低品質",
     "searchFallback": "搜尋備援",

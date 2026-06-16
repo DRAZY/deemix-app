@@ -12,6 +12,7 @@ import { spotifyConverter } from './services/spotifyConverter'
 import { playlistSync } from './services/playlistSync'
 import { artistSync, type FirstSyncMode, type ArtistSyncFilters } from './services/artistSync'
 import { scanFolder, retagFile, retagFileInFolder, type RetagFields } from './services/retagger'
+import { libraryIndex } from './services/libraryIndex'
 
 // File-based cache for discography (persists across app restarts)
 const DISCOGRAPHY_FILE_CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
@@ -361,6 +362,8 @@ interface ServerSettings {
   downloadPacing: 'off' | 'balanced' | 'cautious'
   // Download behavior settings
   overwriteFiles: OverwriteMode
+  // Opt-in: skip downloading a recording (by ISRC) already in the library (#91/#92)
+  skipDuplicateTracks: boolean
   bitrateFallback: boolean
   searchFallback: boolean
   isrcFallback: boolean
@@ -423,6 +426,7 @@ export class DeemixServer extends EventEmitter {
     downloadPacing: 'off',
     // Download behavior settings
     overwriteFiles: 'no',
+    skipDuplicateTracks: false,
     bitrateFallback: true,
     searchFallback: true,
     isrcFallback: false,
@@ -756,6 +760,10 @@ export class DeemixServer extends EventEmitter {
 
       case '/api/download/batch':
         await this.handleDownloadBatch(req, res)
+        break
+
+      case '/api/library/reindex':
+        await this.handleLibraryReindex(req, res)
         break
 
       case '/api/queue':
@@ -1530,6 +1538,7 @@ export class DeemixServer extends EventEmitter {
           keepVariousArtists: this.settings.keepVariousArtists,
           removeArtistCombinations: this.settings.removeArtistCombinations
         },
+        skipDuplicateTracks: this.settings.skipDuplicateTracks,
         createErrorLog: this.settings.createErrorLog,
         overwriteMode: this.settings.overwriteFiles
       })
@@ -1676,6 +1685,7 @@ export class DeemixServer extends EventEmitter {
           },
           discNumber: track.disk_number,
           albumContext: albumContext,
+          skipDuplicateTracks: this.settings.skipDuplicateTracks,
           createErrorLog: this.settings.createErrorLog,
           overwriteMode
         })
@@ -1683,6 +1693,22 @@ export class DeemixServer extends EventEmitter {
       }
 
       this.sendJSON(res, { ids: downloadIds, count: downloadIds.length })
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  // One-time backfill for the "skip duplicates by ISRC" feature: scan the download
+  // folder, read each audio file's ISRC, and populate the library index so the
+  // feature works against files downloaded before it was enabled.
+  private async handleLibraryReindex(_req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      if (!validateDownloadPath(this.settings.downloadPath)) {
+        this.sendJSON(res, { error: 'Invalid download path configured' }, 400)
+        return
+      }
+      const result = await libraryIndex.buildFromFolder(this.settings.downloadPath)
+      this.sendJSON(res, { ...result, total: libraryIndex.count() })
     } catch (error: any) {
       this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
     }
@@ -1822,6 +1848,7 @@ export class DeemixServer extends EventEmitter {
             playlistName: playlistName
           },
           savePlaylistAsCompilation: this.settings.savePlaylistAsCompilation,
+          skipDuplicateTracks: this.settings.skipDuplicateTracks,
           createErrorLog: this.settings.createErrorLog,
           overwriteMode
         })
@@ -1924,6 +1951,7 @@ export class DeemixServer extends EventEmitter {
             keepVariousArtists: this.settings.keepVariousArtists,
             removeArtistCombinations: this.settings.removeArtistCombinations
           },
+          skipDuplicateTracks: this.settings.skipDuplicateTracks,
           createErrorLog: this.settings.createErrorLog,
           overwriteMode: this.settings.overwriteFiles
         })
@@ -2057,6 +2085,7 @@ export class DeemixServer extends EventEmitter {
       // Validate boolean settings
       const booleanSettings: (keyof ServerSettings)[] = [
         // Download behavior
+        'skipDuplicateTracks',
         'bitrateFallback', 'searchFallback', 'isrcFallback',
         'createErrorLog', 'createSearchLog', 'gambleCDNs',
         'createLrcFiles', 'createPlaylistFile', 'clearQueueOnClose',

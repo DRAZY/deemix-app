@@ -195,6 +195,12 @@
       "rename": "Yeniden Adlandır",
       "rename_desc": "Yeni dosyalara numara ekle"
     },
+    "skipDuplicateTracks": "Kitaplığımda zaten olan parçaları atla",
+    "skipDuplicateTracksHelp": "İndirmeden önce, farklı bir albüm veya çalma listesinden olsa bile zaten sahip olduğun her kaydı (ISRC ile eşleştirilerek) atla. ISRC'si olmayan parçalar her zaman indirilir. Varsayılan olarak kapalı.",
+    "reindexLibrary": "Mevcut kitaplığı dizinle",
+    "reindexingLibrary": "Dizinleniyor…",
+    "reindexDone": "{total} parçadan {indexed} tanesi dizinlendi (ISRC'siz {noIsrc} atlandı).",
+    "reindexFailed": "Dizinleme başarısız — günlüklere bakın.",
     "bitrateFallback": "Bit Hızı Yedekleme",
     "bitrateFallbackDesc": "Tercih edilen mevcut değilse düşük kalite indir",
     "searchFallback": "Arama Yedekleme",

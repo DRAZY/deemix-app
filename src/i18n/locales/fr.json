@@ -195,6 +195,12 @@
       "rename": "Renommer",
       "rename_desc": "Ajouter un suffixe aux nouveaux fichiers"
     },
+    "skipDuplicateTracks": "Ignorer les titres déjà présents dans ma bibliothèque",
+    "skipDuplicateTracksHelp": "Avant le téléchargement, ignorer tout enregistrement que vous possédez déjà (identifié par l'ISRC), même s'il provient d'un autre album ou d'une autre playlist. Les titres sans ISRC sont toujours téléchargés. Désactivé par défaut.",
+    "reindexLibrary": "Indexer la bibliothèque existante",
+    "reindexingLibrary": "Indexation…",
+    "reindexDone": "{indexed} titres sur {total} indexés ({noIsrc} sans ISRC ignorés).",
+    "reindexFailed": "Échec de l'indexation — voir les journaux.",
     "bitrateFallback": "Repli de débit",
     "bitrateFallbackDesc": "Télécharger en qualité inférieure si préféré indisponible",
     "searchFallback": "Repli de recherche",

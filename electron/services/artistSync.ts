@@ -26,6 +26,9 @@ export interface ArtistSyncDownloadSettings {
   // downloader as `overwriteMode` so sync runs honor the user's "skip
   // existing files" choice. See issue #66.
   overwriteFiles: 'no' | 'overwrite' | 'rename'
+  // Mirrors the server's `skipDuplicateTracks` opt-in — skip a recording (by ISRC)
+  // already in the library. Off unless the user enabled it. See #91/#92.
+  skipDuplicateTracks: boolean
   // Worker-pool size for parallel per-track downloads inside a sync run.
   // Falls back to 5 if unset (matches the server's default).
   maxConcurrentDownloads: number
@@ -649,6 +652,7 @@ class ArtistSyncEngine extends EventEmitter {
                   // Safe-side default: scheduled/unattended sync must not
                   // destroy existing files unless the user explicitly opted in.
                   overwriteMode: settings?.overwriteFiles ?? 'no',
+                  skipDuplicateTracks: settings?.skipDuplicateTracks ?? false,
                   folderSettings: settings?.folderSettings,
                   trackTemplates: settings?.trackTemplates,
                   metadataSettings: settings?.metadataSettings,

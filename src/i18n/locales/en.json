@@ -360,6 +360,12 @@
       "rename": "Rename",
       "rename_desc": "Add number suffix to new files"
     },
+    "skipDuplicateTracks": "Skip tracks already in my library",
+    "skipDuplicateTracksHelp": "Before downloading, skip any recording you already have (matched by ISRC), even if it's from a different album or playlist. Tracks with no ISRC are always downloaded. Off by default.",
+    "reindexLibrary": "Index existing library",
+    "reindexingLibrary": "Indexing…",
+    "reindexDone": "Indexed {indexed} of {total} tracks ({noIsrc} without ISRC skipped).",
+    "reindexFailed": "Indexing failed — see logs.",
     "bitrateFallback": "Bitrate fallback",
     "bitrateFallbackDesc": "Download lower quality if preferred is unavailable",
     "searchFallback": "Search fallback",

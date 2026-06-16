@@ -355,6 +355,7 @@ export const useDownloadStore = defineStore('downloads', () => {
         maxConcurrentDownloads: settingsStore.settings.maxConcurrentDownloads,
         downloadPacing: settingsStore.settings.downloadPacing,
         overwriteFiles: settingsStore.settings.overwriteFiles,
+        skipDuplicateTracks: settingsStore.settings.skipDuplicateTracks,
         bitrateFallback: settingsStore.settings.bitrateFallback,
         searchFallback: settingsStore.settings.searchFallback,
         isrcFallback: settingsStore.settings.isrcFallback,

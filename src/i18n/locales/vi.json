@@ -246,6 +246,12 @@
       "rename": "Đổi tên",
       "rename_desc": "Thêm số vào tập tin mới"
     },
+    "skipDuplicateTracks": "Bỏ qua bài hát đã có trong thư viện của tôi",
+    "skipDuplicateTracksHelp": "Trước khi tải, bỏ qua mọi bản ghi bạn đã có (đối chiếu bằng ISRC), kể cả khi từ album hoặc danh sách phát khác. Các bài không có ISRC luôn được tải. Mặc định tắt.",
+    "reindexLibrary": "Lập chỉ mục thư viện hiện có",
+    "reindexingLibrary": "Đang lập chỉ mục…",
+    "reindexDone": "Đã lập chỉ mục {indexed} trên {total} bài ({noIsrc} không có ISRC bị bỏ qua).",
+    "reindexFailed": "Lập chỉ mục thất bại — xem nhật ký.",
     "bitrateFallback": "Bitrate dự phòng",
     "bitrateFallbackDesc": "Tải chất lượng thấp hơn nếu ưu tiên không khả dụng",
     "searchFallback": "Tìm kiếm dự phòng",

@@ -26,6 +26,9 @@ export interface SyncDownloadSettings {
   // existing files" choice instead of clobbering pre-existing files and
   // externally-applied tags (e.g. ReplayGain). See issue #66.
   overwriteFiles: 'no' | 'overwrite' | 'rename'
+  // Mirrors the server's `skipDuplicateTracks` opt-in — skip a recording (by ISRC)
+  // already in the library. Off unless the user enabled it. See #91/#92.
+  skipDuplicateTracks: boolean
   // Worker-pool size for parallel per-track downloads inside a sync run.
   // Falls back to 5 if unset (matches the server's default).
   maxConcurrentDownloads: number
@@ -732,6 +735,7 @@ class PlaylistSyncEngine extends EventEmitter {
             // existing files unless the user explicitly opted in via the
             // global setting. Downloader's own default is 'overwrite'.
             overwriteMode: settings?.overwriteFiles ?? 'no',
+            skipDuplicateTracks: settings?.skipDuplicateTracks ?? false,
             folderSettings: settings?.folderSettings,
             trackTemplates: settings?.trackTemplates,
             metadataSettings: settings?.metadataSettings,

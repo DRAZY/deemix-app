@@ -195,6 +195,12 @@
       "rename": "Umbenennen",
       "rename_desc": "Nummer an neue Dateien anhängen"
     },
+    "skipDuplicateTracks": "Titel überspringen, die ich bereits in meiner Bibliothek habe",
+    "skipDuplicateTracksHelp": "Vor dem Download jede Aufnahme überspringen, die du bereits hast (per ISRC erkannt), auch aus einem anderen Album oder einer anderen Playlist. Titel ohne ISRC werden immer heruntergeladen. Standardmäßig aus.",
+    "reindexLibrary": "Vorhandene Bibliothek indizieren",
+    "reindexingLibrary": "Indiziere…",
+    "reindexDone": "{indexed} von {total} Titeln indiziert ({noIsrc} ohne ISRC übersprungen).",
+    "reindexFailed": "Indizierung fehlgeschlagen — siehe Logs.",
     "bitrateFallback": "Bitrate-Fallback",
     "bitrateFallbackDesc": "Niedrigere Qualität laden wenn bevorzugte nicht verfügbar",
     "searchFallback": "Such-Fallback",

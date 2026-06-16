@@ -195,6 +195,12 @@
       "rename": "重命名",
       "rename_desc": "为新文件添加数字后缀"
     },
+    "skipDuplicateTracks": "跳过音乐库中已有的曲目",
+    "skipDuplicateTracksHelp": "下载前，跳过你已拥有的任何录音（按 ISRC 匹配），即使来自不同的专辑或播放列表。没有 ISRC 的曲目始终会下载。默认关闭。",
+    "reindexLibrary": "索引现有音乐库",
+    "reindexingLibrary": "正在索引…",
+    "reindexDone": "已索引 {total} 首中的 {indexed} 首（跳过 {noIsrc} 首无 ISRC）。",
+    "reindexFailed": "索引失败——请查看日志。",
     "bitrateFallback": "比特率回退",
     "bitrateFallbackDesc": "如果首选不可用则下载较低质量",
     "searchFallback": "搜索回退",

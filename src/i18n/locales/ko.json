@@ -195,6 +195,12 @@
       "rename": "이름 바꾸기",
       "rename_desc": "새 파일에 숫자 접미사 추가"
     },
+    "skipDuplicateTracks": "이미 라이브러리에 있는 트랙 건너뛰기",
+    "skipDuplicateTracksHelp": "다운로드 전에 이미 보유한 녹음(ISRC로 식별)은 다른 앨범이나 재생목록에 있어도 건너뜁니다. ISRC가 없는 트랙은 항상 다운로드됩니다. 기본값은 꺼짐입니다.",
+    "reindexLibrary": "기존 라이브러리 색인화",
+    "reindexingLibrary": "색인화 중…",
+    "reindexDone": "{total}개 중 {indexed}개 트랙을 색인화했습니다(ISRC 없는 {noIsrc}개 건너뜀).",
+    "reindexFailed": "색인화 실패 — 로그를 확인하세요.",
     "bitrateFallback": "비트레이트 대체",
     "bitrateFallbackDesc": "선호 품질을 사용할 수 없으면 낮은 품질로 다운로드",
     "searchFallback": "검색 대체",

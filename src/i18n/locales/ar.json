@@ -195,6 +195,12 @@
       "rename": "إعادة تسمية",
       "rename_desc": "إضافة لاحقة رقمية للملفات الجديدة"
     },
+    "skipDuplicateTracks": "تخطّي المقاطع الموجودة بالفعل في مكتبتي",
+    "skipDuplicateTracksHelp": "قبل التنزيل، تخطَّ أي تسجيل تملكه بالفعل (بالمطابقة عبر ISRC)، حتى لو كان من ألبوم أو قائمة تشغيل مختلفة. تُنزَّل دائمًا المقاطع التي لا تحتوي على ISRC. مُعطَّل افتراضيًا.",
+    "reindexLibrary": "فهرسة المكتبة الحالية",
+    "reindexingLibrary": "جارٍ الفهرسة…",
+    "reindexDone": "تمت فهرسة {indexed} من {total} مقطعًا (تم تخطّي {noIsrc} بدون ISRC).",
+    "reindexFailed": "فشلت الفهرسة — راجع السجلات.",
     "bitrateFallback": "بديل معدل البت",
     "bitrateFallbackDesc": "تحميل بجودة أقل إذا لم يتوفر المفضل",
     "searchFallback": "بديل البحث",

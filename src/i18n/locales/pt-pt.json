@@ -195,6 +195,12 @@
       "rename": "Renomear",
       "rename_desc": "Adicionar sufixo numérico aos novos ficheiros"
     },
+    "skipDuplicateTracks": "Ignorar faixas que já tenho na minha biblioteca",
+    "skipDuplicateTracksHelp": "Antes de transferir, ignora qualquer gravação que já tenhas (identificada por ISRC), mesmo que seja de outro álbum ou lista de reprodução. As faixas sem ISRC são sempre transferidas. Desativado por predefinição.",
+    "reindexLibrary": "Indexar biblioteca existente",
+    "reindexingLibrary": "A indexar…",
+    "reindexDone": "Indexadas {indexed} de {total} faixas ({noIsrc} sem ISRC ignoradas).",
+    "reindexFailed": "Falha na indexação — consulte os registos.",
     "bitrateFallback": "Fallback de bitrate",
     "bitrateFallbackDesc": "Transferir qualidade inferior se preferida não disponível",
     "searchFallback": "Fallback de pesquisa",

@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.10.20-blue" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.10.21-blue" />
   <img alt="Electron" src="https://img.shields.io/badge/Electron-39-47848F?logo=electron&logoColor=white" />
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
@@ -45,6 +45,7 @@
 - **Download Queue** -- Pause, resume, reorder (drag-and-drop), cancel, and retry downloads (retries stay grouped under the parent album/playlist)
 - **Download Next** -- Move pending items to the front of the download queue so they download first
 - **Duplicate Album Detection** -- Warns when an album already exists on disk before downloading
+- **Skip Duplicate Tracks (by ISRC)** -- Optional, off by default: before downloading, skip any recording you already have in your library — matched by ISRC, so it catches the same song appearing on a different album, single, or compilation. Tracks without an ISRC are always downloaded. Includes a one-click "Index existing library" backfill so it works on a pre-existing collection (v1.10.21+, #91/#92)
 - **Download Statistics** -- View total downloads, tracks, top artists, format breakdown, and weekly activity
 - **Delete Files** -- Remove downloaded files directly from the app; deletes the entire playlist or album folder
 - **Download History** -- Persistent log of all completed and failed downloads (last 500 entries)

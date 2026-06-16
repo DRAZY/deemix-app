@@ -6,6 +6,7 @@ import * as crypto from 'crypto'
 import { Blowfish } from 'egoroof-blowfish'
 import { deezerAuth } from './deezerAuth'
 import { applyMergeFromMeta, type ResolvedMeta, type RetagFields } from './retagger'
+import { libraryIndex } from './libraryIndex'
 
 export interface FolderSettings {
   createPlaylistFolder: boolean
@@ -141,6 +142,10 @@ export interface DownloadOptions {
   // Overwrite behavior: 'no' = skip existing, 'overwrite' = replace, 'rename' = add suffix,
   // 'refresh-tags' = don't download; if the file already exists, merge-rewrite its tags only
   overwriteMode?: 'no' | 'overwrite' | 'rename' | 'refresh-tags'
+  // Opt-in library de-dup: skip downloading a recording (by ISRC) we already have
+  // elsewhere in the library. Off unless the user enables it. Tracks with no ISRC
+  // are never deduped. See libraryIndex.ts.
+  skipDuplicateTracks?: boolean
   // Pre-resolved album info (set by processDownload before buildOutputPath)
   _resolvedAlbumExplicit?: boolean
   _resolvedAlbumArtist?: string        // Album-level artist from public API (for consistent folder naming)
@@ -181,6 +186,7 @@ export interface DownloadProgress {
   actualFormat?: string  // Actual downloaded format (may differ from requested due to fallback)
   error?: string
   errorDetails?: DownloadErrorDetails  // Enhanced error information
+  skippedAsDuplicate?: boolean  // Completed by being skipped as a library duplicate (by ISRC)
 }
 
 const BLOWFISH_KEY = 'g4el58wc0zvf9na1'
@@ -1076,6 +1082,34 @@ export class Downloader extends EventEmitter {
       return
     }
 
+    // Library de-dup (opt-in): if we already have this exact recording somewhere in
+    // the library (matched by ISRC, not path), skip it. This runs BEFORE pacing and
+    // the CDN fetch so duplicate-skips stay instant (same discipline as #88). Tracks
+    // with no ISRC are never deduped. Stale index entries self-evict in findExisting.
+    if (options.skipDuplicateTracks && trackInfo.ISRC) {
+      await libraryIndex.ensureLoaded()
+      const existingPath = libraryIndex.findExisting(trackInfo.ISRC)
+      if (existingPath) {
+        console.log(`[Downloader] Skipping duplicate (ISRC ${trackInfo.ISRC} already in library): ${existingPath}`)
+        progress.status = 'completed'
+        progress.progress = 100
+        progress.skippedAsDuplicate = true
+        // M3U: point the playlist entry at the file we already have.
+        if (options.isFromPlaylist && options.playlistName) {
+          this.recordM3UEntry(options._m3uTrackerId || options.playlistName || "", {
+            position: options.playlistPosition || 0,
+            duration: trackInfo.DURATION || 0,
+            artist: trackInfo.ART_NAME || 'Unknown Artist',
+            title: progress.trackTitle || trackInfo.SNG_TITLE || 'Unknown Track',
+            absolutePath: existingPath
+          })
+        }
+        this.emit('progress', progress)
+        this.emit('complete', { ...progress, path: existingPath })
+        return
+      }
+    }
+
     // Reserve a unique output path to prevent concurrent download collisions
     // Returns null if overwrite mode is 'no' and file already exists (skip download)
     const outputPath = this.reserveOutputPath(initialOutputPath, trackInfo.SNG_ID, options.overwriteMode)
@@ -1093,6 +1127,10 @@ export class Downloader extends EventEmitter {
           absolutePath: initialOutputPath
         })
       }
+      // Keep the library index fresh even when the file already existed at the
+      // computed path (so a later same-ISRC download from a different release can
+      // de-dup against it without a backfill scan). No-op without an ISRC.
+      libraryIndex.add(trackInfo.ISRC, initialOutputPath)
       this.emit('progress', progress)
       // Mirror the success path's contract: every download that finishes —
       // including ones that finish by being skipped — must emit 'complete'.
@@ -1270,6 +1308,10 @@ export class Downloader extends EventEmitter {
           absolutePath: decryptedPath
         })
       }
+
+      // Record this recording in the library index (by ISRC) so future downloads can
+      // de-dup against it when the user has that option on. No-op without an ISRC.
+      libraryIndex.add(trackInfo.ISRC, decryptedPath)
 
       this.emit('complete', { ...progress, path: decryptedPath })
     } finally {

@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.21] — 2026-06-16
+
+### Added
+
+- **Skip duplicate tracks by ISRC (#91/#92).** New opt-in setting (Settings → Downloads, off by default): before downloading, skip any recording already in your library, matched by **ISRC** rather than filename. This catches the same song appearing on a different album, single, or compilation — the common cause of "why do I have two copies of this track?" Tracks with no ISRC are always downloaded, nothing is ever deleted, and a one-click **Index existing library** button backfills the index so it works on a collection downloaded before the feature existed. Applies to single, album, playlist, batch, and both sync engines. New `library-index.json` (ISRC → path) in userData; new `electron/services/libraryIndex.ts`. Setting + backfill UI translated across all 21 locales.
+
 ## [1.10.20] — 2026-06-15
 
 ### Added

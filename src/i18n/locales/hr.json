@@ -195,6 +195,12 @@
       "rename": "Preimenuj",
       "rename_desc": "Dodaj numerički sufiks novim datotekama"
     },
+    "skipDuplicateTracks": "Preskoči pjesme koje već imam u biblioteci",
+    "skipDuplicateTracksHelp": "Prije preuzimanja preskoči svaku snimku koju već imaš (prema ISRC-u), čak i ako je s drugog albuma ili popisa. Pjesme bez ISRC-a uvijek se preuzimaju. Prema zadanom isključeno.",
+    "reindexLibrary": "Indeksiraj postojeću biblioteku",
+    "reindexingLibrary": "Indeksiranje…",
+    "reindexDone": "Indeksirano {indexed} od {total} pjesama ({noIsrc} bez ISRC-a preskočeno).",
+    "reindexFailed": "Indeksiranje nije uspjelo — pogledajte zapisnike.",
     "bitrateFallback": "Rezervni Bitrate",
     "bitrateFallbackDesc": "Preuzmi nižu kvalitetu ako preferirana nije dostupna",
     "searchFallback": "Rezervna Pretraga",

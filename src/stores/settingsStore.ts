@@ -71,6 +71,8 @@ export interface Settings {
   downloadPacing: 'off' | 'balanced' | 'cautious'
   // Download behavior settings
   overwriteFiles: OverwriteMode
+  // Opt-in: skip downloading a recording (by ISRC) already in the library (#91/#92)
+  skipDuplicateTracks: boolean
   bitrateFallback: boolean
   searchFallback: boolean
   isrcFallback: boolean
@@ -141,6 +143,7 @@ export const defaultSettings: Settings = {
   downloadPacing: 'off',
   // Download behavior settings
   overwriteFiles: 'no',
+  skipDuplicateTracks: false,
   bitrateFallback: true,
   searchFallback: true,
   isrcFallback: false,

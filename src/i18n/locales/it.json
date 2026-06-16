@@ -195,6 +195,12 @@
       "rename": "Rinomina",
       "rename_desc": "Aggiungi suffisso numerico ai nuovi file"
     },
+    "skipDuplicateTracks": "Salta i brani che ho già nella libreria",
+    "skipDuplicateTracksHelp": "Prima del download, salta qualsiasi registrazione che possiedi già (riconosciuta tramite ISRC), anche se proviene da un altro album o playlist. I brani senza ISRC vengono sempre scaricati. Disattivato per impostazione predefinita.",
+    "reindexLibrary": "Indicizza la libreria esistente",
+    "reindexingLibrary": "Indicizzazione…",
+    "reindexDone": "Indicizzati {indexed} di {total} brani ({noIsrc} senza ISRC saltati).",
+    "reindexFailed": "Indicizzazione non riuscita — controlla i log.",
     "bitrateFallback": "Fallback bitrate",
     "bitrateFallbackDesc": "Scarica qualità inferiore se preferita non disponibile",
     "searchFallback": "Fallback ricerca",

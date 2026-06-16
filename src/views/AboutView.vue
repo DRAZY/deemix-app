@@ -35,6 +35,14 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.21',
+    date: '2026-06-16',
+    items: [
+      'New optional setting: "Skip tracks already in my library" (Settings → Downloads, off by default). When on, the app skips downloading any recording you already have — matched by ISRC, not filename — so the same song on a different album, single, or compilation won\'t pile up as a duplicate. Tracks without an ISRC are always downloaded, and nothing is ever deleted.',
+      'Got an existing collection? Turn the setting on and click "Index existing library" once — it scans your download folder so the de-dup works against everything you already have, not just new downloads.'
+    ]
+  },
+  {
     version: '1.10.20',
     date: '2026-06-15',
     items: [

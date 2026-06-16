@@ -195,6 +195,12 @@
       "rename": "Ganti Nama",
       "rename_desc": "Tambahkan sufiks angka ke berkas baru"
     },
+    "skipDuplicateTracks": "Lewati lagu yang sudah ada di pustaka saya",
+    "skipDuplicateTracksHelp": "Sebelum mengunduh, lewati rekaman yang sudah kamu miliki (dicocokkan berdasarkan ISRC), meskipun dari album atau playlist berbeda. Lagu tanpa ISRC selalu diunduh. Nonaktif secara bawaan.",
+    "reindexLibrary": "Indeks pustaka yang ada",
+    "reindexingLibrary": "Mengindeks…",
+    "reindexDone": "Mengindeks {indexed} dari {total} lagu ({noIsrc} tanpa ISRC dilewati).",
+    "reindexFailed": "Pengindeksan gagal — lihat log.",
     "bitrateFallback": "Cadangan Bitrate",
     "bitrateFallbackDesc": "Unduh kualitas lebih rendah jika pilihan tidak tersedia",
     "searchFallback": "Cadangan Pencarian",

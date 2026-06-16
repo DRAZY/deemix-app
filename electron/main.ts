@@ -358,6 +358,7 @@ async function initServer() {
         savePlaylistAsCompilation: s.savePlaylistAsCompilation,
         createPlaylistFile: s.createPlaylistFile,
         overwriteFiles: s.overwriteFiles,
+        skipDuplicateTracks: s.skipDuplicateTracks,
         maxConcurrentDownloads: s.maxConcurrentDownloads,
         folderSettings: {
           createPlaylistFolder: s.createPlaylistFolder,
@@ -435,6 +436,7 @@ async function initServer() {
         syncedLyrics: s.syncedLyrics,
         createErrorLog: s.createErrorLog,
         overwriteFiles: s.overwriteFiles,
+        skipDuplicateTracks: s.skipDuplicateTracks,
         maxConcurrentDownloads: s.maxConcurrentDownloads,
         folderSettings: {
           createPlaylistFolder: s.createPlaylistFolder,
