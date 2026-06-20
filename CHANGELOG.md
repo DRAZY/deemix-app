@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.22] — 2026-06-19
+
+### Fixed
+
+- **Full artist sync silently skipping albums under load (#93).** Artist sync enumerated a discography through its own raw `https.get` calls with no pacing or retry — so a quota burst on a large discography (or several syncs at once) made Deezer return "Quota limit exceeded" and the affected albums were dropped straight into `failedAlbums` with no recovery. Random-looking, load-dependent, hard to reproduce. Both sync engines now route every public-API lookup through a new paced, quota-aware client (`electron/services/deezerPublicApi.ts`): a global jittered min-gap between request starts plus exponential-backoff-with-jitter retry. This extends the #84 quota fix to the one set of call sites it never reached. Verified against a 90-release artist: ~40 albums dropped under an 8-wide burst → **0** through the new client.
+
+### Changed
+
+- **Reliable Sync-view tooltips.** The synced-playlist and synced-artist row buttons (sync, edit, enable/disable, remove) used native HTML `title`, which showed inconsistently — often only one label, sometimes the wrong text bleeding from an adjacent button. New dependency-free `v-tooltip` directive (`src/directives/tooltip.ts`) renders a single body-teleported tooltip per element: instant, correctly positioned, keyboard-accessible (`aria-label`), and reactive (the enable/disable label flips live). Applied to the Sync view; native `title` remains elsewhere for now.
+
 ## [1.10.21] — 2026-06-16
 
 ### Added

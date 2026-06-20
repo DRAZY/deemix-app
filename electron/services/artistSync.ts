@@ -1,11 +1,11 @@
 import { EventEmitter } from 'events'
-import * as https from 'https'
 import { app } from 'electron'
 import { join } from 'path'
 import { readFile } from 'fs/promises'
 import { deezerAuth } from './deezerAuth'
 import { downloader, type DownloadOptions, type FolderSettings, type TrackTemplates, type MetadataSettings } from './downloader'
 import { runPool, safeWriteJson, quarantineCorruptFile } from './playlistSync'
+import { fetchDeezerPublicJson, fetchDeezerPublicPaginated } from './deezerPublicApi'
 
 // Reuse the SyncSchedule contract from playlistSync to keep one source of truth
 // for cadence semantics across both engines.
@@ -799,57 +799,28 @@ class ArtistSyncEngine extends EventEmitter {
     return results
   }
 
+  // Enumerate the full discography via the paced, quota-aware public-API client.
+  // Previously this fired raw https.get per page with no retry; on a large
+  // discography (or with several syncs running at once) a quota burst would
+  // reject the whole enumeration. The client now paces + retries (#84, #93).
   private fetchDeezerArtistDiscography(artistId: string): Promise<DeezerArtistAlbum[]> {
-    return new Promise((resolve, reject) => {
-      const albums: DeezerArtistAlbum[] = []
-      const fetchPage = (url: string) => {
-        https.get(url, (res) => {
-          let data = ''
-          res.on('data', (chunk: string) => data += chunk)
-          res.on('end', () => {
-            try {
-              const parsed = JSON.parse(data)
-              if (parsed.error) {
-                reject(new Error(parsed.error.message || 'Deezer API error'))
-                return
-              }
-              const items: DeezerArtistAlbum[] = parsed.data || []
-              for (const album of items) albums.push(album)
-              if (parsed.next) {
-                fetchPage(parsed.next)
-              } else {
-                resolve(albums)
-              }
-            } catch {
-              reject(new Error('Failed to parse Deezer response'))
-            }
-          })
-        }).on('error', reject)
-      }
-      fetchPage(`https://api.deezer.com/artist/${artistId}/albums?limit=100`)
-    })
+    return fetchDeezerPublicPaginated<DeezerArtistAlbum>(
+      `https://api.deezer.com/artist/${artistId}/albums?limit=100`,
+      `artist ${artistId} discography`
+    )
   }
 
-  private fetchDeezerAlbumTracks(albumId: number): Promise<DeezerAlbumTrack[]> {
-    return new Promise((resolve, reject) => {
-      const url = `https://api.deezer.com/album/${albumId}/tracks?limit=200`
-      https.get(url, (res) => {
-        let data = ''
-        res.on('data', (chunk: string) => data += chunk)
-        res.on('end', () => {
-          try {
-            const parsed = JSON.parse(data)
-            if (parsed.error) {
-              reject(new Error(parsed.error.message || 'Deezer API error'))
-              return
-            }
-            resolve(parsed.data || [])
-          } catch {
-            reject(new Error('Failed to parse Deezer album response'))
-          }
-        })
-      }).on('error', reject)
-    })
+  // Fetch an album's tracklist via the paced, quota-aware client. A quota trip
+  // here used to silently drop the album into failedAlbums with no retry — the
+  // root cause of #93. The client now backs off and retries before giving up,
+  // and a genuine quota exhaustion surfaces as "Quota limit exceeded" (distinct
+  // from an actually-unavailable release, which returns an empty tracklist).
+  private async fetchDeezerAlbumTracks(albumId: number): Promise<DeezerAlbumTrack[]> {
+    const parsed = await fetchDeezerPublicJson<{ data?: DeezerAlbumTrack[] }>(
+      `https://api.deezer.com/album/${albumId}/tracks?limit=200`,
+      { label: `album ${albumId} tracks` }
+    )
+    return parsed.data || []
   }
 }
 

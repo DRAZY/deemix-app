@@ -35,6 +35,14 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.22',
+    date: '2026-06-19',
+    items: [
+      'Fixed full artist resyncs sometimes skipping a random-looking handful of albums (#93). On a large discography the app could hit Deezer\'s request limit while listing an artist\'s catalog, and the albums that got rate-limited were silently dropped with no retry — which is why it felt random and was hard to reproduce. Artist and playlist sync now pace those catalog lookups and automatically back off and retry instead of dropping anything. In testing, a 90-release artist went from ~40 albums skipped under load to zero.',
+      'The Sync page\'s row buttons now show reliable, instant tooltips. Hovering the sync / edit / enable / remove icons used to show only one inconsistent label (sometimes the wrong one bleeding over from a neighboring button) — each button now shows its own label correctly and immediately.'
+    ]
+  },
+  {
     version: '1.10.21',
     date: '2026-06-16',
     items: [

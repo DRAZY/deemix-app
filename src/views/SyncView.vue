@@ -427,7 +427,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
       <button
         @click="playlistSortDir = playlistSortDir === 'asc' ? 'desc' : 'asc'"
         class="p-2 rounded-lg bg-background-main border border-zinc-700 text-foreground-muted hover:text-foreground transition-colors"
-        :title="t('sync.sortBy')"
+        v-tooltip="t('sync.sortBy')"
       >
         <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': playlistSortDir === 'desc' }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -539,7 +539,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
             v-if="syncStore.isSyncing(playlist.id)"
             @click="syncStore.cancelSync(playlist.id)"
             class="p-2 text-foreground-muted hover:text-red-400 transition-colors"
-            :title="t('common.cancel')"
+            v-tooltip="t('common.cancel')"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -550,7 +550,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
             @click="syncStore.syncPlaylist(playlist.id)"
             @contextmenu.prevent="syncStore.forceSync(playlist.id)"
             class="p-2 text-foreground-muted hover:text-primary-400 transition-colors"
-            :title="t('sync.syncNow') + ' (right-click: force full sync)'"
+            v-tooltip="t('sync.syncNow') + ' (right-click: force full sync)'"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -559,7 +559,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
           <button
             @click="openEditPlaylist(playlist)"
             class="p-2 text-foreground-muted hover:text-primary-400 transition-colors"
-            :title="t('sync.edit')"
+            v-tooltip="t('sync.edit')"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -569,7 +569,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
             @click="syncStore.updatePlaylist(playlist.id, { enabled: !playlist.enabled })"
             class="p-2 transition-colors"
             :class="playlist.enabled ? 'text-green-400 hover:text-green-300' : 'text-foreground-muted hover:text-foreground'"
-            :title="playlist.enabled ? t('sync.disable') : t('sync.enable')"
+            v-tooltip="playlist.enabled ? t('sync.disable') : t('sync.enable')"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path v-if="playlist.enabled" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -580,7 +580,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
           <button
             @click="syncStore.removePlaylist(playlist.id)"
             class="p-2 text-foreground-muted hover:text-red-400 transition-colors"
-            :title="t('sync.remove')"
+            v-tooltip="t('sync.remove')"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -627,7 +627,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
         <button
           @click="artistSortDir = artistSortDir === 'asc' ? 'desc' : 'asc'"
           class="p-2 rounded-lg bg-background-main border border-zinc-700 text-foreground-muted hover:text-foreground transition-colors"
-          :title="t('sync.sortBy')"
+          v-tooltip="t('sync.sortBy')"
         >
           <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': artistSortDir === 'desc' }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -744,7 +744,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
               v-if="artistSyncStore.isSyncing(artist.id)"
               @click="artistSyncStore.cancelSync(artist.id)"
               class="p-2 text-foreground-muted hover:text-red-400 transition-colors"
-              :title="t('common.cancel')"
+              v-tooltip="t('common.cancel')"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -755,7 +755,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
               @click="artistSyncStore.syncArtist(artist.id)"
               @contextmenu.prevent="artistSyncStore.forceSync(artist.id)"
               class="p-2 text-foreground-muted hover:text-primary-400 transition-colors"
-              :title="t('sync.syncNow') + ' (right-click: force full re-check)'"
+              v-tooltip="t('sync.syncNow') + ' (right-click: force full re-check)'"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -764,7 +764,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
             <button
               @click="openEditArtist(artist)"
               class="p-2 text-foreground-muted hover:text-primary-400 transition-colors"
-              :title="t('sync.edit')"
+              v-tooltip="t('sync.edit')"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -774,7 +774,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
               @click="artistSyncStore.updateArtist(artist.id, { enabled: !artist.enabled })"
               class="p-2 transition-colors"
               :class="artist.enabled ? 'text-green-400 hover:text-green-300' : 'text-foreground-muted hover:text-foreground'"
-              :title="artist.enabled ? t('sync.disable') : t('sync.enable')"
+              v-tooltip="artist.enabled ? t('sync.disable') : t('sync.enable')"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path v-if="artist.enabled" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -785,7 +785,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
             <button
               @click="artistSyncStore.removeArtist(artist.id)"
               class="p-2 text-foreground-muted hover:text-red-400 transition-colors"
-              :title="t('sync.remove')"
+              v-tooltip="t('sync.remove')"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

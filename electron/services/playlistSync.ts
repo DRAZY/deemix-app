@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events'
-import * as https from 'https'
 import { app } from 'electron'
 import { join, dirname } from 'path'
 import { readFile, writeFile, mkdir, rename } from 'fs/promises'
@@ -7,6 +6,7 @@ import { spotifyAPI } from './spotifyAPI'
 import { spotifyConverter } from './spotifyConverter'
 import { deezerAuth } from './deezerAuth'
 import { downloader, type DownloadOptions, type FolderSettings, type TrackTemplates, type MetadataSettings } from './downloader'
+import { fetchDeezerPublicJson } from './deezerPublicApi'
 
 export interface SyncDownloadSettings {
   downloadPath: string
@@ -927,43 +927,27 @@ class PlaylistSyncEngine extends EventEmitter {
     return Array.from(this.activeSyncs.keys())
   }
 
+  // Playlist artwork — best-effort, never fails a sync. Routed through the paced
+  // client so it can't contribute to a quota burst (#84, #93).
   private async fetchDeezerPlaylistInfo(playlistId: string): Promise<{ picture_xl?: string; picture_big?: string }> {
-    return new Promise((resolve, reject) => {
-      const url = `https://api.deezer.com/playlist/${playlistId}`
-      https.get(url, (res) => {
-        let data = ''
-        res.on('data', (chunk: string) => data += chunk)
-        res.on('end', () => {
-          try {
-            resolve(JSON.parse(data))
-          } catch {
-            resolve({})
-          }
-        })
-      }).on('error', () => resolve({}))
-    })
+    try {
+      return await fetchDeezerPublicJson<{ picture_xl?: string; picture_big?: string }>(
+        `https://api.deezer.com/playlist/${playlistId}`,
+        { label: `playlist ${playlistId} info` }
+      )
+    } catch {
+      return {}
+    }
   }
 
+  // Playlist tracklist via the paced, quota-aware client — a quota trip now backs
+  // off and retries instead of failing the whole sync (#84, #93).
   private async fetchDeezerPlaylist(playlistId: string): Promise<{ tracks: Array<{ id: number; title: string; artist: { name: string } }> }> {
-    return new Promise((resolve, reject) => {
-      const url = `https://api.deezer.com/playlist/${playlistId}/tracks?limit=2000`
-      https.get(url, (res) => {
-        let data = ''
-        res.on('data', (chunk: string) => data += chunk)
-        res.on('end', () => {
-          try {
-            const parsed = JSON.parse(data)
-            if (parsed.error) {
-              reject(new Error(parsed.error.message || 'Deezer API error'))
-            } else {
-              resolve({ tracks: parsed.data || [] })
-            }
-          } catch (e) {
-            reject(new Error('Failed to parse Deezer response'))
-          }
-        })
-      }).on('error', reject)
-    })
+    const parsed = await fetchDeezerPublicJson<{ data?: Array<{ id: number; title: string; artist: { name: string } }> }>(
+      `https://api.deezer.com/playlist/${playlistId}/tracks?limit=2000`,
+      { label: `playlist ${playlistId} tracks` }
+    )
+    return { tracks: parsed.data || [] }
   }
 }
 
