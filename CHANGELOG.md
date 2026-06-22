@@ -6,6 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.23] — 2026-06-22
+
+### Fixed
+
+- **Artist sync silently skipping albums marked "already existing" that weren't on disk (#93 follow-up).** Sync trusted its internal `knownAlbumIds` ledger over the filesystem, and an album was added to that ledger if *even one* track downloaded — so partially-downloaded albums (and, via the old `subscribe-forward` default, entire un-downloaded catalogs) were marked complete and skipped on every future sync, never surfacing in the failed list. Now an album earns a `knownAlbumIds` entry **only when every track is accounted for**. Per-track failures are classified via the downloader's `errorDetails.code`: permanent failures (`GEO_RESTRICTED`/`TRACK_UNAVAILABLE`) are accepted and surfaced ("N unavailable in your region"); transient failures keep the album out of the ledger so the next sync retries just the missing tracks (the downloader skips files already on disk), **bounded by a 3-attempt cap** so nothing retries forever. New persisted `partialAlbums` ledger on each synced artist; **Force Full Sync** now also clears it. Verified end-to-end against the real sync engine (transient→heal, permanent→accept, cap→stop).
+
+### Changed
+
+- **Pin-to-Sync now asks how to handle an artist's existing catalog (#93).** Pinning an artist from Favourites (single or "sync all") opens a mode chooser — **Download full discography now** (new default), **Watch for new releases only**, or **From a date** — instead of silently using `subscribe-forward`, which downloaded nothing and made pinning look broken. The first-sync mode labels in the Add-Artist dialog were reworded to make each option's effect explicit.
+
 ## [1.10.22] — 2026-06-19
 
 ### Fixed

@@ -70,6 +70,19 @@ export interface SyncedArtist {
     releaseDate: string | null
     error: string
   }>
+  // Albums that downloaded only partially — tracked across syncs so the missing
+  // tracks get retried (bounded) instead of being silently lost (#93). An album
+  // is NEVER added to knownAlbumIds while it has a partialAlbums entry; once all
+  // its tracks are accounted for (downloaded, permanently-unavailable, or the
+  // transient-retry cap is hit) the entry is cleared and the album becomes known.
+  partialAlbums: Array<{
+    sourceAlbumId: string
+    title: string
+    releaseDate: string | null
+    failedTrackIds: number[]
+    attempts: number
+    lastReason: string
+  }>
   totalAlbumsDownloaded: number
   totalTracksDownloaded: number
   downloadPath: string
@@ -188,6 +201,7 @@ class ArtistSyncEngine extends EventEmitter {
         if (!artist.firstSyncMode) artist.firstSyncMode = 'subscribe-forward'
         if (!Array.isArray(artist.knownAlbumIds)) artist.knownAlbumIds = []
         if (!Array.isArray(artist.failedAlbums)) artist.failedAlbums = []
+        if (!Array.isArray(artist.partialAlbums)) artist.partialAlbums = []  // #93
         // v1.6.3 — backfill: pre-existing entries are treated as manual so
         // they aren't auto-flagged on the first favorites refresh.
         if (!artist.origin) artist.origin = 'manual'
@@ -272,6 +286,7 @@ class ArtistSyncEngine extends EventEmitter {
       lastSyncError: null,
       knownAlbumIds: [],
       failedAlbums: [],
+      partialAlbums: [],
       totalAlbumsDownloaded: 0,
       totalTracksDownloaded: 0,
       downloadPath: config.downloadPath,
@@ -398,6 +413,7 @@ class ArtistSyncEngine extends EventEmitter {
         lastSyncError: raw.lastSyncError ?? null,
         knownAlbumIds: Array.isArray(raw.knownAlbumIds) ? raw.knownAlbumIds.map(String) : [],
         failedAlbums: Array.isArray(raw.failedAlbums) ? raw.failedAlbums : [],
+        partialAlbums: Array.isArray(raw.partialAlbums) ? raw.partialAlbums : [],
         totalAlbumsDownloaded: Number(raw.totalAlbumsDownloaded) || 0,
         totalTracksDownloaded: Number(raw.totalTracksDownloaded) || 0,
         downloadPath: String(raw.downloadPath ?? ''),
@@ -479,6 +495,7 @@ class ArtistSyncEngine extends EventEmitter {
     if (!artist) return false
     artist.knownAlbumIds = []
     artist.failedAlbums = []
+    artist.partialAlbums = []
     artist.totalAlbumsDownloaded = 0
     artist.totalTracksDownloaded = 0
     artist.lastSyncStatus = null
@@ -498,6 +515,20 @@ class ArtistSyncEngine extends EventEmitter {
 
   getActiveSyncIds(): string[] {
     return Array.from(this.activeSyncs.keys())
+  }
+
+  // #93: classify a per-track download failure. PERMANENT = retrying can never
+  // help (region/availability), so the album is accepted as done. Everything else
+  // (timeouts, quota, network, empty responses, cancellation, unknown) is TRANSIENT
+  // and worth a bounded retry. Keys on the downloader's structured error code when
+  // present, with a message fallback that excludes the transient "temporarily
+  // unavailable" phrasing.
+  private isPermanentFailure(code: string | undefined, reason: string): boolean {
+    if (code) return code === 'GEO_RESTRICTED' || code === 'TRACK_UNAVAILABLE'
+    const m = (reason || '').toLowerCase()
+    if (m.includes('temporarily')) return false
+    return m.includes('geo') || m.includes('region') || m.includes('country') ||
+           m.includes('unavailable') || m.includes('not available') || m.includes('restricted')
   }
 
   // Filtering rules per record_type. Deezer's "featured" record type isn't
@@ -571,6 +602,10 @@ class ArtistSyncEngine extends EventEmitter {
       const filtered = discography.filter(album => this.albumPassesFilters(album, artist))
       const filteredIds = filtered.map(a => String(a.id))
       const known = new Set(artist.knownAlbumIds)
+      // #93: partially-downloaded albums are deliberately NOT in knownAlbumIds, so
+      // they fall into newAlbumIds here and get retried. Drop ledger entries for
+      // albums that left the filtered discography so they don't retry forever.
+      artist.partialAlbums = (artist.partialAlbums || []).filter(p => filteredIds.includes(p.sourceAlbumId))
       const newAlbumIds = filteredIds.filter(aid => !known.has(aid))
       const isFirstSync = artist.lastSyncAt === null
 
@@ -597,6 +632,13 @@ class ArtistSyncEngine extends EventEmitter {
           .filter(a => newAlbumIds.includes(String(a.id)))
           .sort((a, b) => (a.release_date || '').localeCompare(b.release_date || ''))
 
+        // #93: an album earns a knownAlbumIds entry ONLY when every track is
+        // accounted for. Until then it lives in partialMap and is retried (bounded
+        // by RETRY_CAP) on each sync. The downloader skips files that already exist,
+        // so a retry only re-fetches the genuinely-missing tracks.
+        const RETRY_CAP = 3
+        const partialMap = new Map(artist.partialAlbums.map(p => [p.sourceAlbumId, p]))
+
         for (let i = 0; i < newAlbumsByDate.length; i++) {
           if (this.cancelRequested.has(id)) break
           const album = newAlbumsByDate[i]
@@ -611,6 +653,10 @@ class ArtistSyncEngine extends EventEmitter {
             const tracks = await this.fetchDeezerAlbumTracks(album.id)
             const albumCoverUrl = album.cover_xl || album.cover_big || ''
             if (tracks.length === 0) {
+              // No playable tracks = permanently unavailable here; mark known so it
+              // doesn't retry forever, and surface it in the failed list. (#93)
+              if (!artist.knownAlbumIds.includes(albumIdStr)) artist.knownAlbumIds.push(albumIdStr)
+              partialMap.delete(albumIdStr)
               failed.push({
                 sourceAlbumId: albumIdStr,
                 title: album.title,
@@ -624,14 +670,13 @@ class ArtistSyncEngine extends EventEmitter {
             // loop sequential so the per-album progress UI ("Album 3/5,
             // downloading X") remains meaningful.
             const poolConcurrency = Math.max(1, settings?.maxConcurrentDownloads ?? 5)
-            let albumSucceededAtLeastOnce = false
 
             const trackResults = await runPool(
               tracks,
               poolConcurrency,
               async (track) => {
                 if (this.cancelRequested.has(id)) {
-                  return { ok: false as const, reason: 'cancelled' }
+                  return { ok: false as const, trackId: track.id, reason: 'cancelled', code: 'CANCELLED' as string | undefined }
                 }
                 const opts: DownloadOptions = {
                   trackId: track.id,
@@ -671,11 +716,13 @@ class ArtistSyncEngine extends EventEmitter {
                     const onError = (progress: any) => {
                       if (progress.id === downloadId) {
                         cleanup()
-                        reject(new Error(progress.error || 'Download failed'))
+                        const e: any = new Error(progress.error || 'Download failed')
+                        e.code = progress.errorDetails?.code
+                        reject(e)
                       }
                     }
                     const onCancelled = (progress: any) => {
-                      if (progress.id === downloadId) { cleanup(); reject(new Error('Download cancelled')) }
+                      if (progress.id === downloadId) { cleanup(); const e: any = new Error('Download cancelled'); e.code = 'CANCELLED'; reject(e) }
                     }
                     const cleanup = () => {
                       clearTimeout(timeout)
@@ -687,7 +734,9 @@ class ArtistSyncEngine extends EventEmitter {
                     if (current?.status === 'completed') { cleanup(); resolve(); return }
                     if (current?.status === 'error') {
                       cleanup()
-                      reject(new Error(current.error || 'Download failed'))
+                      const e: any = new Error(current.error || 'Download failed')
+                      e.code = current.errorDetails?.code
+                      reject(e)
                       return
                     }
                     downloader.on('complete', onComplete)
@@ -697,27 +746,63 @@ class ArtistSyncEngine extends EventEmitter {
                   return { ok: true as const, trackId: track.id }
                 } catch (err: any) {
                   console.error(`[ArtistSync] Track ${track.id} of album ${album.title} failed:`, err.message)
-                  return { ok: false as const, reason: err.message || 'Download failed' }
+                  return { ok: false as const, trackId: track.id, reason: err.message || 'Download failed', code: err.code as string | undefined }
                 }
               }
             )
 
-            for (const r of trackResults) {
-              if (r.ok) {
-                downloadedTrackCount++
-                albumSucceededAtLeastOnce = true
-              }
+            // #93 disposition: an album is marked "known" ONLY when every track is
+            // accounted for. Failed tracks are classified — permanent failures
+            // (geo/unavailable) are accepted so they don't retry forever; transient
+            // failures keep the album out of knownAlbumIds so the next sync retries
+            // just the missing tracks, bounded by RETRY_CAP.
+            const okResults = trackResults.filter((r: any) => r.ok)
+            const failedTracks = trackResults.filter((r: any) => !r.ok) as Array<{ ok: false; trackId?: number; reason: string; code?: string }>
+            downloadedTrackCount += okResults.length
+            const markKnown = () => {
+              if (!artist.knownAlbumIds.includes(albumIdStr)) artist.knownAlbumIds.push(albumIdStr)
+              partialMap.delete(albumIdStr)
             }
-            if (albumSucceededAtLeastOnce) {
+
+            if (failedTracks.length === 0) {
+              // Fully downloaded → genuinely known.
               downloadedAlbumCount++
-              artist.knownAlbumIds.push(albumIdStr)
+              markKnown()
             } else {
-              failed.push({
-                sourceAlbumId: albumIdStr,
-                title: album.title,
-                releaseDate: album.release_date || null,
-                error: 'All tracks failed'
-              })
+              const transient = failedTracks.filter(t => !this.isPermanentFailure(t.code, t.reason))
+              const permanentCount = failedTracks.length - transient.length
+              if (transient.length === 0) {
+                // Every failure is permanent (geo/unavailable) — retrying can't help.
+                // Accept so it stops re-attempting; surface what's missing.
+                if (okResults.length > 0) downloadedAlbumCount++
+                markKnown()
+                failed.push({
+                  sourceAlbumId: albumIdStr, title: album.title, releaseDate: album.release_date || null,
+                  error: `${failedTracks.length} track(s) unavailable in your region`
+                })
+              } else {
+                const attempts = (partialMap.get(albumIdStr)?.attempts || 0) + 1
+                if (attempts >= RETRY_CAP) {
+                  // Bounded: give up after RETRY_CAP so it never churns forever.
+                  if (okResults.length > 0) downloadedAlbumCount++
+                  markKnown()
+                  failed.push({
+                    sourceAlbumId: albumIdStr, title: album.title, releaseDate: album.release_date || null,
+                    error: `${failedTracks.length} track(s) failed after ${RETRY_CAP} attempts`
+                  })
+                } else {
+                  // Keep OUT of knownAlbumIds → next sync retries the missing tracks.
+                  partialMap.set(albumIdStr, {
+                    sourceAlbumId: albumIdStr, title: album.title, releaseDate: album.release_date || null,
+                    failedTrackIds: failedTracks.map(t => t.trackId).filter((x): x is number => typeof x === 'number'),
+                    attempts, lastReason: transient[0]?.reason || 'download failed'
+                  })
+                  failed.push({
+                    sourceAlbumId: albumIdStr, title: album.title, releaseDate: album.release_date || null,
+                    error: `${failedTracks.length} track(s) failed — retrying (attempt ${attempts}/${RETRY_CAP})${permanentCount ? `, ${permanentCount} unavailable` : ''}`
+                  })
+                }
+              }
             }
           } catch (err: any) {
             failed.push({
@@ -728,6 +813,8 @@ class ArtistSyncEngine extends EventEmitter {
             })
           }
         }
+        // #93: persist the retry ledger (entries for albums still missing tracks).
+        artist.partialAlbums = [...partialMap.values()]
       }
 
       artist.failedAlbums = failed

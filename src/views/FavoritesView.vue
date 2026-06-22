@@ -6,7 +6,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useDownloadStore } from '../stores/downloadStore'
 import { useToastStore } from '../stores/toastStore'
 import { useSyncStore, type SyncedPlaylist } from '../stores/syncStore'
-import { useArtistSyncStore, type SyncedArtist } from '../stores/artistSyncStore'
+import { useArtistSyncStore, type SyncedArtist, type FirstSyncMode } from '../stores/artistSyncStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { deezerAPI } from '../services/deezerAPI'
 import TrackCard from '../components/TrackCard.vue'
@@ -26,6 +26,17 @@ const settingsStore = useSettingsStore()
 const activeTab = ref<'tracks' | 'albums' | 'artists' | 'playlists'>('tracks')
 const isDownloading = ref(false)
 const isBulkSyncing = ref(false)
+
+// #93: pinning an artist from Favourites now asks how to handle the existing
+// catalog (instead of silently using subscribe-forward, which downloaded nothing).
+// `pinModalTarget` is the single Artist being pinned, or 'bulk' for "sync all".
+const showPinModal = ref(false)
+const pinModalTarget = ref<Artist | 'bulk' | null>(null)
+const pinModalMode = ref<FirstSyncMode>('download-backlog')
+const pinModalDate = ref('')
+const pinModalName = computed(() =>
+  pinModalTarget.value && pinModalTarget.value !== 'bulk' ? pinModalTarget.value.name : ''
+)
 const serverPort = ref(6595)
 const sortOrder = ref<'added' | 'name-asc' | 'name-desc'>(
   (localStorage.getItem('favorites_sort') as any) || 'added'
@@ -271,16 +282,26 @@ function getArtistSyncingLabel(artistId: number | string): string {
   return t('favorites.syncing')
 }
 
-async function pinArtistToSync(artist: Artist) {
+// Opens the mode-choice modal for a single artist (#93). The actual add runs in
+// confirmPinMode → doPinArtist once the user picks a first-sync mode.
+function pinArtistToSync(artist: Artist) {
   if (getArtistSyncEntry(artist.id)) return
+  pinModalTarget.value = artist
+  pinModalMode.value = 'download-backlog'
+  pinModalDate.value = ''
+  showPinModal.value = true
+}
+
+async function doPinArtist(artist: Artist, mode: FirstSyncMode, date: string) {
   const result = await artistSyncStore.addArtist({
     sourceArtistId: String(artist.id),
     sourceArtistName: artist.name,
     sourceArtistUrl: `https://www.deezer.com/artist/${artist.id}`,
     schedule: '24h',
     downloadPath: settingsStore.settings.downloadPath,
-    firstSyncMode: 'subscribe-forward',
-    origin: 'favorites'
+    firstSyncMode: mode,
+    origin: 'favorites',
+    ...(mode === 'date-threshold' && date ? { filters: { minReleaseDate: date } } : {})
   })
   if (result?.success) {
     toastStore.success(t('favorites.artistSyncAdded', { name: artist.name }))
@@ -289,7 +310,34 @@ async function pinArtistToSync(artist: Artist) {
   }
 }
 
-async function syncAllFavoriteArtists() {
+// Confirm handler shared by single + bulk pin. Dispatches to the right "do".
+async function confirmPinMode() {
+  const target = pinModalTarget.value
+  const mode = pinModalMode.value
+  const date = mode === 'date-threshold' ? pinModalDate.value : ''
+  showPinModal.value = false
+  pinModalTarget.value = null
+  if (!target) return
+  if (target === 'bulk') await doSyncAllFavoriteArtists(mode, date)
+  else await doPinArtist(target, mode, date)
+}
+
+// Opens the mode-choice modal for "sync all favourite artists" (#93). Skips the
+// modal if there's nothing to add. The actual bulk add runs in doSyncAllFavoriteArtists.
+function syncAllFavoriteArtists() {
+  if (isBulkSyncing.value) return
+  const anyToAdd = favoritesStore.favoriteArtists.some(a => !getArtistSyncEntry(a.id))
+  if (!anyToAdd) {
+    toastStore.info(t('favorites.artistSyncAllNoneAdded'))
+    return
+  }
+  pinModalTarget.value = 'bulk'
+  pinModalMode.value = 'download-backlog'
+  pinModalDate.value = ''
+  showPinModal.value = true
+}
+
+async function doSyncAllFavoriteArtists(mode: FirstSyncMode, date: string) {
   if (isBulkSyncing.value) return
   isBulkSyncing.value = true
   try {
@@ -315,8 +363,9 @@ async function syncAllFavoriteArtists() {
       sourceArtistUrl: `https://www.deezer.com/artist/${a.id}`,
       schedule: '24h' as const,
       downloadPath: settingsStore.settings.downloadPath,
-      firstSyncMode: 'subscribe-forward' as const,
-      origin: 'favorites' as const
+      firstSyncMode: mode,
+      origin: 'favorites' as const,
+      ...(mode === 'date-threshold' && date ? { filters: { minReleaseDate: date } } : {})
     }))
     const result = await artistSyncStore.addArtistsBulk(configs)
     const added = result?.added ?? 0
@@ -775,5 +824,78 @@ async function importFromDeezer() {
         :subtitle="t('favorites.noFavoritesHint')"
       />
     </div>
+
+    <!-- Pin-to-Sync mode chooser (#93) — replaces the silent subscribe-forward default -->
+    <teleport to="body">
+      <transition name="fade">
+        <div v-if="showPinModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60" @click.self="showPinModal = false">
+          <div class="bg-background-secondary rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
+            <h2 class="text-lg font-semibold mb-1">
+              {{ t('sync.pinModeTitle') }}<span v-if="pinModalName"> — {{ pinModalName }}</span>
+            </h2>
+            <p class="text-sm text-foreground-muted mb-4">
+              {{ pinModalTarget === 'bulk' ? t('sync.pinModeBulkPrompt') : t('sync.pinModePrompt') }}
+            </p>
+
+            <div class="space-y-2">
+              <label
+                class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
+                :class="pinModalMode === 'download-backlog' ? 'border-primary-500 bg-primary-500/10' : 'border-zinc-700 hover:border-zinc-600'"
+              >
+                <input type="radio" class="mt-1" value="download-backlog" v-model="pinModalMode" />
+                <span>
+                  <span class="block text-sm font-medium">{{ t('sync.firstSyncModeDownloadBacklog') }}</span>
+                  <span class="block text-xs text-foreground-muted">{{ t('sync.firstSyncModeDownloadBacklogHelp') }}</span>
+                </span>
+              </label>
+
+              <label
+                class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
+                :class="pinModalMode === 'subscribe-forward' ? 'border-primary-500 bg-primary-500/10' : 'border-zinc-700 hover:border-zinc-600'"
+              >
+                <input type="radio" class="mt-1" value="subscribe-forward" v-model="pinModalMode" />
+                <span>
+                  <span class="block text-sm font-medium">{{ t('sync.firstSyncModeSubscribeForward') }}</span>
+                  <span class="block text-xs text-foreground-muted">{{ t('sync.firstSyncModeSubscribeForwardHelp') }}</span>
+                </span>
+              </label>
+
+              <label
+                class="flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
+                :class="pinModalMode === 'date-threshold' ? 'border-primary-500 bg-primary-500/10' : 'border-zinc-700 hover:border-zinc-600'"
+              >
+                <input type="radio" class="mt-1" value="date-threshold" v-model="pinModalMode" />
+                <span class="flex-1">
+                  <span class="block text-sm font-medium">{{ t('sync.firstSyncModeDateThreshold') }}</span>
+                  <span class="block text-xs text-foreground-muted">{{ t('sync.firstSyncModeDateThresholdHelp') }}</span>
+                  <input
+                    v-if="pinModalMode === 'date-threshold'"
+                    type="date"
+                    v-model="pinModalDate"
+                    class="mt-2 px-3 py-1.5 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+                  />
+                </span>
+              </label>
+            </div>
+
+            <div class="flex justify-end gap-2 mt-6">
+              <button
+                @click="showPinModal = false"
+                class="px-4 py-2 text-sm rounded-lg bg-zinc-700 hover:bg-zinc-600 transition-colors"
+              >
+                {{ t('common.cancel') }}
+              </button>
+              <button
+                @click="confirmPinMode"
+                :disabled="pinModalMode === 'date-threshold' && !pinModalDate"
+                class="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {{ t('sync.pinModeConfirm') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </teleport>
   </div>
 </template>

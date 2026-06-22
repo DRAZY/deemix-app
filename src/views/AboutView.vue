@@ -35,6 +35,14 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.23',
+    date: '2026-06-22',
+    items: [
+      'Fixed artist sync silently skipping albums it thought were "already downloaded" when they weren\'t (#93). Sync kept an internal list of albums it considered done and trusted it over what was actually on disk — so an album that only partly downloaded (or was never downloaded) got marked complete and skipped on every future sync, and never showed up in the failed list. Now an album is only marked done when all its tracks actually downloaded; tracks that hit a temporary error are retried on the next sync (up to a few times), and genuinely unavailable tracks are reported instead of hidden.',
+      'Pinning an artist to Sync from your Favourites now asks how to handle their existing catalog — "Download full discography now" (the new default), "Watch for new releases only," or from a date. Previously it silently chose "watch only," so pinning an artist downloaded nothing and could look broken. (Tip: if some albums are missing on an already-synced artist, right-click its sync button → Force Full Sync to re-pull everything.)'
+    ]
+  },
+  {
     version: '1.10.22',
     date: '2026-06-19',
     items: [
