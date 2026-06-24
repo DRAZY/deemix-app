@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.25',
+    date: '2026-06-24',
+    items: [
+      'Fixed Sync ignoring your "create CD folders" setting for multi-disc albums (#95). When syncing an artist, multi-disc albums were dropped straight into the album folder instead of CD1/CD2 subfolders — even with the setting on — which could also create duplicates of albums you\'d already downloaded into CD folders from the artist page. Synced multi-disc albums now go into their CD subfolders, and synced downloads now match album-page downloads for folder names and tags in general.'
+    ]
+  },
+  {
     version: '1.10.24',
     date: '2026-06-24',
     items: [

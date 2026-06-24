@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.25] — 2026-06-24
+
+### Fixed
+
+- **Sync ignored the "create CD folders" setting for multi-disc albums (#95).** Artist sync downloaded every track of a multi-disc album straight into the album root instead of `CD1`/`CD2` subfolders, even with the setting enabled — which also produced duplicates against albums previously pulled (correctly, into CD folders) from the artist page. Root cause: the sync download path passed neither the track's disc number nor the album's disc count, so the CD-folder rule (`createCDFolder && discNumber && totalDiscs > 1`) could never fire. Sync now builds the same authoritative album context a manual album-page download uses and passes `discNumber` per track, so multi-disc albums land in CD subfolders during sync — and, more broadly, synced downloads now match album-page downloads for folder naming, the RELEASETYPE tag (#82), and `%upc%`/`%label%` templates. The album-context builder is now a shared single source of truth (`electron/services/albumContext.ts`) used by both paths. Verified against a real 2-disc album via the sync engine.
+
 ## [1.10.24] — 2026-06-24
 
 ### Fixed

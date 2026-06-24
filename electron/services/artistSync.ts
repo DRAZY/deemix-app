@@ -6,6 +6,7 @@ import { deezerAuth } from './deezerAuth'
 import { downloader, type DownloadOptions, type FolderSettings, type TrackTemplates, type MetadataSettings } from './downloader'
 import { runPool, safeWriteJson, quarantineCorruptFile } from './playlistSync'
 import { fetchDeezerPublicJson, fetchDeezerPublicPaginated } from './deezerPublicApi'
+import { buildAlbumContext, type AlbumContext } from './albumContext'
 
 // Reuse the SyncSchedule contract from playlistSync to keep one source of truth
 // for cadence semantics across both engines.
@@ -665,6 +666,25 @@ class ArtistSyncEngine extends EventEmitter {
               })
               continue
             }
+            // #95: build the authoritative album context (the same one a manual
+            // album-page download uses) so synced tracks land in the SAME folders
+            // — including CD subfolders for multi-disc albums — and carry the same
+            // tags. Without this, sync fell back to per-track metadata and never
+            // created CD folders. Best-effort: if the album lookup fails, fall back
+            // to per-track naming rather than failing the whole album.
+            let albumContext: AlbumContext | undefined
+            try {
+              const albumInfo = await fetchDeezerPublicJson<any>(
+                `https://api.deezer.com/album/${album.id}`,
+                { label: `album ${album.id} info` }
+              )
+              if (albumInfo && !albumInfo.error) {
+                albumContext = buildAlbumContext(album.id, albumInfo, tracks)
+              }
+            } catch {
+              // leave albumContext undefined → previous per-track fallback naming
+            }
+
             // Within-album parallelism — download the album's tracks in
             // parallel up to maxConcurrentDownloads. Keeps the cross-album
             // loop sequential so the per-album progress UI ("Album 3/5,
@@ -701,7 +721,12 @@ class ArtistSyncEngine extends EventEmitter {
                   folderSettings: settings?.folderSettings,
                   trackTemplates: settings?.trackTemplates,
                   metadataSettings: settings?.metadataSettings,
-                  playlistCoverUrl: albumCoverUrl || undefined
+                  playlistCoverUrl: albumCoverUrl || undefined,
+                  // #95: album context + this track's disc number so multi-disc
+                  // albums get CD subfolders during sync, matching album-page
+                  // downloads. (CD folder = createCDFolder && discNumber && discs>1)
+                  albumContext,
+                  discNumber: track.disk_number
                 }
                 try {
                   const downloadId = await downloader.download(opts)

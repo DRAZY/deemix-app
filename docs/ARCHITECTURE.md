@@ -188,7 +188,10 @@ Renderer polls /api/queue/status, updates DownloadStore, re-renders queue UI
 
 Auth required (cookie session). Filesystem write. Three CDN candidates tried per track (gambleCDNs setting).
 
-**Retry-folder context (#94).** "Retry failed tracks" re-downloads individual tracks via `POST /api/download` (the single-track route, not `/api/download/album`). To keep retried tracks in their original folder rather than the download root, the renderer forwards the parent item's context: album items send `albumId`, playlist items send `playlistName`. On an album retry the server rebuilds the album's folder/tag context from `albumId` via `fetchAlbumContext` → `buildAlbumContext` (the **same** builder `handleDownloadAlbum` uses — single source of truth, so the retry can't drift to a different folder), sets `isSingle: false`, and reuses the track's `disk_number` for multi-disc CD folders. Standalone singles send neither and are filed in the artist root as before.
+**Shared album context.** Folder structure (incl. `CD1`/`CD2` subfolders), folder/file naming, and album-level tags all derive from an album *context* object built by `buildAlbumContext` in `electron/services/albumContext.ts` — the **single source of truth**, used by every download path so they produce identical results:
+- **Album-page download** (`handleDownloadAlbum`) builds it from `/album/{id}` + the tracklist.
+- **Retry failed tracks (#94)** re-downloads individual tracks via `POST /api/download` (single-track route). The renderer forwards the parent item's context — album items send `albumId`, playlist items send `playlistName`. On an album retry the server rebuilds the context from `albumId` via `fetchAlbumContext` → `buildAlbumContext`, sets `isSingle: false`, and reuses the track's `disk_number` for CD folders. Standalone singles send neither and are filed in the artist root.
+- **Artist sync (#95)** builds the same context per album (one paced `/album/{id}` lookup) and passes it plus each track's `disk_number`, so synced multi-disc albums get CD subfolders and synced downloads match album-page downloads for naming, RELEASETYPE tag, and `%upc%`/`%label%` templates. Previously sync passed neither, so the CD-folder rule (`createCDFolder && discNumber && totalDiscs > 1`) never fired.
 
 ### C. Logging in with email + password
 
