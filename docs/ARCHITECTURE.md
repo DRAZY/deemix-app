@@ -188,6 +188,8 @@ Renderer polls /api/queue/status, updates DownloadStore, re-renders queue UI
 
 Auth required (cookie session). Filesystem write. Three CDN candidates tried per track (gambleCDNs setting).
 
+**Retry-folder context (#94).** "Retry failed tracks" re-downloads individual tracks via `POST /api/download` (the single-track route, not `/api/download/album`). To keep retried tracks in their original folder rather than the download root, the renderer forwards the parent item's context: album items send `albumId`, playlist items send `playlistName`. On an album retry the server rebuilds the album's folder/tag context from `albumId` via `fetchAlbumContext` → `buildAlbumContext` (the **same** builder `handleDownloadAlbum` uses — single source of truth, so the retry can't drift to a different folder), sets `isSingle: false`, and reuses the track's `disk_number` for multi-disc CD folders. Standalone singles send neither and are filed in the artist root as before.
+
 ### C. Logging in with email + password
 
 ```

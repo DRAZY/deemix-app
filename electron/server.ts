@@ -1468,6 +1468,10 @@ export class DeemixServer extends EventEmitter {
     // a standalone single. This enables playlist folder creation and playlist
     // track naming templates from the user's settings.
     const playlistName = typeof body.playlistName === 'string' ? body.playlistName.trim() : ''
+    // Optional album context — the "Retry failed tracks" path for an album (#94)
+    // sends the parent albumId so the retried track returns to its original album
+    // folder instead of the root download folder. Playlist context takes precedence.
+    const retryAlbumId = validateNumericId(body.albumId)
 
     if (trackId === null) {
       this.sendJSON(res, { error: 'Valid Track ID is required' }, 400)
@@ -1481,7 +1485,20 @@ export class DeemixServer extends EventEmitter {
     }
 
     const isPlaylistTrack = !!playlistName
-    console.log(`[Server] Download request - trackId: ${trackId}, quality: ${this.settings.quality}, path: ${this.settings.downloadPath}${isPlaylistTrack ? `, playlist: "${playlistName}"` : ''}`)
+    // Rebuild album context for an album-track retry (skipped for playlist tracks,
+    // which use playlist folders). Null-safe: an unavailable album falls back to
+    // standalone-single behavior. albumTrackDisc preserves CD folders on multi-disc
+    // albums by reusing the track's disk_number from the album's track list.
+    let albumCtx: any = null
+    let albumTrackDisc: number | undefined
+    if (!isPlaylistTrack && retryAlbumId !== null) {
+      const fetched = await this.fetchAlbumContext(retryAlbumId)
+      if (fetched) {
+        albumCtx = fetched.context
+        albumTrackDisc = fetched.tracks.find((t: any) => t.id === trackId)?.disk_number
+      }
+    }
+    console.log(`[Server] Download request - trackId: ${trackId}, quality: ${this.settings.quality}, path: ${this.settings.downloadPath}${isPlaylistTrack ? `, playlist: "${playlistName}"` : ''}${albumCtx ? `, album-retry: "${albumCtx.albumTitle}"` : ''}`)
     console.log(`[Server] Settings - embedArtwork: ${this.settings.embedArtwork}, saveArtwork: ${this.settings.saveArtwork}`)
     console.log(`[Server] Settings - tags.cover: ${this.settings.tags?.cover}, tags.title: ${this.settings.tags?.title}`)
     console.log(`[Server] Settings - albumCovers.embeddedArtworkSize: ${this.settings.albumCovers?.embeddedArtworkSize}`)
@@ -1502,7 +1519,9 @@ export class DeemixServer extends EventEmitter {
         embedArtwork: this.settings.embedArtwork,
         saveLyrics: this.settings.saveLyrics,
         syncedLyrics: this.settings.syncedLyrics,
-        isSingle: !isPlaylistTrack,
+        // An album retry is NOT a single — clear isSingle so the album folder and
+        // album track template apply, matching the original album download (#94).
+        isSingle: !isPlaylistTrack && !albumCtx,
         isFromPlaylist: isPlaylistTrack || undefined,
         playlistName: playlistName || undefined,
         savePlaylistAsCompilation: isPlaylistTrack ? this.settings.savePlaylistAsCompilation : undefined,
@@ -1538,6 +1557,10 @@ export class DeemixServer extends EventEmitter {
           keepVariousArtists: this.settings.keepVariousArtists,
           removeArtistCombinations: this.settings.removeArtistCombinations
         },
+        // Album-retry context (#94): present only when albumId was supplied and the
+        // album resolved. discNumber keeps multi-disc albums in their CD subfolder.
+        albumContext: albumCtx || undefined,
+        discNumber: albumCtx ? albumTrackDisc : undefined,
         skipDuplicateTracks: this.settings.skipDuplicateTracks,
         createErrorLog: this.settings.createErrorLog,
         overwriteMode: this.settings.overwriteFiles
@@ -1607,36 +1630,10 @@ export class DeemixServer extends EventEmitter {
 
       const downloadIds: string[] = []
 
-      // Calculate total number of discs in the album
-      const totalDiscs = Math.max(...albumTracks.data.map((t: any) => t.disk_number || 1), 1)
-
-      // Determine explicit status by checking actual track data
-      // Album-level explicit_content_lyrics is unreliable (code 4 = "partial" for both
-      // truly explicit albums and non-explicit albums with explicit cover art).
-      // Instead, check if ANY track is explicitly flagged (code 1).
-      const hasExplicitTracks = albumTracks.data.some((t: any) => t.explicit_content_lyrics === 1)
-
-      // Build album context for consistent folder naming
-      // For compilations (record_type "compile"), Deezer typically sets the album artist
-      // to "Various Artists" — this ensures all tracks land in the same folder
-      const albumContext = {
-        albumId: albumId,
-        albumTitle: albumInfo.title || 'Unknown Album',
-        albumArtist: albumInfo.artist?.name || 'Unknown Artist',
-        artistPicture: albumInfo.artist?.picture_xl || albumInfo.artist?.picture_big || albumInfo.artist?.picture_medium || undefined,
-        totalDiscs: totalDiscs,
-        explicitLyrics: hasExplicitTracks,
-        isCompilation: albumInfo.record_type === 'compile',
-        // Full record_type (album/single/ep/compile) for the RELEASETYPE tag (#82)
-        recordType: typeof albumInfo.record_type === 'string' ? albumInfo.record_type : '',
-        // v1.8.1: surface UPC so %barcode% / %upc% folder + filename templates
-        // have a value. Without this the downloader's cascade falls through to
-        // trackInfo.ALB_UPC, which is undefined on private-API track fetches.
-        upc: typeof albumInfo.upc === 'string' ? albumInfo.upc : '',
-        // v1.8.2: surface label for the same reason — the BARCODE/LABEL embedded
-        // tags read these resolved values; trackInfo.LABEL_NAME is empty here too.
-        label: typeof albumInfo.label === 'string' ? albumInfo.label : ''
-      }
+      // Build album context for consistent folder naming. Single source of truth —
+      // the per-track "Retry failed tracks" path (handleDownload, #94) rebuilds the
+      // same context via fetchAlbumContext so retried tracks land in the same folder.
+      const albumContext = this.buildAlbumContext(albumId, albumInfo, albumTracks.data)
 
       for (const track of albumTracks.data) {
         const downloadId = await downloader.download({
@@ -1695,6 +1692,62 @@ export class DeemixServer extends EventEmitter {
       this.sendJSON(res, { ids: downloadIds, count: downloadIds.length })
     } catch (error: any) {
       this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  // Build the album-level context that drives consistent folder/tag naming.
+  // Single source of truth shared by full-album downloads (handleDownloadAlbum)
+  // and the per-track "Retry failed tracks" path (handleDownload, #94). Keep the
+  // shape identical in both callers — divergence would send retried tracks to a
+  // different folder than the original download.
+  private buildAlbumContext(albumId: number, albumInfo: any, tracksData: any[]) {
+    // Total discs — drives CD folder creation for multi-disc albums.
+    const totalDiscs = Math.max(...tracksData.map((t: any) => t.disk_number || 1), 1)
+    // Explicit status from actual track data. Album-level explicit_content_lyrics
+    // is unreliable (code 4 = "partial"); flag the album explicit if ANY track is
+    // code 1.
+    const hasExplicitTracks = tracksData.some((t: any) => t.explicit_content_lyrics === 1)
+    // For compilations (record_type "compile"), Deezer sets the album artist to
+    // "Various Artists" — this keeps all tracks in the same folder.
+    return {
+      albumId: albumId,
+      albumTitle: albumInfo.title || 'Unknown Album',
+      albumArtist: albumInfo.artist?.name || 'Unknown Artist',
+      artistPicture: albumInfo.artist?.picture_xl || albumInfo.artist?.picture_big || albumInfo.artist?.picture_medium || undefined,
+      totalDiscs: totalDiscs,
+      explicitLyrics: hasExplicitTracks,
+      isCompilation: albumInfo.record_type === 'compile',
+      // Full record_type (album/single/ep/compile) for the RELEASETYPE tag (#82)
+      recordType: typeof albumInfo.record_type === 'string' ? albumInfo.record_type : '',
+      // v1.8.1: surface UPC so %barcode% / %upc% folder + filename templates have a
+      // value (trackInfo.ALB_UPC is undefined on private-API track fetches).
+      upc: typeof albumInfo.upc === 'string' ? albumInfo.upc : '',
+      // v1.8.2: surface label for the same reason.
+      label: typeof albumInfo.label === 'string' ? albumInfo.label : ''
+    }
+  }
+
+  // Fetch an album and build its context + track list for the per-track retry
+  // path (#94). Returns null when the album can't be fetched so the caller falls
+  // back to standalone-single behavior rather than failing the retry.
+  private async fetchAlbumContext(albumId: number): Promise<{ context: any; tracks: any[] } | null> {
+    try {
+      const albumInfo = await this.deezerPublicAPI(`/album/${albumId}`)
+      if (!albumInfo || albumInfo.error) return null
+      let tracks: any[] = []
+      let index = 0
+      const batchSize = 100
+      while (index < 10000) {
+        const page = await this.deezerPublicAPI(`/album/${albumId}/tracks?limit=${batchSize}&index=${index}`)
+        if (!page.data || page.data.length === 0) break
+        tracks = [...tracks, ...page.data]
+        if (!page.next) break
+        index += batchSize
+      }
+      if (tracks.length === 0) return null
+      return { context: this.buildAlbumContext(albumId, albumInfo, tracks), tracks }
+    } catch {
+      return null
     }
   }
 

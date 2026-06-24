@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.24] — 2026-06-24
+
+### Fixed
+
+- **"Retry failed tracks" sent the retried tracks to the root download folder instead of the original album/playlist folder (#94).** The retry posted only the bare track ID, with no album/playlist context, so the server treated each retried track as a standalone single and filed it under the download root — leaving users to hunt down the files and move them back by hand. Retry now forwards the parent item's context: album items send the `albumId` (the server rebuilds the authoritative album context — same folder, tags, disc layout as the original download), and playlist items send the `playlistName` (the playlist folder is recreated). The album-context builder is now a single shared source of truth in `electron/server.ts`, so a retry can't drift to a different folder than the original. Standalone single downloads are unaffected (they have no parent folder). Verified end-to-end against the live gateway: a retried album track lands in `…/Artist/Artist - Album/`, a context-less single stays in the artist root.
+
 ## [1.10.23] — 2026-06-22
 
 ### Fixed

@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.24',
+    date: '2026-06-24',
+    items: [
+      'Fixed "Retry failed tracks" putting the retried files in your main download folder instead of back in the album or playlist folder they belong to (#94). The retry used to forget which album or playlist a track came from, so the files landed loose in the download root and you had to find and move them yourself. Now a retried track goes back into its original album folder (with the same naming, tags, and disc layout as the rest of the album) or its playlist folder. Downloading a standalone single is unchanged.'
+    ]
+  },
+  {
     version: '1.10.23',
     date: '2026-06-22',
     items: [

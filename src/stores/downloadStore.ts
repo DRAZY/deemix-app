@@ -1221,6 +1221,19 @@ export const useDownloadStore = defineStore('downloads', () => {
 
     await syncSettingsToServer()
 
+    // Preserve the parent item's album/playlist context so retried tracks return to
+    // their ORIGINAL folder instead of the root download folder (#94). Without this
+    // the server treats the retried track as a standalone single. Album items send
+    // albumId (server rebuilds the authoritative album context); playlist items send
+    // playlistName (server recreates the playlist folder).
+    const retryContext: Record<string, unknown> = {}
+    if (item.type === 'album' && item.album?.id) {
+      retryContext.albumId = item.album.id
+    } else if (item.type === 'playlist') {
+      const playlistName = item.batchConfig?.playlistName || item.playlist?.title
+      if (playlistName) retryContext.playlistName = playlistName
+    }
+
     // Queue each failed track on the server and collect the new download IDs.
     // These IDs are appended to the parent item's trackIds so the polling
     // system tracks them under the original album/playlist — no separate entries.
@@ -1232,7 +1245,7 @@ export const useDownloadStore = defineStore('downloads', () => {
         const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/download`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ trackId })
+          body: JSON.stringify({ trackId, ...retryContext })
         })
         if (!response.ok) continue
         const data = await response.json()
