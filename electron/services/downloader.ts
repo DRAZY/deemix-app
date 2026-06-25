@@ -2277,8 +2277,13 @@ export class Downloader extends EventEmitter {
         tags.artist = processedArtist
       }
 
-      if (tagSettings.album && trackInfo.ALB_TITLE) {
-        tags.album = trackInfo.ALB_TITLE
+      if (tagSettings.album) {
+        // Source the album tag from the SAME place as the folder name (albumContext
+        // → private track field), mirroring the albumArtist tag below, so the tag
+        // never disagrees with the folder — e.g. a relinked single whose track's
+        // ALB_TITLE points to a different release than the one being downloaded (#96).
+        const albumTag = options.albumContext?.albumTitle || trackInfo.ALB_TITLE
+        if (albumTag) tags.album = albumTag
       }
 
       if (tagSettings.albumArtist) {
@@ -2711,8 +2716,12 @@ export class Downloader extends EventEmitter {
         comments.push(`ARTIST=${processedArtist}`)
       }
 
-      if (tagSettings.album && trackInfo.ALB_TITLE) {
-        comments.push(`ALBUM=${trackInfo.ALB_TITLE}`)
+      if (tagSettings.album) {
+        // Mirror the folder naming's album source (albumContext → private track
+        // field) so the ALBUM tag matches the folder for relinked/duplicate
+        // releases (#96), consistent with the MP3 path and the ALBUMARTIST tag.
+        const albumTag = options.albumContext?.albumTitle || trackInfo.ALB_TITLE
+        if (albumTag) comments.push(`ALBUM=${albumTag}`)
       }
 
       if (tagSettings.albumArtist) {

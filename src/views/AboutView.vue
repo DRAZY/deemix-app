@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.26',
+    date: '2026-06-25',
+    items: [
+      'Fixed the album tag sometimes not matching the folder name during sync (#96). The folder is named after the release being downloaded, but the album tag was taken only from the track\'s own metadata — so for tracks that Deezer relinks to a different release, the folder and the tag could name different albums. The album tag now uses the same source as the folder, so they always agree (for both MP3 and FLAC).'
+    ]
+  },
+  {
     version: '1.10.25',
     date: '2026-06-24',
     items: [

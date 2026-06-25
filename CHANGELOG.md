@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.26] — 2026-06-25
+
+### Fixed
+
+- **Album tag could disagree with the folder name during sync (#96).** The folder name is sourced from the album context (the release being downloaded), but the written ALBUM tag was sourced only from the track's own metadata (`ALB_TITLE`). For most releases these are identical, but when a track is relinked to a different release (e.g. a single whose audio resolves to the album version) the folder and the tag could name different albums. The ALBUM tag now uses the same source as the folder name (`albumContext` → track metadata), mirroring how the ALBUMARTIST tag already works — so the tag and folder always agree. Applied to both the MP3 and FLAC tag writers (the FLAC refresh path already did this). Note: this aligns the tag with the folder; it does not de-duplicate separate single-release folders, which is tracked separately.
+
 ## [1.10.25] — 2026-06-24
 
 ### Fixed
