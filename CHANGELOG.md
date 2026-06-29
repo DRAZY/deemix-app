@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.27] — 2026-06-29
+
+### Fixed
+
+- **Download concurrency could briefly run at the default during startup syncs (#97).** The download concurrency limit is global and shared across all syncs and manual downloads, so running several syncs at once can never exceed the configured number (verified directly: with up to 20 sync workers competing at a setting of 5, the peak simultaneous downloads stayed at exactly 5). The one edge that existed: the downloader kept its built-in default (5 concurrent, pacing off) until the app's window pushed settings to it, so a sync triggered on launch could race that push and briefly run at the default instead of a value you had lowered. The app now applies your saved concurrency and pacing the moment the backend starts, before any sync can run, so a launch sync always uses your setting. No effect on the normal path.
+
 ## [1.10.26] — 2026-06-25
 
 ### Fixed

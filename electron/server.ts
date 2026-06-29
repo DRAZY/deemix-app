@@ -3827,6 +3827,18 @@ export class DeemixServer extends EventEmitter {
 
   updateSettings(settings: Partial<ServerSettings>): void {
     this.settings = { ...this.settings, ...settings }
+    // Keep the downloader's global concurrency gate and pacing in sync with the
+    // settings (issue #97). The downloader otherwise stays at its constructor
+    // default (5 / off) until the renderer's first /api/settings push, so a
+    // launch-triggered sync that races startup could briefly run at the default
+    // instead of a user-lowered value. Applying here closes that window when the
+    // persisted settings are loaded at boot.
+    if (settings.maxConcurrentDownloads !== undefined) {
+      downloader.setMaxConcurrent(this.settings.maxConcurrentDownloads)
+    }
+    if (settings.downloadPacing !== undefined) {
+      downloader.setPacing(this.settings.downloadPacing)
+    }
   }
 
   getSettings(): ServerSettings {

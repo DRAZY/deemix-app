@@ -340,6 +340,27 @@ async function initServer() {
       }
     }
 
+    // Apply persisted download concurrency + pacing to the server (and through
+    // it, the downloader) BEFORE sync engines initialize (issue #97). The server
+    // otherwise relies entirely on the renderer's first /api/settings push, so a
+    // launch-triggered sync could race startup and run at the constructor default
+    // (5 / off) instead of a user-lowered value. The renderer's later push still
+    // confirms the full settings; this just closes the boot window.
+    try {
+      const settingsPath = getSettingsPath()
+      const persisted = JSON.parse(await readFile(settingsPath, 'utf-8'))
+      const applied: { maxConcurrentDownloads?: number; downloadPacing?: 'off' | 'balanced' | 'cautious' } = {}
+      const mc = parseInt(persisted?.maxConcurrentDownloads, 10)
+      if (!isNaN(mc) && mc >= 1 && mc <= 50) applied.maxConcurrentDownloads = mc
+      if (['off', 'balanced', 'cautious'].includes(persisted?.downloadPacing)) applied.downloadPacing = persisted.downloadPacing
+      if (Object.keys(applied).length > 0) {
+        server!.updateSettings(applied)
+        console.log('[Main] Applied persisted download settings at boot:', applied)
+      }
+    } catch (e: any) {
+      if (e.code !== 'ENOENT') console.warn('[Main] Failed to apply persisted download settings at boot:', e.message)
+    }
+
     // Provide current download settings to the sync engine so synced playlists
     // use the same quality, folder structure, templates, and metadata settings
     playlistSync.setSettingsProvider(() => {

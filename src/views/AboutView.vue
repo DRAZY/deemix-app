@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.27',
+    date: '2026-06-29',
+    items: [
+      'Confirmed and hardened download concurrency during syncs (#97). The concurrency limit is shared across everything, so running several syncs at once never goes over the number you set (verified directly). The one edge case: a sync that started the moment you opened the app could briefly use the built-in default before your saved setting was applied. Your concurrency and pacing settings now take effect the instant the app starts, before any sync runs.'
+    ]
+  },
+  {
     version: '1.10.26',
     date: '2026-06-25',
     items: [
