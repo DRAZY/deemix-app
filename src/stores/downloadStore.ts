@@ -86,6 +86,11 @@ export const useDownloadStore = defineStore('downloads', () => {
   // Queue pause state
   const isPaused = ref(false)
 
+  // Ids of downloads that were interrupted by the app closing and flagged on the
+  // most recent startup (#98). Captured so auto-resume only touches this-session
+  // interruptions, never a user's genuine prior failures.
+  const interruptedDownloadIds = ref<string[]>([])
+
   // ============================================
   // DUPLICATE DETECTION HELPERS
   // These check if items are already in the active queue
@@ -269,14 +274,21 @@ export const useDownloadStore = defineStore('downloads', () => {
         // are skipped — retrying one routes through addAlbumDownload WITHOUT the
         // refresh flag, which would re-download instead of re-tag.
         let interrupted = 0
+        const interruptedIds: string[] = []
         for (const d of downloads.value) {
           if ((d.status === 'downloading' || d.status === 'pending') && !d.refresh) {
             d.status = 'error'
             d.error = 'Interrupted — the app closed before this finished. Click retry to resume (already-downloaded tracks are skipped).'
             d.speed = 0
             interrupted++
+            interruptedIds.push(d.id)
           }
         }
+        // Remember these for opt-in auto-resume (#98). Auto-resume runs later,
+        // after auth is restored (see resumeInterruptedDownloads), so a resume
+        // can actually reach Deezer. If the setting is off they just stay as
+        // one-click-retryable, exactly as before.
+        interruptedDownloadIds.value = interruptedIds
         // Rebuild O(1) lookup Maps after loading
         rebuildLookupMaps()
         // Persist the corrected statuses so a second restart stays consistent.
@@ -1396,6 +1408,34 @@ export const useDownloadStore = defineStore('downloads', () => {
     )
   }
 
+  // Opt-in auto-resume of downloads interrupted by the app closing (#98).
+  // Called from App.vue AFTER auth is restored — a resume re-queues through the
+  // normal add* paths (server skips already-downloaded tracks), which actually
+  // hit Deezer, so it must not run before login. Reuses the battle-tested
+  // retryDownload path; only touches items flagged interrupted on this startup.
+  async function resumeInterruptedDownloads() {
+    const settingsStore = useSettingsStore()
+    if (!settingsStore.settings.resumeInterruptedOnStartup) return
+    const ids = interruptedDownloadIds.value
+    if (ids.length === 0) return
+    // Clear first so this can never double-fire within a session.
+    interruptedDownloadIds.value = []
+    const toastStore = useToastStore()
+    toastStore.info(`Resuming ${ids.length} interrupted download${ids.length === 1 ? '' : 's'}…`)
+    console.log(`[DownloadStore] Auto-resuming ${ids.length} interrupted download(s) on startup`)
+    // Sequential: retryDownload re-adds through add* paths; serialising avoids a
+    // burst of list-build requests, and the global concurrency gate + pacing
+    // (#97, applied at boot) still bound the actual downloads regardless.
+    for (const id of ids) {
+      // Only resume items still in the interrupted error state (user may have
+      // already retried or removed one before auth finished).
+      const item = downloads.value.find(d => d.id === id)
+      if (item && item.status === 'error') {
+        await retryDownload(id)
+      }
+    }
+  }
+
   return {
     downloads,
     activeDownloads,
@@ -1424,6 +1464,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     cancelDownload,
     deleteDownload,
     retryDownload,
+    resumeInterruptedDownloads,
     clearCompleted,
     clearAll,
     reorderDownload,

@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.10.27-blue" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.10.28-blue" />
   <img alt="Electron" src="https://img.shields.io/badge/Electron-39-47848F?logo=electron&logoColor=white" />
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
@@ -43,6 +43,7 @@
 - **Batch Favorites** -- Download all your favorite tracks, albums, or playlists with one click
 - **Three-Tier Track Resolution** -- Automatically finds alternative versions (FALLBACK, ISRC) when a track is unavailable — matches old Deemix behavior
 - **Download Queue** -- Pause, resume, reorder (drag-and-drop), cancel, and retry downloads (retries stay grouped under the parent album/playlist)
+- **Resume Interrupted Downloads on Startup** -- Optional, off by default: if a download was still going when you last closed the app, it continues automatically the next time you open it (already-downloaded tracks are skipped, so it picks up where it left off). Runs only once you're logged in (#98)
 - **Download Next** -- Move pending items to the front of the download queue so they download first
 - **Duplicate Album Detection** -- Warns when an album already exists on disk before downloading
 - **Skip Duplicate Tracks (by ISRC)** -- Optional, off by default: before downloading, skip any recording you already have in your library — matched by ISRC, so it catches the same song appearing on a different album, single, or compilation. Tracks without an ISRC are always downloaded. Includes a one-click "Index existing library" backfill so it works on a pre-existing collection (v1.10.21+, #91/#92)

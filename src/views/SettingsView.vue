@@ -761,6 +761,20 @@ async function reindexLibrary() {
         </div>
       </div>
 
+      <!-- Resume interrupted downloads on startup (#98) -->
+      <div>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            v-model="settingsStore.settings.resumeInterruptedOnStartup"
+            @change="saveNow"
+            class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+          />
+          <span class="text-sm font-medium">{{ t('settings.resumeInterruptedOnStartup') }}</span>
+        </label>
+        <p class="text-xs text-foreground-muted mt-1 ml-7">{{ t('settings.resumeInterruptedOnStartupHelp') }}</p>
+      </div>
+
       <!-- Download Options Grid -->
       <div class="grid grid-cols-3 gap-x-6 gap-y-3 pt-2">
         <!-- Column 1 -->

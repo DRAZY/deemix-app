@@ -73,6 +73,8 @@ export interface Settings {
   overwriteFiles: OverwriteMode
   // Opt-in: skip downloading a recording (by ISRC) already in the library (#91/#92)
   skipDuplicateTracks: boolean
+  // Opt-in: automatically resume downloads interrupted by the app closing, on next launch (#98)
+  resumeInterruptedOnStartup: boolean
   bitrateFallback: boolean
   searchFallback: boolean
   isrcFallback: boolean
@@ -144,6 +146,7 @@ export const defaultSettings: Settings = {
   // Download behavior settings
   overwriteFiles: 'no',
   skipDuplicateTracks: false,
+  resumeInterruptedOnStartup: false,
   bitrateFallback: true,
   searchFallback: true,
   isrcFallback: false,

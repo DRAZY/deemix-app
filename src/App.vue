@@ -112,6 +112,18 @@ onMounted(async () => {
     // App continues to load - user can try logging in manually
   }
 
+  // Opt-in: auto-resume downloads interrupted by the app closing (#98). Runs
+  // only once auth is restored, since a resume re-queues real downloads that
+  // hit Deezer. No-op unless the setting is on and something was interrupted.
+  // If auth failed/timed out, interrupted items stay one-click-retryable.
+  if (authStore.isLoggedIn) {
+    try {
+      await downloadStore.resumeInterruptedDownloads()
+    } catch (e: any) {
+      console.warn('[App] Failed to auto-resume interrupted downloads:', e.message)
+    }
+  }
+
   // Load favorites (will work even without auth - just shows empty state)
   loadingMessage.value = 'Loading favorites...'
   try {

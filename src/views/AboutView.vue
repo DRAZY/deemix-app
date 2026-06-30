@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.28',
+    date: '2026-06-30',
+    items: [
+      'Added an option to resume interrupted downloads on startup (#98). If a download was still going when you closed the app, it can now continue automatically the next time you open it, instead of waiting for you to click retry. Find it under Settings → Downloads → "Resume interrupted downloads on startup". It only runs once you are logged in, already-downloaded tracks are skipped so it picks up where it left off, and it respects your concurrency and pacing limits. Off by default.'
+    ]
+  },
+  {
     version: '1.10.27',
     date: '2026-06-29',
     items: [

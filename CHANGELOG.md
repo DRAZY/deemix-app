@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.28] — 2026-06-30
+
+### Added
+
+- **Optionally resume interrupted downloads on startup (#98).** Since v1.10.6 a download that was still in progress when the app closed is flagged on the next launch as retryable, so you can click Retry to continue it (already-downloaded tracks are skipped). This adds a setting — **Settings → Downloads → "Resume interrupted downloads on startup"**, off by default — that does that automatically: when enabled, any download interrupted by the app closing is continued for you the next time you open the app. It runs only after you're logged in (a resume re-queues real downloads that hit Deezer), reuses the existing retry path so already-downloaded tracks are skipped, and respects your concurrency and pacing limits. Off by default, so nothing changes unless you turn it on.
+
 ## [1.10.27] — 2026-06-29
 
 ### Fixed

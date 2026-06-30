@@ -362,6 +362,8 @@
     },
     "skipDuplicateTracks": "Skip tracks already in my library",
     "skipDuplicateTracksHelp": "Before downloading, skip any recording you already have (matched by ISRC), even if it's from a different album or playlist. Tracks with no ISRC are always downloaded. Off by default.",
+    "resumeInterruptedOnStartup": "Resume interrupted downloads on startup",
+    "resumeInterruptedOnStartupHelp": "If a download was still in progress when you last closed the app, automatically continue it the next time you open the app. Already-downloaded tracks are skipped, so it picks up where it left off. Only runs once you're logged in. Off by default.",
     "reindexLibrary": "Index existing library",
     "reindexingLibrary": "Indexing…",
     "reindexDone": "Indexed {indexed} of {total} tracks ({noIsrc} without ISRC skipped).",
