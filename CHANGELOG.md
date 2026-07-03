@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.29] — 2026-07-03
+
+### Fixed
+
+- **Album/playlist download progress bar now matches the track count.** The percentage next to an album download was a byte-weighted average across every track in flight, while the "X/Y" count next to it only counts tracks that have fully finished. Because the concurrency limit lets several tracks download at once, the byte progress ran ahead of the finished count, so an album could show "1/10" tracks alongside a 59% bar, which reads as contradictory. The bar is now the fraction of tracks finished, measured against the album's original total, so it always agrees with the count you see (1/10 shows as 10%). This also corrects the bar for retried albums, which previously measured only against the retried subset. Single-track downloads still show smooth byte-level progress, and the detailed bytes line is unchanged.
+
 ## [1.10.28] — 2026-06-30
 
 ### Added

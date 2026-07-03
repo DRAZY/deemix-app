@@ -995,7 +995,6 @@ export const useDownloadStore = defineStore('downloads', () => {
     let changed = false
     let completedCount = 0
     let errorCount = 0
-    let totalProgress = 0
     const failedTracks: FailedTrack[] = []
     let albumFolderPath: string | null = null
     let playlistFolderPath: string | null = null
@@ -1035,10 +1034,8 @@ export const useDownloadStore = defineStore('downloads', () => {
 
         if (isTrackDone) {
           completedCount++
-          totalProgress += 100
         } else if (serverItem.status === 'error') {
           errorCount++
-          totalProgress += 100
           failedTracks.push({
             id: trackId,
             trackId: serverItem.trackId || trackId,
@@ -1048,13 +1045,20 @@ export const useDownloadStore = defineStore('downloads', () => {
             error: serverItem.error || 'Download failed',
             errorDetails: serverItem.errorDetails
           })
-        } else {
-          totalProgress += serverItem.progress || 0
         }
       }
     }
 
-    const newProgress = Math.round(totalProgress / trackIds.length)
+    // Progress bar = fraction of tracks finished, normalized over the ORIGINAL
+    // total (so it agrees with the "X/Y" track count shown next to it). We
+    // deliberately do NOT byte-weight in-flight tracks: with the concurrency
+    // gate running several tracks at once, byte progress races ahead of the
+    // completed count and the bar would read e.g. 59% next to "1/10" (issue:
+    // progress bar mismatch). previouslyCompletedTracks keeps retried albums
+    // (trackIds shrinks to just the retry set) consistent with their fraction.
+    const originalTotal = item.originalTotalTracks || item.totalTracks || trackIds.length || 1
+    const doneCount = (item.previouslyCompletedTracks || 0) + completedCount
+    const newProgress = Math.min(100, Math.round((doneCount / originalTotal) * 100))
     if (item.progress !== newProgress) {
       item.progress = newProgress
       changed = true

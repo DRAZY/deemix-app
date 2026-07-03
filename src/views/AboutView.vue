@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.29',
+    date: '2026-07-03',
+    items: [
+      'Fixed the album progress bar so the percentage matches the track count. An album could show "1/10" tracks next to a 59% bar at the same time, which looked contradictory. That happened because the percentage was based on how many bytes had downloaded across every track running at once, while the count only reflects tracks that have fully finished, and the concurrency limit lets several tracks download in parallel. The bar now simply tracks the fraction of tracks finished, so 1 of 10 shows as 10%. Single-track downloads still show smooth progress as before.'
+    ]
+  },
+  {
     version: '1.10.28',
     date: '2026-06-30',
     items: [
