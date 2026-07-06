@@ -323,6 +323,7 @@ export const useDownloadStore = defineStore('downloads', () => {
       type: item.type,
       quality: item.quality,
       actualFormat: item.actualFormat,
+      substituted: item.substituted,
       path: item.path,
       status: item.status === 'completed' ? 'completed' : 'error',
       error: item.error,
@@ -986,6 +987,11 @@ export const useDownloadStore = defineStore('downloads', () => {
       item.actualFormat = serverItem.actualFormat
       changed = true
     }
+    // Capture substitution flag (exact track unavailable; alternate release downloaded)
+    if (serverItem.substituted && !item.substituted) {
+      item.substituted = true
+      changed = true
+    }
 
     return changed
   }
@@ -999,6 +1005,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     let albumFolderPath: string | null = null
     let playlistFolderPath: string | null = null
     let actualFormat: string | null = null
+    let anySubstituted = false
 
     for (const trackId of trackIds) {
       const serverItem = queueMap.get(trackId)
@@ -1023,6 +1030,10 @@ export const useDownloadStore = defineStore('downloads', () => {
         // Capture actual format from first track that has it
         if (!actualFormat && serverItem.actualFormat) {
           actualFormat = serverItem.actualFormat
+        }
+        // Flag the whole album/playlist row if any track was an alternate release
+        if (serverItem.substituted) {
+          anySubstituted = true
         }
 
         // Count tracks as "complete" if they've finished downloading
@@ -1086,6 +1097,12 @@ export const useDownloadStore = defineStore('downloads', () => {
     // Update actual format (may differ from requested due to fallback)
     if (actualFormat && item.actualFormat !== actualFormat) {
       item.actualFormat = actualFormat
+      changed = true
+    }
+
+    // Surface if any track fell back to an alternate release
+    if (anySubstituted && !item.substituted) {
+      item.substituted = true
       changed = true
     }
 

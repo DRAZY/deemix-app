@@ -110,6 +110,7 @@ export interface DownloadItem {
   addedAt: string
   quality?: '128' | '320' | 'flac'  // Quality at time of download (requested)
   actualFormat?: string             // Actual downloaded format (may differ due to fallback)
+  substituted?: boolean             // Exact track was unavailable; an alternate release (possibly a different master) was downloaded
   // For album/playlist downloads
   totalTracks?: number
   completedTracks?: number
@@ -142,6 +143,7 @@ export interface DownloadHistoryEntry {
   type: 'track' | 'album' | 'playlist'
   quality?: string
   actualFormat?: string
+  substituted?: boolean
   path?: string
   status: 'completed' | 'error'
   error?: string

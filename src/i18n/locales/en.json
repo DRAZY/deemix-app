@@ -124,6 +124,10 @@
   },
   "downloads": {
     "title": "Downloads",
+    "downgraded": "Lower bitrate",
+    "downgradedTip": "You requested {requested} but Deezer only had {actual} for this track, so it was downloaded at the lower bitrate. This is a catalog limit, not re-encoding.",
+    "substituted": "Alternate version",
+    "substitutedTip": "The exact track was not available (usually region or rights restricted), so an ISRC-matched version from another release was downloaded. The audio is an exact copy of that release but may be a different master, so it can sound slightly different from the one you picked.",
     "active": "Active",
     "completed": "Completed",
     "failed": "Failed",

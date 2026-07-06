@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.30] — 2026-07-06
+
+### Added
+
+- **Downloads now surface quality fallbacks and track substitutions (follow-up to #99).** Two things the downloader already did quietly are now visible in the Downloads list and history. When a track is delivered at a lower bitrate than requested (you asked for FLAC or 320 kbps but Deezer only had a lower quality for that specific track), the row shows a **Lower bitrate** badge whose tooltip names the requested and actual format and makes clear the audio was served at the catalog's available quality, not re-encoded. When the exact track is unavailable for your account and the downloader resolves an ISRC/FALLBACK-matched copy from a different release, the row shows an **Alternate version** badge whose tooltip explains the audio is an exact copy of that release but may be a different master, so it can sound slightly different from the track you picked. This is purely a surfacing change: the download path, the bit-exact copy of Deezer's source, and the existing fallback behavior are all unchanged. It exists so a mismatch between what you hear and what you expected has a visible, checkable explanation instead of being silent.
+
 ## [1.10.29] — 2026-07-03
 
 ### Fixed

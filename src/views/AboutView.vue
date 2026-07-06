@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.30',
+    date: '2026-07-06',
+    items: [
+      'Downloads now show a small badge when a track did not arrive exactly as requested, so two behaviors that used to be silent are now visible. If you ask for 320 kbps or FLAC and Deezer only has a lower bitrate for that track, the download shows a "Lower bitrate" badge, so you know the file was served at what the catalog had rather than re-encoded. And when the exact track is not available for your account (usually region or rights) and the app substitutes an ISRC-matched copy from another release, it shows an "Alternate version" badge, because a different release can be a different master and sound a little different from the one you picked. Hover either badge for the details. Nothing about how audio is downloaded changed. Files are still a bit-for-bit copy of Deezer\'s source. This only makes these two existing outcomes visible instead of hidden.'
+    ]
+  },
+  {
     version: '1.10.29',
     date: '2026-07-03',
     items: [

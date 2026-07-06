@@ -184,6 +184,7 @@ export interface DownloadProgress {
   albumRootFolder?: string  // Root album folder path (excludes CD subfolders) - used for deletion
   playlistFolder?: string  // Playlist root folder path - used for deletion of entire playlist
   actualFormat?: string  // Actual downloaded format (may differ from requested due to fallback)
+  substituted?: boolean  // True when the exact track was unavailable and an ISRC/FALLBACK alternative (possibly a different master) was downloaded
   error?: string
   errorDetails?: DownloadErrorDetails  // Enhanced error information
   skippedAsDuplicate?: boolean  // Completed by being skipped as a library duplicate (by ISRC)
@@ -970,6 +971,10 @@ export class Downloader extends EventEmitter {
       // re-fetch track info so metadata, folder path, and M3U use the correct album
       if (result.resolvedTrackId && String(result.resolvedTrackId) !== String(trackInfo.SNG_ID)) {
         console.log(`[Downloader] Track resolved to alternative: ${trackInfo.SNG_ID} → ${result.resolvedTrackId} — refreshing metadata`)
+        // Flag for the UI: the exact track was unavailable, so we downloaded an
+        // ISRC/FALLBACK-matched alternative from another release. Audio is bit-exact
+        // to that source but may be a different master than the requested track.
+        progress.substituted = true
         // Preserve the original track/disc number — the resolved track may be from
         // a different album where it has a different position
         const originalTrackNumber = trackInfo.TRACK_NUMBER

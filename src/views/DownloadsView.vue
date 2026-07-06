@@ -331,6 +331,20 @@ function getQualityLabel(format?: string): string {
   }
 }
 
+// True when the delivered format is a lower bitrate than what was requested
+// (e.g. asked for MP3 320 but Deezer only had 128, or asked FLAC and got MP3).
+// Ranks accept both the requested labels ('128'|'320'|'flac') and actualFormat
+// labels ('MP3_128'|'MP3_320'|'FLAC').
+function isDowngraded(item: { quality?: string; actualFormat?: string }): boolean {
+  if (!item.actualFormat || !item.quality) return false
+  const rank: Record<string, number> = {
+    '128': 1, MP3_128: 1, '320': 2, MP3_320: 2, flac: 3, FLAC: 3
+  }
+  const req = rank[item.quality] ?? 0
+  const got = rank[item.actualFormat] ?? 0
+  return req > 0 && got > 0 && got < req
+}
+
 function getQualityColor(format?: string): string {
   if (!format) return 'bg-zinc-500/20 text-zinc-400'
   const f = format.toUpperCase()
@@ -625,6 +639,22 @@ function copyAllErrorDetails() {
                 :class="getQualityColor(getDisplayFormat(item))"
               >
                 {{ getQualityLabel(getDisplayFormat(item)) }}
+              </span>
+              <!-- Downgrade badge: delivered a lower bitrate than requested -->
+              <span
+                v-if="isDowngraded(item)"
+                v-tooltip="t('downloads.downgradedTip', { requested: getQualityLabel(item.quality), actual: getQualityLabel(item.actualFormat) })"
+                class="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-orange-500/20 text-orange-400 cursor-help"
+              >
+                {{ t('downloads.downgraded') }}
+              </span>
+              <!-- Alternate-version badge: exact track unavailable, alternate release downloaded -->
+              <span
+                v-if="item.substituted"
+                v-tooltip="t('downloads.substitutedTip')"
+                class="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/20 text-purple-400 cursor-help"
+              >
+                {{ t('downloads.substituted') }}
               </span>
               <!-- Type badge in slim mode (inline) -->
               <span
@@ -1061,6 +1091,16 @@ function copyAllErrorDetails() {
               {{ entry.artist || 'Unknown Artist' }}
               <span v-if="entry.actualFormat"> · {{ entry.actualFormat }}</span>
               <span v-if="entry.type !== 'track'"> · {{ entry.totalTracks }} tracks<span v-if="entry.failedTracks"> ({{ entry.failedTracks }} failed)</span></span>
+              <span
+                v-if="isDowngraded(entry)"
+                v-tooltip="t('downloads.downgradedTip', { requested: getQualityLabel(entry.quality), actual: getQualityLabel(entry.actualFormat) })"
+                class="ml-1.5 px-1.5 py-0.5 text-[10px] font-medium rounded bg-orange-500/20 text-orange-400 cursor-help"
+              >{{ t('downloads.downgraded') }}</span>
+              <span
+                v-if="entry.substituted"
+                v-tooltip="t('downloads.substitutedTip')"
+                class="ml-1.5 px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/20 text-purple-400 cursor-help"
+              >{{ t('downloads.substituted') }}</span>
             </p>
           </div>
           <!-- Type badge -->
