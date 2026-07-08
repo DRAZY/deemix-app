@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.31',
+    date: '2026-07-08',
+    items: [
+      'Wired up ReplayGain tag writing. The Settings toggle for "Replay Gain" existed for a long time but never actually did anything. Now, when you turn it on, the app writes a standard ReplayGain track-gain tag (an ID3 frame on MP3, a Vorbis comment on FLAC) using Deezer\'s own per-track gain value, the same way the original Deemix did it. Players that understand ReplayGain, like foobar2000, VLC, and Rockbox, use that tag to even out playback volume, so a download can sound closer to how the same track sounds inside the Deezer app instead of playing at the full, un-normalized level of the master. It is metadata only and changes nothing about the audio itself, which stays a bit-for-bit copy. It is off by default, and you can also add it to files you already downloaded from the Refresh tags option or the Retag view. Note that most DJ software does its own volume analysis and ignores this tag, so it mainly helps regular music players.'
+    ]
+  },
+  {
     version: '1.10.30',
     date: '2026-07-06',
     items: [

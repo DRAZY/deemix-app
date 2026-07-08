@@ -53,6 +53,7 @@ export interface RetagFields {
   albumBarcode?: boolean // UPC
   albumLabel?: boolean
   releaseType?: boolean  // RELEASETYPE (album/single/EP/compilation) — #82 retag backfill
+  replayGain?: boolean   // REPLAYGAIN_TRACK_GAIN from Deezer's per-track gain. Default OFF.
 }
 
 // Normalized metadata resolved from the public Deezer endpoints (or supplied
@@ -76,6 +77,7 @@ export interface ResolvedMeta {
   duration: string   // seconds (track length); written as TLEN ms (MP3) / LENGTH s (FLAC)
   explicit: boolean
   recordType: string // Deezer record_type (album/single/ep/compile) → RELEASETYPE tag (#82)
+  gain: string       // Deezer per-track gain value (e.g. "-6.3") → REPLAYGAIN_TRACK_GAIN. '' when absent.
 }
 
 export interface TagChange {
@@ -207,8 +209,24 @@ function buildMeta(track: any, album: any): ResolvedMeta {
     genre: genreNames.join('; '),
     duration: track.duration ? str(track.duration) : '',
     explicit: track.explicit_lyrics === true,
-    recordType: typeof album.record_type === 'string' ? album.record_type : ''
+    recordType: typeof album.record_type === 'string' ? album.record_type : '',
+    gain: (track.gain === null || track.gain === undefined) ? '' : String(track.gain)
   }
+}
+
+/**
+ * ReplayGain track-gain string from Deezer's per-track gain value.
+ * Formula matches original deemix exactly: -(GAIN + 18.4), 2 decimals + " dB".
+ * Returns '' when the gain is missing/unparseable so we never write a junk tag.
+ * Metadata only — a ReplayGain-aware player reads this to normalize playback
+ * loudness; it never alters the audio. Shared by the download writer and the
+ * retag/refresh writers so the value can't diverge between paths.
+ */
+export function replayGainString(gainRaw: string | number | null | undefined): string {
+  if (gainRaw === null || gainRaw === undefined || gainRaw === '') return ''
+  const g = parseFloat(String(gainRaw))
+  if (isNaN(g)) return ''
+  return `${(-(g + 18.4)).toFixed(2)} dB`
 }
 
 /**
@@ -281,6 +299,7 @@ function planFields(meta: ResolvedMeta, fields: RetagFields): { plan: PlannedFie
   add(fields.albumBarcode, 'albumBarcode', meta.upc)
   add(fields.albumLabel, 'albumLabel', meta.label)
   add(fields.releaseType, 'releaseType', mapReleaseType(meta.recordType))
+  add(fields.replayGain, 'replayGain', replayGainString(meta.gain))
   return { plan, unavailable }
 }
 
@@ -360,6 +379,17 @@ function applyMp3(filePath: string, plan: PlannedField[], dryRun: boolean): { ch
         tags.userDefinedText = udt
         break
       }
+      case 'replayGain': {
+        // REPLAYGAIN_TRACK_GAIN TXXX frame — the de-facto ReplayGain key that
+        // foobar2000/VLC/etc read to normalize playback loudness. Metadata
+        // only; audio bytes are untouched. Merge like BARCODE.
+        const prev = udt.find((e) => e.description === 'REPLAYGAIN_TRACK_GAIN')
+        record('replayGain', prev?.value ?? null, value)
+        if (prev) prev.value = value
+        else udt.push({ description: 'REPLAYGAIN_TRACK_GAIN', value })
+        tags.userDefinedText = udt
+        break
+      }
     }
   }
 
@@ -379,7 +409,7 @@ const FLAC_FIELD_TO_KEY: Record<string, string> = {
   trackNumber: 'TRACKNUMBER', trackTotal: 'TRACKTOTAL', discNumber: 'DISCNUMBER',
   isrc: 'ISRC', year: 'YEAR', date: 'DATE', bpm: 'BPM', genre: 'GENRE',
   trackLength: 'LENGTH', explicitLyrics: 'EXPLICIT',
-  albumBarcode: 'BARCODE', albumLabel: 'LABEL'
+  albumBarcode: 'BARCODE', albumLabel: 'LABEL', replayGain: 'REPLAYGAIN_TRACK_GAIN'
 }
 
 function applyFlac(filePath: string, plan: PlannedField[], dryRun: boolean): { changes: TagChange[]; unchanged: string[] } {

@@ -86,7 +86,7 @@ const BUILT_IN_PROFILES: SettingsProfile[] = [
         trackNumber: true, trackTotal: true, discNumber: true, discTotal: true,
         albumArtist: true, genre: true, year: true, date: true,
         explicitLyrics: true, isrc: true, trackLength: true, albumBarcode: true,
-        bpm: true, replayGain: true, albumLabel: true,
+        bpm: true, replayGain: false, albumLabel: true,
         unsyncLyrics: true, syncLyrics: true, copyright: true,
         composer: true, involvedPeople: true, sourceId: true, releaseType: true
       },

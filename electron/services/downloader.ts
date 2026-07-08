@@ -5,7 +5,7 @@ import * as https from 'https'
 import * as crypto from 'crypto'
 import { Blowfish } from 'egoroof-blowfish'
 import { deezerAuth } from './deezerAuth'
-import { applyMergeFromMeta, type ResolvedMeta, type RetagFields } from './retagger'
+import { applyMergeFromMeta, replayGainString, type ResolvedMeta, type RetagFields } from './retagger'
 import { libraryIndex } from './libraryIndex'
 
 export interface FolderSettings {
@@ -1416,7 +1416,8 @@ export class Downloader extends EventEmitter {
         genre,
         duration: trackInfo.DURATION ? s(trackInfo.DURATION) : '',
         explicit: trackInfo.EXPLICIT_LYRICS === true || trackInfo.EXPLICIT_LYRICS === 1,
-        recordType: s(options.albumContext?.recordType || options._resolvedAlbumRecordType || '')
+        recordType: s(options.albumContext?.recordType || options._resolvedAlbumRecordType || ''),
+        gain: trackInfo.GAIN === null || trackInfo.GAIN === undefined ? '' : s(trackInfo.GAIN)
       }
 
       // Refresh honors the user's tag selection (Settings → Metadata tags): a tag
@@ -1436,13 +1437,20 @@ export class Downloader extends EventEmitter {
         isrc: on(ts.isrc), year: on(ts.year), date: on(ts.date), bpm: on(ts.bpm), genre: on(ts.genre),
         trackLength: on(ts.trackLength), explicitLyrics: on(ts.explicitLyrics),
         albumBarcode: on(ts.albumBarcode), albumLabel: on(ts.albumLabel),
-        releaseType: on(ts.releaseType)
+        releaseType: on(ts.releaseType),
+        // ReplayGain is default-OFF: only an EXPLICIT true enables it, unlike the
+        // default-on `on()` tags above. Keeps refresh consistent with the download
+        // writer's opt-in gate.
+        replayGain: ts.replayGain === true
       } : {
         title: true, artist: true, album: true, albumArtist: true,
         trackNumber: true, trackTotal: true, discNumber: true, isrc: true,
         year: true, date: true, bpm: true, genre: true, trackLength: true,
         explicitLyrics: true, albumBarcode: true, albumLabel: true,
-        releaseType: true
+        releaseType: true,
+        // Default-OFF even on the legacy no-settings fallback — RG must never be
+        // written unless the user opted in.
+        replayGain: false
       }
       const result = applyMergeFromMeta(filePath, meta, fields, false)
       console.log(`[Downloader] Refresh-tags ${result.status} (${result.changes.length} changed): ${filePath}`)
@@ -2329,6 +2337,18 @@ export class Downloader extends EventEmitter {
         }
       }
 
+      // REPLAYGAIN_TRACK_GAIN — lets ReplayGain-aware players (foobar2000, VLC,
+      // etc.) normalize playback loudness to Deezer's reference, so a download
+      // sounds closer to in-app playback. Metadata only; audio untouched.
+      // Default OFF — opt-in truthy gate, NOT the releaseType `!== false` default.
+      if (tagSettings.replayGain) {
+        const rg = replayGainString(trackInfo.GAIN)
+        if (rg) {
+          tags.userDefinedText = tags.userDefinedText || []
+          tags.userDefinedText.push({ description: 'REPLAYGAIN_TRACK_GAIN', value: rg })
+        }
+      }
+
       if (tagSettings.trackNumber && trackInfo.TRACK_NUMBER) {
         if (tagSettings.trackTotal && trackInfo.TRACKS_COUNT) {
           tags.trackNumber = `${trackInfo.TRACK_NUMBER}/${trackInfo.TRACKS_COUNT}`
@@ -2756,6 +2776,13 @@ export class Downloader extends EventEmitter {
           comments.push(`RELEASETYPE=${releaseType}`)
           comments.push(`MUSICBRAINZ_ALBUMTYPE=${releaseType}`)
         }
+      }
+
+      // REPLAYGAIN_TRACK_GAIN — same as the MP3 path. Metadata only; audio
+      // bytes preserved verbatim. Default OFF — opt-in truthy gate.
+      if (tagSettings.replayGain) {
+        const rg = replayGainString(trackInfo.GAIN)
+        if (rg) comments.push(`REPLAYGAIN_TRACK_GAIN=${rg}`)
       }
 
       if (tagSettings.trackNumber && trackInfo.TRACK_NUMBER) {

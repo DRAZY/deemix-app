@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.31] — 2026-07-08
+
+### Added
+
+- **ReplayGain tag writing, now actually wired.** The app has long had a "Replay Gain" toggle under Settings → Metadata tags, but nothing was ever written when it was on. It now writes a standard `REPLAYGAIN_TRACK_GAIN` tag, computed from Deezer's own per-track gain value using the same formula as the original Deemix, to both MP3 (an ID3v2 `TXXX` frame) and FLAC (a Vorbis comment). ReplayGain-aware players such as foobar2000, VLC, and Rockbox read this tag to normalize playback loudness toward Deezer's reference, so a download can sound closer to in-app Deezer playback instead of playing at the master's full un-normalized level. This is metadata only: the tag is a loudness hint a player may act on, and no audio bytes are changed (verified: the decoded audio is byte-identical before and after the tag is written). It is **off by default** and only written when you opt in. The same tag is available on the Refresh-tags path and the standalone Retag view, so existing files can be backfilled without re-downloading. Most DJ software runs its own gain analysis and ignores file ReplayGain tags, so this mainly benefits ReplayGain-aware music players.
+
 ## [1.10.30] — 2026-07-06
 
 ### Added

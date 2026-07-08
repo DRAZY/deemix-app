@@ -37,12 +37,12 @@ const progress = reactive({ current: 0, total: 0 })
 // Fields the public API can source. UPC + Label default ON (the gap users hit);
 // the rest are opt-in so we never silently overwrite carefully-tagged data.
 const fieldKeys = [
-  'albumBarcode', 'albumLabel', 'releaseType', 'genre', 'isrc', 'year', 'date', 'bpm', 'trackLength',
+  'albumBarcode', 'albumLabel', 'releaseType', 'replayGain', 'genre', 'isrc', 'year', 'date', 'bpm', 'trackLength',
   'trackNumber', 'trackTotal', 'discNumber', 'explicitLyrics', 'albumArtist', 'album', 'artist', 'title'
 ] as const
 type FieldKey = typeof fieldKeys[number]
 const fields = reactive<Record<FieldKey, boolean>>({
-  albumBarcode: true, albumLabel: true, releaseType: true, genre: false, isrc: false, year: false, date: false,
+  albumBarcode: true, albumLabel: true, releaseType: true, replayGain: false, genre: false, isrc: false, year: false, date: false,
   bpm: false, trackLength: false, trackNumber: false, trackTotal: false, discNumber: false,
   explicitLyrics: false, albumArtist: false, album: false, artist: false, title: false
 })
