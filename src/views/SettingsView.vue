@@ -790,14 +790,6 @@ async function reindexLibrary() {
           <label class="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
-              v-model="settingsStore.settings.searchFallback"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
-            />
-            <span class="text-sm">{{ t('settings.searchFallback') }}</span>
-          </label>
-          <label class="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
               v-model="settingsStore.settings.isrcFallback"
               class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
             />
@@ -815,27 +807,10 @@ async function reindexLibrary() {
             />
             <span class="text-sm">{{ t('settings.createLogFiles') }}</span>
           </label>
-          <label class="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              v-model="settingsStore.settings.createSearchLog"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
-            />
-            <span class="text-sm">{{ t('settings.createSearchLog') }}</span>
-          </label>
-          <!-- gambleCDNs hidden — not implemented, modern API handles CDN routing -->
         </div>
 
         <!-- Column 3 -->
         <div class="space-y-3">
-          <label class="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              v-model="settingsStore.settings.createLrcFiles"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
-            />
-            <span class="text-sm">{{ t('settings.createLrcFiles') }}</span>
-          </label>
           <label class="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -1987,18 +1962,6 @@ async function reindexLibrary() {
         </div>
       </div>
 
-      <!-- Fallback search toggle -->
-      <label class="flex items-center gap-3 cursor-pointer">
-        <input
-          type="checkbox"
-          v-model="settingsStore.settings.spotifyFallbackSearch"
-          class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
-        />
-        <div>
-          <span class="text-sm">{{ t('settings.spotify.fallbackSearch') }}</span>
-          <p class="text-xs text-foreground-muted">{{ t('settings.spotify.fallbackSearchDesc') }}</p>
-        </div>
-      </label>
 
         <!-- Help links -->
         <div class="pt-4 border-t border-zinc-700/50 space-y-3">

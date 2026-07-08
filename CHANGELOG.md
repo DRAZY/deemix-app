@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [1.10.32] — 2026-07-08
+
+### Changed
+
+- Some minor feature enhancements and refinements.
+
 ## [1.10.31] — 2026-07-08
 
 ### Added

@@ -73,6 +73,10 @@ const { showShortcutsHelp } = useKeyboardShortcuts()
 const handleBeforeUnload = () => {
   // Trigger a synchronous save attempt
   settingsStore.saveSettings()
+  // Optionally clear the download queue on close (off by default)
+  if (settingsStore.settings.clearQueueOnClose) {
+    downloadStore.clearAll()
+  }
 }
 
 onMounted(async () => {

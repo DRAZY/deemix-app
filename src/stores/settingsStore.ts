@@ -76,12 +76,8 @@ export interface Settings {
   // Opt-in: automatically resume downloads interrupted by the app closing, on next launch (#98)
   resumeInterruptedOnStartup: boolean
   bitrateFallback: boolean
-  searchFallback: boolean
   isrcFallback: boolean
   createErrorLog: boolean
-  createSearchLog: boolean
-  gambleCDNs: boolean
-  createLrcFiles: boolean
   createPlaylistFile: boolean
   clearQueueOnClose: boolean
   // Folder settings
@@ -102,7 +98,6 @@ export interface Settings {
   // File settings
   saveArtwork: boolean
   embedArtwork: boolean
-  artworkSize: number
   saveLyrics: boolean
   syncedLyrics: boolean
   // Tag settings
@@ -135,7 +130,6 @@ export interface Settings {
   spotifyClientId: string
   spotifyClientSecret: string
   spotifyUsername: string
-  spotifyFallbackSearch: boolean
 }
 
 export const defaultSettings: Settings = {
@@ -148,12 +142,8 @@ export const defaultSettings: Settings = {
   skipDuplicateTracks: false,
   resumeInterruptedOnStartup: false,
   bitrateFallback: true,
-  searchFallback: true,
   isrcFallback: false,
   createErrorLog: true,
-  createSearchLog: false,
-  gambleCDNs: false,
-  createLrcFiles: false,
   createPlaylistFile: false,
   clearQueueOnClose: false,
   // Folder settings
@@ -174,7 +164,6 @@ export const defaultSettings: Settings = {
   // File settings
   saveArtwork: true,
   embedArtwork: true,
-  artworkSize: 1200,
   saveLyrics: true,
   syncedLyrics: true,
   // Tag settings
@@ -248,8 +237,7 @@ export const defaultSettings: Settings = {
   // Spotify integration
   spotifyClientId: '',
   spotifyClientSecret: '',
-  spotifyUsername: '',
-  spotifyFallbackSearch: true
+  spotifyUsername: ''
 }
 
 function applyColorTheme(theme: ColorTheme) {
@@ -303,6 +291,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
     let loadedSettings: Partial<Settings> | null = null
     let settingsFileExists = false
+    let migrationApplied = false
 
     // Try to load from Electron's userData storage first (preferred - reliable persistence)
     if (window.electronAPI?.storage) {
@@ -354,6 +343,20 @@ export const useSettingsStore = defineStore('settings', () => {
       console.log('[Settings] No saved settings found, using defaults')
     }
 
+    // One-time migration: "Synced lyrics" and "Clear queue on close" were shown in
+    // the UI for a long time but not actually wired to any behavior. Now that they
+    // take effect, reset them to their defaults once so a value a user set while the
+    // toggle did nothing can't silently change behavior on upgrade. The marker is
+    // set for fresh installs too, so this never re-fires and later user changes
+    // stick. Only existing users (a settings file already existed) need a re-save.
+    const TOGGLE_MIGRATION_KEY = 'deemix-migration-wired-toggles-v1'
+    if (!localStorage.getItem(TOGGLE_MIGRATION_KEY)) {
+      settings.value.syncedLyrics = defaultSettings.syncedLyrics
+      settings.value.clearQueueOnClose = defaultSettings.clearQueueOnClose
+      localStorage.setItem(TOGGLE_MIGRATION_KEY, '1')
+      if (settingsFileExists) migrationApplied = true
+    }
+
     // Load encrypted credentials separately (from userData or localStorage)
     await loadSecureCredentials()
 
@@ -395,6 +398,13 @@ export const useSettingsStore = defineStore('settings', () => {
 
     isLoaded.value = true
     console.log('[Settings] Settings load complete. ARL loaded:', !!settings.value.arl)
+
+    // Persist the one-time toggle migration for existing users so the reset sticks
+    // even if the app is closed before any other settings change.
+    if (migrationApplied) {
+      console.log('[Settings] Applied one-time wired-toggle migration, saving...')
+      await saveSettings()
+    }
 
     // CRITICAL: If no settings file existed, create one now with defaults
     // This ensures future saves work and settings persist from the first run

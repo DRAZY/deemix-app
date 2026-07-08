@@ -5,14 +5,14 @@ import { useSettingsStore, defaultSettings, deepMerge, type Settings } from './s
 // Profile settings exclude credentials, appearance, and personal preferences
 type ProfileSettingsKeys =
   | 'downloadPath' | 'quality' | 'maxConcurrentDownloads' | 'downloadPacing'
-  | 'overwriteFiles' | 'bitrateFallback' | 'searchFallback' | 'isrcFallback'
-  | 'createErrorLog' | 'createSearchLog' | 'gambleCDNs' | 'createLrcFiles'
+  | 'overwriteFiles' | 'bitrateFallback' | 'isrcFallback'
+  | 'createErrorLog'
   | 'createPlaylistFile' | 'clearQueueOnClose'
   | 'createPlaylistFolder' | 'createArtistFolder' | 'createAlbumFolder'
   | 'createCDFolder' | 'createPlaylistStructure' | 'createSinglesStructure'
   | 'playlistFolderTemplate' | 'albumFolderTemplate' | 'artistFolderTemplate'
   | 'trackNameTemplate' | 'albumTrackTemplate' | 'playlistTrackTemplate'
-  | 'saveArtwork' | 'embedArtwork' | 'artworkSize' | 'saveLyrics' | 'syncedLyrics'
+  | 'saveArtwork' | 'embedArtwork' | 'saveLyrics' | 'syncedLyrics'
   | 'tags' | 'albumCovers'
   | 'savePlaylistAsCompilation' | 'useNullSeparator' | 'saveID3v1'
   | 'saveOnlyMainArtist' | 'keepVariousArtists' | 'removeAlbumVersion'
@@ -33,14 +33,14 @@ export interface SettingsProfile {
 
 const PROFILE_SETTINGS_KEYS: ProfileSettingsKeys[] = [
   'downloadPath', 'quality', 'maxConcurrentDownloads', 'downloadPacing',
-  'overwriteFiles', 'bitrateFallback', 'searchFallback', 'isrcFallback',
-  'createErrorLog', 'createSearchLog', 'gambleCDNs', 'createLrcFiles',
+  'overwriteFiles', 'bitrateFallback', 'isrcFallback',
+  'createErrorLog',
   'createPlaylistFile', 'clearQueueOnClose',
   'createPlaylistFolder', 'createArtistFolder', 'createAlbumFolder',
   'createCDFolder', 'createPlaylistStructure', 'createSinglesStructure',
   'playlistFolderTemplate', 'albumFolderTemplate', 'artistFolderTemplate',
   'trackNameTemplate', 'albumTrackTemplate', 'playlistTrackTemplate',
-  'saveArtwork', 'embedArtwork', 'artworkSize', 'saveLyrics', 'syncedLyrics',
+  'saveArtwork', 'embedArtwork', 'saveLyrics', 'syncedLyrics',
   'tags', 'albumCovers',
   'savePlaylistAsCompilation', 'useNullSeparator', 'saveID3v1',
   'saveOnlyMainArtist', 'keepVariousArtists', 'removeAlbumVersion',
@@ -72,7 +72,6 @@ const BUILT_IN_PROFILES: SettingsProfile[] = [
     settings: {
       ...extractProfileSettings(defaultSettings),
       quality: 'flac',
-      artworkSize: 1400,
       saveArtwork: true,
       embedArtwork: true,
       saveLyrics: true,
@@ -113,7 +112,6 @@ const BUILT_IN_PROFILES: SettingsProfile[] = [
     settings: {
       ...extractProfileSettings(defaultSettings),
       quality: '128',
-      artworkSize: 500,
       saveArtwork: false,
       embedArtwork: true,
       saveLyrics: false,
@@ -227,7 +225,6 @@ export const useProfileStore = defineStore('profiles', () => {
     merged.spotifyClientId = settingsStore.settings.spotifyClientId
     merged.spotifyClientSecret = settingsStore.settings.spotifyClientSecret
     merged.spotifyUsername = settingsStore.settings.spotifyUsername
-    merged.spotifyFallbackSearch = settingsStore.settings.spotifyFallbackSearch
     merged.theme = settingsStore.settings.theme
     merged.colorTheme = settingsStore.settings.colorTheme
     merged.language = settingsStore.settings.language

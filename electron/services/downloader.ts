@@ -1293,7 +1293,7 @@ export class Downloader extends EventEmitter {
       // Save lyrics if requested
       if (options.saveLyrics && trackInfo.LYRICS) {
         try {
-          await this.saveLyrics(trackInfo, dir)
+          await this.saveLyrics(trackInfo, dir, options.syncedLyrics !== false)
         } catch (error: any) {
           console.error(`[Downloader] Lyrics save error:`, error.message)
         }
@@ -3708,7 +3708,7 @@ export class Downloader extends EventEmitter {
     }
   }
 
-  private async saveLyrics(trackInfo: any, outputDir: string): Promise<void> {
+  private async saveLyrics(trackInfo: any, outputDir: string, saveSynced: boolean = true): Promise<void> {
     try {
       if (!trackInfo.LYRICS?.LYRICS_TEXT && !trackInfo.LYRICS?.LYRICS_SYNC_JSON) {
         return
@@ -3726,8 +3726,10 @@ export class Downloader extends EventEmitter {
         fs.writeFileSync(lyricsPath, trackInfo.LYRICS.LYRICS_TEXT)
       }
 
-      // Save synced lyrics as LRC
-      if (trackInfo.LYRICS?.LYRICS_SYNC_JSON) {
+      // Save synced lyrics as LRC — gated on the "Synced lyrics" setting so users
+      // can get plain .txt lyrics without the .lrc file. Default true preserves the
+      // prior always-write behavior for everyone who hasn't turned it off.
+      if (saveSynced && trackInfo.LYRICS?.LYRICS_SYNC_JSON) {
         const lrcPath = path.join(outputDir, `${baseName}.lrc`)
         const lrcContent = this.convertToLrc(trackInfo.LYRICS.LYRICS_SYNC_JSON, trackInfo)
         fs.writeFileSync(lrcPath, lrcContent)

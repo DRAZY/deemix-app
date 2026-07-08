@@ -366,12 +366,8 @@ interface ServerSettings {
   // Opt-in: skip downloading a recording (by ISRC) already in the library (#91/#92)
   skipDuplicateTracks: boolean
   bitrateFallback: boolean
-  searchFallback: boolean
   isrcFallback: boolean
   createErrorLog: boolean
-  createSearchLog: boolean
-  gambleCDNs: boolean
-  createLrcFiles: boolean
   createPlaylistFile: boolean
   clearQueueOnClose: boolean
   // Folder settings
@@ -429,12 +425,8 @@ export class DeemixServer extends EventEmitter {
     overwriteFiles: 'no',
     skipDuplicateTracks: false,
     bitrateFallback: true,
-    searchFallback: true,
     isrcFallback: false,
     createErrorLog: true,
-    createSearchLog: false,
-    gambleCDNs: false,
-    createLrcFiles: false,
     createPlaylistFile: false,
     clearQueueOnClose: false,
     // Folder settings
@@ -2108,9 +2100,8 @@ export class DeemixServer extends EventEmitter {
       const booleanSettings: (keyof ServerSettings)[] = [
         // Download behavior
         'skipDuplicateTracks',
-        'bitrateFallback', 'searchFallback', 'isrcFallback',
-        'createErrorLog', 'createSearchLog', 'gambleCDNs',
-        'createLrcFiles', 'createPlaylistFile', 'clearQueueOnClose',
+        'bitrateFallback', 'isrcFallback',
+        'createErrorLog', 'createPlaylistFile', 'clearQueueOnClose',
         // Folder settings
         'createPlaylistFolder', 'createArtistFolder', 'createAlbumFolder',
         'createCDFolder', 'createPlaylistStructure', 'createSinglesStructure',

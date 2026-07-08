@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.32',
+    date: '2026-07-08',
+    items: [
+      'Some minor feature enhancements and refinements.'
+    ]
+  },
+  {
     version: '1.10.31',
     date: '2026-07-08',
     items: [
