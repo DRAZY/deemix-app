@@ -203,12 +203,8 @@
     "reindexFailed": "Dizinleme başarısız — günlüklere bakın.",
     "bitrateFallback": "Bit Hızı Yedekleme",
     "bitrateFallbackDesc": "Tercih edilen mevcut değilse düşük kalite indir",
-    "searchFallback": "Arama Yedekleme",
     "isrcFallback": "ISRC Yedekleme",
     "createLogFiles": "Hata günlük dosyaları oluştur",
-    "createSearchLog": "Arama günlüğü oluştur",
-    "gambleCDNs": "CDN'leri Dene",
-    "createLrcFiles": ".lrc dosyaları oluştur (Senkronize Şarkı Sözleri)",
     "createPlaylistFile": "Çalma listesi dosyası oluştur",
     "clearQueueOnClose": "Kapatırken kuyruğu temizle",
     "savePlaylistAsM3U": "Çalma listesini M3U dosyası olarak kaydet",
@@ -341,8 +337,6 @@
       "connectionSuccess": "Spotify API'ye başarıyla bağlanıldı",
       "connectionFailed": "Spotify'a bağlanılamadı",
       "credentialsRequired": "Lütfen hem Client ID hem de Client Secret girin",
-      "fallbackSearch": "Yedek arama kullan",
-      "fallbackSearchDesc": "Tam ISRC eşleşmesi bulunamadığında Deezer'da ara",
       "getCredentials": "Spotify Developer Kimlik Bilgilerini Alın",
       "credentialsHelp": "Client ID ve Secret almak için Spotify Developer Dashboard'da bir uygulama oluşturun."
     }

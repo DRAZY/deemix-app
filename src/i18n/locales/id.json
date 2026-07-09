@@ -203,12 +203,8 @@
     "reindexFailed": "Pengindeksan gagal — lihat log.",
     "bitrateFallback": "Cadangan Bitrate",
     "bitrateFallbackDesc": "Unduh kualitas lebih rendah jika pilihan tidak tersedia",
-    "searchFallback": "Cadangan Pencarian",
     "isrcFallback": "Cadangan ISRC",
     "createLogFiles": "Buat berkas log untuk kesalahan",
-    "createSearchLog": "Buat log pencarian",
-    "gambleCDNs": "Coba CDN",
-    "createLrcFiles": "Buat berkas .lrc (Lirik Sinkron)",
     "createPlaylistFile": "Buat berkas playlist",
     "clearQueueOnClose": "Kosongkan antrian saat menutup",
     "savePlaylistAsM3U": "Simpan playlist sebagai berkas M3U",
@@ -341,8 +337,6 @@
       "connectionSuccess": "Berhasil terhubung ke Spotify API",
       "connectionFailed": "Gagal terhubung ke Spotify",
       "credentialsRequired": "Silakan masukkan Client ID dan Client Secret",
-      "fallbackSearch": "Gunakan pencarian cadangan",
-      "fallbackSearchDesc": "Cari di Deezer jika tidak ditemukan kecocokan ISRC yang tepat",
       "getCredentials": "Dapatkan Kredensial Spotify Developer",
       "credentialsHelp": "Buat aplikasi di Spotify Developer Dashboard untuk mendapatkan Client ID dan Secret Anda."
     }

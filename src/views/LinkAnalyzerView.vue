@@ -5,6 +5,7 @@ import { useDownloadStore } from '../stores/downloadStore'
 import { useAuthStore } from '../stores/authStore'
 import { useToastStore } from '../stores/toastStore'
 import BackButton from '../components/BackButton.vue'
+import { isDeezerUrl, isSpotifyUrl } from '../utils/urlHost'
 import ContextMenu from '../components/ContextMenu.vue'
 import { useContextMenu } from '../composables/useContextMenu'
 
@@ -72,17 +73,8 @@ function formatNumber(num: number): string {
   return num.toLocaleString()
 }
 
-// Check if URL is a Spotify link
-function isSpotifyUrl(url: string): boolean {
-  return url.includes('open.spotify.com') ||
-         url.includes('link.spotify.com') ||
-         url.startsWith('spotify:')
-}
-
-// Check if URL is a Deezer link
-function isDeezerUrl(url: string): boolean {
-  return url.includes('deezer.com') || url.includes('deezer.page.link')
-}
+// URL type detection now uses shared hostname matching (src/utils/urlHost.ts)
+// instead of substring checks. isDeezerUrl/isSpotifyUrl are imported above.
 
 // Get cover image URL (largest available)
 const coverUrl = computed(() => {

@@ -1423,7 +1423,7 @@ export class DeezerAuth extends EventEmitter {
     }
   }
 
-  async getTrackUrl(trackId: string | number, quality: 'MP3_128' | 'MP3_320' | 'FLAC' = 'MP3_320', bitrateFallback: boolean = true): Promise<{ url: string; format: string; resolvedTrackId?: string | number }> {
+  async getTrackUrl(trackId: string | number, quality: 'MP3_128' | 'MP3_320' | 'FLAC' = 'MP3_320', bitrateFallback: boolean = true, isrcFallback: boolean = true): Promise<{ url: string; format: string; resolvedTrackId?: string | number }> {
     console.log('[DeezerAuth] getTrackUrl called with quality:', quality, 'bitrateFallback:', bitrateFallback)
 
     // Build format fallback chain
@@ -1495,8 +1495,10 @@ export class DeezerAuth extends EventEmitter {
     }
 
     // Attempt 3: Search for the same song on the original album via ISRC
-    // ISRC is a universal recording identifier — same across all album versions
-    if (trackInfo.ISRC) {
+    // ISRC is a universal recording identifier — same across all album versions.
+    // Gated on isrcFallback: this resolves to a DIFFERENT release/master, so users
+    // who want only the exact track can disable it (attempts 1-2 still run).
+    if (isrcFallback && trackInfo.ISRC) {
       console.log(`[DeezerAuth] Trying ISRC lookup for: ${trackInfo.ISRC}`)
       try {
         const searchResult = await this.apiCall('song.getListByIsrc', { isrc: trackInfo.ISRC })
@@ -1525,7 +1527,7 @@ export class DeezerAuth extends EventEmitter {
     // ISRC to its canonical track ID — usually the original single — which is
     // frequently streamable when the compilation master is not. This mirrors what
     // a user does by hand: find the original single and download that instead.
-    if (trackInfo.ISRC) {
+    if (isrcFallback && trackInfo.ISRC) {
       const publicId = await this.resolvePublicTrackIdByIsrc(trackInfo.ISRC)
       if (publicId && String(publicId) !== String(trackId) && String(publicId) !== String(fallbackId || '')) {
         console.log(`[DeezerAuth] Trying public-API ISRC alternative: ${publicId}`)
@@ -1584,7 +1586,9 @@ export class DeezerAuth extends EventEmitter {
       const req = https.request('https://media.deezer.com/v1/get_url', {
         method: 'POST',
         agent: httpsAgent,
-        rejectUnauthorized: false, // Required for Deezer Media API (matches deemix-gui)
+        // TLS certificate validation left ON (default). Verified media.deezer.com
+        // presents a valid cert chain, so the old rejectUnauthorized:false (copied
+        // from deemix-gui) was unnecessary and is removed to prevent MITM.
         timeout: 30000, // 30s timeout for media URL retrieval
         headers: {
           'Content-Type': 'application/json',

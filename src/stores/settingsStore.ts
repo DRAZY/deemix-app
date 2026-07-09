@@ -142,7 +142,7 @@ export const defaultSettings: Settings = {
   skipDuplicateTracks: false,
   resumeInterruptedOnStartup: false,
   bitrateFallback: true,
-  isrcFallback: false,
+  isrcFallback: true,
   createErrorLog: true,
   createPlaylistFile: false,
   clearQueueOnClose: false,
@@ -354,6 +354,19 @@ export const useSettingsStore = defineStore('settings', () => {
       settings.value.syncedLyrics = defaultSettings.syncedLyrics
       settings.value.clearQueueOnClose = defaultSettings.clearQueueOnClose
       localStorage.setItem(TOGGLE_MIGRATION_KEY, '1')
+      if (settingsFileExists) migrationApplied = true
+    }
+
+    // One-time migration: isrcFallback was an orphaned toggle — the ISRC
+    // substitution it names ran unconditionally regardless of the setting (which
+    // sat at false). Now that the toggle actually gates that behavior, set it to
+    // the new default (on) once so existing users keep today's always-on
+    // substitution and the toggle becomes a real opt-out. Separate marker so it
+    // runs even for users who already ran the wired-toggles migration above.
+    const ISRC_MIGRATION_KEY = 'deemix-migration-isrc-fallback-v1'
+    if (!localStorage.getItem(ISRC_MIGRATION_KEY)) {
+      settings.value.isrcFallback = defaultSettings.isrcFallback
+      localStorage.setItem(ISRC_MIGRATION_KEY, '1')
       if (settingsFileExists) migrationApplied = true
     }
 

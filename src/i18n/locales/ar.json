@@ -203,12 +203,8 @@
     "reindexFailed": "فشلت الفهرسة — راجع السجلات.",
     "bitrateFallback": "بديل معدل البت",
     "bitrateFallbackDesc": "تحميل بجودة أقل إذا لم يتوفر المفضل",
-    "searchFallback": "بديل البحث",
     "isrcFallback": "بديل ISRC",
     "createLogFiles": "إنشاء ملفات سجل للأخطاء",
-    "createSearchLog": "إنشاء سجل البحث",
-    "gambleCDNs": "تجربة شبكات CDN",
-    "createLrcFiles": "إنشاء ملفات .lrc (كلمات متزامنة)",
     "createPlaylistFile": "إنشاء ملف قائمة تشغيل",
     "clearQueueOnClose": "مسح قائمة الانتظار عند الإغلاق",
     "savePlaylistAsM3U": "حفظ قائمة التشغيل كملف M3U",
@@ -341,8 +337,6 @@
       "connectionSuccess": "تم الاتصال بنجاح بواجهة Spotify",
       "connectionFailed": "فشل الاتصال بـ Spotify",
       "credentialsRequired": "الرجاء إدخال معرف العميل وسر العميل",
-      "fallbackSearch": "استخدام البحث البديل",
-      "fallbackSearchDesc": "البحث في Deezer عند عدم العثور على تطابق ISRC دقيق",
       "getCredentials": "الحصول على بيانات اعتماد Spotify Developer",
       "credentialsHelp": "أنشئ تطبيقاً في Spotify Developer Dashboard للحصول على معرف العميل والسر."
     }

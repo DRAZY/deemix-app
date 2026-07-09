@@ -203,12 +203,8 @@
     "reindexFailed": "Η δημιουργία ευρετηρίου απέτυχε — δείτε τα αρχεία καταγραφής.",
     "bitrateFallback": "Εναλλακτικό Bitrate",
     "bitrateFallbackDesc": "Λήψη χαμηλότερης ποιότητας αν το προτιμώμενο δεν είναι διαθέσιμο",
-    "searchFallback": "Εναλλακτική Αναζήτηση",
     "isrcFallback": "Εναλλακτικό ISRC",
     "createLogFiles": "Δημιουργία αρχείων καταγραφής σφαλμάτων",
-    "createSearchLog": "Δημιουργία αρχείου καταγραφής αναζήτησης",
-    "gambleCDNs": "Δοκιμή CDNs",
-    "createLrcFiles": "Δημιουργία αρχείων .lrc (Συγχρονισμένοι Στίχοι)",
     "createPlaylistFile": "Δημιουργία αρχείου λίστας",
     "clearQueueOnClose": "Εκκαθάριση ουράς κατά το κλείσιμο",
     "savePlaylistAsM3U": "Αποθήκευση λίστας ως αρχείο M3U",
@@ -341,8 +337,6 @@
       "connectionSuccess": "Επιτυχής σύνδεση στο Spotify API",
       "connectionFailed": "Αποτυχία σύνδεσης στο Spotify",
       "credentialsRequired": "Παρακαλώ εισάγετε και Client ID και Client Secret",
-      "fallbackSearch": "Χρήση εναλλακτικής αναζήτησης",
-      "fallbackSearchDesc": "Αναζήτηση στο Deezer όταν δεν βρεθεί ακριβής αντιστοιχία ISRC",
       "getCredentials": "Λήψη διαπιστευτηρίων Spotify Developer",
       "credentialsHelp": "Δημιουργήστε μια εφαρμογή στο Spotify Developer Dashboard για να αποκτήσετε το Client ID και Secret σας."
     }

@@ -203,12 +203,8 @@
     "reindexFailed": "Indeksiranje nije uspjelo — pogledajte zapisnike.",
     "bitrateFallback": "Rezervni Bitrate",
     "bitrateFallbackDesc": "Preuzmi nižu kvalitetu ako preferirana nije dostupna",
-    "searchFallback": "Rezervna Pretraga",
     "isrcFallback": "Rezervni ISRC",
     "createLogFiles": "Kreiraj log datoteke za greške",
-    "createSearchLog": "Kreiraj log pretrage",
-    "gambleCDNs": "Testiraj CDN-ove",
-    "createLrcFiles": "Kreiraj .lrc datoteke (Sinkronizirani Tekstovi)",
     "createPlaylistFile": "Kreiraj datoteku popisa",
     "clearQueueOnClose": "Očisti red pri zatvaranju",
     "savePlaylistAsM3U": "Spremi popis kao M3U datoteku",
@@ -341,8 +337,6 @@
       "connectionSuccess": "Uspješno povezano sa Spotify API-jem",
       "connectionFailed": "Povezivanje sa Spotifyjem nije uspjelo",
       "credentialsRequired": "Unesite i Client ID i Client Secret",
-      "fallbackSearch": "Koristi rezervnu pretragu",
-      "fallbackSearchDesc": "Pretraži Deezer ako nema točnog ISRC podudaranja",
       "getCredentials": "Nabavite Spotify Developer vjerodajnice",
       "credentialsHelp": "Stvorite aplikaciju na Spotify Developer Dashboardu za dobivanje Client ID-a i Secreta."
     }

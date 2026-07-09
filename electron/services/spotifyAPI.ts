@@ -1,4 +1,5 @@
 import * as https from 'https'
+import { isSpotifyUrl as isSpotifyUrlByHost } from '../utils/urlHost'
 
 export interface SpotifyTrack {
   id: string
@@ -218,9 +219,7 @@ class SpotifyAPI {
    * Check if a URL is a Spotify URL
    */
   isSpotifyUrl(url: string): boolean {
-    return url.includes('open.spotify.com') ||
-           url.includes('link.spotify.com') ||
-           url.startsWith('spotify:')
+    return isSpotifyUrlByHost(url)
   }
 
   /**

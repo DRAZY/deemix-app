@@ -203,12 +203,8 @@
     "reindexFailed": "索引失败——请查看日志。",
     "bitrateFallback": "比特率回退",
     "bitrateFallbackDesc": "如果首选不可用则下载较低质量",
-    "searchFallback": "搜索回退",
     "isrcFallback": "ISRC 回退",
     "createLogFiles": "创建错误日志文件",
-    "createSearchLog": "创建搜索日志",
-    "gambleCDNs": "测试 CDN",
-    "createLrcFiles": "创建 .lrc 文件（同步歌词）",
     "createPlaylistFile": "创建播放列表文件",
     "clearQueueOnClose": "关闭时清空队列",
     "savePlaylistAsM3U": "将播放列表保存为 M3U 文件",
@@ -341,8 +337,6 @@
       "connectionSuccess": "成功连接到 Spotify API",
       "connectionFailed": "连接 Spotify 失败",
       "credentialsRequired": "请输入客户端 ID 和客户端密钥",
-      "fallbackSearch": "使用备用搜索",
-      "fallbackSearchDesc": "当没有找到精确的 ISRC 匹配时在 Deezer 上搜索",
       "getCredentials": "获取 Spotify 开发者凭据",
       "credentialsHelp": "在 Spotify Developer Dashboard 中创建应用以获取您的客户端 ID 和密钥。"
     }

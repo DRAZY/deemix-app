@@ -203,12 +203,8 @@
     "reindexFailed": "Nabigo ang pag-index — tingnan ang logs.",
     "bitrateFallback": "Bitrate Fallback",
     "bitrateFallbackDesc": "Mag-download ng mas mababang kalidad kung hindi available ang preferred",
-    "searchFallback": "Search Fallback",
     "isrcFallback": "ISRC Fallback",
     "createLogFiles": "Gumawa ng log files para sa mga error",
-    "createSearchLog": "Gumawa ng search log",
-    "gambleCDNs": "Subukan ang CDNs",
-    "createLrcFiles": "Gumawa ng .lrc files (Synced na Lyrics)",
     "createPlaylistFile": "Gumawa ng playlist file",
     "clearQueueOnClose": "I-clear ang queue kapag isinara",
     "savePlaylistAsM3U": "I-save ang playlist bilang M3U file",
@@ -341,8 +337,6 @@
       "connectionSuccess": "Matagumpay na nakakonekta sa Spotify API",
       "connectionFailed": "Hindi makakonekta sa Spotify",
       "credentialsRequired": "Pakilagay ang Client ID at Client Secret",
-      "fallbackSearch": "Gamitin ang fallback search",
-      "fallbackSearchDesc": "Maghanap sa Deezer kapag walang eksaktong ISRC match",
       "getCredentials": "Kumuha ng Spotify Developer Credentials",
       "credentialsHelp": "Gumawa ng app sa Spotify Developer Dashboard para makuha ang iyong Client ID at Secret."
     }

@@ -12,6 +12,7 @@ export interface SyncDownloadSettings {
   downloadPath: string
   quality: 'MP3_128' | 'MP3_320' | 'FLAC'
   bitrateFallback: boolean
+  isrcFallback?: boolean
   createArtistFolder: boolean
   createAlbumFolder: boolean
   saveArtwork: boolean
@@ -717,6 +718,7 @@ class PlaylistSyncEngine extends EventEmitter {
             outputPath: playlist.downloadPath || settings?.downloadPath || join(process.env.HOME || process.env.USERPROFILE || '/tmp', 'Music', 'Deemix'),
             quality: settings?.quality || 'MP3_320',
             bitrateFallback: settings?.bitrateFallback ?? true,
+            isrcFallback: settings?.isrcFallback ?? true,
             createFolders: true,
             artistFolder: settings?.createArtistFolder ?? false,
             albumFolder: settings?.createAlbumFolder ?? true,

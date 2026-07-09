@@ -203,12 +203,8 @@
     "reindexFailed": "Не удалось проиндексировать — см. журналы.",
     "bitrateFallback": "Запасной битрейт",
     "bitrateFallbackDesc": "Загружать в низком качестве если предпочтительное недоступно",
-    "searchFallback": "Запасной поиск",
     "isrcFallback": "Запасной ISRC",
     "createLogFiles": "Создавать логи ошибок",
-    "createSearchLog": "Создавать лог поиска",
-    "gambleCDNs": "Тестировать CDN",
-    "createLrcFiles": "Создавать .lrc файлы (синхронизированный текст)",
     "createPlaylistFile": "Создавать файл плейлиста",
     "clearQueueOnClose": "Очищать очередь при закрытии",
     "savePlaylistAsM3U": "Сохранять плейлист как M3U файл",
@@ -341,8 +337,6 @@
       "connectionSuccess": "Успешно подключено к Spotify API",
       "connectionFailed": "Не удалось подключиться к Spotify",
       "credentialsRequired": "Пожалуйста, введите Client ID и Client Secret",
-      "fallbackSearch": "Использовать резервный поиск",
-      "fallbackSearchDesc": "Искать в Deezer, если не найдено точное совпадение ISRC",
       "getCredentials": "Получить учетные данные Spotify Developer",
       "credentialsHelp": "Создайте приложение в Spotify Developer Dashboard, чтобы получить Client ID и Secret."
     }

@@ -97,6 +97,7 @@ export interface DownloadOptions {
   outputPath: string
   quality: 'MP3_128' | 'MP3_320' | 'FLAC'
   bitrateFallback?: boolean  // Whether to fallback to lower bitrates if preferred unavailable
+  isrcFallback?: boolean     // Whether to resolve an unavailable track to an ISRC-matched alternate release (may be a different master)
   createFolders: boolean
   artistFolder: boolean
   albumFolder: boolean
@@ -958,11 +959,12 @@ export class Downloader extends EventEmitter {
     // Get the download URL and actual format FIRST
     // Default bitrateFallback to true if not specified
     const bitrateFallback = options.bitrateFallback !== false
-    console.log(`[Downloader] Getting download URL for quality: ${options.quality}, bitrateFallback: ${bitrateFallback}`)
+    const isrcFallback = options.isrcFallback !== false
+    console.log(`[Downloader] Getting download URL for quality: ${options.quality}, bitrateFallback: ${bitrateFallback}, isrcFallback: ${isrcFallback}`)
     let downloadUrl: string
     let actualFormat: string
     try {
-      const result = await deezerAuth.getTrackUrl(trackInfo.SNG_ID, options.quality, bitrateFallback)
+      const result = await deezerAuth.getTrackUrl(trackInfo.SNG_ID, options.quality, bitrateFallback, isrcFallback)
       downloadUrl = result.url
       actualFormat = result.format
       progress.actualFormat = actualFormat

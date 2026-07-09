@@ -203,12 +203,8 @@
     "reindexFailed": "Error al indexar — consulta los registros.",
     "bitrateFallback": "Respaldo de tasa de bits",
     "bitrateFallbackDesc": "Descargar menor calidad si la preferida no está disponible",
-    "searchFallback": "Respaldo de búsqueda",
     "isrcFallback": "Respaldo ISRC",
     "createLogFiles": "Crear archivos de registro para errores",
-    "createSearchLog": "Crear registro de búsqueda",
-    "gambleCDNs": "Probar CDNs",
-    "createLrcFiles": "Crear archivos .lrc (Letras sincronizadas)",
     "createPlaylistFile": "Crear archivo de playlist",
     "clearQueueOnClose": "Vaciar cola al cerrar",
     "savePlaylistAsM3U": "Guardar playlist como archivo M3U",
@@ -341,8 +337,6 @@
       "connectionSuccess": "Conexión exitosa a la API de Spotify",
       "connectionFailed": "Error al conectar con Spotify",
       "credentialsRequired": "Por favor ingresa tanto el Client ID como el Client Secret",
-      "fallbackSearch": "Usar búsqueda alternativa",
-      "fallbackSearchDesc": "Buscar en Deezer cuando no se encuentra coincidencia exacta de ISRC",
       "getCredentials": "Obtener credenciales de Spotify Developer",
       "credentialsHelp": "Crea una aplicación en el Spotify Developer Dashboard para obtener tu Client ID y Secret."
     }

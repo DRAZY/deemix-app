@@ -188,7 +188,7 @@ For each track:
 Renderer polls /api/queue/status, updates DownloadStore, re-renders queue UI
 ```
 
-Auth required (cookie session). Filesystem write. Three CDN candidates tried per track (gambleCDNs setting).
+Auth required (cookie session). Filesystem write. The media URL comes from Deezer's `get_url` endpoint (validated TLS) and the encrypted stream is decrypted client-side.
 
 **Shared album context.** Folder structure (incl. `CD1`/`CD2` subfolders), folder/file naming, and album-level tags all derive from an album *context* object built by `buildAlbumContext` in `electron/services/albumContext.ts` — the **single source of truth**, used by every download path so they produce identical results:
 - **Album-page download** (`handleDownloadAlbum`) builds it from `/album/{id}` + the tracklist.

@@ -6,6 +6,7 @@ import * as fs from 'fs'
 import { normalize, resolve, join, dirname } from 'path'
 import { app } from 'electron'
 import { deezerAuth, DeezerSession } from './services/deezerAuth'
+import { urlHasHost } from './utils/urlHost'
 import { downloader, DownloadProgress } from './services/downloader'
 import { spotifyAPI } from './services/spotifyAPI'
 import { spotifyConverter } from './services/spotifyConverter'
@@ -167,7 +168,10 @@ function checkRateLimit(ip: string, operation: OperationType = 'default'): boole
 
 // Security: SSRF-safe redirect follower for share link resolution
 // Only follows redirects to whitelisted domains, rejects private IPs and non-HTTP protocols
-const ALLOWED_REDIRECT_DOMAINS = ['.deezer.com', '.spotify.com', '.dzcdn.net']
+// 'deezer.page.link' is a legit Deezer share-link host that is NOT a .deezer.com
+// subdomain — it must be allowlisted so the initial-URL check below doesn't reject
+// real share links once we validate the first request (not just redirects).
+const ALLOWED_REDIRECT_DOMAINS = ['.deezer.com', '.spotify.com', '.dzcdn.net', 'deezer.page.link']
 
 function isRedirectSafe(targetUrl: string): boolean {
   try {
@@ -190,7 +194,12 @@ function isRedirectSafe(targetUrl: string): boolean {
       if (second >= 16 && second <= 31) return false
     }
     // Must match an allowed domain
-    return ALLOWED_REDIRECT_DOMAINS.some(domain => hostname.endsWith(domain))
+    // Dotted entries ('.deezer.com') match subdomains via suffix; undotted
+    // entries ('deezer.page.link') must match EXACTLY, so a hostile
+    // 'evildeezer.page.link' can't satisfy the check.
+    return ALLOWED_REDIRECT_DOMAINS.some(domain =>
+      domain.startsWith('.') ? hostname.endsWith(domain) : hostname === domain
+    )
   } catch {
     return false
   }
@@ -203,8 +212,12 @@ async function followRedirectsSafely(startUrl: string, maxRedirects: number = 5)
         reject(new Error('Too many redirects'))
         return
       }
-      if (redirectCount > 0 && !isRedirectSafe(targetUrl)) {
-        reject(new Error('Redirect to disallowed destination blocked'))
+      // Validate EVERY hop including the initial request — the first URL is
+      // user-provided (a pasted share link), so it must pass the allowlist too,
+      // not just subsequent redirects. Closes the SSRF where a crafted initial
+      // URL could be fetched server-side against localhost/LAN.
+      if (!isRedirectSafe(targetUrl)) {
+        reject(new Error('Request to disallowed destination blocked'))
         return
       }
       const protocol = targetUrl.startsWith('https') ? https : http
@@ -425,7 +438,7 @@ export class DeemixServer extends EventEmitter {
     overwriteFiles: 'no',
     skipDuplicateTracks: false,
     bitrateFallback: true,
-    isrcFallback: false,
+    isrcFallback: true,
     createErrorLog: true,
     createPlaylistFile: false,
     clearQueueOnClose: false,
@@ -1505,6 +1518,7 @@ export class DeemixServer extends EventEmitter {
         outputPath: this.settings.downloadPath,
         quality: this.settings.quality,
         bitrateFallback: this.settings.bitrateFallback,
+        isrcFallback: this.settings.isrcFallback,
         createFolders: true,
         artistFolder: this.settings.createArtistFolder,
         albumFolder: this.settings.createAlbumFolder,
@@ -1634,6 +1648,7 @@ export class DeemixServer extends EventEmitter {
           outputPath: this.settings.downloadPath,
           quality: this.settings.quality,
           bitrateFallback: this.settings.bitrateFallback,
+          isrcFallback: this.settings.isrcFallback,
           createFolders: true,
           artistFolder: this.settings.createArtistFolder,
           albumFolder: this.settings.createAlbumFolder,
@@ -1812,6 +1827,7 @@ export class DeemixServer extends EventEmitter {
           outputPath: this.settings.downloadPath,
           quality: this.settings.quality,
           bitrateFallback: this.settings.bitrateFallback,
+          isrcFallback: this.settings.isrcFallback,
           createFolders: true,
           artistFolder: this.settings.createArtistFolder,
           albumFolder: this.settings.createAlbumFolder,
@@ -1920,6 +1936,7 @@ export class DeemixServer extends EventEmitter {
           outputPath: this.settings.downloadPath,
           quality: this.settings.quality,
           bitrateFallback: this.settings.bitrateFallback,
+          isrcFallback: this.settings.isrcFallback,
           createFolders: true,
           artistFolder: this.settings.createArtistFolder,
           albumFolder: this.settings.createAlbumFolder,
@@ -2565,7 +2582,7 @@ export class DeemixServer extends EventEmitter {
 
     // Resolve share/short links (link.deezer.com, deezer.page.link) to full URLs
     let resolvedUrl = rawUrl.trim()
-    if (resolvedUrl.includes('link.deezer.com') || resolvedUrl.includes('deezer.page.link')) {
+    if (urlHasHost(resolvedUrl, ['link.deezer.com', 'deezer.page.link'])) {
       try {
         resolvedUrl = await followRedirectsSafely(resolvedUrl)
         console.log(`[Server] Resolved share link: ${rawUrl} -> ${resolvedUrl}`)
@@ -2838,7 +2855,14 @@ export class DeemixServer extends EventEmitter {
   private async deezerPublicAPI(endpoint: string, opts?: { timeoutMs?: number }): Promise<any> {
     const timeoutMs = opts?.timeoutMs ?? 15000
     return new Promise((resolve, reject) => {
-      const url = `https://api.deezer.com${endpoint}`
+      // Build from a fixed base and assert the host so a crafted `endpoint`
+      // (e.g. starting with `@` or `//`) can't re-point the request off Deezer.
+      const target = new URL(endpoint, 'https://api.deezer.com')
+      if (target.hostname !== 'api.deezer.com') {
+        reject(new Error('Invalid Deezer API endpoint'))
+        return
+      }
+      const url = target.toString()
 
       const req = https.get(url, (response) => {
         let data = ''

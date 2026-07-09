@@ -9,6 +9,7 @@ import ToastContainer from './components/ToastContainer.vue'
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal.vue'
 import OfflineBanner from './components/OfflineBanner.vue'
 import { useDownloadStore } from './stores/downloadStore'
+import { textContainsHostUrl } from './utils/urlHost'
 import { useAuthStore } from './stores/authStore'
 import { useSettingsStore } from './stores/settingsStore'
 import { useProfileStore } from './stores/profileStore'
@@ -175,10 +176,11 @@ function handleGlobalPaste(e: ClipboardEvent) {
 
   const text = e.clipboardData?.getData('text') || ''
 
-  // Check for share links and Spotify URLs — route to Link Analyzer for resolution
-  if (text.includes('link.deezer.com') || text.includes('deezer.page.link') ||
-      text.includes('spotify.link') || text.includes('open.spotify.com') ||
-      text.includes('link.spotify.com') || text.startsWith('spotify:')) {
+  // Check for share links and Spotify URLs — route to Link Analyzer for resolution.
+  // Deezer side stays narrow (share/short links only, NOT bare deezer.com) to
+  // preserve the prior global-paste behavior; matched by host, not substring.
+  if (textContainsHostUrl(text, ['link.deezer.com', 'deezer.page.link', 'open.spotify.com', 'link.spotify.com', 'spotify.link']) ||
+      text.startsWith('spotify:')) {
     e.preventDefault()
     router.push({ path: '/analyzer', query: { url: text.trim() } })
     return

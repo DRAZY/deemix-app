@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '1.10.33',
+    date: '2026-07-08',
+    items: [
+      'Security hardening and minor improvements under the hood.'
+    ]
+  },
+  {
     version: '1.10.32',
     date: '2026-07-08',
     items: [
@@ -91,231 +98,11 @@ const whatsNew: ReleaseNotes[] = [
     ]
   },
   {
-    version: '1.10.24',
-    date: '2026-06-24',
-    items: [
-      'Fixed "Retry failed tracks" putting the retried files in your main download folder instead of back in the album or playlist folder they belong to (#94). The retry used to forget which album or playlist a track came from, so the files landed loose in the download root and you had to find and move them yourself. Now a retried track goes back into its original album folder (with the same naming, tags, and disc layout as the rest of the album) or its playlist folder. Downloading a standalone single is unchanged.'
-    ]
-  },
-  {
-    version: '1.10.23',
-    date: '2026-06-22',
-    items: [
-      'Fixed artist sync silently skipping albums it thought were "already downloaded" when they weren\'t (#93). Sync kept an internal list of albums it considered done and trusted it over what was actually on disk — so an album that only partly downloaded (or was never downloaded) got marked complete and skipped on every future sync, and never showed up in the failed list. Now an album is only marked done when all its tracks actually downloaded; tracks that hit a temporary error are retried on the next sync (up to a few times), and genuinely unavailable tracks are reported instead of hidden.',
-      'Pinning an artist to Sync from your Favourites now asks how to handle their existing catalog — "Download full discography now" (the new default), "Watch for new releases only," or from a date. Previously it silently chose "watch only," so pinning an artist downloaded nothing and could look broken. (Tip: if some albums are missing on an already-synced artist, right-click its sync button → Force Full Sync to re-pull everything.)'
-    ]
-  },
-  {
-    version: '1.10.22',
-    date: '2026-06-19',
-    items: [
-      'Fixed full artist resyncs sometimes skipping a random-looking handful of albums (#93). On a large discography the app could hit Deezer\'s request limit while listing an artist\'s catalog, and the albums that got rate-limited were silently dropped with no retry — which is why it felt random and was hard to reproduce. Artist and playlist sync now pace those catalog lookups and automatically back off and retry instead of dropping anything. In testing, a 90-release artist went from ~40 albums skipped under load to zero.',
-      'The Sync page\'s row buttons now show reliable, instant tooltips. Hovering the sync / edit / enable / remove icons used to show only one inconsistent label (sometimes the wrong one bleeding over from a neighboring button) — each button now shows its own label correctly and immediately.'
-    ]
-  },
-  {
-    version: '1.10.21',
-    date: '2026-06-16',
-    items: [
-      'New optional setting: "Skip tracks already in my library" (Settings → Downloads, off by default). When on, the app skips downloading any recording you already have — matched by ISRC, not filename — so the same song on a different album, single, or compilation won\'t pile up as a duplicate. Tracks without an ISRC are always downloaded, and nothing is ever deleted.',
-      'Got an existing collection? Turn the setting on and click "Index existing library" once — it scans your download folder so the de-dup works against everything you already have, not just new downloads.'
-    ]
-  },
-  {
-    version: '1.10.20',
-    date: '2026-06-15',
-    items: [
-      'The Sync page can now be sorted and filtered. Each list (synced playlists and synced artists) has its own search box and a sort menu — by date added, name, last synced, status, or number of tracks downloaded — plus an ascending/descending toggle, so finding a specific playlist or artist in a long list is fast. Your sort choice is remembered between visits; the default order is unchanged.',
-      'Clearer artist-separator label (#89). The comma+space option that outputs "Artist A, Artist B" was confusingly labeled "Standard specification (null byte)" — it\'s now "Comma + space (, ) — default" so it\'s easy to find. The separator itself works exactly as before.'
-    ]
-  },
-  {
-    version: '1.10.19',
-    date: '2026-06-10',
-    items: [
-      'Pause now actually pauses a download in progress. Previously the Pause button only stopped the next tracks in the queue from starting — whatever was already downloading streamed to the end. Now pressing Pause stops the current download(s) mid-stream, and Resume picks them back up and finishes them. (Paused tracks restart from the beginning on resume, which is near-instant for music files.)'
-    ]
-  },
-  {
-    version: '1.10.18',
-    date: '2026-06-09',
-    items: [
-      'Fixed slow skipping of already-downloaded files when Natural Download Pacing was on. Pacing was delaying every track before checking whether it already existed, so re-downloading a library you already have crawled. Skips are now instant again — pacing only applies to tracks actually being downloaded.',
-      'Dragging a download up or down the list now actually reorders the download queue, not just the on-screen list — so it really does change what downloads next. (The ↑ "Download next" button still jumps a track straight to the front.)',
-      'Fixed the Pause button on the bottom download bar, which previously did nothing. It now pauses and resumes downloads, and shows a play icon while paused.',
-      'Clarified the "Release Type" tag label in Settings — it now reads "Release Type (Album / Single / EP)" with a tooltip explaining it, instead of the cryptic "(RELEASETYPE)".'
-    ]
-  },
-  {
-    version: '1.10.17',
-    date: '2026-06-07',
-    items: [
-      'Added "Natural Download Pacing" (Settings → Downloads) with three levels: Off (default), Balanced, and Cautious. On Balanced or Cautious, the app adds small random delays between downloads so a large batch doesn\'t hit Deezer all at once — which can reduce the chance Deezer flags your account for unusual activity and prompts a password reset. Off behaves exactly as before at full speed; Balanced spaces downloads moderately; Cautious is slowest and safest. For the most natural pattern, pair Cautious with Concurrent Downloads set to 1.'
-    ]
-  },
-  {
-    version: '1.10.15',
-    date: '2026-06-05',
-    items: [
-      'Fixed applying your ARL token in Settings not actually logging the app in. The Settings panel would show "Logged in as <you>", but the sidebar still said "Login with Deezer / Login required to download" and downloads stayed blocked — because the Apply button logged in the server session without updating the app\'s shared login state. Apply now logs in app-wide.'
-    ]
-  },
-  {
-    version: '1.10.14',
-    date: '2026-06-05',
-    items: [
-      'Fixed the Release Type tag not being written on downloads (it only appeared if you retagged afterward). The setting was being dropped before it reached the downloader, so new downloads silently skipped it. RELEASETYPE is now written on download as intended; existing retagging is unchanged.'
-    ]
-  },
-  {
-    version: '1.10.13',
-    date: '2026-06-04',
-    items: [
-      'You can now backfill the Release Type tag onto music you already downloaded. The Retag Library and the album/playlist "Refresh tags" actions now write RELEASETYPE too, so existing libraries get the same album/single/EP separation in Navidrome without re-downloading. (Same EP caveat applies — Deezer sometimes mislabels EPs.)'
-    ]
-  },
-  {
-    version: '1.10.12',
-    date: '2026-06-04',
-    items: [
-      'Added a Release Type tag (RELEASETYPE) so servers like Navidrome can automatically separate albums, singles, and EPs. Enabled by default; toggle it under Settings → Metadata tags. Note: the type comes from Deezer, which is reliable for albums/singles/compilations but sometimes mislabels EPs — so EP detection is best-effort.'
-    ]
-  },
-  {
-    version: '1.10.11',
-    date: '2026-06-04',
-    items: [
-      'Extended the v1.10.10 quota fix to the rest of the app: downloading all your favorite albums, downloading selected search results, and pasting a batch of links are now paced the same way, with the same retry-and-report behavior so nothing gets silently dropped. The download path itself also now backs off on rate-limit errors.'
-    ]
-  },
-  {
-    version: '1.10.10',
-    date: '2026-06-04',
-    items: [
-      'Fixed "Quota limit exceeded" errors when downloading a large artist discography. The app was firing metadata requests too fast while building the list, tripping Deezer\'s rate limit — which could silently drop some releases from the download queue (even with concurrent downloads set to 1). Requests are now paced, retried with smarter backoff, and any release that still can\'t be loaded is reported instead of vanishing.'
-    ]
-  },
-  {
-    version: '1.10.9',
-    date: '2026-06-03',
-    items: [
-      'Fixed the album artist tag on "Various Artists" releases: the folder was already named correctly, but the ALBUMARTIST tag was getting the individual track\'s artist instead of "Various Artists". Tags now match the folder.'
-    ]
-  },
-  {
-    version: '1.10.8',
-    date: '2026-05-30',
-    items: [
-      'Fixed downloads that failed with "Track unavailable on Deezer" even though the song plays fine — common on compilation/playlist versions of a track. The app now falls back to the original single release (matched by ISRC) and downloads that instead, the same move you\'d make by hand.'
-    ]
-  },
-  {
-    version: '1.10.7',
-    date: '2026-05-27',
-    items: [
-      'Retag Library is now album-aware: it tags every file in an album folder from the one real Deezer album, so track numbers and totals are correct even for songs that were also released as singles (which previously got mis-tagged as 1-of-1).',
-      'Results now show a "✓ Already correct" note for tags that already match Deezer, so nothing looks silently skipped.'
-    ]
-  },
-  {
-    version: '1.10.2',
-    date: '2026-05-27',
-    items: [
-      'The "Refresh tags" button on albums/playlists now fills in every tag Deezer offers for that release, instead of only the ones enabled in Settings.',
-      'The Retag Library now tells you why a tag didn\'t change — "Already up to date" or "Not available on Deezer" (some albums genuinely have no genre on Deezer) — instead of a silent skip.'
-    ]
-  },
-  {
-    version: '1.10.1',
-    date: '2026-05-26',
-    items: [
-      'Polish: "Refresh tags" now reads as a tag refresh in the queue (not a download), and is kept out of your download history and stats. Refreshing an album you haven\'t downloaded no longer marks it as downloaded.'
-    ]
-  },
-  {
-    version: '1.10.0',
-    date: '2026-05-26',
-    items: [
-      'Retag now has a "Refresh tags" button on any album or playlist — it rewrites tags on the files you already have from that exact release (correct barcode/label every time), with no re-download.',
-      'Retag can now write more fields: Genre, Track Length, and Explicit — all from Deezer\'s public catalog.'
-    ]
-  },
-  {
-    version: '1.9.0',
-    date: '2026-05-26',
-    items: [
-      'New Retag Library tool (closes #77) — point it at a folder and it rewrites tags on your existing files from Deezer, no re-download and the audio is left untouched. Great for backfilling UPC/Label on older downloads. Matches by ISRC; uses the public catalog (no account needed).'
-    ]
-  },
-  {
-    version: '1.8.2',
-    date: '2026-05-25',
-    items: [
-      'UPC and Label now write correctly into file tags when selected (fixes #76). The embedded-tag path still read the empty private-API fields; it now sources both from the public album API, same as the v1.8.1 template fix.'
-    ]
-  },
-  {
-    version: '1.8.1',
-    date: '2026-05-24',
-    items: [
-      '%barcode% / %upc% in folder + filename templates now actually substitute the album UPC (fixes #75). v1.8.0 wired the variable but read it from the private track API, which omits the field — sources the value from the public album API instead.'
-    ]
-  },
-  {
-    version: '1.8.0',
-    date: '2026-05-24',
-    items: [
-      'New %barcode% / %upc% folder template variable (closes #74) — distinguishes same-titled releases (e.g. a single "abcd" vs an album "abcd") so they don\'t collide on disk.',
-      'Per-profile picker in Backup and Restore — expand the Profiles row to back up or restore only the profiles you choose. v1.7.9 backup files keep working unchanged.'
-    ]
-  },
-  {
-    version: '1.7.9',
-    date: '2026-05-24',
-    items: [
-      'Restore no longer duplicates profiles on name collision — custom-name match overwrites in place, built-in name match renames to "(Restored)".',
-      'New "Semicolon + space" artist-separator option (closes #73). Existing "Semicolon" unchanged.'
-    ]
-  },
-  {
-    version: '1.7.8',
-    date: '2026-05-22',
-    items: [
-      'Restore modal now closes on completion with a confirmation toast.',
-      'Section renamed to "Backup and Restore Settings" for clarity. Closed ws CVE GHSA-58qx-3vcg-4xpx via overrides.'
-    ]
-  },
-  {
-    version: '1.7.3 – 1.7.5',
-    date: '2026-05-20 — 2026-05-21',
-    items: [
-      'Bulk "Sync all favourites" works at any scale (#68, #70) — replaced per-item loop with bulk endpoints; serialized state writes fix Windows drops.',
-      'Editable sync entries with pencil icon (#69) — rename, reschedule, change folder, or change first-sync mode per entry.',
-      'Selectable release types for artist sync (#71) — Albums / Singles / EPs / Compilations / Features filters per artist.'
-    ]
-  },
-  {
-    version: '1.7.0 – 1.7.2',
-    date: '2026-05-15 — 2026-05-20',
-    items: [
-      'Sync robustness pass (#66, #67) — scheduled sync respects "skip existing"; downloader no longer strands workers on skip.',
-      'Stack hygiene — Electron 35 → 39, axios/vite/postcss bumps, 40 Dependabot alerts closed.'
-    ]
-  },
-  {
-    version: '1.6.x',
-    date: '2026-05-14 — 2026-05-15',
-    items: [
-      'Sync engine launch — one-click sync for favourite playlists (#60) and artist discographies (#61) with per-artist release-type filters.',
-      'Parallel downloads inside sync, atomic state-file writes, corrupt-file quarantine, sync-badge progress, and "no longer in favourites" detection (#64).'
-    ]
-  },
-  {
     version: 'Earlier',
-    date: '< 2026-05-14',
+    date: '< 2026-06-24',
     items: [
-      'Foundational features — Playlist Sync, Spotify→Deezer conversion, Link Analyzer, Charts, New Releases, Downloads dashboard.',
-      'Full per-version detail: https://github.com/DRAZY/deemix-remastered/releases'
+      'Earlier 1.9–1.10 releases and foundational features — Sync engine, Spotify→Deezer conversion, Link Analyzer, Charts, New Releases, library dedup, retagging, and many fixes.',
+      'Full version-by-version history is on the changelog: https://github.com/DRAZY/deemix-remastered/releases'
     ]
   }
 ]

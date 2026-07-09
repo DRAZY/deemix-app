@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+# Least-privilege token: this workflow only needs to read the repo.
+permissions:
+  contents: read
+
 jobs:
   typecheck:
     name: vue-tsc --noEmit

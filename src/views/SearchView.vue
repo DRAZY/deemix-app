@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { deezerAPI } from '../services/deezerAPI'
 import { useSearchHistory } from '../composables/useSearchHistory'
 import { useDownloadStore } from '../stores/downloadStore'
+import { textContainsHostUrl } from '../utils/urlHost'
 import { useAuthStore } from '../stores/authStore'
 import { useToastStore } from '../stores/toastStore'
 import TrackCard from '../components/TrackCard.vue'
@@ -253,9 +254,7 @@ async function performSearch() {
 
   // Detect Deezer/Spotify links and redirect to Link Analyzer
   const query = searchQuery.value.trim()
-  if (query.includes('deezer.com') || query.includes('link.deezer.com') ||
-      query.includes('deezer.page.link') || query.includes('spotify.com') ||
-      query.includes('spotify.link')) {
+  if (textContainsHostUrl(query, ['deezer.com', 'deezer.page.link', 'spotify.com', 'spotify.link']) || query.startsWith('spotify:')) {
     router.push({ path: '/analyzer', query: { url: query } })
     return
   }
