@@ -116,6 +116,11 @@ export interface DownloadOptions {
   isFromPlaylist?: boolean
   isSingle?: boolean
   discNumber?: number
+  // Authoritative track position from the album tracklist (public API
+  // track_position). Backstop for FALLBACK/ISRC substitution: when the
+  // requested track's GW record lacks TRACK_NUMBER, this keeps the file from
+  // inheriting the substituted release's numbering (#102/#103).
+  trackNumber?: number
   playlistPosition?: number
   // Playlist context - for compilation handling
   playlistContext?: {
@@ -984,13 +989,13 @@ export class Downloader extends EventEmitter {
         const resolvedInfo = await deezerAuth.getTrackInfo(result.resolvedTrackId)
         if (resolvedInfo) {
           trackInfo = resolvedInfo
-          // Restore original position so the file is numbered correctly on this album
-          if (originalTrackNumber) {
-            trackInfo.TRACK_NUMBER = originalTrackNumber
-          }
-          if (originalDiskNumber) {
-            trackInfo.DISK_NUMBER = originalDiskNumber
-          }
+          // Restore original position so the file is numbered correctly on this
+          // album. Restricted tracks sometimes come back from song.getData without
+          // usable numbers, so fall back to the album-tracklist position the
+          // caller passed before accepting the substituted release's numbering
+          // (#102/#103).
+          trackInfo.TRACK_NUMBER = originalTrackNumber || options.trackNumber || trackInfo.TRACK_NUMBER
+          trackInfo.DISK_NUMBER = originalDiskNumber || options.discNumber || trackInfo.DISK_NUMBER
           // Update progress display with resolved track info
           const resolvedVersion = trackInfo.VERSION ? trackInfo.VERSION.replace(/^\((.+)\)$/, '$1') : ''
           progress.trackTitle = resolvedVersion

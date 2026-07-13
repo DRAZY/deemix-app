@@ -1191,11 +1191,16 @@ export class DeezerAuth extends EventEmitter {
   async getTrackInfo(trackId: string | number): Promise<any> {
     const cacheKey = `track_${trackId}`
 
-    // Check cache first
+    // Check cache first. Return a defensive copy — processDownload mutates the
+    // returned object (TRACK_NUMBER/DISK_NUMBER restore after FALLBACK/ISRC
+    // substitution, LYRICS attach). Handing out the cached reference let those
+    // mutations poison the cache, so a later download of the resolved track
+    // inherited another track's numbers and wrote a wrong-numbered duplicate
+    // (#102/#103).
     const cached = this.getCachedData(this.trackInfoCache, cacheKey)
     if (cached) {
       console.log(`[DeezerAuth] Track ${trackId} found in cache`)
-      return cached
+      return structuredClone(cached)
     }
 
     const response = await this.apiCall('song.getData', { sng_id: trackId })
@@ -1216,9 +1221,9 @@ export class DeezerAuth extends EventEmitter {
       throw new Error('Failed to get track info - empty response from Deezer')
     }
 
-    // Cache the result
+    // Cache the result — and return a copy for the same reason as above.
     this.setCachedData(this.trackInfoCache, cacheKey, response.results)
-    return response.results
+    return structuredClone(response.results)
   }
 
   // Try to get track info with country availability using song.getListData

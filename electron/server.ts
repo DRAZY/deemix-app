@@ -1689,6 +1689,9 @@ export class DeemixServer extends EventEmitter {
             removeArtistCombinations: this.settings.removeArtistCombinations
           },
           discNumber: track.disk_number,
+          // #102/#103: authoritative position backstop for FALLBACK/ISRC
+          // substitution — see DownloadOptions.trackNumber.
+          trackNumber: track.track_position,
           albumContext: albumContext,
           skipDuplicateTracks: this.settings.skipDuplicateTracks,
           createErrorLog: this.settings.createErrorLog,
