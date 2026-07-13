@@ -66,15 +66,15 @@ const contextMenuItems = computed(() => [
         :alt="artist.name"
         loading="lazy"
         decoding="async"
-        class="w-full h-full object-cover rounded-full bg-background-tertiary shadow-md
-               group-hover:shadow-lg transition-shadow duration-200"
+        class="w-full h-full object-cover rounded-full bg-background-tertiary border border-white/[0.08]
+               group-hover:border-primary-500/60 transition-colors duration-200"
         @error="handleImageError"
       />
       <!-- Fallback placeholder when no image or image fails to load -->
       <div
         v-else
-        class="w-full h-full rounded-full bg-background-tertiary shadow-md
-               group-hover:shadow-lg transition-shadow duration-200
+        class="w-full h-full rounded-full bg-background-tertiary border border-white/[0.08]
+               group-hover:border-primary-500/60 transition-colors duration-200
                flex items-center justify-center"
       >
         <svg class="w-12 h-12 text-foreground-muted/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -87,16 +87,16 @@ const contextMenuItems = computed(() => [
                   rounded-full flex items-center justify-center">
         <div class="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center
                     transform scale-90 group-hover:scale-100 transition-transform shadow-lg">
-          <svg class="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6 text-background-main ml-1" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
           </svg>
         </div>
       </div>
     </div>
-    <h3 class="font-medium truncate group-hover:text-primary-400 transition-colors">
+    <h3 class="text-[13px] font-semibold truncate group-hover:text-primary-400 transition-colors">
       {{ artist.name }}
     </h3>
-    <p class="text-sm text-foreground-muted">{{ t('common.artist') }}</p>
+    <p class="font-mono text-[9.5px] tracking-[0.16em] uppercase text-foreground-muted/70 mt-0.5">{{ t('common.artist') }}</p>
 
     <!-- Context Menu -->
     <ContextMenu

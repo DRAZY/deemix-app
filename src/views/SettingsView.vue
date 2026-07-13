@@ -399,7 +399,7 @@ async function reindexLibrary() {
 <template>
   <div class="space-y-8 max-w-3xl">
     <div class="flex items-center justify-between gap-4">
-      <h1 class="text-2xl font-bold">{{ t('settings.title') }}</h1>
+      <h1 class="font-display uppercase text-[22px] tracking-[0.02em]">{{ t('settings.title') }}</h1>
       <!-- Settings Search -->
       <div class="relative w-64">
         <input
@@ -438,7 +438,7 @@ async function reindexLibrary() {
     <section v-if="isSectionVisible('profiles')" class="card">
       <h2
         @click="toggleSection('profiles')"
-        class="text-lg font-semibold border-b border-zinc-700 pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
+        class="font-display text-[13px] uppercase tracking-[0.08em] border-b border-white/[0.08] pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
       >
         <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -463,7 +463,7 @@ async function reindexLibrary() {
     <section v-if="isSectionVisible('appearance')" class="card">
       <h2
         @click="toggleSection('appearance')"
-        class="text-lg font-semibold border-b border-zinc-700 pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
+        class="font-display text-[13px] uppercase tracking-[0.08em] border-b border-white/[0.08] pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
       >
         <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -599,7 +599,7 @@ async function reindexLibrary() {
     <section v-if="isSectionVisible('languages')" class="card">
       <h2
         @click="toggleSection('languages')"
-        class="text-lg font-semibold border-b border-zinc-700 pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
+        class="font-display text-[13px] uppercase tracking-[0.08em] border-b border-white/[0.08] pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
       >
         <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -637,7 +637,7 @@ async function reindexLibrary() {
     <section v-if="isSectionVisible('downloads')" class="card">
       <h2
         @click="toggleSection('downloads')"
-        class="text-lg font-semibold border-b border-zinc-700 pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
+        class="font-display text-[13px] uppercase tracking-[0.08em] border-b border-white/[0.08] pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
       >
         <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -851,7 +851,7 @@ async function reindexLibrary() {
     <section v-if="isSectionVisible('folders')" class="card">
       <h2
         @click="toggleSection('folders')"
-        class="text-lg font-semibold border-b border-zinc-700 pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
+        class="font-display text-[13px] uppercase tracking-[0.08em] border-b border-white/[0.08] pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
       >
         <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -994,7 +994,7 @@ async function reindexLibrary() {
     <section v-if="isSectionVisible('templates')" class="card">
       <h2
         @click="toggleSection('templates')"
-        class="text-lg font-semibold border-b border-zinc-700 pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
+        class="font-display text-[13px] uppercase tracking-[0.08em] border-b border-white/[0.08] pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
       >
         <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1153,7 +1153,7 @@ async function reindexLibrary() {
     <section v-if="isSectionVisible('metadata')" class="card">
       <h2
         @click="toggleSection('metadata')"
-        class="text-lg font-semibold border-b border-zinc-700 pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
+        class="font-display text-[13px] uppercase tracking-[0.08em] border-b border-white/[0.08] pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
       >
         <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1212,7 +1212,7 @@ async function reindexLibrary() {
     <section v-if="isSectionVisible('albumCovers')" class="card">
       <h2
         @click="toggleSection('albumCovers')"
-        class="text-lg font-semibold border-b border-zinc-700 pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
+        class="font-display text-[13px] uppercase tracking-[0.08em] border-b border-white/[0.08] pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
       >
         <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1339,7 +1339,7 @@ async function reindexLibrary() {
     <section v-if="isSectionVisible('tags')" class="card">
       <h2
         @click="toggleSection('tags')"
-        class="text-lg font-semibold border-b border-zinc-700 pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
+        class="font-display text-[13px] uppercase tracking-[0.08em] border-b border-white/[0.08] pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
       >
         <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1581,7 +1581,7 @@ async function reindexLibrary() {
     <section v-if="isSectionVisible('other')" class="card">
       <h2
         @click="toggleSection('other')"
-        class="text-lg font-semibold border-b border-zinc-700 pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
+        class="font-display text-[13px] uppercase tracking-[0.08em] border-b border-white/[0.08] pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
       >
         <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1776,7 +1776,7 @@ async function reindexLibrary() {
     <section v-if="isSectionVisible('accounts')" class="card">
       <h2
         @click="toggleSection('accounts')"
-        class="text-lg font-semibold border-b border-zinc-700 pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
+        class="font-display text-[13px] uppercase tracking-[0.08em] border-b border-white/[0.08] pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
       >
         <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1853,7 +1853,7 @@ async function reindexLibrary() {
     <section v-if="isSectionVisible('spotify')" class="card">
       <h2
         @click="toggleSection('spotify')"
-        class="text-lg font-semibold border-b border-zinc-700 pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
+        class="font-display text-[13px] uppercase tracking-[0.08em] border-b border-white/[0.08] pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
       >
         <svg class="w-5 h-5 text-[#1DB954]" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
@@ -1999,7 +1999,7 @@ async function reindexLibrary() {
     <section v-if="isSectionVisible('backup')" class="card">
       <h2
         @click="toggleSection('backup')"
-        class="text-lg font-semibold border-b border-zinc-700 pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
+        class="font-display text-[13px] uppercase tracking-[0.08em] border-b border-white/[0.08] pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
       >
         <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

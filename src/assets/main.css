@@ -241,6 +241,17 @@
     color: rgb(10 14 18);
   }
 
+  /* Signal is a hard-edged console — no rounded buttons/inputs/cards */
+  [data-theme="signal"] .btn,
+  [data-theme="signal"] .input {
+    border-radius: 0;
+  }
+
+  [data-theme="signal"] .card {
+    border-radius: 0;
+    border: 1px solid rgb(255 255 255 / 0.07);
+  }
+
   .btn-secondary {
     @apply bg-background-tertiary hover:bg-zinc-700 text-foreground;
   }
@@ -336,4 +347,35 @@
   .space-y-2 > * {
     contain: layout style;
   }
+}
+
+/* ── Signal Deck atmosphere ──
+   Scanline + vignette overlays rendered by App.vue (.theme-crt / .theme-vig).
+   Hidden by default; only the Signal theme switches them on. Toned down from
+   the mockup (0.35 → 0.16) so long sessions stay comfortable. */
+.theme-crt,
+.theme-vig {
+  display: none;
+}
+[data-theme="signal"] .theme-crt {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.14) 0 1px, transparent 1px 3px);
+  opacity: 0.16;
+}
+[data-theme="signal"] .theme-vig {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  pointer-events: none;
+  background: radial-gradient(120% 100% at 50% 40%, transparent 62%, rgba(0, 0, 0, 0.38));
+}
+/* Light mode never gets the CRT treatment, whatever the theme setting */
+[data-mode="light"] .theme-crt,
+[data-mode="light"] .theme-vig {
+  display: none;
 }

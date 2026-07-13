@@ -209,13 +209,13 @@ const contextMenuItems = computed(() => {
         <img
           :src="album.cover_xl || album.cover_big || album.cover_medium"
           :alt="album.title"
-          class="w-48 h-48 rounded-xl object-cover shadow-2xl"
+          class="w-48 h-48 object-cover border border-white/[0.1] shadow-2xl"
         />
         <div class="flex-1">
-          <p class="text-sm text-foreground-muted uppercase tracking-wider mb-2">
+          <p class="font-mono text-[10px] tracking-[0.3em] uppercase text-primary-500 mb-2">
             {{ album.record_type || 'Album' }}
           </p>
-          <h1 class="text-4xl font-bold mb-2">{{ album.title }}</h1>
+          <h1 class="font-display uppercase text-[34px] leading-[1.02] tracking-[-0.01em] mb-2">{{ album.title }}</h1>
           <p class="text-foreground-muted mb-4">
             <router-link
               v-if="album.artist?.id != null"
@@ -307,7 +307,7 @@ const contextMenuItems = computed(() => {
         <!-- Selection Bar -->
         <div
           v-if="isSelectionMode"
-          class="flex items-center justify-between mb-4 p-3 bg-background-secondary rounded-lg"
+          class="flex items-center justify-between mb-4 p-3 border border-white/[0.08] bg-background-secondary/70"
         >
           <div class="flex items-center gap-4">
             <button
