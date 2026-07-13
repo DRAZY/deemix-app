@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { setLocale } from '../i18n'
 
-export type ColorTheme = 'violet' | 'spotify' | 'rose' | 'ocean' | 'sunset' | 'mint' | 'dracula' | 'nord'
+export type ColorTheme = 'signal' | 'violet' | 'spotify' | 'rose' | 'ocean' | 'sunset' | 'mint' | 'dracula' | 'nord'
 
 export type OverwriteMode = 'no' | 'overwrite' | 'rename'
 
@@ -231,7 +231,7 @@ export const defaultSettings: Settings = {
   previewVolume: 80,
   // executeAfterDownload removed - security risk
   theme: 'dark',
-  colorTheme: 'violet',
+  colorTheme: 'signal',
   language: 'en',
   arl: '',
   // Spotify integration

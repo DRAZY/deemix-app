@@ -22,7 +22,7 @@ const settingsSearch = ref('')
 // Define searchable content for each section
 const sectionSearchTerms: Record<string, string[]> = {
   profiles: ['profile', 'preset', 'audiophile', 'quick', 'balanced', 'flac', 'mp3', 'import', 'export', 'save profile'],
-  appearance: ['appearance', 'theme', 'color', 'violet', 'spotify', 'rose', 'ocean', 'sunset', 'mint', 'dracula', 'nord', 'slim', 'sidebar', 'download tab', 'quality tag', 'search button'],
+  appearance: ['appearance', 'theme', 'color', 'signal', 'violet', 'spotify', 'rose', 'ocean', 'sunset', 'mint', 'dracula', 'nord', 'slim', 'sidebar', 'download tab', 'quality tag', 'search button'],
   languages: ['language', 'languages', 'locale', 'translation'],
   downloads: ['download', 'path', 'location', 'folder', 'concurrent', 'pacing', 'speed', 'rate', 'delay', 'natural', 'bitrate', 'quality', 'mp3', 'flac', '128', '320', 'overwrite', 'fallback', 'isrc', 'log', 'cdn', 'lrc', 'lyrics', 'playlist', 'queue'],
   folders: ['folder', 'structure', 'template', 'artist', 'album', 'playlist', 'cd', 'singles'],
@@ -322,6 +322,7 @@ function openSpotifyInfo() {
 }
 
 const themeOptions: { value: ColorTheme; label: string; colors: string[] }[] = [
+  { value: 'signal', label: 'Signal', colors: ['#C8F135', '#8FAE24', '#59C2D6'] },
   { value: 'violet', label: 'Violet', colors: ['#8B5CF6', '#6366F1', '#3B82F6'] },
   { value: 'spotify', label: 'Spotify', colors: ['#1DB954', '#1ED760', '#17A34A'] },
   { value: 'rose', label: 'Rose', colors: ['#F43F5E', '#EC4899', '#DB2777'] },
