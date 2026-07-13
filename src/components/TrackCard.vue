@@ -118,8 +118,8 @@ const contextMenuItems = computed(() => [
 
 <template>
   <div
-    class="track-card group flex items-center gap-3 p-2 rounded-lg transition-colors"
-    :class="isPlaying ? 'bg-primary-500/10' : 'hover:bg-background-secondary'"
+    class="track-card group flex items-center gap-3 px-2 py-2 border-b border-white/[0.05] transition-colors"
+    :class="isPlaying ? 'bg-primary-500/10' : 'hover:bg-primary-500/[0.04]'"
     @contextmenu="openMenu"
   >
     <!-- Index / Play button -->
@@ -137,7 +137,7 @@ const contextMenuItems = computed(() => [
       </button>
       <!-- Show index normally, play button on hover -->
       <template v-else>
-        <span class="group-hover:hidden text-foreground-muted">{{ index || '' }}</span>
+        <span class="group-hover:hidden font-mono text-[11px] text-foreground-muted">{{ index || '' }}</span>
         <button
           v-if="track.preview"
           @click="togglePlay"
@@ -157,13 +157,13 @@ const contextMenuItems = computed(() => [
       :alt="track.title"
       loading="lazy"
       decoding="async"
-      class="w-10 h-10 rounded object-cover bg-background-tertiary"
+      class="w-9 h-9 object-cover bg-background-tertiary"
       @error="handleImageError"
     />
     <!-- Fallback placeholder when no image or image fails to load -->
     <div
       v-else
-      class="w-10 h-10 rounded bg-background-tertiary flex items-center justify-center"
+      class="w-9 h-9 bg-background-tertiary flex items-center justify-center"
     >
       <svg class="w-5 h-5 text-foreground-muted/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -173,11 +173,11 @@ const contextMenuItems = computed(() => [
 
     <!-- Track info -->
     <div class="flex-1 min-w-0">
-      <p class="font-medium truncate" :class="isPlaying ? 'text-primary-400' : (track.explicit_lyrics ? 'text-primary-400' : '')">
+      <p class="text-[13px] font-semibold truncate" :class="isPlaying ? 'text-primary-400' : (track.explicit_lyrics ? 'text-primary-400' : '')">
         {{ track.title }}
-        <span v-if="track.explicit_lyrics" class="text-xs bg-foreground-muted/20 px-1 rounded ml-1">E</span>
+        <span v-if="track.explicit_lyrics" class="font-mono text-[9px] border border-white/20 text-foreground-muted px-1 ml-1 align-middle">E</span>
       </p>
-      <div class="flex items-center gap-1 text-sm text-foreground-muted truncate">
+      <div class="flex items-center gap-1 text-[11.5px] text-foreground-muted truncate">
         <span
           v-if="track.artist?.id != null"
           @click.stop="goToArtist"
@@ -205,17 +205,17 @@ const contextMenuItems = computed(() => [
     </div>
 
     <!-- Duration -->
-    <span class="text-sm text-foreground-muted w-12 text-right">{{ duration }}</span>
+    <span class="font-mono text-[11px] text-foreground-muted w-12 text-right">{{ duration }}</span>
 
     <!-- Actions -->
-    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div class="flex items-center gap-1.5">
       <button
         @click="toggleFavorite"
-        class="p-2 hover:bg-white/10 rounded-lg transition-colors"
+        class="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all"
         :title="isFavorite ? t('trackCard.removeFromFavorites') : t('trackCard.addToFavorites')"
       >
         <svg
-          class="w-5 h-5"
+          class="w-4.5 h-4.5"
           :class="isFavorite ? 'fill-primary-500 text-primary-500' : 'text-foreground-muted'"
           fill="none"
           viewBox="0 0 24 24"
@@ -227,30 +227,17 @@ const contextMenuItems = computed(() => [
       </button>
       <button
         @click="download"
-        class="p-2 rounded-lg transition-colors"
+        class="get-btn"
         :class="{
-          'bg-primary-500/20 text-primary-400 cursor-default': downloadState === 'downloading',
-          'bg-green-500/20 text-green-400 cursor-default': downloadState === 'completed',
-          'hover:bg-white/10': downloadState === 'available'
+          'get-btn-queued': downloadState === 'downloading',
+          'get-btn-stored': downloadState === 'completed'
         }"
         :title="downloadState === 'downloading' ? t('trackCard.inQueue') : downloadState === 'completed' ? t('trackCard.alreadyDownloaded') : t('trackCard.download')"
         :disabled="downloadState !== 'available'"
       >
-        <!-- Downloading indicator (checkmark) -->
-        <svg v-if="downloadState === 'downloading'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M5 13l4 4L19 7" />
-        </svg>
-        <!-- Already downloaded indicator (double checkmark) -->
-        <svg v-else-if="downloadState === 'completed'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <!-- Download icon -->
-        <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-        </svg>
+        <template v-if="downloadState === 'downloading'">QUEUED</template>
+        <template v-else-if="downloadState === 'completed'">STORED</template>
+        <template v-else>GET&nbsp;↓</template>
       </button>
     </div>
 
@@ -264,3 +251,34 @@ const contextMenuItems = computed(() => [
     />
   </div>
 </template>
+
+<style scoped>
+/* Mockup .get — mono bordered acquisition button; fills chartreuse on hover */
+.get-btn {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgb(var(--primary-500));
+  border: 1px solid rgb(var(--primary-600) / 0.7);
+  padding: 4px 10px;
+  background: none;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.get-btn:not(:disabled):hover {
+  background: rgb(var(--primary-500));
+  color: rgb(var(--bg-main));
+  border-color: rgb(var(--primary-500));
+  box-shadow: 0 0 14px rgb(var(--primary-500) / 0.35);
+}
+.get-btn-queued {
+  color: #ffb454;
+  border-color: rgb(255 180 84 / 0.5);
+  cursor: default;
+}
+.get-btn-stored {
+  color: #59c2d6;
+  border-color: rgb(89 194 214 / 0.5);
+  cursor: default;
+}
+</style>
