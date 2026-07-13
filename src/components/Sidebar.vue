@@ -68,8 +68,15 @@ function handleAuthClick() {
     <!-- Brand block -->
     <div class="p-4" :class="isSlim ? 'pb-2' : 'p-5 pb-3'">
       <div class="flex items-center gap-2.5" :class="isSlim ? 'justify-center' : ''">
-        <div class="w-9 h-9 rounded-md overflow-hidden flex-shrink-0">
-          <img src="/icon.png" alt="Deemix Remastered" class="w-full h-full object-cover" />
+        <!-- Themed brand mark — driven by each theme's logo gradient vars, so it
+             follows Signal (chartreuse→cyan) and every other palette. -->
+        <div
+          class="w-9 h-9 flex-shrink-0 flex items-center justify-center border border-white/[0.1]"
+          style="background: linear-gradient(140deg, var(--logo-start), var(--logo-mid) 55%, var(--logo-end))"
+          role="img"
+          :aria-label="t('sidebar.appName')"
+        >
+          <span class="font-display text-[15px] leading-none" style="color: rgb(var(--bg-main))">D▮</span>
         </div>
         <div v-if="!isSlim" class="min-w-0">
           <h1 class="text-sm font-semibold leading-tight truncate">{{ t('sidebar.appName') }}</h1>
