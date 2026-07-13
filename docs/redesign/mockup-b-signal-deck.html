@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deemix Remastered — Concept B: SIGNAL DECK</title>
+<!-- HERO: the transfer rack — every download rendered as a hardware rack unit with a
+     segmented VU meter that fills in real time, live throughput readout, phosphor glow -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0E12; --panel:#0E141B; --panel2:#131B24; --inset:#070B0F;
+  --line:#1C2833; --line2:#2A3948;
+  --fg:#D7E1E8; --dim:#7C8B98; --faint:#45535F;
+  --acid:#C8F135; --acid-dim:#8FAE24;
+  --amber:#FFB454; --red:#FF5C5C; --cyanish:#59C2D6;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;overflow:hidden}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Archivo Black',sans-serif;letter-spacing:.01em}
+
+/* scanline + vignette atmosphere */
+.crt{position:fixed;inset:0;z-index:50;pointer-events:none;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.14) 0 1px, transparent 1px 3px);
+  opacity:.35}
+.vig{position:fixed;inset:0;z-index:49;pointer-events:none;background:radial-gradient(120% 100% at 50% 40%, transparent 60%, rgba(0,0,0,.5))}
+
+.app{display:flex;flex-direction:column;height:100vh;position:relative;z-index:1}
+
+/* ── status strip ── */
+.strip{display:flex;align-items:center;height:38px;border-bottom:1px solid var(--line);padding:0 14px;gap:0;flex:0 0 auto;background:var(--panel);-webkit-app-region:drag}
+.strip .cell{display:flex;align-items:center;gap:8px;padding:0 14px;height:100%;border-right:1px solid var(--line);font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:var(--dim)}
+.strip .cell:first-child{padding-left:0}
+.strip .brand{font-family:'Archivo Black',sans-serif;font-size:13px;color:var(--fg);letter-spacing:.04em}
+.strip .brand span{color:var(--acid)}
+.led{width:7px;height:7px;border-radius:1px;background:var(--acid);box-shadow:0 0 8px rgba(200,241,53,.7);animation:blink 3s steps(1) infinite}
+@keyframes blink{0%,92%{opacity:1}94%,97%{opacity:.3}98%,100%{opacity:1}}
+.strip .grow{flex:1;border-right:none}
+.strip .clock{border-right:none;color:var(--fg)}
+
+.body{display:flex;flex:1;min-height:0}
+
+/* ── channel nav ── */
+.chan{width:216px;flex:0 0 auto;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;padding:18px 0}
+.chan .hd{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.3em;color:var(--faint);padding:0 18px 10px}
+.ch{display:flex;align-items:center;gap:12px;padding:9px 18px;cursor:pointer;color:var(--dim);border-left:2px solid transparent;transition:all .15s ease-out;font-weight:500}
+.ch .no{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint);width:20px}
+.ch:hover{color:var(--fg);background:rgba(200,241,53,.04)}
+.ch.on{color:var(--acid);border-left-color:var(--acid);background:linear-gradient(90deg,rgba(200,241,53,.09),transparent)}
+.ch.on .no{color:var(--acid-dim)}
+.ch .bdg{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;background:var(--acid);color:#0A0E12;padding:1px 6px;font-weight:700}
+.chan .spacer{flex:1}
+.meterbox{margin:0 14px;padding:12px;border:1px solid var(--line);background:var(--inset)}
+.meterbox .lbl{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.24em;color:var(--faint);display:flex;justify-content:space-between;margin-bottom:8px}
+.meterbox .lbl b{color:var(--acid);font-weight:500}
+.spark{display:flex;align-items:flex-end;gap:2px;height:34px}
+.spark i{flex:1;background:linear-gradient(to top,var(--acid-dim),var(--acid));opacity:.85;animation:sp 1.6s ease-in-out infinite}
+@keyframes sp{0%,100%{transform:scaleY(.55)}50%{transform:scaleY(1)}}
+.spark i{transform-origin:bottom}
+.spark i:nth-child(2n){animation-delay:.2s}.spark i:nth-child(3n){animation-delay:.45s}.spark i:nth-child(5n){animation-delay:.7s}
+
+/* ── main ── */
+.main{flex:1;min-width:0;overflow-y:auto;padding:30px 34px 60px}
+.main::-webkit-scrollbar{width:10px}
+.main::-webkit-scrollbar-thumb{background:var(--line2)}
+
+.reveal{opacity:0;transform:translateY(10px);animation:up .6s ease-out forwards}
+@keyframes up{to{opacity:1;transform:none}}
+.d1{animation-delay:.05s}.d2{animation-delay:.14s}.d3{animation-delay:.23s}.d4{animation-delay:.32s}
+
+.overline{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.3em;color:var(--acid);margin-bottom:10px}
+h1.big{font-family:'Archivo Black',sans-serif;font-size:52px;line-height:.98;text-transform:uppercase;letter-spacing:-.01em}
+h1.big .ghost{color:transparent;-webkit-text-stroke:1px var(--line2)}
+
+/* command search */
+.cmd{margin-top:26px;display:flex;align-items:center;border:1px solid var(--line2);background:var(--inset);height:56px}
+.cmd .tag{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0A0E12;background:var(--acid);align-self:stretch;display:flex;align-items:center;padding:0 14px;font-weight:700;letter-spacing:.1em}
+.cmd input{flex:1;background:none;border:none;outline:none;color:var(--fg);font-family:'IBM Plex Mono',monospace;font-size:14px;padding:0 16px}
+.cmd input::placeholder{color:var(--faint)}
+.cmd .cur{width:9px;height:20px;background:var(--acid);margin-right:16px;animation:cur 1.1s steps(1) infinite}
+@keyframes cur{50%{opacity:0}}
+.hint{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint);margin-top:8px;letter-spacing:.06em}
+.hint b{color:var(--dim);font-weight:500}
+
+/* results table */
+.tblhead{display:flex;align-items:center;gap:14px;margin:36px 0 0}
+.tblhead h3{font-family:'Archivo Black',sans-serif;font-size:15px;text-transform:uppercase;letter-spacing:.06em}
+.tblhead .count{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint)}
+.tblhead .rule{flex:1;height:1px;background:var(--line)}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.2em;color:var(--faint);text-align:left;font-weight:500;padding:8px 10px;border-bottom:1px solid var(--line2)}
+td{padding:11px 10px;border-bottom:1px solid var(--line);font-size:13px}
+tr.row{cursor:pointer;transition:background .12s}
+tr.row:hover{background:rgba(200,241,53,.045)}
+td .tt{font-weight:600}
+td .aa{color:var(--dim);font-size:11.5px;margin-top:1px}
+.sq{width:34px;height:34px;flex:0 0 auto}
+.fmt{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--cyanish);border:1px solid var(--line2);padding:2px 7px;white-space:nowrap}
+.dur{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim)}
+.get{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--acid);border:1px solid var(--acid-dim);padding:5px 12px;background:none;cursor:pointer;transition:all .15s}
+tr.row:hover .get{background:var(--acid);color:#0A0E12;border-color:var(--acid);box-shadow:0 0 14px rgba(200,241,53,.35)}
+.g1{background:linear-gradient(140deg,#233,#3a6a7a)}
+.g2{background:linear-gradient(140deg,#332318,#7a5a2a)}
+.g3{background:linear-gradient(140deg,#2a1a2e,#6a3a7a)}
+.g4{background:linear-gradient(140deg,#13291e,#2a7a4e)}
+.g5{background:linear-gradient(140deg,#301a1a,#7a3a3a)}
+
+/* ── transfer rack ── */
+.rack{width:340px;flex:0 0 auto;border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column}
+.rack .rhd{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.rack .rhd h4{font-family:'Archivo Black',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:.08em}
+.rack .rhd .mono{margin-left:auto;font-size:9.5px;color:var(--faint);letter-spacing:.12em}
+.units{flex:1;overflow-y:auto;padding:12px}
+.unit{border:1px solid var(--line2);background:var(--panel2);margin-bottom:10px;padding:12px 12px 10px;position:relative}
+.unit::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--acid);box-shadow:0 0 10px rgba(200,241,53,.5)}
+.unit.q::before{background:var(--faint);box-shadow:none}
+.unit.ok::before{background:var(--cyanish);box-shadow:none}
+.unit .u-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.unit .u-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unit .u-stat{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--acid);letter-spacing:.1em;flex:0 0 auto}
+.unit.q .u-stat{color:var(--faint)}
+.unit.ok .u-stat{color:var(--cyanish)}
+.unit .u-sub{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--dim);margin-top:3px}
+.vu{display:flex;gap:3px;margin-top:9px;height:12px}
+.vu i{flex:1;background:var(--inset);border:1px solid var(--line)}
+.vu i.f{background:var(--acid);border-color:var(--acid-dim);box-shadow:0 0 6px rgba(200,241,53,.4)}
+.vu i.fa{background:var(--amber);border-color:#a06a20;box-shadow:0 0 6px rgba(255,180,84,.4)}
+.vu i.fc{background:var(--cyanish);border-color:#3a8a9a;box-shadow:none}
+.unit .u-foot{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--faint);margin-top:7px}
+.unit .u-foot b{color:var(--dim);font-weight:500}
+.rack .totals{border-top:1px solid var(--line);padding:14px 18px;background:var(--inset)}
+.rack .totals .r{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--dim);margin-bottom:6px}
+.rack .totals .r b{color:var(--acid);font-weight:500}
+.bigmeter{display:flex;gap:3px;height:16px;margin-top:10px}
+.bigmeter i{flex:1;background:var(--panel2);border:1px solid var(--line)}
+.bigmeter i.f{background:var(--acid);border-color:var(--acid-dim);box-shadow:0 0 8px rgba(200,241,53,.45)}
+.bigmeter i.fa{background:var(--amber);border-color:#a06a20}
+
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="crt"></div><div class="vig"></div>
+<div class="app">
+
+  <div class="strip">
+    <div class="cell brand">DEEMIX<span>▮</span>RMSTD</div>
+    <div class="cell"><span class="led"></span>LINK ESTABLISHED</div>
+    <div class="cell">ARL · VALID 142d</div>
+    <div class="cell">REGION · US</div>
+    <div class="cell">QUALITY · FLAC/1411</div>
+    <div class="cell grow"></div>
+    <div class="cell clock">19:42:07 PST</div>
+  </div>
+
+  <div class="body">
+    <nav class="chan">
+      <div class="hd">CHANNELS</div>
+      <div class="ch on"><span class="no">01</span>Home</div>
+      <div class="ch"><span class="no">02</span>Search</div>
+      <div class="ch"><span class="no">03</span>Charts</div>
+      <div class="ch"><span class="no">04</span>Favorites</div>
+      <div class="ch"><span class="no">05</span>Downloads<span class="bdg">04</span></div>
+      <div class="ch"><span class="no">06</span>Link Analyzer</div>
+      <div class="ch"><span class="no">07</span>Playlist Sync</div>
+      <div class="ch"><span class="no">08</span>Retag</div>
+      <div class="ch"><span class="no">09</span>Settings</div>
+      <div class="spacer"></div>
+      <div class="meterbox">
+        <div class="lbl"><span>THROUGHPUT</span><b>9.2 MB/S</b></div>
+        <div class="spark"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+    </nav>
+
+    <main class="main">
+      <div class="reveal d1">
+        <div class="overline">// ACQUISITION CONSOLE</div>
+        <h1 class="big">Pull the<br>signal <span class="ghost">down.</span></h1>
+      </div>
+
+      <div class="reveal d2">
+        <div class="cmd">
+          <span class="tag">QUERY</span>
+          <input value="sable motif" />
+          <span class="cur"></span>
+        </div>
+        <div class="hint">ACCEPTS <b>free text</b> · <b>deezer.com/*</b> · <b>open.spotify.com/*</b> · PASTE ANYWHERE TO ROUTE</div>
+      </div>
+
+      <div class="reveal d3">
+        <div class="tblhead"><h3>Results</h3><span class="count">37 MATCHES · 0.31s</span><div class="rule"></div></div>
+        <table>
+          <thead><tr><th style="width:44px"></th><th>TITLE / ARTIST</th><th>FORMAT</th><th>DUR</th><th style="width:80px"></th></tr></thead>
+          <tbody>
+            <tr class="row"><td><div class="sq g1"></div></td><td><div class="tt">Nocturnal Exchange</div><div class="aa">Sable Motif · album · 22 trk</div></td><td><span class="fmt">FLAC</span></td><td class="dur">1:18:44</td><td><button class="get">GET ↓</button></td></tr>
+            <tr class="row"><td><div class="sq g2"></div></td><td><div class="tt">Filament</div><div class="aa">Sable Motif · single</div></td><td><span class="fmt">FLAC</span></td><td class="dur">3:57</td><td><button class="get">GET ↓</button></td></tr>
+            <tr class="row"><td><div class="sq g3"></div></td><td><div class="tt">Low Orbit Sessions</div><div class="aa">Sable Motif · EP · 6 trk</div></td><td><span class="fmt">FLAC</span></td><td class="dur">24:12</td><td><button class="get">GET ↓</button></td></tr>
+            <tr class="row"><td><div class="sq g4"></div></td><td><div class="tt">Patina (Sable Motif Rework)</div><div class="aa">The Vermilion · track</div></td><td><span class="fmt">MP3 320</span></td><td class="dur">5:22</td><td><button class="get">GET ↓</button></td></tr>
+            <tr class="row"><td><div class="sq g5"></div></td><td><div class="tt">Essential Sable Motif</div><div class="aa">playlist · 48 trk</div></td><td><span class="fmt">MIXED</span></td><td class="dur">3:04:51</td><td><button class="get">GET ↓</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <aside class="rack">
+      <div class="rhd"><h4>Transfer Rack</h4><span class="mono">4 LIVE · 12 STORED</span></div>
+      <div class="units reveal d4">
+        <div class="unit">
+          <div class="u-top"><span class="u-name">Filament — Sable Motif</span><span class="u-stat">RECV</span></div>
+          <div class="u-sub">FLAC 1411 · 8.4 MB/s</div>
+          <div class="vu"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="fa"></i><i></i><i></i><i></i><i></i></div>
+          <div class="u-foot"><span>24.1 / 31.0 MB</span><b>78%</b></div>
+        </div>
+        <div class="unit">
+          <div class="u-top"><span class="u-name">Overture — Velvet Arithmetic</span><span class="u-stat">RECV</span></div>
+          <div class="u-sub">FLAC 1411 · 6.1 MB/s</div>
+          <div class="vu"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="fa"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="u-foot"><span>11.6 / 28.4 MB</span><b>41%</b></div>
+        </div>
+        <div class="unit">
+          <div class="u-top"><span class="u-name">Slack Tide — Night Ferry</span><span class="u-stat">RECV</span></div>
+          <div class="u-sub">FLAC 1411 · handshake</div>
+          <div class="vu"><i class="f"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="u-foot"><span>1.8 / 29.7 MB</span><b>6%</b></div>
+        </div>
+        <div class="unit q">
+          <div class="u-top"><span class="u-name">Nocturnal Exchange — full album</span><span class="u-stat">QUEUE</span></div>
+          <div class="u-sub">22 tracks · awaiting slot</div>
+          <div class="vu"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="u-foot"><span>0 / 612 MB</span><b>—</b></div>
+        </div>
+        <div class="unit ok">
+          <div class="u-top"><span class="u-name">Patina — The Vermilion</span><span class="u-stat">STORED</span></div>
+          <div class="u-sub">✓ ~/Music/Deemix · 31.2 MB</div>
+          <div class="vu"><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i></div>
+          <div class="u-foot"><span>31.2 / 31.2 MB</span><b>100%</b></div>
+        </div>
+        <div class="unit ok">
+          <div class="u-top"><span class="u-name">Fern Logic — Palm Theory</span><span class="u-stat">STORED</span></div>
+          <div class="u-sub">✓ ~/Music/Deemix · 28.9 MB</div>
+          <div class="vu"><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i><i class="fc"></i></div>
+          <div class="u-foot"><span>28.9 / 28.9 MB</span><b>100%</b></div>
+        </div>
+      </div>
+      <div class="totals">
+        <div class="r"><span>SESSION VOLUME</span><b>1.24 GB</b></div>
+        <div class="r"><span>AGGREGATE RATE</span><b>9.2 MB/S</b></div>
+        <div class="bigmeter"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="fa"></i><i class="fa"></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>
