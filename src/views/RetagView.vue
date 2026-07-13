@@ -203,7 +203,7 @@ function resultClass(status?: string) {
     <div class="max-w-4xl mx-auto p-6 space-y-6">
       <!-- Header -->
       <div>
-        <h1 class="text-2xl font-bold">{{ t('retag.title') }}</h1>
+        <h1 class="font-display uppercase text-[22px] tracking-[0.02em]">{{ t('retag.title') }}</h1>
         <p class="text-foreground-muted text-sm mt-1">{{ t('retag.subtitle') }}</p>
         <p class="text-xs text-foreground-muted mt-1">{{ t('retag.freemodeNote') }}</p>
       </div>

@@ -157,11 +157,11 @@ const contextMenuItems = computed(() => {
         <img
           :src="playlist.picture_xl || playlist.picture_big || playlist.picture_medium"
           :alt="playlist.title"
-          class="w-48 h-48 rounded-xl object-cover shadow-2xl"
+          class="w-48 h-48 object-cover border border-white/[0.1] shadow-2xl"
         />
         <div class="flex-1">
-          <p class="text-sm text-foreground-muted uppercase tracking-wider mb-2">{{ t('common.playlist') }}</p>
-          <h1 class="text-4xl font-bold mb-2">{{ playlist.title }}</h1>
+          <p class="font-mono text-[10px] tracking-[0.3em] uppercase text-primary-500 mb-2">{{ t('common.playlist') }}</p>
+          <h1 class="font-display uppercase text-[34px] leading-[1.02] tracking-[-0.01em] mb-2">{{ playlist.title }}</h1>
           <p v-if="playlist.description" class="text-foreground-muted mb-2">
             {{ playlist.description }}
           </p>

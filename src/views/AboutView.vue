@@ -117,7 +117,7 @@ const whatsNew: ReleaseNotes[] = [
           <img src="/icon.png" alt="Deemix Remastered" class="w-full h-full object-cover" />
         </div>
       </div>
-      <h1 class="text-3xl font-bold mb-1">{{ t('about.appName') }}</h1>
+      <h1 class="font-display uppercase text-[26px] tracking-[0.02em] mb-1">{{ t('about.appName') }}</h1>
       <p class="text-foreground-muted mb-3">{{ t('about.tagline') }}</p>
       <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary-500/15 text-primary-400 text-sm font-medium">
         v{{ appVersion }}

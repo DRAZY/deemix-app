@@ -369,7 +369,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold">{{ t('sync.title') }}</h1>
+        <h1 class="font-display uppercase text-[22px] tracking-[0.02em]">{{ t('sync.title') }}</h1>
         <p class="text-foreground-muted text-sm mt-1">{{ t('sync.subtitle') }}</p>
       </div>
       <div class="flex gap-2">

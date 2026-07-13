@@ -417,7 +417,7 @@ function copyAllErrorDetails() {
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">{{ t('downloads.title') }}</h1>
+      <h1 class="font-display uppercase text-[22px] tracking-[0.02em]">{{ t('downloads.title') }}</h1>
       <div class="flex gap-2">
         <!-- Pause/Resume Button -->
         <button

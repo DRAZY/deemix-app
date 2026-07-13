@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [2.0.0-alpha.1] — Unreleased
+
+### Changed
+
+- **Complete UI redesign: "Signal Deck."** The entire interface moves to an industrial-console aesthetic — acid chartreuse on blue-black, Archivo Black display type, IBM Plex Sans/Mono (bundled, fully offline), hard edges throughout. Highlights: the title bar is a live status strip (link LED, region, quality, live throughput, clock); the sidebar is a numbered channel rail with a download-activity sparkline; the download panel is a "Transfer Rack" of hardware-style units with 16-segment VU meters and status-coded edge lights; search is a QUERY command bar with dense console-row results and GET ↓ buttons; every view carries display-type headers with mono kickers; and a subtle scanline + vignette atmosphere overlays the Signal theme only. Ships as a new default "Signal" color theme — all previous themes remain available, existing installs keep their saved theme, and light mode gets a tuned "paper console" olive variant. No functional changes: every download, sync, retag, and settings behavior is carried over intact.
+
 ## [1.10.33] — 2026-07-08
 
 ### Changed

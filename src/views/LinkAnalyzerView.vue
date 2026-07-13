@@ -666,7 +666,7 @@ async function pasteLink() {
 
     <!-- Header -->
     <div class="mb-6">
-      <h1 class="text-2xl font-bold mb-2">Link Analyzer</h1>
+      <h1 class="font-display uppercase text-[22px] tracking-[0.02em] mb-2">Link Analyzer</h1>
       <p class="text-foreground-muted">
         Paste a Deezer or Spotify link to analyze its metadata and download options
       </p>

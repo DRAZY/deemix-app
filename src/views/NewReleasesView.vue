@@ -40,7 +40,7 @@ onMounted(() => {
 
     <div class="flex items-center justify-between flex-wrap gap-4">
       <div class="flex items-center gap-3">
-        <h1 class="text-2xl font-bold">{{ t('newReleases.title') }}</h1>
+        <h1 class="font-display uppercase text-[22px] tracking-[0.02em]">{{ t('newReleases.title') }}</h1>
         <span
           v-if="!isLoading && count > 0"
           class="text-xs px-2 py-0.5 rounded-full bg-background-tertiary text-foreground-muted"
