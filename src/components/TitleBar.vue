@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAuthStore } from '../stores/authStore'
+import { useSettingsStore } from '../stores/settingsStore'
+import { useDownloadStore } from '../stores/downloadStore'
 
 const { t } = useI18n()
+const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
+const downloadStore = useDownloadStore()
 const isMaximized = ref(false)
 
 // Detect platform - check multiple sources for reliability
@@ -20,7 +26,32 @@ const detectPlatform = (): boolean => {
 
 const isMac = detectPlatform()
 
+// Live clock cell
+const clock = ref('')
+let clockTimer: ReturnType<typeof setInterval> | undefined
+function tick() {
+  clock.value = new Date().toLocaleTimeString(undefined, { hour12: false })
+}
+
+const qualityLabel = computed(() => {
+  const q = settingsStore.settings.quality
+  if (q === 'flac') return 'FLAC/1411'
+  if (q === '320') return 'MP3/320'
+  return 'MP3/128'
+})
+
+const region = computed(() => authStore.user?.country || '')
+
+const throughput = computed(() => {
+  const bps = downloadStore.totalDownloadSpeed
+  if (!bps || downloadStore.activeDownloads.length === 0) return ''
+  if (bps >= 1024 * 1024) return `${(bps / (1024 * 1024)).toFixed(1)} MB/S`
+  return `${(bps / 1024).toFixed(0)} KB/S`
+})
+
 onMounted(async () => {
+  tick()
+  clockTimer = setInterval(tick, 1000)
   if (window.electronAPI) {
     try {
       isMaximized.value = await window.electronAPI.isMaximized()
@@ -33,6 +64,10 @@ onMounted(async () => {
   }
 })
 
+onBeforeUnmount(() => {
+  if (clockTimer) clearInterval(clockTimer)
+})
+
 const minimize = () => window.electronAPI?.minimize()
 const maximize = () => window.electronAPI?.maximize()
 const close = () => window.electronAPI?.close()
@@ -40,20 +75,54 @@ const close = () => window.electronAPI?.close()
 
 <template>
   <div
-    class="h-9 flex items-center justify-between bg-background-secondary border-b border-zinc-800 drag-region"
+    class="h-10 flex items-center bg-background-secondary border-b border-white/[0.06] drag-region select-none"
     :class="{ 'pl-20': isMac }"
   >
-    <!-- App title (center on mac, left on windows) -->
-    <div class="flex-1 flex items-center px-4">
-      <span class="text-sm font-medium text-foreground-muted">Deemix Remastered</span>
+    <!-- Brand -->
+    <div class="flex items-center h-full px-4 border-r border-white/[0.06]">
+      <span class="font-display text-[13px] tracking-wide text-foreground">DEEMIX<span class="text-primary-500">▮</span>RMSTD</span>
+    </div>
+
+    <!-- Link status -->
+    <div class="hidden sm:flex items-center gap-2 h-full px-4 border-r border-white/[0.06] font-mono text-[10.5px] tracking-[0.08em] text-foreground-muted">
+      <span
+        class="w-[7px] h-[7px] rounded-[1px] status-led"
+        :class="authStore.isLoggedIn
+          ? 'bg-primary-500 shadow-[0_0_8px] shadow-primary-500/70'
+          : 'bg-red-500 shadow-[0_0_8px] shadow-red-500/70'"
+      ></span>
+      {{ authStore.isLoggedIn ? 'LINK ESTABLISHED' : 'LINK DOWN' }}
+    </div>
+
+    <!-- Region -->
+    <div v-if="region" class="hidden md:flex items-center h-full px-4 border-r border-white/[0.06] font-mono text-[10.5px] tracking-[0.08em] text-foreground-muted">
+      REGION · {{ region }}
+    </div>
+
+    <!-- Quality -->
+    <div class="hidden md:flex items-center h-full px-4 border-r border-white/[0.06] font-mono text-[10.5px] tracking-[0.08em] text-foreground-muted">
+      QUALITY · {{ qualityLabel }}
+    </div>
+
+    <!-- Live throughput (only while downloading) -->
+    <div v-if="throughput" class="hidden sm:flex items-center h-full px-4 border-r border-white/[0.06] font-mono text-[10.5px] tracking-[0.08em] text-primary-500">
+      RECV · {{ throughput }}
+    </div>
+
+    <!-- Flexible drag space -->
+    <div class="flex-1 h-full"></div>
+
+    <!-- Clock -->
+    <div class="hidden sm:flex items-center h-full px-4 font-mono text-[10.5px] tracking-[0.08em] text-foreground">
+      {{ clock }}
     </div>
 
     <!-- Window controls (Windows/Linux only) -->
-    <div v-if="!isMac" class="flex items-center no-drag" role="group" aria-label="Window controls">
+    <div v-if="!isMac" class="flex items-center h-full no-drag" role="group" aria-label="Window controls">
       <button
         @click="minimize"
         :aria-label="t('accessibility.minimizeWindow')"
-        class="w-12 h-9 flex items-center justify-center hover:bg-white/10 transition-colors"
+        class="w-12 h-full flex items-center justify-center hover:bg-white/10 transition-colors"
       >
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
@@ -62,7 +131,7 @@ const close = () => window.electronAPI?.close()
       <button
         @click="maximize"
         :aria-label="t('accessibility.maximizeWindow')"
-        class="w-12 h-9 flex items-center justify-center hover:bg-white/10 transition-colors"
+        class="w-12 h-full flex items-center justify-center hover:bg-white/10 transition-colors"
       >
         <svg v-if="!isMaximized" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <rect x="4" y="4" width="16" height="16" rx="1" stroke-width="2" />
@@ -75,7 +144,7 @@ const close = () => window.electronAPI?.close()
       <button
         @click="close"
         :aria-label="t('accessibility.closeWindow')"
-        class="w-12 h-9 flex items-center justify-center hover:bg-red-500 transition-colors"
+        class="w-12 h-full flex items-center justify-center hover:bg-red-500 transition-colors"
       >
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -84,3 +153,17 @@ const close = () => window.electronAPI?.close()
     </div>
   </div>
 </template>
+
+<style scoped>
+.status-led {
+  animation: led-blink 3s steps(1) infinite;
+}
+@keyframes led-blink {
+  0%, 92% { opacity: 1; }
+  94%, 97% { opacity: 0.3; }
+  98%, 100% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .status-led { animation: none; }
+}
+</style>
