@@ -8,7 +8,7 @@ import ConfirmDialog from '../components/ConfirmDialog.vue'
 import EmptyState from '../components/EmptyState.vue'
 import ContextMenu from '../components/ContextMenu.vue'
 import { useContextMenu } from '../composables/useContextMenu'
-import type { DownloadItem } from '../types'
+import type { DownloadItem, SubstitutedTrack } from '../types'
 
 const { t } = useI18n()
 const downloadStore = useDownloadStore()
@@ -18,6 +18,13 @@ const toastStore = useToastStore()
 // Appearance settings
 const isSlim = computed(() => settingsStore.settings.appearance?.slimDownloadTab ?? false)
 const showQualityTag = computed(() => settingsStore.settings.appearance?.showQualityTag ?? true)
+
+// Alternate-version drill-down modal (works for queue rows and history entries)
+const substitutedModal = ref<{ title: string; tracks: SubstitutedTrack[] } | null>(null)
+function showSubstituted(src: { title: string; substitutedTracks?: SubstitutedTrack[] }) {
+  if (!src.substitutedTracks?.length) return
+  substitutedModal.value = { title: src.title, tracks: src.substitutedTracks }
+}
 
 // Track which items have expanded failed tracks view
 const expandedItems = ref<Set<string>>(new Set())
@@ -648,14 +655,18 @@ function copyAllErrorDetails() {
               >
                 {{ t('downloads.downgraded') }}
               </span>
-              <!-- Alternate-version badge: exact track unavailable, alternate release downloaded -->
-              <span
+              <!-- Alternate-version badge: exact track unavailable, alternate release downloaded.
+                   Clickable when we know which tracks — opens the drill-down list. -->
+              <button
                 v-if="item.substituted"
-                v-tooltip="t('downloads.substitutedTip')"
-                class="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/20 text-purple-400 cursor-help"
+                v-tooltip="item.substitutedTracks?.length ? t('downloads.substitutedListTip') : t('downloads.substitutedTip')"
+                class="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/20 text-purple-400 flex items-center gap-1"
+                :class="item.substitutedTracks?.length ? 'hover:bg-purple-500/40 cursor-pointer' : 'cursor-help'"
+                @click.stop="showSubstituted(item)"
               >
                 {{ t('downloads.substituted') }}
-              </span>
+                <span v-if="item.substitutedTracks?.length" class="font-mono">{{ item.substitutedTracks.length }}</span>
+              </button>
               <!-- Type badge in slim mode (inline) -->
               <span
                 v-if="isSlim && (item.type === 'album' || item.type === 'playlist')"
@@ -1096,11 +1107,13 @@ function copyAllErrorDetails() {
                 v-tooltip="t('downloads.downgradedTip', { requested: getQualityLabel(entry.quality), actual: getQualityLabel(entry.actualFormat) })"
                 class="ml-1.5 px-1.5 py-0.5 text-[10px] font-medium rounded bg-orange-500/20 text-orange-400 cursor-help"
               >{{ t('downloads.downgraded') }}</span>
-              <span
+              <button
                 v-if="entry.substituted"
-                v-tooltip="t('downloads.substitutedTip')"
-                class="ml-1.5 px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/20 text-purple-400 cursor-help"
-              >{{ t('downloads.substituted') }}</span>
+                v-tooltip="entry.substitutedTracks?.length ? t('downloads.substitutedListTip') : t('downloads.substitutedTip')"
+                class="ml-1.5 px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/20 text-purple-400"
+                :class="entry.substitutedTracks?.length ? 'hover:bg-purple-500/40 cursor-pointer' : 'cursor-help'"
+                @click.stop="showSubstituted(entry)"
+              >{{ t('downloads.substituted') }}<span v-if="entry.substitutedTracks?.length" class="font-mono ml-1">{{ entry.substitutedTracks.length }}</span></button>
             </p>
           </div>
           <!-- Type badge -->
@@ -1111,6 +1124,43 @@ function copyAllErrorDetails() {
           <span class="text-xs text-foreground-muted/50 flex-shrink-0 w-20 text-right">
             {{ new Date(entry.completedAt).toLocaleDateString() }}
           </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alternate-versions drill-down modal -->
+    <div
+      v-if="substitutedModal"
+      class="fixed inset-0 bg-black/70 z-[1000] flex items-center justify-center p-5"
+      @click="substitutedModal = null"
+    >
+      <div class="bg-background-secondary border border-white/10 w-full max-w-lg max-h-[70vh] flex flex-col shadow-[0_20px_60px_rgba(0,0,0,0.5)]" @click.stop>
+        <div class="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+          <div class="min-w-0">
+            <h3 class="font-display text-[13px] uppercase tracking-[0.08em] text-foreground">{{ t('downloads.substitutedListTitle') }}</h3>
+            <p class="text-[12px] text-foreground-muted truncate">{{ substitutedModal.title }}</p>
+          </div>
+          <button
+            class="p-1.5 text-foreground-muted hover:text-foreground hover:bg-background-tertiary transition-colors flex-shrink-0"
+            :aria-label="t('common.close')"
+            @click="substitutedModal = null"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <p class="px-4 pt-3 text-[12px] leading-relaxed text-foreground-muted">{{ t('downloads.substitutedTip') }}</p>
+        <div class="p-4 overflow-y-auto">
+          <div class="flex flex-col gap-1 font-mono text-[11px] bg-background-main border border-white/[0.06] p-2">
+            <div
+              v-for="tr in substitutedModal.tracks"
+              :key="tr.id"
+              class="px-2.5 py-2 bg-purple-500/5 border-l-2 border-purple-500"
+            >
+              <span class="text-foreground font-medium">{{ tr.artist ? `${tr.artist} - ${tr.title}` : tr.title }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -71,10 +71,13 @@ function formatMB(bytes: number): string {
   return (bytes / 1048576).toFixed(1)
 }
 
-// Second line of a unit: artist, then live telemetry while receiving.
+// Second line of a unit: artist, live telemetry while receiving, and how many
+// tracks were fulfilled from alternate releases (drill-down list lives in the
+// Downloads view badge).
 function getUnitSub(item: DownloadItem): string {
   const parts = [getArtistName(item)]
   if (item.status === 'downloading' && item.speed) parts.push(formatSpeed(item.speed))
+  if (item.substitutedTracks?.length) parts.push(`${item.substitutedTracks.length} ALT`)
   return parts.join(' · ')
 }
 

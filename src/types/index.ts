@@ -93,6 +93,15 @@ export interface FailedTrack {
   errorDetails?: ErrorDetails       // Enhanced error information
 }
 
+// Track fulfilled by an ISRC/FALLBACK-matched alternate release — recorded so
+// the "Alternate version" badge can list exactly which tracks were substituted.
+export interface SubstitutedTrack {
+  id: string
+  trackId?: string | number
+  title: string
+  artist?: string
+}
+
 export interface DownloadItem {
   id: string
   track?: Track
@@ -111,6 +120,7 @@ export interface DownloadItem {
   quality?: '128' | '320' | 'flac'  // Quality at time of download (requested)
   actualFormat?: string             // Actual downloaded format (may differ due to fallback)
   substituted?: boolean             // Exact track was unavailable; an alternate release (possibly a different master) was downloaded
+  substitutedTracks?: SubstitutedTrack[]  // Which tracks were substituted — drives the badge drill-down list
   // For album/playlist downloads
   totalTracks?: number
   completedTracks?: number
@@ -144,6 +154,7 @@ export interface DownloadHistoryEntry {
   quality?: string
   actualFormat?: string
   substituted?: boolean
+  substitutedTracks?: SubstitutedTrack[]
   path?: string
   status: 'completed' | 'error'
   error?: string
