@@ -728,7 +728,10 @@ class ArtistSyncEngine extends EventEmitter {
                   // albums get CD subfolders during sync, matching album-page
                   // downloads. (CD folder = createCDFolder && discNumber && discs>1)
                   albumContext,
-                  discNumber: track.disk_number
+                  discNumber: track.disk_number,
+                  // #102/#103: authoritative position backstop for FALLBACK/ISRC
+                  // substitution — see DownloadOptions.trackNumber.
+                  trackNumber: track.track_position
                 }
                 try {
                   const downloadId = await downloader.download(opts)

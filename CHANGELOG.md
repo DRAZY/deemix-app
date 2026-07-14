@@ -6,17 +6,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
-## [2.0.0-rc.2] — Unreleased
-
-### Changed
-
-- **New app icon: "DM/RM Console Stack."** The brand mark is now the DM/RM monogram — chartreuse stacked letters with a cyan block cursor on blue-black — replacing the legacy icon across every surface: macOS Dock (`icon.icns`, Apple rounded-rect with proper alpha margins), Windows taskbar/Explorer (`icon.ico`, 16–256 px), Linux (`icon.png`), the in-app sidebar mark (theme-adaptive: letters and cursor follow each palette's logo colors), and the dev favicon.
-
-## [2.0.0-rc.1] — Unreleased
+## [2.0.0] — 2026-07-14
 
 ### Changed
 
 - **Complete UI redesign: "Signal Deck."** The entire interface moves to an industrial-console aesthetic — acid chartreuse on blue-black, Archivo Black display type, IBM Plex Sans/Mono (bundled, fully offline), hard edges throughout. Highlights: the title bar is a live status strip (link LED, region, quality, live throughput, clock); the sidebar is a numbered channel rail with a download-activity sparkline; the download panel is a "Transfer Rack" of hardware-style units with 16-segment VU meters and status-coded edge lights; search is a QUERY command bar with dense console-row results and GET ↓ buttons; every view carries display-type headers with mono kickers; and a subtle scanline + vignette atmosphere overlays the Signal theme only. Ships as a new default "Signal" color theme — all previous themes remain available, existing installs keep their saved theme, and light mode gets a tuned "paper console" olive variant. No functional changes: every download, sync, retag, and settings behavior is carried over intact.
+- **New app icon: "DM/RM Console Stack."** The brand mark is now the DM/RM monogram — chartreuse stacked letters with a cyan block cursor on blue-black — replacing the legacy icon across every surface: macOS Dock (`icon.icns`, Apple rounded-rect with proper alpha margins), Windows taskbar/Explorer (`icon.ico`, 16–256 px), Linux (`icon.png`), the in-app sidebar mark, and the dev favicon.
+
+### Added
+
+- **Live throughput for album/playlist downloads.** Group rows aggregate the in-flight per-track speeds, so the Transfer Rack, sidebar sparkline, and title-bar meter show real numbers during batch downloads instead of 0.
+- **Alternate-version drill-down.** The "Alternate version" badge on album/playlist downloads is now clickable with a count, opening a list of exactly which tracks were fulfilled by an ISRC-matched alternate release; rack units show an ALT count and download history keeps the list.
+
+## [1.10.34] — 2026-07-13
+
+### Fixed
+
+- **Resync no longer creates wrong-numbered duplicate tracks (#102, #103).** When an unavailable track was resolved to an alternate release (the ISRC/FALLBACK "Alternate version" path), the downloader wrote the original track/disc numbers into a *shared cached* metadata object. A later download of the resolved track within the hour-long cache window then inherited another release's numbering — so a force resync could re-download a track that already existed, but named as e.g. track 1 or `1-01` instead of its real position, and the "skip existing files" check couldn't match the wrongly-named file. Track metadata now comes back as a defensive copy so one download can never poison another, and album downloads additionally pass the album tracklist's authoritative position as a backstop when Deezer's private record for a restricted track is missing its numbers.
 
 ## [1.10.33] — 2026-07-08
 
