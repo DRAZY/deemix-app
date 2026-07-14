@@ -406,7 +406,7 @@ async function reindexLibrary() {
           v-model="settingsSearch"
           type="text"
           :placeholder="t('settings.searchSettings')"
-          class="input w-full pl-10 pr-8 py-2 text-sm"
+          class="w-full pl-10 pr-8 py-2 bg-background-main/60 font-mono text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
         />
         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -414,7 +414,7 @@ async function reindexLibrary() {
         <button
           v-if="settingsSearch"
           @click="clearSearch"
-          class="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-background-tertiary rounded transition-colors"
+          class="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-background-tertiary transition-colors"
         >
           <svg class="w-4 h-4 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -482,11 +482,11 @@ async function reindexLibrary() {
       <div v-show="expandedSections.appearance" class="space-y-6 pt-6">
         <!-- Theme Mode Toggle -->
         <div>
-          <label class="block text-sm font-medium mb-3">{{ t('settings.themeMode') }}</label>
+          <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-3">{{ t('settings.themeMode') }}</label>
           <div class="flex gap-2">
             <button
               @click="settingsStore.setTheme('dark')"
-              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 border-2"
+              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 transition-all duration-200 border-2"
               :class="settingsStore.settings.theme === 'dark'
                 ? 'border-primary-500 bg-primary-500/10 text-primary-400'
                 : 'border-transparent bg-background-main hover:bg-background-tertiary text-foreground-muted'"
@@ -498,7 +498,7 @@ async function reindexLibrary() {
             </button>
             <button
               @click="settingsStore.setTheme('light')"
-              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 border-2"
+              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 transition-all duration-200 border-2"
               :class="settingsStore.settings.theme === 'light'
                 ? 'border-primary-500 bg-primary-500/10 text-primary-400'
                 : 'border-transparent bg-background-main hover:bg-background-tertiary text-foreground-muted'"
@@ -510,7 +510,7 @@ async function reindexLibrary() {
             </button>
             <button
               @click="settingsStore.setTheme('system')"
-              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 border-2"
+              class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 transition-all duration-200 border-2"
               :class="settingsStore.settings.theme === 'system'
                 ? 'border-primary-500 bg-primary-500/10 text-primary-400'
                 : 'border-transparent bg-background-main hover:bg-background-tertiary text-foreground-muted'"
@@ -525,20 +525,20 @@ async function reindexLibrary() {
 
         <!-- Color Theme -->
         <div>
-          <label class="block text-sm font-medium mb-3">{{ t('settings.colorTheme') }}</label>
+          <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-3">{{ t('settings.colorTheme') }}</label>
           <div class="grid grid-cols-4 gap-3">
             <button
               v-for="theme in themeOptions"
               :key="theme.value"
               @click="settingsStore.setColorTheme(theme.value)"
-              class="group relative p-3 rounded-xl transition-all duration-200 border-2"
+              class="group relative p-3 transition-all duration-200 border-2"
               :class="settingsStore.settings.colorTheme === theme.value
                 ? 'border-primary-500 bg-primary-500/10'
                 : 'border-transparent bg-background-main hover:bg-background-tertiary'"
             >
               <!-- Color preview gradient -->
               <div
-                class="w-full h-8 rounded-lg mb-2"
+                class="w-full h-8 mb-2"
                 :style="{
                   background: `linear-gradient(135deg, ${theme.colors[0]} 0%, ${theme.colors[1]} 50%, ${theme.colors[2]} 100%)`
                 }"
@@ -547,9 +547,9 @@ async function reindexLibrary() {
               <!-- Checkmark for selected theme -->
               <div
                 v-if="settingsStore.settings.colorTheme === theme.value"
-                class="absolute top-2 right-2 w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center"
+                class="absolute top-2 right-2 w-5 h-5 bg-primary-500 flex items-center justify-center"
               >
-                <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-3 h-3 text-background-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
@@ -563,7 +563,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.appearance.slimDownloadTab"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.slimDownloadTab') }}</span>
           </label>
@@ -571,7 +571,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.appearance.slimSidebar"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.slimSidebar') }}</span>
           </label>
@@ -579,7 +579,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.appearance.showQualityTag"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.showQualityTag') }}</span>
           </label>
@@ -587,7 +587,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.appearance.showSearchButton"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.showSearchButton') }}</span>
           </label>
@@ -621,7 +621,7 @@ async function reindexLibrary() {
           v-for="locale in SUPPORTED_LOCALES"
           :key="locale.code"
           @click="changeLanguage(locale.code)"
-          class="w-12 h-12 rounded-lg transition-all duration-200 border-2 flex items-center justify-center hover:scale-110"
+          class="w-12 h-12 transition-all duration-200 border-2 flex items-center justify-center hover:scale-110"
           :class="currentLocale === locale.code
             ? 'border-primary-500 bg-primary-500/20'
             : 'border-transparent bg-background-main hover:bg-background-tertiary'"
@@ -656,23 +656,23 @@ async function reindexLibrary() {
       <div v-show="expandedSections.downloads" class="space-y-6 pt-6">
         <!-- Download Path -->
         <div>
-        <label class="block text-sm font-medium mb-2">{{ t('settings.downloadLocation') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.downloadLocation') }}</label>
         <div class="flex gap-2">
           <input
             :value="settingsStore.settings.downloadPath || t('settings.notSet')"
             readonly
-            class="input flex-1 bg-background-main cursor-default"
+            class="flex-1 px-3 py-2 bg-background-main/60 font-mono text-[13px] border border-white/[0.1] outline-none cursor-default"
           />
           <button
             @click="settingsStore.selectDownloadPath()"
-            class="btn btn-secondary"
+            class="px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-white/[0.1] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors"
           >
             {{ t('common.browse') }}
           </button>
           <button
             v-if="settingsStore.settings.downloadPath"
             @click="settingsStore.openDownloadPath()"
-            class="btn btn-ghost"
+            class="px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-white/[0.1] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors"
             :title="t('settings.openFolder')"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -685,38 +685,38 @@ async function reindexLibrary() {
 
       <!-- Concurrent Downloads -->
       <div>
-        <label class="block text-sm font-medium mb-2">{{ t('settings.concurrentDownloads') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.concurrentDownloads') }}</label>
         <input
           type="number"
           min="1"
           max="50"
           v-model.number="settingsStore.settings.maxConcurrentDownloads"
-          class="input w-full"
+          class="w-full px-3 py-2 bg-background-main/60 font-mono text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
         />
       </div>
 
       <!-- Download Pacing (issue #86) -->
       <div>
-        <label class="block text-sm font-medium mb-2">{{ t('settings.downloadPacing') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.downloadPacing') }}</label>
         <select
           v-model="settingsStore.settings.downloadPacing"
           @change="saveNow"
-          class="input w-full bg-background-main"
+          class="w-full px-3 py-2 bg-background-main/60 text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
         >
           <option value="off">{{ t('settings.pacingOptions.off') }}</option>
           <option value="balanced">{{ t('settings.pacingOptions.balanced') }}</option>
           <option value="cautious">{{ t('settings.pacingOptions.cautious') }}</option>
         </select>
-        <p class="text-xs text-zinc-400 mt-1">{{ t('settings.downloadPacingHelp') }}</p>
+        <p class="text-xs text-foreground-muted mt-1">{{ t('settings.downloadPacingHelp') }}</p>
       </div>
 
       <!-- Preferred Bitrate -->
       <div>
-        <label class="block text-sm font-medium mb-2">{{ t('settings.preferredBitrate') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.preferredBitrate') }}</label>
         <select
           v-model="settingsStore.settings.quality"
           @change="saveNow"
-          class="input w-full bg-background-main"
+          class="w-full px-3 py-2 bg-background-main/60 text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
         >
           <option value="128">{{ t('settings.bitrateOptions.mp3_128') }}</option>
           <option value="320">{{ t('settings.bitrateOptions.mp3_320') }}</option>
@@ -726,11 +726,11 @@ async function reindexLibrary() {
 
       <!-- Overwrite Files -->
       <div>
-        <label class="block text-sm font-medium mb-2">{{ t('settings.overwriteFiles') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.overwriteFiles') }}</label>
         <select
           v-model="settingsStore.settings.overwriteFiles"
           @change="saveNow"
-          class="input w-full bg-background-main"
+          class="w-full px-3 py-2 bg-background-main/60 text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
         >
           <option value="no">{{ t('settings.overwriteOptions.no') }}</option>
           <option value="overwrite">{{ t('settings.overwriteOptions.overwrite') }}</option>
@@ -745,7 +745,7 @@ async function reindexLibrary() {
             type="checkbox"
             v-model="settingsStore.settings.skipDuplicateTracks"
             @change="saveNow"
-            class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+            class="w-4 h-4 accent-primary-500"
           />
           <span class="text-sm font-medium">{{ t('settings.skipDuplicateTracks') }}</span>
         </label>
@@ -754,7 +754,7 @@ async function reindexLibrary() {
           <button
             @click="reindexLibrary"
             :disabled="reindexing"
-            class="px-3 py-1.5 text-xs rounded bg-background-main border border-zinc-700 hover:border-primary-500 disabled:opacity-50 transition-colors"
+            class="px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] bg-background-main/60 border border-white/[0.1] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 disabled:opacity-50 transition-colors"
           >
             {{ reindexing ? t('settings.reindexingLibrary') : t('settings.reindexLibrary') }}
           </button>
@@ -769,7 +769,7 @@ async function reindexLibrary() {
             type="checkbox"
             v-model="settingsStore.settings.resumeInterruptedOnStartup"
             @change="saveNow"
-            class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+            class="w-4 h-4 accent-primary-500"
           />
           <span class="text-sm font-medium">{{ t('settings.resumeInterruptedOnStartup') }}</span>
         </label>
@@ -784,7 +784,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.bitrateFallback"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.bitrateFallback') }}</span>
           </label>
@@ -792,7 +792,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.isrcFallback"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.isrcFallback') }}</span>
           </label>
@@ -804,7 +804,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.createErrorLog"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.createLogFiles') }}</span>
           </label>
@@ -816,17 +816,17 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.createPlaylistFile"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.createPlaylistFile') }}</span>
           </label>
           <div v-if="settingsStore.settings.createPlaylistFile" class="ml-7">
-            <label class="block text-xs text-foreground-muted mb-1">M3U filename template</label>
+            <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">M3U filename template</label>
             <input
               v-model="settingsStore.settings.m3uNameTemplate"
               type="text"
               placeholder="%playlist%"
-              class="input w-full text-sm"
+              class="w-full px-3 py-2 bg-background-main/60 font-mono text-[13px] border border-white/[0.1] focus:border-primary-500/50 outline-none"
             />
             <p class="text-xs text-foreground-muted mt-1">Variables: %playlist%, %date%, %year%</p>
           </div>
@@ -834,12 +834,12 @@ async function reindexLibrary() {
       </div>
 
         <!-- Clear Queue Option -->
-        <div class="pt-2 border-t border-zinc-700/50">
+        <div class="pt-2 border-t border-white/[0.08]">
           <label class="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
               v-model="settingsStore.settings.clearQueueOnClose"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.clearQueueOnClose') }}</span>
           </label>
@@ -876,17 +876,17 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.createPlaylistFolder"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.createPlaylistFolder') }}</span>
           </label>
           <div v-if="settingsStore.settings.createPlaylistFolder">
-            <label class="block text-xs text-foreground-muted mb-1">{{ t('settings.playlistFolderTemplate') }}</label>
+            <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">{{ t('settings.playlistFolderTemplate') }}</label>
             <input
               v-model="settingsStore.settings.playlistFolderTemplate"
               type="text"
               placeholder="%playlist%"
-              class="input w-full text-sm"
+              class="w-full px-3 py-2 bg-background-main/60 font-mono text-[13px] border border-white/[0.1] focus:border-primary-500/50 outline-none"
             />
             <p class="text-xs text-foreground-muted mt-1">Variables: %playlist%, %owner%, %date%, %artist%, %year%</p>
           </div>
@@ -898,17 +898,17 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.createArtistFolder"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.createArtistFolder') }}</span>
           </label>
           <div v-if="settingsStore.settings.createArtistFolder">
-            <label class="block text-xs text-foreground-muted mb-1">{{ t('settings.artistFolderTemplate') }}</label>
+            <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">{{ t('settings.artistFolderTemplate') }}</label>
             <input
               v-model="settingsStore.settings.artistFolderTemplate"
               type="text"
               placeholder="%artist%"
-              class="input w-full text-sm"
+              class="w-full px-3 py-2 bg-background-main/60 font-mono text-[13px] border border-white/[0.1] focus:border-primary-500/50 outline-none"
             />
           </div>
         </div>
@@ -919,17 +919,17 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.createAlbumFolder"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.createAlbumFolder') }}</span>
           </label>
           <div v-if="settingsStore.settings.createAlbumFolder">
-            <label class="block text-xs text-foreground-muted mb-1">{{ t('settings.albumFolderTemplate') }}</label>
+            <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">{{ t('settings.albumFolderTemplate') }}</label>
             <input
               v-model="settingsStore.settings.albumFolderTemplate"
               type="text"
               placeholder="%artist% - %album%"
-              class="input w-full text-sm"
+              class="w-full px-3 py-2 bg-background-main/60 font-mono text-[13px] border border-white/[0.1] focus:border-primary-500/50 outline-none"
             />
             <p class="text-xs text-foreground-muted mt-1">Variables: %artist%, %album%, %year%, %date%, %label%, %explicit%</p>
           </div>
@@ -937,12 +937,12 @@ async function reindexLibrary() {
       </div>
 
       <!-- Additional folder options -->
-      <div class="space-y-3 pt-2 border-t border-zinc-700/50">
+      <div class="space-y-3 pt-2 border-t border-white/[0.08]">
         <label class="flex items-center gap-3 cursor-pointer">
           <input
             type="checkbox"
             v-model="settingsStore.settings.createCDFolder"
-            class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+            class="w-4 h-4 accent-primary-500"
           />
           <span class="text-sm">{{ t('settings.createCDFolder') }}</span>
         </label>
@@ -950,7 +950,7 @@ async function reindexLibrary() {
           <input
             type="checkbox"
             v-model="settingsStore.settings.createPlaylistStructure"
-            class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+            class="w-4 h-4 accent-primary-500"
           />
           <span class="text-sm">{{ t('settings.createPlaylistStructure') }}</span>
         </label>
@@ -958,31 +958,31 @@ async function reindexLibrary() {
           <input
             type="checkbox"
             v-model="settingsStore.settings.createSinglesStructure"
-            class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+            class="w-4 h-4 accent-primary-500"
           />
           <span class="text-sm">{{ t('settings.createSinglesStructure') }}</span>
         </label>
       </div>
 
         <!-- Available template variables -->
-        <div class="p-3 bg-background-main rounded-lg">
-          <p class="text-xs text-foreground-muted mb-2">{{ t('settings.availableTemplateVars') }}</p>
+        <div class="p-3 bg-background-main/60 border border-white/[0.06]">
+          <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.availableTemplateVars') }}</p>
           <div class="flex flex-wrap gap-2">
-            <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%artist%</code>
-            <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%album%</code>
-            <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%playlist%</code>
-            <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%owner%</code>
-            <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%year%</code>
-            <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%date%</code>
-            <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%genre%</code>
-            <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%label%</code>
-            <code class="text-xs px-2 py-1 bg-background-tertiary rounded">%explicit%</code>
+            <code class="font-mono text-[10px] px-2 py-1 bg-background-main border border-white/[0.08] text-foreground-muted">%artist%</code>
+            <code class="font-mono text-[10px] px-2 py-1 bg-background-main border border-white/[0.08] text-foreground-muted">%album%</code>
+            <code class="font-mono text-[10px] px-2 py-1 bg-background-main border border-white/[0.08] text-foreground-muted">%playlist%</code>
+            <code class="font-mono text-[10px] px-2 py-1 bg-background-main border border-white/[0.08] text-foreground-muted">%owner%</code>
+            <code class="font-mono text-[10px] px-2 py-1 bg-background-main border border-white/[0.08] text-foreground-muted">%year%</code>
+            <code class="font-mono text-[10px] px-2 py-1 bg-background-main border border-white/[0.08] text-foreground-muted">%date%</code>
+            <code class="font-mono text-[10px] px-2 py-1 bg-background-main border border-white/[0.08] text-foreground-muted">%genre%</code>
+            <code class="font-mono text-[10px] px-2 py-1 bg-background-main border border-white/[0.08] text-foreground-muted">%label%</code>
+            <code class="font-mono text-[10px] px-2 py-1 bg-background-main border border-white/[0.08] text-foreground-muted">%explicit%</code>
           </div>
         </div>
 
         <!-- Folder structure preview -->
-        <div class="p-3 bg-background-main rounded-lg">
-          <p class="text-xs text-foreground-muted mb-1">{{ t('settings.examplePath') }}</p>
+        <div class="p-3 bg-background-main/60 border border-white/[0.06]">
+          <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1">{{ t('settings.examplePath') }}</p>
           <code class="text-sm text-primary-400">
             ~/Music/Deemix/<span v-if="settingsStore.settings.createArtistFolder">{{ settingsStore.settings.artistFolderTemplate.replace('%artist%', 'Artist Name') }}/</span><span v-if="settingsStore.settings.createAlbumFolder">{{ settingsStore.settings.albumFolderTemplate.replace('%artist%', 'Artist').replace('%album%', 'Album').replace('%year%', '2024').replace('%label%', 'Label').replace('%explicit%', 'Explicit') }}/</span>01 - Track.mp3
           </code>
@@ -1013,12 +1013,12 @@ async function reindexLibrary() {
       <div v-show="expandedSections.templates" class="space-y-6 pt-6">
         <!-- Trackname template -->
         <div class="space-y-3">
-        <label class="block text-sm font-medium">{{ t('settings.tracknameTemplate') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted">{{ t('settings.tracknameTemplate') }}</label>
         <input
           v-model="settingsStore.settings.trackNameTemplate"
           type="text"
           placeholder="%artist% - %title%"
-          class="input w-full font-mono text-sm"
+          class="w-full px-3 py-2 bg-background-main/60 font-mono text-[13px] border border-white/[0.1] focus:border-primary-500/50 outline-none"
         />
 
         <!-- Collapsible variables -->
@@ -1037,13 +1037,13 @@ async function reindexLibrary() {
           </svg>
           {{ t('settings.availableTracknameVars') }}
         </button>
-        <div v-if="showTrackVars" class="p-3 bg-background-main rounded-lg">
+        <div v-if="showTrackVars" class="p-3 bg-background-main/60 border border-white/[0.06]">
           <div class="flex flex-wrap gap-2">
             <button
               v-for="variable in templateVariables"
               :key="'track-' + variable"
               @click="insertVariable('trackNameTemplate', variable)"
-              class="text-xs px-2 py-1 bg-background-tertiary rounded hover:bg-primary-500/20 hover:text-primary-400 transition-colors font-mono"
+              class="font-mono text-[10px] px-2 py-1 bg-background-main border border-white/[0.08] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors"
             >
               {{ variable }}
             </button>
@@ -1053,12 +1053,12 @@ async function reindexLibrary() {
 
       <!-- Album track template -->
       <div class="space-y-3">
-        <label class="block text-sm font-medium">{{ t('settings.albumTrackTemplate') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted">{{ t('settings.albumTrackTemplate') }}</label>
         <input
           v-model="settingsStore.settings.albumTrackTemplate"
           type="text"
           placeholder="%tracknumber% - %title%"
-          class="input w-full font-mono text-sm"
+          class="w-full px-3 py-2 bg-background-main/60 font-mono text-[13px] border border-white/[0.1] focus:border-primary-500/50 outline-none"
         />
 
         <!-- Collapsible variables -->
@@ -1077,13 +1077,13 @@ async function reindexLibrary() {
           </svg>
           {{ t('settings.availableAlbumTrackVars') }}
         </button>
-        <div v-if="showAlbumTrackVars" class="p-3 bg-background-main rounded-lg">
+        <div v-if="showAlbumTrackVars" class="p-3 bg-background-main/60 border border-white/[0.06]">
           <div class="flex flex-wrap gap-2">
             <button
               v-for="variable in templateVariables"
               :key="'album-' + variable"
               @click="insertVariable('albumTrackTemplate', variable)"
-              class="text-xs px-2 py-1 bg-background-tertiary rounded hover:bg-primary-500/20 hover:text-primary-400 transition-colors font-mono"
+              class="font-mono text-[10px] px-2 py-1 bg-background-main border border-white/[0.08] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors"
             >
               {{ variable }}
             </button>
@@ -1093,12 +1093,12 @@ async function reindexLibrary() {
 
       <!-- Playlist track template -->
       <div class="space-y-3">
-        <label class="block text-sm font-medium">{{ t('settings.playlistTrackTemplate') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted">{{ t('settings.playlistTrackTemplate') }}</label>
         <input
           v-model="settingsStore.settings.playlistTrackTemplate"
           type="text"
           placeholder="%position% - %artist% - %title%"
-          class="input w-full font-mono text-sm"
+          class="w-full px-3 py-2 bg-background-main/60 font-mono text-[13px] border border-white/[0.1] focus:border-primary-500/50 outline-none"
         />
 
         <!-- Collapsible variables -->
@@ -1117,13 +1117,13 @@ async function reindexLibrary() {
           </svg>
           {{ t('settings.availablePlaylistTrackVars') }}
         </button>
-        <div v-if="showPlaylistTrackVars" class="p-3 bg-background-main rounded-lg">
+        <div v-if="showPlaylistTrackVars" class="p-3 bg-background-main/60 border border-white/[0.06]">
           <div class="flex flex-wrap gap-2">
             <button
               v-for="variable in templateVariables"
               :key="'playlist-' + variable"
               @click="insertVariable('playlistTrackTemplate', variable)"
-              class="text-xs px-2 py-1 bg-background-tertiary rounded hover:bg-primary-500/20 hover:text-primary-400 transition-colors font-mono"
+              class="font-mono text-[10px] px-2 py-1 bg-background-main border border-white/[0.08] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors"
             >
               {{ variable }}
             </button>
@@ -1132,16 +1132,16 @@ async function reindexLibrary() {
       </div>
 
         <!-- Reset and Save buttons -->
-        <div class="flex justify-end gap-3 pt-4 border-t border-zinc-700/50">
+        <div class="flex justify-end gap-3 pt-4 border-t border-white/[0.08]">
           <button
             @click="resetTemplates"
-            class="btn btn-secondary text-sm"
+            class="px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-white/[0.1] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors"
           >
             {{ t('settings.resetToDefault') }}
           </button>
           <button
             @click="settingsStore.saveSettings()"
-            class="btn btn-primary text-sm"
+            class="btn btn-primary font-mono text-[11px] tracking-[0.1em] uppercase"
           >
             {{ t('common.save') }}
           </button>
@@ -1174,7 +1174,7 @@ async function reindexLibrary() {
           <input
             type="checkbox"
             v-model="settingsStore.settings.saveArtwork"
-            class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+            class="w-4 h-4 accent-primary-500"
           />
           <span>{{ t('settings.saveArtwork') }}</span>
         </label>
@@ -1182,7 +1182,7 @@ async function reindexLibrary() {
           <input
             type="checkbox"
             v-model="settingsStore.settings.embedArtwork"
-            class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+            class="w-4 h-4 accent-primary-500"
           />
           <span>{{ t('settings.embedArtwork') }}</span>
         </label>
@@ -1190,7 +1190,7 @@ async function reindexLibrary() {
           <input
             type="checkbox"
             v-model="settingsStore.settings.saveLyrics"
-            class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+            class="w-4 h-4 accent-primary-500"
           />
           <span>{{ t('settings.saveLyrics') }}</span>
         </label>
@@ -1199,7 +1199,7 @@ async function reindexLibrary() {
             type="checkbox"
             v-model="settingsStore.settings.syncedLyrics"
             :disabled="!settingsStore.settings.saveLyrics"
-            class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main disabled:opacity-50"
+            class="w-4 h-4 accent-primary-500 disabled:opacity-50"
           />
           <span :class="{ 'opacity-50': !settingsStore.settings.saveLyrics }">
             {{ t('settings.syncedLyrics') }}
@@ -1234,19 +1234,19 @@ async function reindexLibrary() {
         <input
           type="checkbox"
           v-model="settingsStore.settings.albumCovers.saveCovers"
-          class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+          class="w-4 h-4 accent-primary-500"
         />
         <span>{{ t('settings.saveCovers') }}</span>
       </label>
 
       <!-- Cover name template -->
       <div>
-        <label class="block text-sm font-medium mb-2">{{ t('settings.coverNameTemplate') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.coverNameTemplate') }}</label>
         <input
           v-model="settingsStore.settings.albumCovers.coverNameTemplate"
           type="text"
           placeholder="cover"
-          class="input w-full"
+          class="w-full px-3 py-2 bg-background-main/60 font-mono text-[13px] border border-white/[0.1] focus:border-primary-500/50 outline-none"
         />
       </div>
 
@@ -1255,43 +1255,43 @@ async function reindexLibrary() {
         <input
           type="checkbox"
           v-model="settingsStore.settings.albumCovers.saveArtistImage"
-          class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+          class="w-4 h-4 accent-primary-500"
         />
         <span>{{ t('settings.saveArtistImage') }}</span>
       </label>
 
       <!-- Local artwork size -->
       <div>
-        <label class="block text-sm font-medium mb-2">{{ t('settings.localArtwork') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.localArtwork') }}</label>
         <input
           v-model.number="settingsStore.settings.albumCovers.localArtworkSize"
           type="number"
           min="100"
           max="3000"
           placeholder="1200"
-          class="input w-full"
+          class="w-full px-3 py-2 bg-background-main/60 font-mono text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
         />
       </div>
 
       <!-- Embedded artwork size -->
       <div>
-        <label class="block text-sm font-medium mb-2">{{ t('settings.embeddedArtwork') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.embeddedArtwork') }}</label>
         <input
           v-model.number="settingsStore.settings.albumCovers.embeddedArtworkSize"
           type="number"
           min="100"
           max="3000"
           placeholder="800"
-          class="input w-full"
+          class="w-full px-3 py-2 bg-background-main/60 font-mono text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
         />
       </div>
 
       <!-- Local artwork format -->
       <div>
-        <label class="block text-sm font-medium mb-2">{{ t('settings.localArtworkFormat') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.localArtworkFormat') }}</label>
         <select
           v-model="settingsStore.settings.albumCovers.localArtworkFormat"
-          class="input w-full bg-background-main"
+          class="w-full px-3 py-2 bg-background-main/60 text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
         >
           <option value="jpeg">{{ t('settings.formatJpeg') }}</option>
           <option value="png">{{ t('settings.formatPng') }}</option>
@@ -1304,7 +1304,7 @@ async function reindexLibrary() {
         <input
           type="checkbox"
           v-model="settingsStore.settings.albumCovers.saveEmbeddedArtworkAsPNG"
-          class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+          class="w-4 h-4 accent-primary-500"
         />
         <span>{{ t('settings.saveEmbeddedAsPng') }}</span>
       </label>
@@ -1314,21 +1314,21 @@ async function reindexLibrary() {
         <input
           type="checkbox"
           v-model="settingsStore.settings.albumCovers.coverDescriptionUTF8"
-          class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+          class="w-4 h-4 accent-primary-500"
         />
         <span>{{ t('settings.coverDescriptionUTF8') }}</span>
       </label>
 
         <!-- JPEG image quality -->
         <div>
-          <label class="block text-sm font-medium mb-2">{{ t('settings.jpegQuality') }}</label>
+          <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.jpegQuality') }}</label>
           <input
             v-model.number="settingsStore.settings.albumCovers.jpegImageQuality"
             type="number"
             min="1"
             max="100"
             placeholder="90"
-            class="input w-full"
+            class="w-full px-3 py-2 bg-background-main/60 font-mono text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
           />
           <p class="text-xs text-foreground-muted mt-1">{{ t('settings.jpegQualityDesc') }}</p>
         </div>
@@ -1363,7 +1363,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.title"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.title') }}</span>
           </label>
@@ -1371,7 +1371,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.artist"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.artist') }}</span>
           </label>
@@ -1379,7 +1379,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.album"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.album') }}</span>
           </label>
@@ -1387,7 +1387,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.cover"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.cover') }}</span>
           </label>
@@ -1395,7 +1395,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.trackNumber"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.trackNumber') }}</span>
           </label>
@@ -1403,7 +1403,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.trackTotal"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.trackTotal') }}</span>
           </label>
@@ -1411,7 +1411,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.discNumber"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.discNumber') }}</span>
           </label>
@@ -1419,7 +1419,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.discTotal"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.discTotal') }}</span>
           </label>
@@ -1427,7 +1427,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.albumArtist"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.albumArtist') }}</span>
           </label>
@@ -1435,7 +1435,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.genre"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.genre') }}</span>
           </label>
@@ -1443,7 +1443,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.year"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.year') }}</span>
           </label>
@@ -1451,7 +1451,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.date"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.date') }}</span>
           </label>
@@ -1459,7 +1459,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.explicitLyrics"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.explicitLyrics') }}</span>
           </label>
@@ -1471,7 +1471,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.isrc"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.isrc') }}</span>
           </label>
@@ -1479,7 +1479,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.trackLength"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.trackLength') }}</span>
           </label>
@@ -1487,7 +1487,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.albumBarcode"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.albumBarcode') }}</span>
           </label>
@@ -1495,7 +1495,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.bpm"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.bpm') }}</span>
           </label>
@@ -1503,7 +1503,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.replayGain"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.replayGain') }}</span>
           </label>
@@ -1511,7 +1511,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.albumLabel"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.albumLabel') }}</span>
           </label>
@@ -1519,16 +1519,16 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.releaseType"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.releaseType') }}</span>
-            <span class="text-xs text-zinc-500 cursor-help" :title="t('settings.tags.releaseTypeHelp')">ⓘ</span>
+            <span class="text-xs text-foreground-muted cursor-help" :title="t('settings.tags.releaseTypeHelp')">ⓘ</span>
           </label>
           <label class="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.unsyncLyrics"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.unsyncLyrics') }}</span>
           </label>
@@ -1536,7 +1536,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.syncLyrics"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.syncLyrics') }}</span>
           </label>
@@ -1544,7 +1544,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.copyright"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.copyright') }}</span>
           </label>
@@ -1552,7 +1552,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.composer"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.composer') }}</span>
           </label>
@@ -1560,7 +1560,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.involvedPeople"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.involvedPeople') }}</span>
           </label>
@@ -1568,7 +1568,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.sourceId"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.sourceId') }}</span>
           </label>
@@ -1607,7 +1607,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.checkForUpdates"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.checkUpdates') }}</span>
           </label>
@@ -1615,7 +1615,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.savePlaylistAsCompilation"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.playlistAsCompilation') }}</span>
           </label>
@@ -1623,7 +1623,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.useNullSeparator"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.useNullSeparator') }}</span>
           </label>
@@ -1631,7 +1631,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.saveID3v1"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.saveId3v1') }}</span>
           </label>
@@ -1643,7 +1643,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.saveOnlyMainArtist"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.mainArtistOnly') }}</span>
           </label>
@@ -1651,7 +1651,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.keepVariousArtists"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.keepVA') }}</span>
           </label>
@@ -1659,7 +1659,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.removeAlbumVersion"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.removeAlbumVersion') }}</span>
           </label>
@@ -1667,7 +1667,7 @@ async function reindexLibrary() {
             <input
               type="checkbox"
               v-model="settingsStore.settings.removeArtistCombinations"
-              class="w-4 h-4 rounded border-zinc-600 text-primary-500 focus:ring-primary-500 bg-background-main"
+              class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.removeArtistCombinations') }}</span>
           </label>
@@ -1675,12 +1675,12 @@ async function reindexLibrary() {
       </div>
 
       <!-- Dropdown options -->
-      <div class="grid grid-cols-2 gap-6 pt-4 border-t border-zinc-700/50">
+      <div class="grid grid-cols-2 gap-6 pt-4 border-t border-white/[0.08]">
         <div>
-          <label class="block text-sm font-medium mb-2">{{ t('settings.artistSeparator') }}</label>
+          <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.artistSeparator') }}</label>
           <select
             v-model="settingsStore.settings.artistSeparator"
-            class="input w-full bg-background-main"
+            class="w-full px-3 py-2 bg-background-main/60 text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
           >
             <option value="standard">{{ t('settings.separatorOptions.standard') }}</option>
             <option value="comma">{{ t('settings.separatorOptions.comma') }}</option>
@@ -1691,10 +1691,10 @@ async function reindexLibrary() {
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium mb-2">{{ t('settings.flacDateFormat') }}</label>
+          <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.flacDateFormat') }}</label>
           <select
             v-model="settingsStore.settings.dateFormatFlac"
-            class="input w-full bg-background-main"
+            class="w-full px-3 py-2 bg-background-main/60 text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
           >
             <option value="YYYY-MM-DD">YYYY-MM-DD</option>
             <option value="DD-MM-YYYY">DD-MM-YYYY</option>
@@ -1705,10 +1705,10 @@ async function reindexLibrary() {
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium mb-2">{{ t('settings.featuredArtists') }}</label>
+          <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.featuredArtists') }}</label>
           <select
             v-model="settingsStore.settings.featuredArtistsHandling"
-            class="input w-full bg-background-main"
+            class="w-full px-3 py-2 bg-background-main/60 text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
           >
             <option value="nothing">{{ t('settings.featOptions.nothing') }}</option>
             <option value="remove">{{ t('settings.featOptions.remove') }}</option>
@@ -1717,10 +1717,10 @@ async function reindexLibrary() {
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium mb-2">{{ t('settings.titleCasing') }}</label>
+          <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.titleCasing') }}</label>
           <select
             v-model="settingsStore.settings.titleCasing"
-            class="input w-full bg-background-main"
+            class="w-full px-3 py-2 bg-background-main/60 text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
           >
             <option value="unchanged">{{ t('settings.casingOptions.unchanged') }}</option>
             <option value="lowercase">{{ t('settings.casingOptions.lowercase') }}</option>
@@ -1730,10 +1730,10 @@ async function reindexLibrary() {
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium mb-2">{{ t('settings.artistCasing') }}</label>
+          <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.artistCasing') }}</label>
           <select
             v-model="settingsStore.settings.artistCasing"
-            class="input w-full bg-background-main"
+            class="w-full px-3 py-2 bg-background-main/60 text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
           >
             <option value="unchanged">{{ t('settings.casingOptions.unchanged') }}</option>
             <option value="lowercase">{{ t('settings.casingOptions.lowercase') }}</option>
@@ -1745,8 +1745,8 @@ async function reindexLibrary() {
       </div>
 
       <!-- Preview Volume -->
-      <div class="pt-4 border-t border-zinc-700/50">
-        <label class="block text-sm font-medium mb-3">
+      <div class="pt-4 border-t border-white/[0.08]">
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-3">
           {{ t('settings.previewVolume') }}: {{ settingsStore.settings.previewVolume }}%
         </label>
         <div class="flex items-center gap-4">
@@ -1759,7 +1759,7 @@ async function reindexLibrary() {
             min="0"
             max="100"
             v-model.number="settingsStore.settings.previewVolume"
-            class="flex-1 h-2 bg-background-tertiary rounded-lg appearance-none cursor-pointer accent-primary-500"
+            class="flex-1 h-2 bg-background-tertiary appearance-none cursor-pointer accent-primary-500"
           />
           <svg class="w-5 h-5 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1794,20 +1794,20 @@ async function reindexLibrary() {
 
       <div v-show="expandedSections.accounts" class="space-y-6 pt-6">
         <div>
-        <label class="block text-sm font-medium mb-2">{{ t('login.arlToken') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('login.arlToken') }}</label>
         <div class="flex gap-2">
           <input
             v-model="settingsStore.settings.arl"
             type="password"
             :placeholder="t('login.arlPlaceholder')"
-            class="input flex-1"
+            class="flex-1 px-3 py-2 bg-background-main/60 font-mono text-[13px] border border-white/[0.1] focus:border-primary-500/50 outline-none"
             @keyup.enter="applyArl"
           />
           <!-- Paste Button -->
           <button
             type="button"
             @click="pasteArl"
-            class="btn btn-secondary"
+            class="px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-white/[0.1] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors"
             title="Paste from clipboard"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1817,7 +1817,7 @@ async function reindexLibrary() {
           <button
             @click="applyArl"
             :disabled="arlLoading"
-            class="btn btn-primary px-6"
+            class="btn btn-primary px-6 font-mono text-[11px] tracking-[0.1em] uppercase"
             :class="{ 'opacity-50 cursor-not-allowed': arlLoading }"
           >
             <span v-if="arlLoading" class="flex items-center gap-2">
@@ -1875,18 +1875,18 @@ async function reindexLibrary() {
 
       <!-- Client ID -->
       <div>
-        <label class="block text-sm font-medium mb-2">{{ t('settings.spotify.clientId') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.spotify.clientId') }}</label>
         <div class="flex gap-2">
           <input
             v-model="spotifyClientId"
             type="password"
             :placeholder="t('settings.spotify.clientIdPlaceholder')"
-            class="input flex-1 font-mono text-sm"
+            class="flex-1 px-3 py-2 bg-background-main/60 font-mono text-[13px] border border-white/[0.1] focus:border-primary-500/50 outline-none"
           />
           <button
             type="button"
             @click="pasteSpotifyClientId"
-            class="btn btn-secondary"
+            class="px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-white/[0.1] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors"
             title="Paste from clipboard"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1898,18 +1898,18 @@ async function reindexLibrary() {
 
       <!-- Client Secret -->
       <div>
-        <label class="block text-sm font-medium mb-2">{{ t('settings.spotify.clientSecret') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.spotify.clientSecret') }}</label>
         <div class="flex gap-2">
           <input
             v-model="spotifyClientSecret"
             type="password"
             :placeholder="t('settings.spotify.clientSecretPlaceholder')"
-            class="input flex-1 font-mono text-sm"
+            class="flex-1 px-3 py-2 bg-background-main/60 font-mono text-[13px] border border-white/[0.1] focus:border-primary-500/50 outline-none"
           />
           <button
             type="button"
             @click="pasteSpotifyClientSecret"
-            class="btn btn-secondary"
+            class="px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-white/[0.1] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors"
             title="Paste from clipboard"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -1921,12 +1921,12 @@ async function reindexLibrary() {
 
       <!-- Spotify Username -->
       <div>
-        <label class="block text-sm font-medium mb-2">{{ t('settings.spotify.username') }}</label>
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">{{ t('settings.spotify.username') }}</label>
         <input
           v-model="spotifyUsername"
           type="text"
           :placeholder="t('settings.spotify.usernamePlaceholder')"
-          class="input w-full font-mono text-sm"
+          class="w-full px-3 py-2 bg-background-main/60 font-mono text-[13px] border border-white/[0.1] focus:border-primary-500/50 outline-none"
         />
         <p class="text-xs text-foreground-muted mt-1">{{ t('settings.spotify.usernameHelp') }}</p>
       </div>
@@ -1936,7 +1936,7 @@ async function reindexLibrary() {
         <button
           @click="testSpotifyConnection"
           :disabled="spotifyLoading"
-          class="btn btn-primary"
+          class="btn btn-primary font-mono text-[11px] tracking-[0.1em] uppercase"
           :class="{ 'opacity-50 cursor-not-allowed': spotifyLoading }"
         >
           <span v-if="spotifyLoading" class="flex items-center gap-2">
@@ -1965,7 +1965,7 @@ async function reindexLibrary() {
 
 
         <!-- Help links -->
-        <div class="pt-4 border-t border-zinc-700/50 space-y-3">
+        <div class="pt-4 border-t border-white/[0.08] space-y-3">
           <button
             @click="openSpotifyInfo"
             class="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-2 transition-colors"
@@ -2024,7 +2024,7 @@ async function reindexLibrary() {
     <div class="flex justify-end">
       <button
         @click="settingsStore.resetSettings()"
-        class="btn btn-ghost text-red-400 hover:text-red-300"
+        class="px-4 py-2 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-red-500/30 text-red-400 hover:text-red-300 hover:border-red-500/50 transition-colors"
       >
         {{ t('settings.resetToDefaults') }}
       </button>

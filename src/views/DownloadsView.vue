@@ -430,8 +430,8 @@ function copyAllErrorDetails() {
         <button
           v-if="downloadStore.activeDownloads.length > 0"
           @click="downloadStore.isPaused ? downloadStore.resumeQueue() : downloadStore.pauseQueue()"
-          class="btn text-sm flex items-center gap-2"
-          :class="downloadStore.isPaused ? 'btn-primary' : 'btn-ghost text-yellow-400 hover:text-yellow-300'"
+          class="flex items-center gap-2 px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] border transition-colors"
+          :class="downloadStore.isPaused ? 'btn-primary border-primary-500' : 'text-amber-400 border-amber-500/40 hover:border-amber-400 hover:text-amber-300'"
         >
           <!-- Pause Icon -->
           <svg v-if="!downloadStore.isPaused" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -447,14 +447,14 @@ function copyAllErrorDetails() {
         <button
           v-if="downloadStore.completedDownloads.length > 0"
           @click="confirmClearCompleted"
-          class="btn btn-ghost text-sm"
+          class="px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-white/[0.1] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors"
         >
           {{ t('downloads.clearCompleted') }}
         </button>
         <button
           v-if="downloadStore.downloads.length > 0"
           @click="confirmClearAll"
-          class="btn btn-ghost text-sm text-red-400 hover:text-red-300"
+          class="px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-red-500/40 text-red-400 hover:border-red-400 hover:text-red-300 transition-colors"
         >
           {{ t('downloads.clearAll') }}
         </button>
@@ -484,10 +484,10 @@ function copyAllErrorDetails() {
     <!-- Stats - hidden in slim mode -->
     <div v-if="!isSlim" class="grid grid-cols-3 gap-4">
       <div class="card">
-        <p class="text-sm text-foreground-muted">{{ t('downloads.active') }}</p>
+        <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted">{{ t('downloads.active') }}</p>
         <div class="flex items-baseline gap-2">
-          <p class="text-2xl font-bold text-primary-400">{{ downloadStore.activeDownloads.length }}</p>
-          <span v-if="downloadStore.totalDownloadSpeed > 0" class="text-sm text-primary-300 flex items-center gap-1">
+          <p class="font-display text-[26px] text-primary-400">{{ downloadStore.activeDownloads.length }}</p>
+          <span v-if="downloadStore.totalDownloadSpeed > 0" class="font-mono text-[11px] text-primary-300 flex items-center gap-1">
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
             </svg>
@@ -496,12 +496,12 @@ function copyAllErrorDetails() {
         </div>
       </div>
       <div class="card">
-        <p class="text-sm text-foreground-muted">{{ t('downloads.completed') }}</p>
-        <p class="text-2xl font-bold text-green-400">{{ downloadStore.completedDownloads.length }}</p>
+        <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted">{{ t('downloads.completed') }}</p>
+        <p class="font-display text-[26px] text-green-400">{{ downloadStore.completedDownloads.length }}</p>
       </div>
       <div class="card">
-        <p class="text-sm text-foreground-muted">{{ t('downloads.failed') }}</p>
-        <p class="text-2xl font-bold text-red-400">{{ downloadStore.failedDownloads.length }}</p>
+        <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted">{{ t('downloads.failed') }}</p>
+        <p class="font-display text-[26px] text-red-400">{{ downloadStore.failedDownloads.length }}</p>
       </div>
     </div>
     <!-- Download Statistics (below session counters) -->
@@ -513,7 +513,7 @@ function copyAllErrorDetails() {
         <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-90': showStats }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
-        <span class="text-sm font-medium">Download Statistics</span>
+        <span class="font-mono text-[10px] tracking-[0.2em] uppercase">Download Statistics</span>
       </button>
 
       <div v-if="showStats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -537,7 +537,7 @@ function copyAllErrorDetails() {
 
       <div v-if="showStats && downloadStats.topArtists.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div class="card p-4">
-          <h4 class="text-xs font-medium text-foreground-muted mb-3 uppercase tracking-wider">Top Artists</h4>
+          <h4 class="font-mono text-[9.5px] text-foreground-muted mb-3 uppercase tracking-[0.2em]">Top Artists</h4>
           <div class="space-y-2">
             <div v-for="([artist, count], i) in downloadStats.topArtists" :key="artist" class="flex items-center justify-between">
               <span class="text-sm truncate">
@@ -549,7 +549,7 @@ function copyAllErrorDetails() {
           </div>
         </div>
         <div class="card p-4">
-          <h4 class="text-xs font-medium text-foreground-muted mb-3 uppercase tracking-wider">Formats</h4>
+          <h4 class="font-mono text-[9.5px] text-foreground-muted mb-3 uppercase tracking-[0.2em]">Formats</h4>
           <div class="space-y-2">
             <div v-for="([format, count]) in downloadStats.formats" :key="format" class="flex items-center justify-between">
               <span class="text-sm">{{ format }}</span>
@@ -590,8 +590,9 @@ function copyAllErrorDetails() {
         v-for="item in downloadStore.downloads"
         :key="item.id"
         draggable="true"
-        class="card relative transition-transform"
+        class="card relative transition-transform dl-unit"
         :class="[
+          `dl-${item.status}`,
           isSlim ? 'p-2' : '',
           draggedItem === item.id ? 'opacity-50' : '',
           dragOverItem === item.id && dragOverPosition === 'before' ? 'before:absolute before:top-0 before:left-0 before:right-0 before:h-0.5 before:bg-primary-500' : '',
@@ -638,7 +639,7 @@ function copyAllErrorDetails() {
           <!-- Track/Album/Playlist info -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
-              <p class="font-medium truncate" :class="isSlim ? 'text-sm' : ''">{{ item.title }}</p>
+              <p class="text-[13px] font-semibold truncate">{{ item.title }}</p>
               <!-- Quality tag - shows actual downloaded format (not just requested) -->
               <span
                 v-if="showQualityTag && getDisplayFormat(item)"
@@ -675,7 +676,7 @@ function copyAllErrorDetails() {
                 {{ item.type === 'album' ? t('common.album') : t('common.playlist') }}
               </span>
             </div>
-            <p class="text-foreground-muted truncate" :class="isSlim ? 'text-xs' : 'text-sm'">
+            <p class="text-[11.5px] text-foreground-muted truncate">
               {{ item.artist || t('common.unknownArtist') }}
             </p>
           </div>
@@ -685,17 +686,17 @@ function copyAllErrorDetails() {
             <div v-if="item.status === 'downloading' || item.status === 'pending'" class="space-y-1">
               <div class="flex items-center justify-end gap-2">
                 <!-- Download speed -->
-                <span v-if="item.speed && item.speed > 0" class="text-xs text-primary-300 flex items-center gap-0.5">
+                <span v-if="item.speed && item.speed > 0" class="font-mono text-[10.5px] text-primary-300 flex items-center gap-0.5">
                   <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                   {{ formatSpeed(item.speed) }}
                 </span>
                 <!-- Track count for albums/playlists -->
-                <span v-if="(item.totalTracks || item.originalTotalTracks) && !isSlim" class="text-sm font-medium text-primary-400">
+                <span v-if="(item.totalTracks || item.originalTotalTracks) && !isSlim" class="font-mono text-[11px] text-primary-400">
                   {{ (item.previouslyCompletedTracks || 0) + (item.completedTracks || 0) }}/{{ item.originalTotalTracks || item.totalTracks }}
                 </span>
-                <span :class="isSlim ? 'text-[10px]' : 'text-xs'" class="text-foreground-muted">{{ item.progress }}%</span>
+                <span class="font-mono text-[10.5px] text-foreground-muted">{{ item.progress }}%</span>
               </div>
               <div :class="isSlim ? 'h-1' : 'h-1.5'" class="bg-background-tertiary overflow-hidden">
                 <div
@@ -704,14 +705,14 @@ function copyAllErrorDetails() {
                 />
               </div>
               <!-- Bytes downloaded info -->
-              <div v-if="item.bytesDownloaded && item.totalBytes && !isSlim" class="text-[10px] text-foreground-muted">
+              <div v-if="item.bytesDownloaded && item.totalBytes && !isSlim" class="font-mono text-[9.5px] text-foreground-muted">
                 {{ formatBytes(item.bytesDownloaded) }} / {{ formatBytes(item.totalBytes) }}
               </div>
             </div>
             <div v-else>
-              <p :class="[getStatusColor(item.status), isSlim ? 'text-xs' : 'text-sm']" class="font-medium">
+              <p :class="[getStatusColor(item.status)]" class="font-mono text-[10.5px] tracking-[0.1em] uppercase">
                 {{ getStatusText(item.status, item.refresh) }}
-                <span v-if="(item.status === 'completed' || item.status === 'error') && (item.totalTracks || item.originalTotalTracks)" class="text-foreground-muted font-normal">
+                <span v-if="(item.status === 'completed' || item.status === 'error') && (item.totalTracks || item.originalTotalTracks)" class="text-foreground-muted">
                   ({{ (item.previouslyCompletedTracks || 0) + (item.completedTracks || 0) }}/{{ item.originalTotalTracks || item.totalTracks }})
                 </span>
               </p>
@@ -829,15 +830,15 @@ function copyAllErrorDetails() {
           v-if="item.failedTracks && item.failedTracks.length > 0 && expandedItems.has(item.id)"
           class="mt-4 pt-4 border-t border-white/[0.08]"
         >
-          <p class="text-sm font-medium text-red-400 mb-2">
-            {{ t('downloads.failedTracks') }} ({{ item.failedTracks.length }}):
+          <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-red-400 mb-2">
+            {{ t('downloads.failedTracks') }} ({{ item.failedTracks.length }})
           </p>
           <div class="space-y-1 max-h-48 overflow-y-auto">
             <button
               v-for="failed in item.failedTracks"
               :key="failed.id"
               @click="showFailedTrackError(failed)"
-              class="flex items-center gap-2 text-sm py-1.5 px-2 w-full text-left hover:bg-white/5 transition-colors cursor-pointer group"
+              class="flex items-center gap-2 text-[12px] py-1.5 px-2 w-full text-left border-l-2 border-red-500 bg-red-500/5 hover:bg-red-500/10 transition-colors cursor-pointer group"
             >
               <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -1175,3 +1176,31 @@ function copyAllErrorDetails() {
     />
   </div>
 </template>
+
+<style scoped>
+/* Queue rows carry the Transfer Rack's status edge-light so the Downloads
+   view reads as the same instrument family. */
+.dl-unit::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgb(var(--fg-muted) / 0.5);
+}
+.dl-downloading::before {
+  background: rgb(var(--primary-500));
+  box-shadow: 0 0 10px rgb(var(--primary-500) / 0.5);
+}
+.dl-completed::before {
+  background: #22c55e;
+}
+.dl-error::before {
+  background: #ef4444;
+  box-shadow: 0 0 10px rgb(239 68 68 / 0.4);
+}
+.dl-paused::before {
+  background: #ffb454;
+}
+</style>

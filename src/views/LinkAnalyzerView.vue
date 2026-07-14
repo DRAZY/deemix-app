@@ -672,56 +672,48 @@ async function pasteLink() {
       </p>
     </div>
 
-    <!-- Input Section -->
-    <div class="card">
-      <form @submit.prevent="analyzeLink" class="flex gap-3">
-        <div class="relative flex-1">
+    <!-- Input Section — LINK command bar -->
+    <div>
+      <form @submit.prevent="analyzeLink">
+        <div class="flex items-stretch h-14 border border-white/[0.08] bg-background-secondary/70 focus-within:border-primary-500/50 transition-colors">
+          <span class="flex items-center px-3.5 font-mono text-[11px] font-bold tracking-[0.1em] bg-primary-500 text-background-main select-none">LINK</span>
           <input
             v-model="linkInput"
             type="text"
             placeholder="Paste a Deezer or Spotify link (track, album, artist, or playlist)..."
-            class="input pl-12 pr-12"
+            class="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[13px] px-4 text-foreground placeholder:text-foreground-muted/60 caret-primary-500"
             @paste="handlePaste"
             @contextmenu="openInputMenu"
           />
-          <svg
-            class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground-muted"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+          <!-- Paste Button -->
+          <button
+            type="button"
+            @click="pasteLink"
+            class="flex items-center gap-1.5 px-3.5 border-l border-white/[0.08] font-mono text-[10.5px] uppercase tracking-[0.12em] text-foreground-muted hover:text-primary-500 transition-colors"
+            title="Paste from clipboard"
           >
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-          </svg>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span class="hidden sm:inline">Paste</span>
+          </button>
+          <button
+            type="submit"
+            :disabled="isAnalyzing || !linkInput.trim()"
+            class="flex items-center gap-2 px-5 font-mono text-[11px] uppercase tracking-[0.1em] bg-primary-500 text-background-main hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <svg v-if="isAnalyzing" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <span>{{ isAnalyzing ? 'Analyzing...' : 'Analyze' }}</span>
+          </button>
         </div>
-        <!-- Paste Button -->
-        <button
-          type="button"
-          @click="pasteLink"
-          class="btn btn-secondary flex items-center gap-2"
-          title="Paste from clipboard"
-        >
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          <span class="hidden sm:inline">Paste</span>
-        </button>
-        <button
-          type="submit"
-          :disabled="isAnalyzing || !linkInput.trim()"
-          class="btn bg-green-600 hover:bg-green-700 text-white px-6 flex items-center gap-2"
-        >
-          <svg v-if="isAnalyzing" class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-          </svg>
-          <span>{{ isAnalyzing ? 'Analyzing...' : 'Analyze' }}</span>
-        </button>
       </form>
     </div>
 
     <!-- Error State -->
-    <div v-if="error" class="card border border-red-500/50 bg-red-500/10">
+    <div v-if="error" class="border border-red-500/30 bg-red-500/10 px-4 py-3">
       <div class="flex items-center gap-3 text-red-400">
         <svg class="w-6 h-6 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -732,11 +724,11 @@ async function pasteLink() {
     </div>
 
     <!-- Results Section -->
-    <div v-if="result" class="card">
+    <div v-if="result" class="bg-background-secondary/60 border border-white/[0.08] p-5">
       <!-- Cover and Basic Info -->
       <div class="flex gap-6 mb-6">
         <!-- Cover Image -->
-        <div class="w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden bg-background-tertiary">
+        <div class="w-48 h-48 flex-shrink-0 overflow-hidden bg-background-tertiary border border-white/[0.08]">
           <img
             v-if="coverUrl"
             :src="coverUrl"
@@ -756,12 +748,12 @@ async function pasteLink() {
           <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">
               <span
-                class="inline-block px-2 py-0.5 text-xs font-medium rounded mb-2"
+                class="inline-block px-1.5 py-0.5 font-mono text-[10px] tracking-[0.08em] uppercase border mb-2"
                 :class="{
-                  'bg-primary-500/20 text-primary-400': result.type === 'track',
-                  'bg-blue-500/20 text-blue-400': result.type === 'album',
-                  'bg-green-500/20 text-green-400': result.type === 'artist',
-                  'bg-orange-500/20 text-orange-400': result.type === 'playlist'
+                  'bg-primary-500/10 text-primary-400 border-primary-500/30': result.type === 'track',
+                  'bg-blue-500/10 text-blue-400 border-blue-500/30': result.type === 'album',
+                  'bg-green-500/10 text-green-400 border-green-500/30': result.type === 'artist',
+                  'bg-orange-500/10 text-orange-400 border-orange-500/30': result.type === 'playlist'
                 }"
               >
                 {{ result.type.toUpperCase() }}
@@ -777,10 +769,10 @@ async function pasteLink() {
               v-if="result.type !== 'artist'"
               @click="handleDownload"
               :disabled="!authStore.isLoggedIn || (result.type === 'track' && !result.available)"
-              class="btn flex items-center gap-2"
+              class="btn flex items-center gap-2 font-mono text-[11px] tracking-[0.1em] uppercase"
               :class="(!authStore.isLoggedIn || (result.type === 'track' && !result.available))
-                ? 'bg-zinc-600 text-zinc-400 cursor-not-allowed'
-                : 'bg-green-600 hover:bg-green-700 text-white'"
+                ? 'border border-white/[0.08] text-foreground-muted/50 cursor-not-allowed'
+                : 'btn-primary'"
               :title="!authStore.isLoggedIn ? 'Login required to download' : (result.type === 'track' && !result.available) ? 'Track not available for download' : ''"
             >
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -793,7 +785,7 @@ async function pasteLink() {
             <button
               v-if="result.type !== 'track' || result.data?.album?.id"
               @click="navigateToContent"
-              class="btn btn-secondary flex items-center gap-2"
+              class="btn btn-secondary flex items-center gap-2 font-mono text-[11px] tracking-[0.1em] uppercase"
             >
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -816,26 +808,29 @@ async function pasteLink() {
       </div>
 
       <!-- Metadata Table - 2 Column Layout -->
-      <div class="border-t border-zinc-700 pt-6">
-        <h3 class="text-lg font-semibold mb-4">Metadata</h3>
+      <div class="border-t border-white/[0.08] pt-6">
+        <div class="flex items-center gap-3 mb-4">
+          <h3 class="font-display text-[14px] uppercase tracking-[0.06em]">Metadata</h3>
+          <div class="flex-1 h-px bg-white/[0.06]"></div>
+        </div>
         <table class="w-full">
           <tbody>
             <tr
               v-for="(pair, index) in metadataRows"
               :key="index"
-              class="border-b border-zinc-800"
+              class="border-b border-white/[0.06]"
             >
               <!-- Left column -->
-              <td class="py-2 pr-4 text-foreground-muted w-28">{{ pair.left.label }}</td>
+              <td class="py-2 pr-4 font-mono text-[10px] tracking-[0.1em] uppercase text-foreground-muted align-top w-28">{{ pair.left.label }}</td>
               <td
-                class="py-2 font-medium w-1/3 cursor-context-menu hover:text-primary-400 transition-colors"
+                class="py-2 font-mono text-[12.5px] w-1/3 cursor-context-menu hover:text-primary-400 transition-colors"
                 @contextmenu="openMetadataMenu($event, pair.left.label, pair.left.value)"
               >{{ pair.left.value }}</td>
               <!-- Right column -->
-              <td v-if="pair.right" class="py-2 pr-4 text-foreground-muted w-28 pl-8">{{ pair.right.label }}</td>
+              <td v-if="pair.right" class="py-2 pr-4 font-mono text-[10px] tracking-[0.1em] uppercase text-foreground-muted align-top w-28 pl-8">{{ pair.right.label }}</td>
               <td
                 v-if="pair.right"
-                class="py-2 font-medium cursor-context-menu hover:text-primary-400 transition-colors"
+                class="py-2 font-mono text-[12.5px] cursor-context-menu hover:text-primary-400 transition-colors"
                 @contextmenu="openMetadataMenu($event, pair.right.label, pair.right.value)"
               >{{ pair.right.value }}</td>
               <td v-else colspan="2"></td>
@@ -845,13 +840,16 @@ async function pasteLink() {
       </div>
 
       <!-- Availability Status (for tracks) -->
-      <div v-if="result.type === 'track'" class="border-t border-zinc-700 pt-6 mt-6">
-        <h3 class="text-lg font-semibold mb-4">Availability</h3>
+      <div v-if="result.type === 'track'" class="border-t border-white/[0.08] pt-6 mt-6">
+        <div class="flex items-center gap-3 mb-4">
+          <h3 class="font-display text-[14px] uppercase tracking-[0.06em]">Availability</h3>
+          <div class="flex-1 h-px bg-white/[0.06]"></div>
+        </div>
         <div class="flex gap-6">
           <div class="flex items-center gap-2">
             <div
-              class="w-6 h-6 rounded-full flex items-center justify-center"
-              :class="result.readable ? 'bg-green-500/20' : 'bg-red-500/20'"
+              class="w-6 h-6 flex items-center justify-center border"
+              :class="result.readable ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'"
             >
               <svg v-if="result.readable" class="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -860,14 +858,14 @@ async function pasteLink() {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <span :class="result.readable ? 'text-green-400' : 'text-red-400'">
+            <span class="font-mono text-[11px] tracking-[0.08em] uppercase" :class="result.readable ? 'text-green-400' : 'text-red-400'">
               {{ result.readable ? 'Streamable' : 'Not Streamable' }}
             </span>
           </div>
           <div class="flex items-center gap-2">
             <div
-              class="w-6 h-6 rounded-full flex items-center justify-center"
-              :class="result.available ? 'bg-green-500/20' : 'bg-red-500/20'"
+              class="w-6 h-6 flex items-center justify-center border"
+              :class="result.available ? 'bg-green-500/10 border-green-500/30' : 'bg-red-500/10 border-red-500/30'"
             >
               <svg v-if="result.available" class="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -876,7 +874,7 @@ async function pasteLink() {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <span :class="result.available ? 'text-green-400' : 'text-red-400'">
+            <span class="font-mono text-[11px] tracking-[0.08em] uppercase" :class="result.available ? 'text-green-400' : 'text-red-400'">
               {{ result.available ? 'Downloadable' : 'Not Downloadable' }}
             </span>
           </div>
@@ -884,13 +882,16 @@ async function pasteLink() {
       </div>
 
       <!-- Countries (for tracks, when authenticated) -->
-      <div v-if="result.type === 'track' && result.countries && result.countries.length > 0" class="border-t border-zinc-700 pt-6 mt-6">
-        <h3 class="text-lg font-semibold mb-4">Countries</h3>
+      <div v-if="result.type === 'track' && result.countries && result.countries.length > 0" class="border-t border-white/[0.08] pt-6 mt-6">
+        <div class="flex items-center gap-3 mb-4">
+          <h3 class="font-display text-[14px] uppercase tracking-[0.06em]">Countries</h3>
+          <div class="flex-1 h-px bg-white/[0.06]"></div>
+        </div>
         <div class="space-y-1 max-h-64 overflow-y-auto">
           <div
             v-for="code in result.countries"
             :key="code"
-            class="text-sm"
+            class="font-mono text-[12px]"
           >
             {{ getCountryInfo(code).flag }} - [{{ code }}] {{ getCountryInfo(code).name }}
           </div>
@@ -898,18 +899,21 @@ async function pasteLink() {
       </div>
 
       <!-- Login notice for countries -->
-      <div v-else-if="result.type === 'track' && !authStore.isLoggedIn" class="border-t border-zinc-700 pt-6 mt-6">
-        <h3 class="text-lg font-semibold mb-2 text-foreground-muted">Countries</h3>
+      <div v-else-if="result.type === 'track' && !authStore.isLoggedIn" class="border-t border-white/[0.08] pt-6 mt-6">
+        <div class="flex items-center gap-3 mb-2">
+          <h3 class="font-display text-[14px] uppercase tracking-[0.06em] text-foreground-muted">Countries</h3>
+          <div class="flex-1 h-px bg-white/[0.06]"></div>
+        </div>
         <p class="text-sm text-foreground-muted">Login to view country availability</p>
       </div>
     </div>
 
     <!-- Spotify Results Section -->
-    <div v-if="spotifyResult" class="card">
+    <div v-if="spotifyResult" class="bg-background-secondary/60 border border-white/[0.08] p-5">
       <!-- Cover and Basic Info -->
       <div class="flex gap-6 mb-6">
         <!-- Cover Image -->
-        <div class="w-48 h-48 flex-shrink-0 rounded-lg overflow-hidden bg-background-tertiary">
+        <div class="w-48 h-48 flex-shrink-0 overflow-hidden bg-background-tertiary border border-white/[0.08]">
           <img
             v-if="spotifyResult.data?.images?.[0]?.url || spotifyResult.data?.album?.images?.[0]?.url"
             :src="spotifyResult.data?.images?.[0]?.url || spotifyResult.data?.album?.images?.[0]?.url"
@@ -927,14 +931,14 @@ async function pasteLink() {
         <div class="flex-1 min-w-0">
           <div class="flex items-start justify-between gap-4">
             <div class="min-w-0">
-              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-medium rounded mb-2 bg-[#1DB954]/20 text-[#1DB954]">
+              <span class="inline-flex items-center gap-1.5 px-1.5 py-0.5 font-mono text-[10px] tracking-[0.08em] uppercase border mb-2 bg-[#1DB954]/10 text-[#1DB954] border-[#1DB954]/30">
                 <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
                 </svg>
                 SPOTIFY {{ spotifyResult.type?.toUpperCase() }}
               </span>
-              <span v-if="spotifyResult.type === 'playlist' && spotifyResult.data?.public === true" class="px-2 py-0.5 bg-green-600/20 text-green-400 text-xs font-semibold rounded-full uppercase">Public</span>
-              <span v-if="spotifyResult.type === 'playlist' && spotifyResult.data?.public === false" class="px-2 py-0.5 bg-yellow-600/20 text-yellow-400 text-xs font-semibold rounded-full uppercase">Private</span>
+              <span v-if="spotifyResult.type === 'playlist' && spotifyResult.data?.public === true" class="px-1.5 py-0.5 bg-green-500/10 text-green-400 border border-green-500/30 font-mono text-[10px] tracking-[0.08em] font-semibold uppercase">Public</span>
+              <span v-if="spotifyResult.type === 'playlist' && spotifyResult.data?.public === false" class="px-1.5 py-0.5 bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 font-mono text-[10px] tracking-[0.08em] font-semibold uppercase">Private</span>
               <h2 class="text-2xl font-bold truncate">{{ spotifyResult.data?.name }}</h2>
               <p v-if="spotifyResult.data?.artists?.[0]?.name || spotifyResult.data?.owner?.display_name" class="text-lg text-foreground-muted truncate">
                 {{ spotifyResult.data?.artists?.[0]?.name || spotifyResult.data?.owner?.display_name }}
@@ -953,9 +957,9 @@ async function pasteLink() {
               v-if="!conversionResult"
               @click="convertSpotifyToDeezer"
               :disabled="isConverting || !authStore.isLoggedIn"
-              class="btn flex items-center gap-2"
+              class="btn flex items-center gap-2 font-mono text-[11px] tracking-[0.1em] uppercase"
               :class="(isConverting || !authStore.isLoggedIn)
-                ? 'bg-zinc-600 text-zinc-400 cursor-not-allowed'
+                ? 'border border-white/[0.08] text-foreground-muted/50 cursor-not-allowed'
                 : 'bg-[#1DB954] hover:bg-[#1ed760] text-black'"
             >
               <svg v-if="isConverting" class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
@@ -973,7 +977,7 @@ async function pasteLink() {
               v-if="conversionResult?.matched?.length"
               @click="downloadConvertedTracks"
               :disabled="!authStore.isLoggedIn"
-              class="btn bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+              class="btn btn-primary font-mono text-[11px] tracking-[0.1em] uppercase flex items-center gap-2"
             >
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -993,45 +997,45 @@ async function pasteLink() {
       </div>
 
       <!-- Conversion Results -->
-      <div v-if="conversionResult" class="border-t border-zinc-700 pt-6">
+      <div v-if="conversionResult" class="border-t border-white/[0.08] pt-6">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold">Conversion Results</h3>
-          <span class="text-sm px-3 py-1 rounded-full" :class="conversionResult.matchRate >= 80 ? 'bg-green-500/20 text-green-400' : conversionResult.matchRate >= 50 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'">
+          <h3 class="font-display text-[14px] uppercase tracking-[0.06em]">Conversion Results</h3>
+          <span class="font-mono text-[10px] tracking-[0.08em] uppercase px-1.5 py-0.5 border" :class="conversionResult.matchRate >= 80 ? 'bg-green-500/10 text-green-400 border-green-500/30' : conversionResult.matchRate >= 50 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30' : 'bg-red-500/10 text-red-400 border-red-500/30'">
             {{ conversionResult.matchRate }}% matched
           </span>
         </div>
 
         <!-- Matched Tracks -->
         <div v-if="conversionResult.matched?.length" class="space-y-2 mb-4">
-          <p class="text-sm text-foreground-muted">Matched ({{ conversionResult.matched.length }})</p>
+          <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted">Matched ({{ conversionResult.matched.length }})</p>
           <div class="max-h-48 overflow-y-auto space-y-1">
             <div
               v-for="match in conversionResult.matched"
               :key="match.spotify?.id || match.spotifyTrack?.id"
-              class="flex items-center gap-3 p-2 rounded bg-background-main"
+              class="flex items-center gap-3 p-2 bg-background-main border border-white/[0.06]"
             >
               <svg class="w-4 h-4 text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
-              <span class="truncate">{{ match.spotify?.name || match.spotifyTrack?.name }}</span>
-              <span class="text-xs text-foreground-muted ml-auto">{{ match.matchType === 'isrc' ? 'ISRC' : 'Search' }}</span>
+              <span class="truncate text-sm">{{ match.spotify?.name || match.spotifyTrack?.name }}</span>
+              <span class="font-mono text-[9.5px] tracking-[0.1em] uppercase text-foreground-muted ml-auto flex-shrink-0">{{ match.matchType === 'isrc' ? 'ISRC' : 'Search' }}</span>
             </div>
           </div>
         </div>
 
         <!-- Unmatched Tracks -->
         <div v-if="conversionResult.unmatched?.length" class="space-y-2">
-          <p class="text-sm text-foreground-muted">Unmatched ({{ conversionResult.unmatched.length }})</p>
+          <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted">Unmatched ({{ conversionResult.unmatched.length }})</p>
           <div class="max-h-32 overflow-y-auto space-y-1">
             <div
               v-for="track in conversionResult.unmatched"
               :key="track.id"
-              class="flex items-center gap-3 p-2 rounded bg-background-main"
+              class="flex items-center gap-3 p-2 bg-background-main border border-white/[0.06]"
             >
               <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
-              <span class="truncate text-foreground-muted">{{ track.name }} - {{ track.artists?.[0]?.name }}</span>
+              <span class="truncate text-sm text-foreground-muted">{{ track.name }} - {{ track.artists?.[0]?.name }}</span>
             </div>
           </div>
         </div>
