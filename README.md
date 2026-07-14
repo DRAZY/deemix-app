@@ -159,33 +159,33 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/search-query.png" alt="Search - QUERY command bar" width="800" />
-  <br />
-  <em>Search — QUERY command bar with dense console-row results and GET ↓ buttons</em>
-</p>
-
-<p align="center">
   <img src="docs/screenshots/downloads-statistics.png" alt="Downloads & Statistics Dashboard" width="800" />
   <br />
-  <em>Downloads — Status edge-lights, mono telemetry, and the statistics dashboard with top artists, formats, and weekly activity</em>
+  <em>Downloads — Status edge-lights, mono telemetry, and per-album completion, with the statistics dashboard one click away</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/charts.png" alt="Charts" width="800" />
+  <img src="docs/screenshots/favorites-tracks.png" alt="Favorites - Favorite Tracks" width="800" />
   <br />
-  <em>Charts — Browse global and country-specific top tracks, albums, artists, and playlists</em>
+  <em>Favorites — Your Deezer favorites as console rows with GET ↓ buttons, sortable and filterable per tab</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/link-analyzer.png" alt="Link Analyzer - LINK command bar" width="800" />
+  <br />
+  <em>Link Analyzer — Paste any Deezer or Spotify URL into the LINK command bar for details and direct downloads</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/playlist-sync-artists.png" alt="Playlist Sync - Synced Artists" width="800" />
+  <br />
+  <em>Playlist &amp; Artist Sync — Pin playlists and artists to sync on a schedule; per-artist status badges, filters, and live progress</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/settings-profiles.png" alt="Settings - Profiles & Appearance" width="800" />
   <br />
   <em>Settings — Quick presets, custom profiles, export/import, and 9 color themes including the Signal default</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/favorites-artists.png" alt="Favorites - Favorite Artists with sync state" width="800" />
-  <br />
-  <em>Favorites — Pull your Deezer favorites locally, pin individual artists to sync on a schedule, and run a one-click "Sync all favorite artists" pass. Per-artist "Pinned / Synced" pills show what's tracked; the Transfer Rack on the right reports live per-album progress.</em>
 </p>
 
 ---
