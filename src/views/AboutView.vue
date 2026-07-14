@@ -35,6 +35,22 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '2.0.0',
+    date: '2026-07-14',
+    items: [
+      'A complete redesign: "Signal Deck." The whole app moves to an industrial-console look — acid chartreuse on blue-black, bold display type, hard edges, and monospaced readouts everywhere. The title bar is now a live status strip with a connection LED, region, quality, real-time throughput, and a clock. The sidebar became a numbered channel rail with a download-activity sparkline. The download panel is a "Transfer Rack": each download is a hardware-style unit with a 16-segment meter and a status edge-light (chartreuse while receiving, green when stored, red on fault, amber on hold). Search is a QUERY command bar with dense console-row results. Signal is the new default theme, but every previous theme is still there, your saved theme is kept, and light mode gets its own tuned "paper console" variant. Under the hood nothing moved: downloads, sync, retag, and settings all behave exactly as before.',
+      'A new identity to go with it: the DM/RM "Console Stack" icon — stacked chartreuse letters with a cyan cursor — now lives on your Dock/taskbar, in the sidebar, and on every OS build.',
+      'Album and playlist downloads now show their real combined download speed while running, and the "Alternate version" badge is clickable: it lists exactly which tracks were fulfilled from an ISRC-matched alternate release, in the panel and in history.'
+    ]
+  },
+  {
+    version: '1.10.34',
+    date: '2026-07-13',
+    items: [
+      'Fixed resync creating wrong-numbered duplicate tracks (#102, #103). When a track was fulfilled from an alternate release, its corrected track/disc numbers could leak into a shared metadata cache and poison a later download of the same track — so a force resync could re-download an existing track under a wrong name like "1-01" instead of its real position. Track metadata is now defensively copied, and album downloads pass the tracklist\'s authoritative position as a backstop.'
+    ]
+  },
+  {
     version: '1.10.33',
     date: '2026-07-08',
     items: [
