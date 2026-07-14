@@ -449,7 +449,7 @@ async function openItemFolder(item: DownloadItem) {
   box-shadow: 0 0 10px rgb(var(--primary-500) / 0.5);
 }
 .unit-completed::before {
-  background: #59c2d6;
+  background: #22c55e;
 }
 .unit-error::before {
   background: #ef4444;
@@ -468,7 +468,7 @@ async function openItemFolder(item: DownloadItem) {
 /* Status word color per state */
 .u-stat { color: rgb(var(--fg-muted)); }
 .unit-downloading .u-stat { color: rgb(var(--primary-500)); }
-.unit-completed .u-stat { color: #59c2d6; }
+.unit-completed .u-stat { color: #22c55e; }
 .unit-error .u-stat { color: #ef4444; }
 .unit-paused .u-stat { color: #ffb454; }
 
@@ -495,8 +495,8 @@ async function openItemFolder(item: DownloadItem) {
   box-shadow: 0 0 6px rgb(255 180 84 / 0.4);
 }
 .vu i.fc {
-  background: #59c2d6;
-  border-color: #3a8a9a;
+  background: #22c55e;
+  border-color: #15803d;
 }
 .vu i.fe {
   background: #ef4444;

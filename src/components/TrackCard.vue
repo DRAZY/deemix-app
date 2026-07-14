@@ -277,8 +277,8 @@ const contextMenuItems = computed(() => [
   cursor: default;
 }
 .get-btn-stored {
-  color: #59c2d6;
-  border-color: rgb(89 194 214 / 0.5);
+  color: #22c55e;
+  border-color: rgb(34 197 94 / 0.5);
   cursor: default;
 }
 </style>
