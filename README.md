@@ -11,7 +11,11 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.10.33-blue" />
+  <strong>2.0 — "Signal Deck":</strong> a complete industrial-console redesign — acid chartreuse on blue-black, display type, hard edges, live telemetry everywhere — plus a new DM/RM identity. Every feature below carried over intact.
+</p>
+
+<p align="center">
+  <img alt="Version" src="https://img.shields.io/badge/version-2.0.0-C8F135" />
   <img alt="Electron" src="https://img.shields.io/badge/Electron-39-47848F?logo=electron&logoColor=white" />
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
@@ -47,6 +51,8 @@
 - **Download Next** -- Move pending items to the front of the download queue so they download first
 - **Duplicate Album Detection** -- Warns when an album already exists on disk before downloading
 - **Skip Duplicate Tracks (by ISRC)** -- Optional, off by default: before downloading, skip any recording you already have in your library — matched by ISRC, so it catches the same song appearing on a different album, single, or compilation. Tracks without an ISRC are always downloaded. Includes a one-click "Index existing library" backfill so it works on a pre-existing collection (v1.10.21+, #91/#92)
+- **Live Batch Throughput** -- Album/playlist rows show their real combined download speed while running, mirrored in the sidebar sparkline and title-bar meter (v2.0.0+)
+- **Alternate-Version Drill-Down** -- The "Alternate version" badge is clickable with a count and lists exactly which tracks were fulfilled from an ISRC-matched alternate release, in the Transfer Rack and in history (v2.0.0+)
 - **Download Statistics** -- View total downloads, tracks, top artists, format breakdown, and weekly activity
 - **Delete Files** -- Remove downloaded files directly from the app; deletes the entire playlist or album folder
 - **Download History** -- Persistent log of all completed and failed downloads (last 500 entries)
@@ -114,8 +120,9 @@
 
 ### User Experience
 
-- **8 Color Themes** -- Violet, Spotify, Rose, Ocean, Sunset, Mint, Dracula, and Nord
-- **Dark / Light / System Mode** -- Follows your OS preference or set manually
+- **"Signal Deck" Interface (v2.0.0)** -- Industrial-console design: live status-strip title bar (link LED, region, quality, throughput, clock), numbered channel-rail sidebar with download sparkline, a "Transfer Rack" download panel with 16-segment VU meters and status edge-lights, and a QUERY command-bar search with dense console rows
+- **9 Color Themes** -- Signal (default), Violet, Spotify, Rose, Ocean, Sunset, Mint, Dracula, and Nord
+- **Dark / Light / System Mode** -- Follows your OS preference or set manually; the Signal theme gets a dedicated light-mode "paper console" olive variant
 - **Slim Sidebar** -- Compact navigation mode for more screen space
 - **Keyboard Shortcuts** -- Quick access to search, downloads, settings, and more
 - **Search History** -- Recent searches saved for quick access
@@ -148,31 +155,37 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
 <p align="center">
   <img src="docs/screenshots/home-new-releases.png" alt="Home - New Releases" width="800" />
   <br />
-  <em>Home Dashboard — New releases, search, and an active downloads panel</em>
+  <em>Home — The Signal Deck console: new releases and charts under the live status-strip title bar, with the Transfer Rack on the right</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/downloads-statistics.png" alt="Downloads & Statistics Dashboard" width="800" />
   <br />
-  <em>Downloads — Statistics dashboard with top artists, formats, and weekly activity</em>
+  <em>Downloads — Status edge-lights, mono telemetry, and per-album completion, with the statistics dashboard one click away</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/charts.png" alt="Charts" width="800" />
+  <img src="docs/screenshots/favorites-tracks.png" alt="Favorites - Favorite Tracks" width="800" />
   <br />
-  <em>Charts — Browse global and country-specific top tracks, albums, artists, and playlists</em>
+  <em>Favorites — Your Deezer favorites as console rows with GET ↓ buttons, sortable and filterable per tab</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/link-analyzer.png" alt="Link Analyzer - LINK command bar" width="800" />
+  <br />
+  <em>Link Analyzer — Paste any Deezer or Spotify URL into the LINK command bar for details and direct downloads</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/playlist-sync-artists.png" alt="Playlist Sync - Synced Artists" width="800" />
+  <br />
+  <em>Playlist &amp; Artist Sync — Pin playlists and artists to sync on a schedule; per-artist status badges, filters, and live progress</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/settings-profiles.png" alt="Settings - Profiles & Appearance" width="800" />
   <br />
-  <em>Settings — Quick presets, custom profiles, export/import, and 8 color themes</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/favorites-artists.png" alt="Favorites - Favorite Artists with sync state" width="800" />
-  <br />
-  <em>Favorites — Pull your Deezer favorites locally, pin individual artists to sync on a schedule, and run a one-click "Sync all favorite artists" pass. Per-artist "Pinned / Synced" pills show what's tracked; the queue panel on the right reports live per-album progress.</em>
+  <em>Settings — Quick presets, custom profiles, export/import, and 9 color themes including the Signal default</em>
 </p>
 
 ---
@@ -259,7 +272,7 @@ The Settings page offers deep customization organized into these categories:
 
 | Category | Key Options |
 |----------|-------------|
-| **Appearance** | Theme (8 color themes), dark/light/system mode, slim sidebar, slim downloads |
+| **Appearance** | Theme (9 color themes, Signal default), dark/light/system mode, slim sidebar, slim downloads |
 | **Downloads** | Quality (128/320/FLAC), max concurrent, natural download pacing, overwrite mode, bitrate fallback, M3U filename template |
 | **Folder Structure** | Create artist/album/playlist/CD folders, templates with `%explicit%`, `%owner%`, `%date%` support |
 | **Track Naming** | Templates for single tracks, album tracks, and playlist tracks |

@@ -168,7 +168,9 @@
     "causeUnavailable": "Track is no longer available on Deezer",
     "causeSession": "Your login session may have expired",
     "causeNetwork": "Network or server connectivity issues",
-    "speed": "Speed"
+    "speed": "Speed",
+    "substitutedListTitle": "Alternate versions",
+    "substitutedListTip": "Click to see which tracks came from an alternate release"
   },
   "charts": {
     "title": "Charts",

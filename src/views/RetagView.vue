@@ -203,36 +203,39 @@ function resultClass(status?: string) {
     <div class="max-w-4xl mx-auto p-6 space-y-6">
       <!-- Header -->
       <div>
-        <h1 class="text-2xl font-bold">{{ t('retag.title') }}</h1>
+        <h1 class="font-display uppercase text-[22px] tracking-[0.02em]">{{ t('retag.title') }}</h1>
         <p class="text-foreground-muted text-sm mt-1">{{ t('retag.subtitle') }}</p>
         <p class="text-xs text-foreground-muted mt-1">{{ t('retag.freemodeNote') }}</p>
       </div>
 
-      <!-- Folder picker -->
-      <div class="bg-background-secondary rounded-xl border border-zinc-800 p-5 space-y-3">
-        <label class="text-sm font-medium">{{ t('retag.folder') }}</label>
+      <!-- Folder picker — PATH command bar -->
+      <div class="bg-background-secondary/60 border border-white/[0.08] p-5 space-y-3">
+        <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted">{{ t('retag.folder') }}</label>
         <div class="flex gap-2">
-          <input
-            :value="folder"
-            readonly
-            :placeholder="t('retag.noFolder')"
-            class="input flex-1 text-sm"
-          />
-          <button class="btn btn-secondary" @click="pickFolder">{{ t('retag.selectFolder') }}</button>
-          <button class="btn btn-primary" :disabled="!folder || isScanning" @click="scan">
+          <div class="flex items-stretch flex-1 min-w-0 border border-white/[0.1] bg-background-main focus-within:border-primary-500/50 transition-colors">
+            <span class="flex items-center px-3 font-mono text-[10.5px] font-bold tracking-[0.1em] bg-primary-500 text-background-main select-none">PATH</span>
+            <input
+              :value="folder"
+              readonly
+              :placeholder="t('retag.noFolder')"
+              class="flex-1 min-w-0 bg-transparent outline-none font-mono text-[13px] px-3 text-foreground placeholder:text-foreground-muted/60"
+            />
+          </div>
+          <button class="px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-white/[0.08] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors whitespace-nowrap" @click="pickFolder">{{ t('retag.selectFolder') }}</button>
+          <button class="btn btn-primary font-mono text-[11px] tracking-[0.1em] uppercase disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap" :disabled="!folder || isScanning" @click="scan">
             {{ isScanning ? t('retag.scanning') : t('retag.scan') }}
           </button>
         </div>
-        <p v-if="files.length" class="text-xs text-foreground-muted">
+        <p v-if="files.length" class="font-mono text-[10px] tracking-[0.04em] text-foreground-muted">
           {{ t('retag.filesFound', { matched: matchedFiles.length, skipped: skippedCount, total: files.length }) }}
         </p>
       </div>
 
       <!-- Tag selection -->
-      <div v-if="matchedFiles.length" class="bg-background-secondary rounded-xl border border-zinc-800 p-5 space-y-3">
+      <div v-if="matchedFiles.length" class="bg-background-secondary/60 border border-white/[0.08] p-5 space-y-3">
         <div>
-          <h2 class="text-sm font-medium">{{ t('retag.fields') }}</h2>
-          <p class="text-xs text-foreground-muted mt-0.5">{{ t('retag.fieldsHint') }}</p>
+          <h2 class="font-display text-[13px] uppercase tracking-[0.06em]">{{ t('retag.fields') }}</h2>
+          <p class="font-mono text-[10px] tracking-[0.04em] text-foreground-muted mt-1">{{ t('retag.fieldsHint') }}</p>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <label
@@ -249,34 +252,34 @@ function resultClass(status?: string) {
       <!-- Actions -->
       <div v-if="matchedFiles.length" class="flex items-center gap-2">
         <button
-          class="btn btn-secondary"
+          class="btn btn-secondary font-mono text-[10.5px] tracking-[0.1em] uppercase disabled:opacity-50 disabled:cursor-not-allowed"
           :disabled="isRunning || !anyFieldSelected || !selectedFiles.length"
           @click="run(true)"
         >
           {{ isRunning && dryRun ? t('retag.previewing') : t('retag.preview') }}
         </button>
         <button
-          class="btn btn-primary"
+          class="btn btn-primary font-mono text-[10.5px] tracking-[0.1em] uppercase disabled:opacity-50 disabled:cursor-not-allowed"
           :disabled="isRunning || !anyFieldSelected || !selectedFiles.length"
           @click="run(false)"
         >
           {{ isRunning && !dryRun ? t('retag.running') : t('retag.run', { count: selectedFiles.length }) }}
         </button>
-        <button v-if="isRunning" class="btn btn-ghost" @click="cancel">{{ t('retag.cancel') }}</button>
+        <button v-if="isRunning" class="btn btn-ghost font-mono text-[10.5px] tracking-[0.1em] uppercase" @click="cancel">{{ t('retag.cancel') }}</button>
         <button
           v-if="!isRunning && failedFiles.length"
-          class="btn btn-ghost text-red-400"
+          class="btn btn-ghost font-mono text-[10.5px] tracking-[0.1em] uppercase text-red-400"
           @click="retryFailed"
         >
           {{ t('retag.retryFailed', { count: failedFiles.length }) }}
         </button>
-        <div v-if="isRunning" class="text-sm text-foreground-muted ml-2">
+        <div v-if="isRunning" class="font-mono text-[11px] tracking-[0.08em] text-foreground-muted ml-2">
           {{ progress.current }} / {{ progress.total }}
         </div>
       </div>
 
       <!-- Progress bar -->
-      <div v-if="isRunning" class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+      <div v-if="isRunning" class="w-full h-2 bg-background-main border border-white/[0.06] overflow-hidden">
         <div
           class="h-full bg-primary-500 transition-all duration-200"
           :style="{ width: progress.total ? (progress.current / progress.total * 100) + '%' : '0%' }"
@@ -284,16 +287,16 @@ function resultClass(status?: string) {
       </div>
 
       <!-- Summary -->
-      <div v-if="Object.keys(results).length" class="text-sm">
+      <div v-if="Object.keys(results).length" class="font-mono text-[11px] tracking-[0.04em]">
         <span class="text-green-400">{{ summary.updated }} {{ dryRun ? t('retag.previewWouldChange') : t('retag.resultUpdated') }}</span>
         · <span class="text-foreground-muted">{{ summary.skipped }} {{ t('retag.resultSkipped') }}</span>
         · <span class="text-red-400">{{ summary.failed }} {{ t('retag.resultFailed') }}</span>
       </div>
 
       <!-- Per-file results -->
-      <div v-if="matchedFiles.length" class="bg-background-secondary rounded-xl border border-zinc-800 divide-y divide-zinc-800">
+      <div v-if="matchedFiles.length" class="bg-background-secondary/60 border border-white/[0.08] divide-y divide-white/[0.06]">
         <!-- Selection header: pick a subset, or just the failed ones, to retag -->
-        <div class="p-3 flex items-center gap-3 text-xs text-foreground-muted">
+        <div class="p-3 flex items-center gap-3 font-mono text-[10px] tracking-[0.04em] text-foreground-muted">
           <label class="flex items-center gap-2 cursor-pointer select-none">
             <input type="checkbox" v-model="allSelected" :disabled="isRunning" class="accent-primary-500" />
             <span>{{ t('retag.selectAll') }}</span>
@@ -301,7 +304,7 @@ function resultClass(status?: string) {
           <span>· {{ t('retag.selectedCount', { count: selectedFiles.length }) }}</span>
           <button
             v-if="failedFiles.length && !isRunning"
-            class="text-red-400 hover:underline"
+            class="text-red-400 hover:underline uppercase tracking-[0.08em]"
             @click="selectFailedOnly"
           >
             {{ t('retag.selectFailed', { count: failedFiles.length }) }}
@@ -320,7 +323,7 @@ function resultClass(status?: string) {
           />
           <div class="min-w-0 flex-1">
             <p class="text-sm truncate">{{ f.name }}</p>
-            <p class="text-xs text-foreground-muted truncate">
+            <p class="font-mono text-[11px] text-foreground-muted truncate">
               {{ f.format?.toUpperCase() }} · ISRC {{ f.isrc }}
             </p>
             <div v-if="results[f.path]?.changes?.length" class="mt-1 space-y-0.5">
@@ -355,13 +358,13 @@ function resultClass(status?: string) {
           <div v-if="results[f.path]" class="flex items-center gap-2 flex-shrink-0">
             <button
               v-if="results[f.path].status === 'failed' && !isRunning"
-              class="text-xs text-primary-400 hover:underline"
+              class="font-mono text-[10px] tracking-[0.08em] uppercase text-primary-400 hover:underline"
               @click="retryOne(f)"
             >
               {{ t('retag.retry') }}
             </button>
             <span
-              class="text-xs font-medium"
+              class="font-mono text-[10px] tracking-[0.08em] uppercase font-medium"
               :class="resultClass(results[f.path].status)"
             >
               {{ results[f.path].status === 'pending' ? '…' :
@@ -373,7 +376,7 @@ function resultClass(status?: string) {
       </div>
 
       <!-- No-ISRC notice -->
-      <p v-if="files.length && skippedCount > 0" class="text-xs text-foreground-muted">
+      <p v-if="files.length && skippedCount > 0" class="font-mono text-[10px] tracking-[0.04em] text-foreground-muted">
         {{ t('retag.noIsrcWarning') }}
       </p>
     </div>

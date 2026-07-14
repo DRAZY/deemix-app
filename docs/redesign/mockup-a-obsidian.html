@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deemix Remastered — Concept A: OBSIDIAN</title>
+<!-- HERO: the vinyl record sliding out from behind the now-downloading album art,
+     spinning, ringed by the live download progress arc -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0E0C0A; --bg2:#151210; --bg3:#1D1915;
+  --line:rgba(237,230,220,.08); --line2:rgba(237,230,220,.14);
+  --fg:#EDE6DC; --fg-dim:#9A8F81; --fg-faint:#5E564B;
+  --accent:#E8A03D; --accent-deep:#B9752A;
+  --ok:#8FBF6A;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--fg);
+  font-family:'Instrument Sans',sans-serif; font-size:14px;
+  overflow:hidden; -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:'JetBrains Mono',monospace}
+.serif{font-family:'Fraunces',serif}
+
+/* ambient wash behind everything */
+.ambient{
+  position:fixed; inset:-20%; z-index:0; pointer-events:none; filter:blur(90px); opacity:.5;
+  background:
+    radial-gradient(38% 44% at 68% 22%, rgba(232,160,61,.16), transparent 70%),
+    radial-gradient(30% 36% at 18% 78%, rgba(122,72,140,.14), transparent 70%),
+    radial-gradient(26% 30% at 85% 80%, rgba(46,94,120,.12), transparent 70%);
+  animation:drift 14s ease-in-out infinite alternate;
+}
+@keyframes drift{from{transform:translate3d(-1.5%,0,0) scale(1)}to{transform:translate3d(1.5%,2%,0) scale(1.06)}}
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.10'/%3E%3C/svg%3E");}
+
+.app{position:relative;z-index:2;display:flex;flex-direction:column;height:100vh}
+
+/* ── titlebar ── */
+.titlebar{display:flex;align-items:center;gap:14px;height:44px;padding:0 16px;border-bottom:1px solid var(--line);flex:0 0 auto;-webkit-app-region:drag}
+.lights{display:flex;gap:8px}
+.lights i{width:11px;height:11px;border-radius:50%;background:var(--bg3);border:1px solid var(--line2)}
+.wordmark{font-family:'Fraunces',serif;font-size:15px;font-weight:600;letter-spacing:.02em}
+.wordmark em{font-style:italic;color:var(--accent);font-weight:500}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.status-pill{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--fg-dim);letter-spacing:.06em}
+.status-pill b{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.avatar{width:26px;height:26px;border-radius:50%;background:conic-gradient(from 120deg,var(--accent),#7a488c,var(--accent));border:1px solid var(--line2)}
+
+.body{display:flex;flex:1;min-height:0}
+
+/* ── rail nav ── */
+.rail{width:190px;flex:0 0 auto;border-right:1px solid var(--line);padding:22px 12px;display:flex;flex-direction:column;gap:2px}
+.rail .sec{font-size:10px;letter-spacing:.22em;color:var(--fg-faint);text-transform:uppercase;padding:14px 12px 8px}
+.nav{display:flex;align-items:center;gap:11px;padding:8px 12px;border-radius:8px;color:var(--fg-dim);cursor:pointer;transition:all .18s cubic-bezier(.16,1,.3,1);font-weight:500}
+.nav svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.nav:hover{color:var(--fg);background:rgba(237,230,220,.04)}
+.nav.on{color:var(--fg);background:linear-gradient(90deg,rgba(232,160,61,.14),transparent 80%);box-shadow:inset 2px 0 0 var(--accent)}
+.nav .badge{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--bg);background:var(--accent);border-radius:20px;padding:1px 7px;font-weight:700}
+.rail .foot{margin-top:auto;padding:12px;border-top:1px solid var(--line);font-size:11px;color:var(--fg-faint)}
+.rail .foot .mono{color:var(--fg-dim)}
+
+/* ── main ── */
+.main{flex:1;min-width:0;overflow-y:auto;padding:34px 38px 120px}
+.main::-webkit-scrollbar{width:10px}
+.main::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:8px}
+
+.reveal{opacity:0;transform:translateY(14px);animation:up .8s cubic-bezier(.16,1,.3,1) forwards}
+@keyframes up{to{opacity:1;transform:none}}
+.d1{animation-delay:.05s}.d2{animation-delay:.15s}.d3{animation-delay:.25s}.d4{animation-delay:.35s}.d5{animation-delay:.45s}
+
+.eyebrow{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--accent);font-weight:600}
+h1.greet{font-family:'Fraunces',serif;font-weight:420;font-size:44px;line-height:1.06;letter-spacing:-.015em;margin:10px 0 6px}
+h1.greet em{font-style:italic;color:var(--accent)}
+.sub{color:var(--fg-dim);max-width:52ch}
+
+/* search */
+.search{margin-top:26px;display:flex;align-items:center;gap:12px;height:54px;padding:0 20px;border:1px solid var(--line2);border-radius:14px;background:rgba(21,18,16,.72);backdrop-filter:blur(12px);transition:border-color .2s}
+.search:hover{border-color:rgba(232,160,61,.45)}
+.search svg{width:18px;height:18px;stroke:var(--fg-dim);fill:none;stroke-width:1.8;stroke-linecap:round}
+.search input{flex:1;background:none;border:none;outline:none;color:var(--fg);font:inherit;font-size:15px}
+.search input::placeholder{color:var(--fg-faint)}
+.kbd{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--fg-dim);border:1px solid var(--line2);border-radius:6px;padding:3px 7px}
+
+/* now-downloading hero */
+.hero{margin-top:34px;display:flex;gap:36px;align-items:center;padding:28px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(120deg,rgba(29,25,21,.9),rgba(21,18,16,.55));position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 120% at 12% 50%,rgba(232,160,61,.13),transparent 60%);pointer-events:none}
+.art-stack{position:relative;width:210px;height:210px;flex:0 0 auto}
+.vinyl{position:absolute;top:9px;left:64px;width:192px;height:192px;border-radius:50%;
+  background:
+    radial-gradient(circle at 50% 50%, #171310 0 14%, #C8742D 14% 30%, #171310 30% 31%, #0c0a08 31% 100%),
+    repeating-radial-gradient(circle at 50% 50%, rgba(255,255,255,.05) 0 1px, transparent 1px 4px);
+  box-shadow:0 8px 30px rgba(0,0,0,.6);
+  animation:spin 4.5s linear infinite}
+.vinyl::after{content:"";position:absolute;top:50%;left:50%;width:7px;height:7px;border-radius:50%;background:var(--bg);transform:translate(-50%,-50%)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cover{position:absolute;inset:0;width:210px;height:210px;border-radius:12px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.65), 0 2px 0 rgba(255,255,255,.06) inset;
+  background:linear-gradient(150deg,#2a1a3e 0%,#804a2c 55%,#d99a4e 100%)}
+.cover .glyph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-style:italic;font-size:64px;color:rgba(237,230,220,.85);text-shadow:0 4px 30px rgba(0,0,0,.4)}
+.ring{position:absolute;top:-13px;left:-13px;width:236px;height:236px;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:3}
+.ring .track{stroke:rgba(237,230,220,.09)}
+.ring .prog{stroke:var(--accent);stroke-linecap:round;stroke-dasharray:716;stroke-dashoffset:258;filter:drop-shadow(0 0 6px rgba(232,160,61,.55));animation:ringin 1.6s cubic-bezier(.16,1,.3,1) .4s both}
+@keyframes ringin{from{stroke-dashoffset:716}}
+.hero-meta{position:relative;flex:1;min-width:0;margin-left:56px}
+.hero-meta .now{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--accent);font-weight:600;display:flex;align-items:center;gap:10px}
+.eq{display:inline-flex;align-items:flex-end;gap:2px;height:12px}
+.eq i{width:3px;background:var(--accent);border-radius:2px;animation:eq 1s ease-in-out infinite}
+.eq i:nth-child(1){height:60%;animation-delay:0s}.eq i:nth-child(2){height:100%;animation-delay:.2s}.eq i:nth-child(3){height:40%;animation-delay:.35s}.eq i:nth-child(4){height:80%;animation-delay:.5s}
+@keyframes eq{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(1)}}
+.hero-meta h2{font-family:'Fraunces',serif;font-size:34px;font-weight:460;letter-spacing:-.01em;margin:12px 0 2px}
+.hero-meta .artist{color:var(--fg-dim);font-size:16px}
+.chips{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.chip{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.05em;color:var(--fg-dim);border:1px solid var(--line2);border-radius:20px;padding:4px 11px}
+.chip.hot{color:var(--accent);border-color:rgba(232,160,61,.4)}
+.hero-stats{display:flex;gap:34px;margin-top:22px}
+.stat .n{font-family:'Fraunces',serif;font-size:26px;font-weight:500}
+.stat .n span{font-size:15px;color:var(--fg-dim)}
+.stat .l{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--fg-faint);margin-top:2px}
+
+/* section heads + grid */
+.sechead{display:flex;align-items:baseline;gap:16px;margin:46px 0 18px}
+.sechead h3{font-family:'Fraunces',serif;font-size:24px;font-weight:480;letter-spacing:-.01em}
+.sechead .rule{flex:1;height:1px;background:var(--line)}
+.sechead a{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim);text-decoration:none}
+.sechead a:hover{color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:22px}
+.card{cursor:pointer}
+.card .art{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;box-shadow:0 10px 26px rgba(0,0,0,.45);transition:transform .25s cubic-bezier(.16,1,.3,1),box-shadow .25s}
+.card:hover .art{transform:translateY(-5px);box-shadow:0 22px 40px rgba(0,0,0,.6)}
+.card .art .dl{position:absolute;right:10px;bottom:10px;width:38px;height:38px;border-radius:50%;background:var(--accent);color:#141008;display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(8px);transition:all .22s cubic-bezier(.16,1,.3,1);box-shadow:0 6px 18px rgba(232,160,61,.4)}
+.card:hover .dl{opacity:1;transform:none}
+.card .dl svg{width:16px;height:16px;stroke:#141008;stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.card .t{margin-top:10px;font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .a{color:var(--fg-dim);font-size:12px;margin-top:2px}
+.c1{background:linear-gradient(160deg,#20304a,#4a7a8c 60%,#c8d8d0)}
+.c2{background:linear-gradient(200deg,#3e1f14,#8c4a2a 55%,#e8c06a)}
+.c3{background:linear-gradient(140deg,#1a1a2e,#5c3a6e 60%,#c86a8c)}
+.c4{background:linear-gradient(170deg,#0e2820,#2a6e50 60%,#a0d8a8)}
+.c5{background:linear-gradient(120deg,#2e1420,#7a2a3e 55%,#e88c6a)}
+.c6{background:linear-gradient(190deg,#141e2e,#2a4a7a 60%,#8cb8e8)}
+
+/* ── queue dock ── */
+.dock{width:308px;flex:0 0 auto;border-left:1px solid var(--line);display:flex;flex-direction:column;background:rgba(14,12,10,.6);backdrop-filter:blur(10px)}
+.dock header{padding:20px 20px 14px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:10px}
+.dock header h4{font-family:'Fraunces',serif;font-size:18px;font-weight:520}
+.dock header .mono{margin-left:auto;font-size:10.5px;color:var(--fg-dim)}
+.q{flex:1;overflow-y:auto;padding:10px 14px}
+.qi{display:flex;gap:12px;align-items:center;padding:10px 8px;border-radius:10px;transition:background .15s}
+.qi:hover{background:rgba(237,230,220,.04)}
+.qi .th{width:40px;height:40px;border-radius:7px;flex:0 0 auto}
+.qi .m{flex:1;min-width:0}
+.qi .m .t{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qi .m .s{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--fg-dim);margin-top:3px}
+.bar{height:2.5px;background:rgba(237,230,220,.09);border-radius:2px;margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent-deep),var(--accent));border-radius:2px}
+.qi.done .m .s{color:var(--ok)}
+.qi .pct{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--fg-dim);flex:0 0 auto}
+.dock .sum{border-top:1px solid var(--line);padding:16px 20px}
+.dock .sum .row{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--fg-dim);margin-bottom:6px}
+.dock .sum .row b{color:var(--fg)}
+.dock .sum .bar{height:4px;margin-top:10px}
+.dock .sum .bar i{width:64%;animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="ambient"></div><div class="grain"></div>
+<div class="app">
+
+  <div class="titlebar">
+    <div class="lights"><i></i><i></i><i></i></div>
+    <div class="wordmark">deemix <em>remastered</em></div>
+    <div class="tb-right">
+      <div class="status-pill"><b></b>DEEZER · HIFI</div>
+      <div class="avatar"></div>
+    </div>
+  </div>
+
+  <div class="body">
+    <nav class="rail">
+      <div class="sec">Browse</div>
+      <div class="nav on"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3z"/></svg>Home</div>
+      <div class="nav"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search</div>
+      <div class="nav"><svg viewBox="0 0 24 24"><path d="M4 19V5m8 14V9m8 10v-8"/></svg>Charts</div>
+      <div class="nav"><svg viewBox="0 0 24 24"><path d="M12 21s-8-5.2-8-11a4.6 4.6 0 0 1 8-3 4.6 4.6 0 0 1 8 3c0 5.8-8 11-8 11z"/></svg>Favorites</div>
+      <div class="sec">Collect</div>
+      <div class="nav"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16"/></svg>Downloads<span class="badge">4</span></div>
+      <div class="nav"><svg viewBox="0 0 24 24"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg>Link Analyzer</div>
+      <div class="nav"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 3v6h-6"/></svg>Playlist Sync</div>
+      <div class="nav"><svg viewBox="0 0 24 24"><path d="M20 7 9 18l-5-5"/></svg>Retag</div>
+      <div class="sec">System</div>
+      <div class="nav"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12"/></svg>Settings</div>
+      <div class="foot">v2.0 concept · <span class="mono">OBSIDIAN</span></div>
+    </nav>
+
+    <main class="main">
+      <div class="reveal d1">
+        <div class="eyebrow">Sunday evening</div>
+        <h1 class="greet">Your collection,<br><em>remastered.</em></h1>
+        <p class="sub">Search anything, paste any link. Lossless by default.</p>
+      </div>
+
+      <div class="search reveal d2">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input placeholder="Search tracks, albums, artists — or paste a Deezer / Spotify link" />
+        <span class="kbd">⌘K</span>
+      </div>
+
+      <section class="hero reveal d3">
+        <div class="art-stack">
+          <div class="vinyl"></div>
+          <div class="cover"><div class="glyph">Nx</div></div>
+          <svg class="ring" viewBox="0 0 236 236"><circle class="track" cx="118" cy="118" r="114"/><circle class="prog" cx="118" cy="118" r="114"/></svg>
+        </div>
+        <div class="hero-meta">
+          <div class="now"><span class="eq"><i></i><i></i><i></i><i></i></span>Now downloading</div>
+          <h2>Nocturnal Exchange</h2>
+          <div class="artist">Sable Motif · 2026 · Deluxe Edition</div>
+          <div class="chips">
+            <span class="chip hot">FLAC · 1411 kbps</span>
+            <span class="chip">44.1 kHz / 16-bit</span>
+            <span class="chip">Embedded art 1200px</span>
+            <span class="chip">LRC lyrics</span>
+          </div>
+          <div class="hero-stats">
+            <div class="stat"><div class="n">14<span>/22</span></div><div class="l">Tracks</div></div>
+            <div class="stat"><div class="n">9.2<span> MB/s</span></div><div class="l">Throughput</div></div>
+            <div class="stat"><div class="n">1:42<span> left</span></div><div class="l">Remaining</div></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="sechead reveal d4"><h3>New releases</h3><div class="rule"></div><a href="#">View all</a></div>
+      <div class="grid reveal d4">
+        <div class="card"><div class="art c1"><span class="dl"><svg viewBox="0 0 24 24"><path d="M12 4v12m0 0 4-4m-4 4-4-4M5 20h14"/></svg></span></div><div class="t">Meridian Lines</div><div class="a">Cobalt Study</div></div>
+        <div class="card"><div class="art c2"><span class="dl"><svg viewBox="0 0 24 24"><path d="M12 4v12m0 0 4-4m-4 4-4-4M5 20h14"/></svg></span></div><div class="t">Amber Static</div><div class="a">Ferrous</div></div>
+        <div class="card"><div class="art c3"><span class="dl"><svg viewBox="0 0 24 24"><path d="M12 4v12m0 0 4-4m-4 4-4-4M5 20h14"/></svg></span></div><div class="t">Velvet Arithmetic</div><div class="a">Mme. Roux</div></div>
+        <div class="card"><div class="art c4"><span class="dl"><svg viewBox="0 0 24 24"><path d="M12 4v12m0 0 4-4m-4 4-4-4M5 20h14"/></svg></span></div><div class="t">Greenhouse</div><div class="a">Palm Theory</div></div>
+        <div class="card"><div class="art c5"><span class="dl"><svg viewBox="0 0 24 24"><path d="M12 4v12m0 0 4-4m-4 4-4-4M5 20h14"/></svg></span></div><div class="t">Copper Tongues</div><div class="a">The Vermilion</div></div>
+        <div class="card"><div class="art c6"><span class="dl"><svg viewBox="0 0 24 24"><path d="M12 4v12m0 0 4-4m-4 4-4-4M5 20h14"/></svg></span></div><div class="t">Night Ferry</div><div class="a">Harbor Lights</div></div>
+      </div>
+    </main>
+
+    <aside class="dock">
+      <header><h4>Queue</h4><span class="mono">4 ACTIVE · 12 DONE</span></header>
+      <div class="q">
+        <div class="qi"><div class="th c2"></div><div class="m"><div class="t">Amber Static — 03 · Filament</div><div class="s">FLAC · 8.4 MB/s</div><div class="bar"><i style="width:78%"></i></div></div><div class="pct">78%</div></div>
+        <div class="qi"><div class="th c3"></div><div class="m"><div class="t">Velvet Arithmetic — 01 · Overture</div><div class="s">FLAC · 6.1 MB/s</div><div class="bar"><i style="width:41%"></i></div></div><div class="pct">41%</div></div>
+        <div class="qi"><div class="th c6"></div><div class="m"><div class="t">Night Ferry — 07 · Slack Tide</div><div class="s">FLAC · queued</div><div class="bar"><i style="width:6%"></i></div></div><div class="pct">6%</div></div>
+        <div class="qi"><div class="th c1"></div><div class="m"><div class="t">Meridian Lines — full album</div><div class="s">22 tracks · pending</div><div class="bar"><i style="width:0%"></i></div></div><div class="pct">—</div></div>
+        <div class="qi done"><div class="th c5"></div><div class="m"><div class="t">Copper Tongues — 02 · Patina</div><div class="s">✓ saved · 31.2 MB</div></div></div>
+        <div class="qi done"><div class="th c4"></div><div class="m"><div class="t">Greenhouse — 05 · Fern Logic</div><div class="s">✓ saved · 28.9 MB</div></div></div>
+        <div class="qi done"><div class="th c3"></div><div class="m"><div class="t">Velvet Arithmetic — 04 · Ledger</div><div class="s">✓ saved · 26.4 MB</div></div></div>
+      </div>
+      <div class="sum">
+        <div class="row"><span>SESSION</span><b>1.24 GB / 1.9 GB</b></div>
+        <div class="row"><span>DESTINATION</span><b>~/Music/Deemix</b></div>
+        <div class="bar"><i></i></div>
+      </div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>

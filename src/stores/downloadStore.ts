@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Track, Album, Playlist, DownloadItem, DownloadStatus, FailedTrack, DownloadHistoryEntry } from '../types'
+import type { Track, Album, Playlist, DownloadItem, DownloadStatus, FailedTrack, SubstitutedTrack, DownloadHistoryEntry } from '../types'
 import { useSettingsStore } from './settingsStore'
 import { useToastStore } from './toastStore'
 
@@ -324,6 +324,7 @@ export const useDownloadStore = defineStore('downloads', () => {
       quality: item.quality,
       actualFormat: item.actualFormat,
       substituted: item.substituted,
+      substitutedTracks: item.substitutedTracks,
       path: item.path,
       status: item.status === 'completed' ? 'completed' : 'error',
       error: item.error,
@@ -986,6 +987,12 @@ export const useDownloadStore = defineStore('downloads', () => {
     // Capture substitution flag (exact track unavailable; alternate release downloaded)
     if (serverItem.substituted && !item.substituted) {
       item.substituted = true
+      item.substitutedTracks = [{
+        id: item.id,
+        trackId: serverItem.trackId,
+        title: serverItem.trackTitle || item.title,
+        artist: serverItem.trackArtist || item.artist
+      }]
       changed = true
     }
 
@@ -1002,6 +1009,8 @@ export const useDownloadStore = defineStore('downloads', () => {
     let playlistFolderPath: string | null = null
     let actualFormat: string | null = null
     let anySubstituted = false
+    let speedSum = 0
+    const substitutedTracks: SubstitutedTrack[] = []
 
     for (const trackId of trackIds) {
       const serverItem = queueMap.get(trackId)
@@ -1027,9 +1036,23 @@ export const useDownloadStore = defineStore('downloads', () => {
         if (!actualFormat && serverItem.actualFormat) {
           actualFormat = serverItem.actualFormat
         }
-        // Flag the whole album/playlist row if any track was an alternate release
+        // Flag the whole album/playlist row if any track was an alternate release,
+        // and remember WHICH track so the badge can list them (drill-down).
         if (serverItem.substituted) {
           anySubstituted = true
+          substitutedTracks.push({
+            id: trackId,
+            trackId: serverItem.trackId || trackId,
+            title: serverItem.trackTitle || serverItem.title || 'Unknown Track',
+            artist: serverItem.trackArtist || serverItem.artist
+          })
+        }
+
+        // Aggregate live throughput of in-flight tracks so the group row (and
+        // the sidebar/title-bar meters that sum activeDownloads speeds) shows
+        // real numbers during album/playlist downloads instead of 0.
+        if (serverItem.status === 'downloading' && typeof serverItem.speed === 'number') {
+          speedSum += serverItem.speed
         }
 
         // Count tracks as "complete" if they've finished downloading
@@ -1099,6 +1122,16 @@ export const useDownloadStore = defineStore('downloads', () => {
     // Surface if any track fell back to an alternate release
     if (anySubstituted && !item.substituted) {
       item.substituted = true
+      changed = true
+    }
+    if ((item.substitutedTracks?.length || 0) !== substitutedTracks.length) {
+      item.substitutedTracks = substitutedTracks
+      changed = true
+    }
+
+    // Publish the aggregated throughput (0 once nothing is in flight)
+    if ((item.speed || 0) !== speedSum) {
+      item.speed = speedSum
       changed = true
     }
 

@@ -4,17 +4,17 @@ import { useToastStore } from '../stores/toastStore'
 const toastStore = useToastStore()
 
 const iconColor: Record<string, string> = {
-  success: 'text-green-400',
-  error: 'text-red-400',
-  info: 'text-blue-400',
-  warning: 'text-yellow-400'
+  success: 'text-[#22c55e]',
+  error: 'text-[#ef4444]',
+  info: 'text-primary-500',
+  warning: 'text-[#ffb454]'
 }
 
 const bgColor: Record<string, string> = {
-  success: 'bg-green-500/10 border-green-500/20',
-  error: 'bg-red-500/10 border-red-500/20',
-  info: 'bg-blue-500/10 border-blue-500/20',
-  warning: 'bg-yellow-500/10 border-yellow-500/20'
+  success: 'bg-background-secondary border-l-2 border-l-[#22c55e]',
+  error: 'bg-background-secondary border-l-2 border-l-[#ef4444]',
+  info: 'bg-background-secondary border-l-2 border-l-primary-500',
+  warning: 'bg-background-secondary border-l-2 border-l-[#ffb454]'
 }
 </script>
 
@@ -25,7 +25,7 @@ const bgColor: Record<string, string> = {
         <div
           v-for="toast in toastStore.toasts"
           :key="toast.id"
-          class="flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg backdrop-blur-sm"
+          class="flex items-start gap-3 px-4 py-3 border border-white/[0.08] shadow-lg"
           :class="bgColor[toast.type]"
         >
           <!-- Icon -->
@@ -85,5 +85,19 @@ const bgColor: Record<string, string> = {
 
 .toast-move {
   transition: transform 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-enter-active,
+  .toast-leave-active {
+    transition: opacity 0.3s ease;
+  }
+  .toast-enter-from,
+  .toast-leave-to {
+    transform: none;
+  }
+  .toast-move {
+    transition: none;
+  }
 }
 </style>

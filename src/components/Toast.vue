@@ -28,15 +28,15 @@ watch(() => props.show, (newVal) => {
 }, { immediate: true })
 
 const iconColor = {
-  success: 'text-green-400',
-  error: 'text-red-400',
-  info: 'text-blue-400'
+  success: 'text-[#22c55e]',
+  error: 'text-[#ef4444]',
+  info: 'text-primary-500'
 }
 
 const bgColor = {
-  success: 'bg-green-500/10 border-green-500/20',
-  error: 'bg-red-500/10 border-red-500/20',
-  info: 'bg-blue-500/10 border-blue-500/20'
+  success: 'bg-background-secondary border-l-2 border-l-[#22c55e]',
+  error: 'bg-background-secondary border-l-2 border-l-[#ef4444]',
+  info: 'bg-background-secondary border-l-2 border-l-primary-500'
 }
 </script>
 
@@ -48,7 +48,7 @@ const bgColor = {
         class="fixed top-4 right-4 z-[100] max-w-sm"
       >
         <div
-          class="flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg backdrop-blur-sm"
+          class="flex items-start gap-3 px-4 py-3 border border-white/[0.08] shadow-lg"
           :class="bgColor[type || 'info']"
         >
           <!-- Icon -->
@@ -99,5 +99,16 @@ const bgColor = {
 .toast-leave-to {
   opacity: 0;
   transform: translateX(100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-enter-active,
+  .toast-leave-active {
+    transition: opacity 0.3s ease;
+  }
+  .toast-enter-from,
+  .toast-leave-to {
+    transform: none;
+  }
 }
 </style>

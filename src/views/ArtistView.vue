@@ -390,8 +390,8 @@ const contextMenuItems = computed(() => {
           class="w-48 h-48 rounded-full object-cover shadow-2xl"
         />
         <div class="flex-1">
-          <p class="text-sm text-foreground-muted uppercase tracking-wider mb-2">{{ t('common.artist') }}</p>
-          <h1 class="text-4xl font-bold mb-4">{{ artist.name }}</h1>
+          <p class="font-mono text-[10px] tracking-[0.3em] uppercase text-primary-500 mb-2">{{ t('common.artist') }}</p>
+          <h1 class="font-display uppercase text-[34px] leading-[1.02] tracking-[-0.01em] mb-4">{{ artist.name }}</h1>
           <p class="text-foreground-muted mb-4">
             {{ artist.nb_fan?.toLocaleString() }} {{ t('common.fans') }}
           </p>
@@ -428,13 +428,13 @@ const contextMenuItems = computed(() => {
 
       <!-- Latest Release Highlight -->
       <section v-if="latestRelease && !isLoadingDetails" class="mb-8">
-        <h2 class="text-xl font-bold mb-4">{{ t('artistView.latestRelease') }}</h2>
-        <div class="flex gap-6 p-4 bg-background-secondary rounded-lg">
+        <h2 class="font-display text-[15px] uppercase tracking-[0.06em] mb-4">{{ t('artistView.latestRelease') }}</h2>
+        <div class="flex gap-6 p-4 border border-white/[0.08] bg-background-secondary/70">
           <!-- Large album cover -->
           <img
             :src="latestRelease.cover_medium || latestRelease.cover_small"
             :alt="latestRelease.title"
-            class="w-32 h-32 rounded-lg shadow-lg object-cover"
+            class="w-32 h-32 border border-white/[0.1] shadow-lg object-cover"
           />
           <div class="flex flex-col justify-center">
             <!-- Album title with badges -->
@@ -474,7 +474,7 @@ const contextMenuItems = computed(() => {
 
       <!-- Top Tracks -->
       <section v-if="topTracks.length > 0">
-        <h2 class="text-xl font-bold mb-4">{{ t('artistView.topTracks') }}</h2>
+        <h2 class="font-display text-[15px] uppercase tracking-[0.06em] mb-4">{{ t('artistView.topTracks') }}</h2>
         <div class="space-y-1">
           <TrackCard
             v-for="(track, index) in topTracks.slice(0, 10)"
@@ -488,7 +488,7 @@ const contextMenuItems = computed(() => {
       <!-- Discography Section -->
       <section v-if="albums.length > 0 || isLoadingDetails">
         <div class="flex items-center gap-3 mb-4">
-          <h2 class="text-xl font-bold">{{ t('artistView.discography') }}</h2>
+          <h2 class="font-display text-[15px] uppercase tracking-[0.06em]">{{ t('artistView.discography') }}</h2>
           <!-- Loading indicator for album details -->
           <div v-if="isLoadingDetails" class="flex items-center gap-2 text-sm text-foreground-muted">
             <div class="animate-spin w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full"></div>
@@ -548,7 +548,7 @@ const contextMenuItems = computed(() => {
         </div>
 
         <!-- Discography Table -->
-        <div class="overflow-hidden rounded-lg bg-background-secondary/30">
+        <div class="overflow-hidden border border-white/[0.06] bg-background-secondary/30">
           <!-- Table Header -->
           <div class="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-3 border-b border-zinc-700/50 text-sm text-foreground-muted">
             <div class="w-12"></div>

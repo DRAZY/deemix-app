@@ -369,14 +369,14 @@ function getScheduleLabel(schedule: SyncSchedule): string {
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold">{{ t('sync.title') }}</h1>
+        <h1 class="font-display uppercase text-[22px] tracking-[0.02em]">{{ t('sync.title') }}</h1>
         <p class="text-foreground-muted text-sm mt-1">{{ t('sync.subtitle') }}</p>
       </div>
       <div class="flex gap-2">
         <button
           v-if="syncStore.playlists.length > 0"
           @click="syncStore.syncAll()"
-          class="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-background-secondary text-foreground-muted hover:text-foreground transition-colors"
+          class="flex items-center gap-2 px-3 py-2 font-mono text-[10.5px] tracking-[0.12em] uppercase border border-white/[0.08] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -385,7 +385,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
         </button>
         <button
           @click="showAddModal = true"
-          class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-primary-500 text-white hover:bg-primary-600 transition-colors"
+          class="btn btn-primary flex items-center gap-2 font-mono text-[11px] tracking-[0.1em] uppercase"
         >
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -400,11 +400,11 @@ function getScheduleLabel(schedule: SyncSchedule): string {
       <svg class="w-16 h-16 mx-auto text-foreground-muted mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
       </svg>
-      <h3 class="text-lg font-medium mb-2">{{ t('sync.noPlaylists') }}</h3>
+      <h3 class="font-display text-[15px] uppercase tracking-[0.04em] mb-2">{{ t('sync.noPlaylists') }}</h3>
       <p class="text-foreground-muted mb-4">{{ t('sync.noPlaylistsHint') }}</p>
       <button
         @click="showAddModal = true"
-        class="px-4 py-2 text-sm font-medium rounded-lg bg-primary-500 text-white hover:bg-primary-600 transition-colors"
+        class="btn btn-primary font-mono text-[11px] tracking-[0.1em] uppercase"
       >
         {{ t('sync.addFirstPlaylist') }}
       </button>
@@ -414,19 +414,19 @@ function getScheduleLabel(schedule: SyncSchedule): string {
     <div v-if="syncStore.playlists.length > 1" class="flex flex-wrap items-center gap-2">
       <input
         v-model="playlistFilter"
-        class="flex-1 min-w-[160px] px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+        class="flex-1 min-w-[160px] px-3 py-2 bg-background-main text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
         :placeholder="t('sync.filterPlaceholder')"
       />
       <select
         v-model="playlistSort"
         :aria-label="t('sync.sortBy')"
-        class="px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+        class="px-3 py-2 bg-background-main text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
       >
         <option v-for="opt in sortFieldOptions" :key="opt.value" :value="opt.value">{{ t(opt.labelKey) }}</option>
       </select>
       <button
         @click="playlistSortDir = playlistSortDir === 'asc' ? 'desc' : 'asc'"
-        class="p-2 rounded-lg bg-background-main border border-zinc-700 text-foreground-muted hover:text-foreground transition-colors"
+        class="p-2 bg-background-main border border-white/[0.1] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors"
         v-tooltip="t('sync.sortBy')"
       >
         <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': playlistSortDir === 'desc' }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -439,8 +439,8 @@ function getScheduleLabel(schedule: SyncSchedule): string {
     <div v-for="playlist in visiblePlaylists" :key="playlist.id" class="card">
       <div class="flex items-start gap-4">
         <!-- Source Icon -->
-        <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-          :class="playlist.source === 'spotify' ? 'bg-green-500/20' : 'bg-purple-500/20'"
+        <div class="w-10 h-10 flex items-center justify-center flex-shrink-0 border border-white/[0.08]"
+          :class="playlist.source === 'spotify' ? 'bg-green-500/10' : 'bg-purple-500/10'"
         >
           <svg v-if="playlist.source === 'spotify'" class="w-5 h-5 text-green-400" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
@@ -456,11 +456,11 @@ function getScheduleLabel(schedule: SyncSchedule): string {
             <h3 class="font-medium truncate">{{ playlist.sourcePlaylistName }}</h3>
             <span
               v-if="playlist.lastSyncStatus"
-              class="px-2 py-0.5 text-xs rounded-full"
+              class="px-1.5 py-0.5 font-mono text-[10px] tracking-[0.08em] uppercase border"
               :class="{
-                'bg-green-500/20 text-green-400': playlist.lastSyncStatus === 'success',
-                'bg-yellow-500/20 text-yellow-400': playlist.lastSyncStatus === 'partial',
-                'bg-red-500/20 text-red-400': playlist.lastSyncStatus === 'error'
+                'bg-green-500/10 text-green-400 border-green-500/30': playlist.lastSyncStatus === 'success',
+                'bg-yellow-500/10 text-yellow-400 border-yellow-500/30': playlist.lastSyncStatus === 'partial',
+                'bg-red-500/10 text-red-400 border-red-500/30': playlist.lastSyncStatus === 'error'
               }"
             >
               {{ playlist.lastSyncStatus }}
@@ -484,9 +484,9 @@ function getScheduleLabel(schedule: SyncSchedule): string {
               </span>
               <span v-else>{{ t('sync.syncing') }}...</span>
             </div>
-            <div class="mt-1 h-1 rounded-full bg-background-main overflow-hidden">
+            <div class="mt-1 h-1 bg-background-main overflow-hidden">
               <div
-                class="h-full bg-primary-500 rounded-full transition-all duration-300"
+                class="h-full bg-primary-500 transition-all duration-300"
                 :style="{ width: syncStore.getProgress(playlist.id) ? `${(syncStore.getProgress(playlist.id)!.current / Math.max(syncStore.getProgress(playlist.id)!.total, 1)) * 100}%` : '0%' }"
               />
             </div>
@@ -495,7 +495,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
           <!-- Stale: source playlist no longer in user's Deezer favorites -->
           <div
             v-if="syncStore.isStale(playlist)"
-            class="mt-2 flex items-center justify-between gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs"
+            class="mt-2 flex items-center justify-between gap-2 bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs"
           >
             <div class="flex items-center gap-2 text-amber-300 min-w-0">
               <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -505,7 +505,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
             </div>
             <button
               @click="syncStore.removePlaylist(playlist.id)"
-              class="px-2 py-1 rounded-md bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 transition-colors flex-shrink-0"
+              class="px-2 py-1 font-mono text-[9.5px] tracking-[0.1em] uppercase bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 transition-colors flex-shrink-0"
             >
               {{ t('sync.remove') }}
             </button>
@@ -526,7 +526,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
               </svg>
             </button>
             <div v-if="expandedErrors.has(playlist.id)" class="mt-2 space-y-1">
-              <div v-for="track in playlist.failedTracks" :key="track.sourceTrackId" class="text-xs text-foreground-muted bg-background-main rounded px-2 py-1">
+              <div v-for="track in playlist.failedTracks" :key="track.sourceTrackId" class="text-xs text-foreground-muted bg-background-main border border-white/[0.06] px-2 py-1">
                 {{ track.artist }} - {{ track.title }}: <span class="text-red-400">{{ track.error }}</span>
               </div>
             </div>
@@ -596,12 +596,12 @@ function getScheduleLabel(schedule: SyncSchedule): string {
     </div>
 
     <!-- Synced Artists Section (U1 layout: appended below the playlist list) -->
-    <div v-if="artistSyncStore.artists.length > 0" class="space-y-3 pt-4 border-t border-zinc-800">
+    <div v-if="artistSyncStore.artists.length > 0" class="space-y-3 pt-4 border-t border-white/[0.08]">
       <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold">{{ t('sync.syncedArtistsTitle') }}</h2>
+        <h2 class="font-display text-[15px] uppercase tracking-[0.06em]">{{ t('sync.syncedArtistsTitle') }}</h2>
         <button
           @click="artistSyncStore.syncAll()"
-          class="flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg bg-background-secondary text-foreground-muted hover:text-foreground transition-colors"
+          class="flex items-center gap-2 px-3 py-1.5 font-mono text-[10px] tracking-[0.12em] uppercase border border-white/[0.08] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors"
         >
           <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -614,19 +614,19 @@ function getScheduleLabel(schedule: SyncSchedule): string {
       <div v-if="artistSyncStore.artists.length > 1" class="flex flex-wrap items-center gap-2">
         <input
           v-model="artistFilter"
-          class="flex-1 min-w-[160px] px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+          class="flex-1 min-w-[160px] px-3 py-2 bg-background-main text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
           :placeholder="t('sync.filterPlaceholder')"
         />
         <select
           v-model="artistSort"
           :aria-label="t('sync.sortBy')"
-          class="px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+          class="px-3 py-2 bg-background-main text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
         >
           <option v-for="opt in sortFieldOptions" :key="opt.value" :value="opt.value">{{ t(opt.labelKey) }}</option>
         </select>
         <button
           @click="artistSortDir = artistSortDir === 'asc' ? 'desc' : 'asc'"
-          class="p-2 rounded-lg bg-background-main border border-zinc-700 text-foreground-muted hover:text-foreground transition-colors"
+          class="p-2 bg-background-main border border-white/[0.1] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors"
           v-tooltip="t('sync.sortBy')"
         >
           <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': artistSortDir === 'desc' }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -643,7 +643,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
       <div v-for="artist in visibleArtists" :key="artist.id" class="card">
         <div class="flex items-start gap-4">
           <!-- Source icon: artist (mic) -->
-          <div class="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center flex-shrink-0">
+          <div class="w-10 h-10 bg-pink-500/10 flex items-center justify-center flex-shrink-0 border border-white/[0.08]">
             <svg class="w-5 h-5 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
             </svg>
@@ -655,16 +655,16 @@ function getScheduleLabel(schedule: SyncSchedule): string {
               <h3 class="font-medium truncate">{{ artist.sourceArtistName }}</h3>
               <span
                 v-if="artist.lastSyncStatus"
-                class="px-2 py-0.5 text-xs rounded-full"
+                class="px-1.5 py-0.5 font-mono text-[10px] tracking-[0.08em] uppercase border"
                 :class="{
-                  'bg-green-500/20 text-green-400': artist.lastSyncStatus === 'success',
-                  'bg-yellow-500/20 text-yellow-400': artist.lastSyncStatus === 'partial',
-                  'bg-red-500/20 text-red-400': artist.lastSyncStatus === 'error'
+                  'bg-green-500/10 text-green-400 border-green-500/30': artist.lastSyncStatus === 'success',
+                  'bg-yellow-500/10 text-yellow-400 border-yellow-500/30': artist.lastSyncStatus === 'partial',
+                  'bg-red-500/10 text-red-400 border-red-500/30': artist.lastSyncStatus === 'error'
                 }"
               >
                 {{ artist.lastSyncStatus }}
               </span>
-              <span class="px-2 py-0.5 text-xs rounded-full bg-zinc-700 text-zinc-300">
+              <span class="px-1.5 py-0.5 font-mono text-[10px] tracking-[0.08em] uppercase border bg-background-main/60 text-foreground-muted border-white/[0.1]">
                 {{ artist.firstSyncMode }}
               </span>
             </div>
@@ -689,9 +689,9 @@ function getScheduleLabel(schedule: SyncSchedule): string {
                 </span>
                 <span v-else>{{ t('sync.syncing') }}...</span>
               </div>
-              <div class="mt-1 h-1 rounded-full bg-background-main overflow-hidden">
+              <div class="mt-1 h-1 bg-background-main overflow-hidden">
                 <div
-                  class="h-full bg-primary-500 rounded-full transition-all duration-300"
+                  class="h-full bg-primary-500 transition-all duration-300"
                   :style="{ width: artistSyncStore.getProgress(artist.id) ? `${(artistSyncStore.getProgress(artist.id)!.current / Math.max(artistSyncStore.getProgress(artist.id)!.total, 1)) * 100}%` : '0%' }"
                 />
               </div>
@@ -700,7 +700,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
             <!-- Stale: artist no longer in user's Deezer favorites -->
             <div
               v-if="artistSyncStore.isStale(artist)"
-              class="mt-2 flex items-center justify-between gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs"
+              class="mt-2 flex items-center justify-between gap-2 bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-xs"
             >
               <div class="flex items-center gap-2 text-amber-300 min-w-0">
                 <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -710,7 +710,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
               </div>
               <button
                 @click="artistSyncStore.removeArtist(artist.id)"
-                class="px-2 py-1 rounded-md bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 transition-colors flex-shrink-0"
+                class="px-2 py-1 font-mono text-[9.5px] tracking-[0.1em] uppercase bg-amber-500/20 text-amber-200 hover:bg-amber-500/30 transition-colors flex-shrink-0"
               >
                 {{ t('sync.remove') }}
               </button>
@@ -731,7 +731,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
                 </svg>
               </button>
               <div v-if="expandedArtistErrors.has(artist.id)" class="mt-2 space-y-1">
-                <div v-for="album in artist.failedAlbums" :key="album.sourceAlbumId" class="text-xs text-foreground-muted bg-background-main rounded px-2 py-1">
+                <div v-for="album in artist.failedAlbums" :key="album.sourceAlbumId" class="text-xs text-foreground-muted bg-background-main border border-white/[0.06] px-2 py-1">
                   {{ album.title }} <span v-if="album.releaseDate">({{ album.releaseDate }})</span>: <span class="text-red-400">{{ album.error }}</span>
                 </div>
               </div>
@@ -800,17 +800,17 @@ function getScheduleLabel(schedule: SyncSchedule): string {
     <teleport to="body">
       <transition name="fade">
         <div v-if="showAddModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60" @click.self="showAddModal = false">
-          <div class="bg-background-secondary rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
-            <h2 class="text-lg font-semibold mb-4">{{ t('sync.addPlaylist') }}</h2>
+          <div class="bg-background-secondary border border-white/[0.1] p-6 w-full max-w-md mx-4 shadow-xl">
+            <h2 class="font-display text-[15px] uppercase tracking-[0.06em] mb-4">{{ t('sync.addPlaylist') }}</h2>
 
             <div class="space-y-4">
               <!-- URL Input -->
               <div>
-                <label class="block text-sm font-medium mb-1">{{ t('sync.playlistUrl') }}</label>
+                <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">{{ t('sync.playlistUrl') }}</label>
                 <input
                   v-model="playlistUrl"
                   @input="detectUrl"
-                  class="w-full px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+                  class="w-full px-3 py-2 bg-background-main font-mono text-[13px] border border-white/[0.1] focus:border-primary-500/50 outline-none"
                   :placeholder="t('sync.urlPlaceholder')"
                 />
                 <div v-if="resolving" class="mt-1 text-xs text-yellow-400 flex items-center gap-1">
@@ -828,20 +828,20 @@ function getScheduleLabel(schedule: SyncSchedule): string {
 
               <!-- Name -->
               <div>
-                <label class="block text-sm font-medium mb-1">{{ t('sync.playlistName') }}</label>
+                <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">{{ t('sync.playlistName') }}</label>
                 <input
                   v-model="playlistName"
-                  class="w-full px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+                  class="w-full px-3 py-2 bg-background-main text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
                   :placeholder="t('sync.namePlaceholder')"
                 />
               </div>
 
               <!-- Schedule -->
               <div>
-                <label class="block text-sm font-medium mb-1">{{ t('sync.schedule') }}</label>
+                <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">{{ t('sync.schedule') }}</label>
                 <select
                   v-model="playlistSchedule"
-                  class="w-full px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+                  class="w-full px-3 py-2 bg-background-main text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
                 >
                   <option v-for="opt in scheduleOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                 </select>
@@ -851,14 +851,14 @@ function getScheduleLabel(schedule: SyncSchedule): string {
             <div class="flex justify-end gap-2 mt-6">
               <button
                 @click="showAddModal = false"
-                class="px-4 py-2 text-sm rounded-lg text-foreground-muted hover:text-foreground transition-colors"
+                class="px-4 py-2 font-mono text-[10.5px] tracking-[0.1em] uppercase text-foreground-muted hover:text-foreground transition-colors"
               >
                 {{ t('common.cancel') }}
               </button>
               <button
                 @click="addPlaylist"
                 :disabled="!detectedSource || addLoading || resolving"
-                class="px-4 py-2 text-sm font-medium rounded-lg bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                class="btn btn-primary font-mono text-[11px] tracking-[0.1em] uppercase disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span v-if="addLoading">{{ t('sync.adding') }}...</span>
                 <span v-else>{{ t('sync.add') }}</span>
@@ -873,46 +873,46 @@ function getScheduleLabel(schedule: SyncSchedule): string {
     <teleport to="body">
       <transition name="fade">
         <div v-if="showEditModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60" @click.self="closeEditModal">
-          <div class="bg-background-secondary rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
-            <h2 class="text-lg font-semibold mb-4">
+          <div class="bg-background-secondary border border-white/[0.1] p-6 w-full max-w-md mx-4 shadow-xl">
+            <h2 class="font-display text-[15px] uppercase tracking-[0.06em] mb-4">
               {{ editingType === 'playlist' ? t('sync.editPlaylist') : t('sync.editArtist') }}
             </h2>
 
             <div class="space-y-4">
               <div>
-                <label class="block text-sm font-medium mb-1">{{ t('sync.editName') }}</label>
+                <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">{{ t('sync.editName') }}</label>
                 <input
                   v-model="editName"
-                  class="w-full px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+                  class="w-full px-3 py-2 bg-background-main text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
                   :placeholder="t('sync.namePlaceholder')"
                 />
                 <p v-if="!isEditNameValid" class="mt-1 text-xs text-red-400">{{ t('sync.editNameRequired') }}</p>
               </div>
 
               <div>
-                <label class="block text-sm font-medium mb-1">{{ t('sync.schedule') }}</label>
+                <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">{{ t('sync.schedule') }}</label>
                 <select
                   v-model="editSchedule"
-                  class="w-full px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+                  class="w-full px-3 py-2 bg-background-main text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
                 >
                   <option v-for="opt in scheduleOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                 </select>
               </div>
 
               <div>
-                <label class="block text-sm font-medium mb-1">{{ t('sync.editDownloadPath') }}</label>
+                <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">{{ t('sync.editDownloadPath') }}</label>
                 <input
                   v-model="editDownloadPath"
-                  class="w-full px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+                  class="w-full px-3 py-2 bg-background-main font-mono text-[13px] border border-white/[0.1] focus:border-primary-500/50 outline-none"
                   :placeholder="settingsStore.settings.downloadPath || t('sync.editDownloadPathPlaceholder')"
                 />
               </div>
 
               <div v-if="editingType === 'artist'">
-                <label class="block text-sm font-medium mb-1">{{ t('sync.editFirstSyncMode') }}</label>
+                <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">{{ t('sync.editFirstSyncMode') }}</label>
                 <select
                   v-model="editFirstSyncMode"
-                  class="w-full px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+                  class="w-full px-3 py-2 bg-background-main text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
                 >
                   <option v-for="opt in firstSyncModeOptions" :key="opt.value" :value="opt.value">{{ t(opt.labelKey) }}</option>
                 </select>
@@ -922,7 +922,7 @@ function getScheduleLabel(schedule: SyncSchedule): string {
                    DEFAULT_ARTIST_FILTERS in the engine; per-entry overrides
                    persist via the existing PUT /api/sync/artists endpoint. -->
               <div v-if="editingType === 'artist'">
-                <label class="block text-sm font-medium mb-1">{{ t('sync.editReleaseTypes') }}</label>
+                <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">{{ t('sync.editReleaseTypes') }}</label>
                 <div class="grid grid-cols-2 gap-x-3 gap-y-2 mt-1">
                   <label class="flex items-center gap-2 text-sm">
                     <input type="checkbox" v-model="editFilterAlbums" class="accent-primary-500" />
@@ -948,11 +948,11 @@ function getScheduleLabel(schedule: SyncSchedule): string {
               </div>
 
               <div v-if="editingType === 'artist'">
-                <label class="block text-sm font-medium mb-1">{{ t('sync.editMinReleaseDate') }}</label>
+                <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">{{ t('sync.editMinReleaseDate') }}</label>
                 <input
                   v-model="editFilterMinDate"
                   type="date"
-                  class="w-full px-3 py-2 bg-background-main rounded-lg text-sm border border-zinc-700 focus:border-primary-500 outline-none"
+                  class="w-full px-3 py-2 bg-background-main text-sm border border-white/[0.1] focus:border-primary-500/50 outline-none"
                 />
               </div>
 
@@ -964,14 +964,14 @@ function getScheduleLabel(schedule: SyncSchedule): string {
             <div class="flex justify-end gap-2 mt-6">
               <button
                 @click="closeEditModal"
-                class="px-4 py-2 text-sm rounded-lg text-foreground-muted hover:text-foreground transition-colors"
+                class="px-4 py-2 font-mono text-[10.5px] tracking-[0.1em] uppercase text-foreground-muted hover:text-foreground transition-colors"
               >
                 {{ t('common.cancel') }}
               </button>
               <button
                 @click="saveEdit"
                 :disabled="!isEditNameValid || editSaving"
-                class="px-4 py-2 text-sm font-medium rounded-lg bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                class="btn btn-primary font-mono text-[11px] tracking-[0.1em] uppercase disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span v-if="editSaving">{{ t('sync.saving') }}...</span>
                 <span v-else>{{ t('sync.saveChanges') }}</span>

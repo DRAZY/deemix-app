@@ -8,7 +8,7 @@ import ConfirmDialog from '../components/ConfirmDialog.vue'
 import EmptyState from '../components/EmptyState.vue'
 import ContextMenu from '../components/ContextMenu.vue'
 import { useContextMenu } from '../composables/useContextMenu'
-import type { DownloadItem } from '../types'
+import type { DownloadItem, SubstitutedTrack } from '../types'
 
 const { t } = useI18n()
 const downloadStore = useDownloadStore()
@@ -18,6 +18,13 @@ const toastStore = useToastStore()
 // Appearance settings
 const isSlim = computed(() => settingsStore.settings.appearance?.slimDownloadTab ?? false)
 const showQualityTag = computed(() => settingsStore.settings.appearance?.showQualityTag ?? true)
+
+// Alternate-version drill-down modal (works for queue rows and history entries)
+const substitutedModal = ref<{ title: string; tracks: SubstitutedTrack[] } | null>(null)
+function showSubstituted(src: { title: string; substitutedTracks?: SubstitutedTrack[] }) {
+  if (!src.substitutedTracks?.length) return
+  substitutedModal.value = { title: src.title, tracks: src.substitutedTracks }
+}
 
 // Track which items have expanded failed tracks view
 const expandedItems = ref<Set<string>>(new Set())
@@ -346,12 +353,12 @@ function isDowngraded(item: { quality?: string; actualFormat?: string }): boolea
 }
 
 function getQualityColor(format?: string): string {
-  if (!format) return 'bg-zinc-500/20 text-zinc-400'
+  if (!format) return 'bg-background-main/60 text-foreground-muted border-white/[0.1]'
   const f = format.toUpperCase()
-  if (f === 'FLAC' || f === 'flac') return 'bg-amber-500/20 text-amber-400'
-  if (f === '320' || f === 'MP3_320') return 'bg-green-500/20 text-green-400'
-  if (f === '128' || f === 'MP3_128') return 'bg-blue-500/20 text-blue-400'
-  return 'bg-zinc-500/20 text-zinc-400'
+  if (f === 'FLAC' || f === 'flac') return 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+  if (f === '320' || f === 'MP3_320') return 'bg-green-500/10 text-green-400 border-green-500/30'
+  if (f === '128' || f === 'MP3_128') return 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+  return 'bg-background-main/60 text-foreground-muted border-white/[0.1]'
 }
 
 // Open the folder containing the downloaded file
@@ -417,14 +424,14 @@ function copyAllErrorDetails() {
 <template>
   <div class="space-y-6">
     <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-bold">{{ t('downloads.title') }}</h1>
+      <h1 class="font-display uppercase text-[22px] tracking-[0.02em]">{{ t('downloads.title') }}</h1>
       <div class="flex gap-2">
         <!-- Pause/Resume Button -->
         <button
           v-if="downloadStore.activeDownloads.length > 0"
           @click="downloadStore.isPaused ? downloadStore.resumeQueue() : downloadStore.pauseQueue()"
-          class="btn text-sm flex items-center gap-2"
-          :class="downloadStore.isPaused ? 'btn-primary' : 'btn-ghost text-yellow-400 hover:text-yellow-300'"
+          class="flex items-center gap-2 px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] border transition-colors"
+          :class="downloadStore.isPaused ? 'btn-primary border-primary-500' : 'text-amber-400 border-amber-500/40 hover:border-amber-400 hover:text-amber-300'"
         >
           <!-- Pause Icon -->
           <svg v-if="!downloadStore.isPaused" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -440,14 +447,14 @@ function copyAllErrorDetails() {
         <button
           v-if="downloadStore.completedDownloads.length > 0"
           @click="confirmClearCompleted"
-          class="btn btn-ghost text-sm"
+          class="px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-white/[0.1] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors"
         >
           {{ t('downloads.clearCompleted') }}
         </button>
         <button
           v-if="downloadStore.downloads.length > 0"
           @click="confirmClearAll"
-          class="btn btn-ghost text-sm text-red-400 hover:text-red-300"
+          class="px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-red-500/40 text-red-400 hover:border-red-400 hover:text-red-300 transition-colors"
         >
           {{ t('downloads.clearAll') }}
         </button>
@@ -457,7 +464,7 @@ function copyAllErrorDetails() {
     <!-- Paused Banner -->
     <div
       v-if="downloadStore.isPaused && downloadStore.activeDownloads.length > 0"
-      class="bg-yellow-500/20 border border-yellow-500/30 rounded-lg px-4 py-3 flex items-center justify-between"
+      class="bg-amber-500/10 border border-amber-500/30 px-4 py-3 flex items-center justify-between"
     >
       <div class="flex items-center gap-3">
         <svg class="w-5 h-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -477,10 +484,10 @@ function copyAllErrorDetails() {
     <!-- Stats - hidden in slim mode -->
     <div v-if="!isSlim" class="grid grid-cols-3 gap-4">
       <div class="card">
-        <p class="text-sm text-foreground-muted">{{ t('downloads.active') }}</p>
+        <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted">{{ t('downloads.active') }}</p>
         <div class="flex items-baseline gap-2">
-          <p class="text-2xl font-bold text-primary-400">{{ downloadStore.activeDownloads.length }}</p>
-          <span v-if="downloadStore.totalDownloadSpeed > 0" class="text-sm text-primary-300 flex items-center gap-1">
+          <p class="font-display text-[26px] text-primary-400">{{ downloadStore.activeDownloads.length }}</p>
+          <span v-if="downloadStore.totalDownloadSpeed > 0" class="font-mono text-[11px] text-primary-300 flex items-center gap-1">
             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
             </svg>
@@ -489,12 +496,12 @@ function copyAllErrorDetails() {
         </div>
       </div>
       <div class="card">
-        <p class="text-sm text-foreground-muted">{{ t('downloads.completed') }}</p>
-        <p class="text-2xl font-bold text-green-400">{{ downloadStore.completedDownloads.length }}</p>
+        <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted">{{ t('downloads.completed') }}</p>
+        <p class="font-display text-[26px] text-green-400">{{ downloadStore.completedDownloads.length }}</p>
       </div>
       <div class="card">
-        <p class="text-sm text-foreground-muted">{{ t('downloads.failed') }}</p>
-        <p class="text-2xl font-bold text-red-400">{{ downloadStore.failedDownloads.length }}</p>
+        <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted">{{ t('downloads.failed') }}</p>
+        <p class="font-display text-[26px] text-red-400">{{ downloadStore.failedDownloads.length }}</p>
       </div>
     </div>
     <!-- Download Statistics (below session counters) -->
@@ -506,7 +513,7 @@ function copyAllErrorDetails() {
         <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-90': showStats }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
-        <span class="text-sm font-medium">Download Statistics</span>
+        <span class="font-mono text-[10px] tracking-[0.2em] uppercase">Download Statistics</span>
       </button>
 
       <div v-if="showStats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -530,7 +537,7 @@ function copyAllErrorDetails() {
 
       <div v-if="showStats && downloadStats.topArtists.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div class="card p-4">
-          <h4 class="text-xs font-medium text-foreground-muted mb-3 uppercase tracking-wider">Top Artists</h4>
+          <h4 class="font-mono text-[9.5px] text-foreground-muted mb-3 uppercase tracking-[0.2em]">Top Artists</h4>
           <div class="space-y-2">
             <div v-for="([artist, count], i) in downloadStats.topArtists" :key="artist" class="flex items-center justify-between">
               <span class="text-sm truncate">
@@ -542,7 +549,7 @@ function copyAllErrorDetails() {
           </div>
         </div>
         <div class="card p-4">
-          <h4 class="text-xs font-medium text-foreground-muted mb-3 uppercase tracking-wider">Formats</h4>
+          <h4 class="font-mono text-[9.5px] text-foreground-muted mb-3 uppercase tracking-[0.2em]">Formats</h4>
           <div class="space-y-2">
             <div v-for="([format, count]) in downloadStats.formats" :key="format" class="flex items-center justify-between">
               <span class="text-sm">{{ format }}</span>
@@ -583,8 +590,9 @@ function copyAllErrorDetails() {
         v-for="item in downloadStore.downloads"
         :key="item.id"
         draggable="true"
-        class="card relative transition-transform"
+        class="card relative transition-transform dl-unit"
         :class="[
+          `dl-${item.status}`,
           isSlim ? 'p-2' : '',
           draggedItem === item.id ? 'opacity-50' : '',
           dragOverItem === item.id && dragOverPosition === 'before' ? 'before:absolute before:top-0 before:left-0 before:right-0 before:h-0.5 before:bg-primary-500' : '',
@@ -615,14 +623,14 @@ function copyAllErrorDetails() {
               :alt="item.title"
               loading="lazy"
               decoding="async"
-              class="rounded object-cover bg-background-tertiary"
+              class="object-cover bg-background-tertiary border border-white/[0.08]"
               :class="isSlim ? 'w-8 h-8' : 'w-12 h-12'"
               @error="handleImageError"
             />
             <!-- Type badge for album/playlist -->
             <span
               v-if="(item.type === 'album' || item.type === 'playlist') && !isSlim"
-              class="absolute -bottom-1 -right-1 px-1.5 py-0.5 text-[10px] font-medium rounded bg-primary-500 text-white"
+              class="absolute -bottom-1 -right-1 px-1 py-0.5 font-mono text-[9px] tracking-[0.08em] uppercase bg-primary-500 text-background-main"
             >
               {{ item.type === 'album' ? t('common.album') : t('common.playlist') }}
             </span>
@@ -631,11 +639,11 @@ function copyAllErrorDetails() {
           <!-- Track/Album/Playlist info -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
-              <p class="font-medium truncate" :class="isSlim ? 'text-sm' : ''">{{ item.title }}</p>
+              <p class="text-[13px] font-semibold truncate">{{ item.title }}</p>
               <!-- Quality tag - shows actual downloaded format (not just requested) -->
               <span
                 v-if="showQualityTag && getDisplayFormat(item)"
-                class="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded"
+                class="flex-shrink-0 px-1.5 py-0.5 font-mono text-[10px] tracking-[0.08em] uppercase border"
                 :class="getQualityColor(getDisplayFormat(item))"
               >
                 {{ getQualityLabel(getDisplayFormat(item)) }}
@@ -644,27 +652,31 @@ function copyAllErrorDetails() {
               <span
                 v-if="isDowngraded(item)"
                 v-tooltip="t('downloads.downgradedTip', { requested: getQualityLabel(item.quality), actual: getQualityLabel(item.actualFormat) })"
-                class="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-orange-500/20 text-orange-400 cursor-help"
+                class="flex-shrink-0 px-1.5 py-0.5 font-mono text-[10px] tracking-[0.08em] uppercase border bg-amber-500/10 text-amber-400 border-amber-500/30 cursor-help"
               >
                 {{ t('downloads.downgraded') }}
               </span>
-              <!-- Alternate-version badge: exact track unavailable, alternate release downloaded -->
-              <span
+              <!-- Alternate-version badge: exact track unavailable, alternate release downloaded.
+                   Clickable when we know which tracks — opens the drill-down list. -->
+              <button
                 v-if="item.substituted"
-                v-tooltip="t('downloads.substitutedTip')"
-                class="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/20 text-purple-400 cursor-help"
+                v-tooltip="item.substitutedTracks?.length ? t('downloads.substitutedListTip') : t('downloads.substitutedTip')"
+                class="flex-shrink-0 px-1.5 py-0.5 font-mono text-[10px] tracking-[0.08em] uppercase border bg-purple-500/15 text-purple-400 border-purple-500/40 flex items-center gap-1"
+                :class="item.substitutedTracks?.length ? 'hover:bg-purple-500/30 cursor-pointer' : 'cursor-help'"
+                @click.stop="showSubstituted(item)"
               >
                 {{ t('downloads.substituted') }}
-              </span>
+                <span v-if="item.substitutedTracks?.length" class="font-mono">{{ item.substitutedTracks.length }}</span>
+              </button>
               <!-- Type badge in slim mode (inline) -->
               <span
                 v-if="isSlim && (item.type === 'album' || item.type === 'playlist')"
-                class="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-primary-500/20 text-primary-400"
+                class="flex-shrink-0 px-1.5 py-0.5 font-mono text-[10px] tracking-[0.08em] uppercase border bg-background-main/60 text-foreground-muted border-white/[0.1]"
               >
                 {{ item.type === 'album' ? t('common.album') : t('common.playlist') }}
               </span>
             </div>
-            <p class="text-foreground-muted truncate" :class="isSlim ? 'text-xs' : 'text-sm'">
+            <p class="text-[11.5px] text-foreground-muted truncate">
               {{ item.artist || t('common.unknownArtist') }}
             </p>
           </div>
@@ -674,33 +686,33 @@ function copyAllErrorDetails() {
             <div v-if="item.status === 'downloading' || item.status === 'pending'" class="space-y-1">
               <div class="flex items-center justify-end gap-2">
                 <!-- Download speed -->
-                <span v-if="item.speed && item.speed > 0" class="text-xs text-primary-300 flex items-center gap-0.5">
+                <span v-if="item.speed && item.speed > 0" class="font-mono text-[10.5px] text-primary-300 flex items-center gap-0.5">
                   <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                   {{ formatSpeed(item.speed) }}
                 </span>
                 <!-- Track count for albums/playlists -->
-                <span v-if="(item.totalTracks || item.originalTotalTracks) && !isSlim" class="text-sm font-medium text-primary-400">
+                <span v-if="(item.totalTracks || item.originalTotalTracks) && !isSlim" class="font-mono text-[11px] text-primary-400">
                   {{ (item.previouslyCompletedTracks || 0) + (item.completedTracks || 0) }}/{{ item.originalTotalTracks || item.totalTracks }}
                 </span>
-                <span :class="isSlim ? 'text-[10px]' : 'text-xs'" class="text-foreground-muted">{{ item.progress }}%</span>
+                <span class="font-mono text-[10.5px] text-foreground-muted">{{ item.progress }}%</span>
               </div>
-              <div :class="isSlim ? 'h-1' : 'h-1.5'" class="bg-background-tertiary rounded-full overflow-hidden">
+              <div :class="isSlim ? 'h-1' : 'h-1.5'" class="bg-background-tertiary overflow-hidden">
                 <div
                   class="h-full bg-primary-500 transition-all duration-300"
                   :style="{ width: `${item.progress}%` }"
                 />
               </div>
               <!-- Bytes downloaded info -->
-              <div v-if="item.bytesDownloaded && item.totalBytes && !isSlim" class="text-[10px] text-foreground-muted">
+              <div v-if="item.bytesDownloaded && item.totalBytes && !isSlim" class="font-mono text-[9.5px] text-foreground-muted">
                 {{ formatBytes(item.bytesDownloaded) }} / {{ formatBytes(item.totalBytes) }}
               </div>
             </div>
             <div v-else>
-              <p :class="[getStatusColor(item.status), isSlim ? 'text-xs' : 'text-sm']" class="font-medium">
+              <p :class="[getStatusColor(item.status)]" class="font-mono text-[10.5px] tracking-[0.1em] uppercase">
                 {{ getStatusText(item.status, item.refresh) }}
-                <span v-if="(item.status === 'completed' || item.status === 'error') && (item.totalTracks || item.originalTotalTracks)" class="text-foreground-muted font-normal">
+                <span v-if="(item.status === 'completed' || item.status === 'error') && (item.totalTracks || item.originalTotalTracks)" class="text-foreground-muted">
                   ({{ (item.previouslyCompletedTracks || 0) + (item.completedTracks || 0) }}/{{ item.originalTotalTracks || item.totalTracks }})
                 </span>
               </p>
@@ -725,7 +737,7 @@ function copyAllErrorDetails() {
             <button
               v-if="item.failedTracks && item.failedTracks.length > 0"
               @click="toggleExpanded(item.id)"
-              class="hover:bg-white/10 rounded-lg transition-colors text-yellow-400"
+              class="hover:bg-white/10 transition-colors text-yellow-400"
               :class="isSlim ? 'p-1' : 'p-2'"
               title="Show failed tracks"
             >
@@ -737,7 +749,7 @@ function copyAllErrorDetails() {
             <button
               v-if="item.status === 'completed' && item.path"
               @click="openItemFolder(item.path)"
-              class="hover:bg-white/10 rounded-lg transition-colors"
+              class="hover:bg-white/10 transition-colors"
               :class="isSlim ? 'p-1' : 'p-2'"
               title="Open folder"
             >
@@ -750,7 +762,7 @@ function copyAllErrorDetails() {
             <button
               v-if="item.status === 'error'"
               @click="downloadStore.retryDownload(item.id)"
-              class="hover:bg-primary-500/20 rounded-lg transition-colors text-primary-400"
+              class="hover:bg-primary-500/20 transition-colors text-primary-400"
               :class="isSlim ? 'p-1' : 'p-2'"
               :title="t('downloads.retry')"
             >
@@ -763,7 +775,7 @@ function copyAllErrorDetails() {
             <button
               v-if="item.status === 'error' && item.failedTracks && item.failedTracks.length > 0 && item.type !== 'track'"
               @click="downloadStore.retryFailedTracks(item.id)"
-              class="hover:bg-yellow-500/20 rounded-lg transition-colors text-yellow-400 flex items-center gap-1"
+              class="hover:bg-yellow-500/20 transition-colors text-yellow-400 flex items-center gap-1"
               :class="isSlim ? 'p-1 text-xs' : 'p-2 text-xs'"
               :title="`Retry ${item.failedTracks.length} failed track${item.failedTracks.length > 1 ? 's' : ''}`"
             >
@@ -777,7 +789,7 @@ function copyAllErrorDetails() {
             <button
               v-if="item.status === 'pending'"
               @click="moveToFront(item)"
-              class="hover:bg-primary-500/20 rounded-lg transition-colors text-primary-400"
+              class="hover:bg-primary-500/20 transition-colors text-primary-400"
               :class="isSlim ? 'p-1' : 'p-2'"
               title="Download next"
             >
@@ -789,7 +801,7 @@ function copyAllErrorDetails() {
             <button
               v-if="item.status === 'completed' || item.status === 'error'"
               @click="confirmDelete(item)"
-              class="hover:bg-red-500/20 rounded-lg transition-colors text-red-400"
+              class="hover:bg-red-500/20 transition-colors text-red-400"
               :class="isSlim ? 'p-1' : 'p-2'"
               title="Delete"
             >
@@ -802,7 +814,7 @@ function copyAllErrorDetails() {
             <button
               v-else
               @click="downloadStore.cancelDownload(item.id)"
-              class="hover:bg-white/10 rounded-lg transition-colors"
+              class="hover:bg-white/10 transition-colors"
               :class="isSlim ? 'p-1' : 'p-2'"
               title="Remove"
             >
@@ -816,17 +828,17 @@ function copyAllErrorDetails() {
         <!-- Expanded failed tracks section -->
         <div
           v-if="item.failedTracks && item.failedTracks.length > 0 && expandedItems.has(item.id)"
-          class="mt-4 pt-4 border-t border-zinc-700"
+          class="mt-4 pt-4 border-t border-white/[0.08]"
         >
-          <p class="text-sm font-medium text-red-400 mb-2">
-            {{ t('downloads.failedTracks') }} ({{ item.failedTracks.length }}):
+          <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-red-400 mb-2">
+            {{ t('downloads.failedTracks') }} ({{ item.failedTracks.length }})
           </p>
           <div class="space-y-1 max-h-48 overflow-y-auto">
             <button
               v-for="failed in item.failedTracks"
               :key="failed.id"
               @click="showFailedTrackError(failed)"
-              class="flex items-center gap-2 text-sm py-1.5 px-2 w-full text-left hover:bg-white/5 rounded-lg transition-colors cursor-pointer group"
+              class="flex items-center gap-2 text-[12px] py-1.5 px-2 w-full text-left border-l-2 border-red-500 bg-red-500/5 hover:bg-red-500/10 transition-colors cursor-pointer group"
             >
               <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -851,27 +863,27 @@ function copyAllErrorDetails() {
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       @click.self="cancelDelete"
     >
-      <div class="bg-background-secondary rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
-        <h3 class="text-lg font-bold mb-2">{{ t('downloads.remove') }}</h3>
+      <div class="bg-background-secondary border border-white/10 p-6 max-w-md w-full mx-4 shadow-2xl">
+        <h3 class="font-display text-[15px] uppercase tracking-[0.06em] mb-2">{{ t('downloads.remove') }}</h3>
         <p class="text-foreground-muted mb-4">
           {{ t('downloads.deleteFiles') }} "{{ deleteConfirm.title }}"?
         </p>
         <div class="flex flex-col gap-2">
           <button
             @click="executeDelete(true)"
-            class="btn bg-red-500 hover:bg-red-600 text-white w-full"
+            class="btn bg-red-500 hover:bg-red-600 text-white w-full font-mono text-[11px] tracking-[0.1em] uppercase"
           >
             {{ t('downloads.deleteFiles') }}
           </button>
           <button
             @click="executeDelete(false)"
-            class="btn btn-secondary w-full"
+            class="btn btn-secondary w-full font-mono text-[11px] tracking-[0.1em] uppercase"
           >
             {{ t('downloads.remove') }}
           </button>
           <button
             @click="cancelDelete"
-            class="btn btn-ghost w-full"
+            class="btn btn-ghost w-full font-mono text-[11px] tracking-[0.1em] uppercase"
           >
             {{ t('downloads.cancel') }}
           </button>
@@ -885,22 +897,22 @@ function copyAllErrorDetails() {
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       @click.self="closeErrorDetails"
     >
-      <div class="bg-background-secondary rounded-xl p-6 max-w-xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="bg-background-secondary border border-white/10 p-6 max-w-xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div class="flex items-start justify-between mb-4">
           <div class="flex items-center gap-3">
-            <div class="p-2 bg-red-500/20 rounded-lg">
+            <div class="p-2 bg-red-500/10 border border-red-500/30">
               <svg class="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
             <div>
-              <h3 class="text-lg font-bold">{{ t('downloads.errorDetails') }}</h3>
+              <h3 class="font-display text-[15px] uppercase tracking-[0.06em]">{{ t('downloads.errorDetails') }}</h3>
               <p class="text-sm text-foreground-muted">{{ t('downloads.downloadFailed') }}</p>
             </div>
           </div>
           <button
             @click="closeErrorDetails"
-            class="p-1 hover:bg-white/10 rounded-lg transition-colors"
+            class="p-1 hover:bg-white/10 transition-colors"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -909,7 +921,7 @@ function copyAllErrorDetails() {
         </div>
 
         <!-- Track Info -->
-        <div class="bg-background-tertiary rounded-lg p-4 mb-4">
+        <div class="bg-background-tertiary border border-white/[0.06] p-4 mb-4">
           <div class="space-y-2">
             <div class="flex">
               <span class="text-foreground-muted text-sm w-16">{{ t('common.track') }}:</span>
@@ -937,10 +949,10 @@ function copyAllErrorDetails() {
 
         <!-- Error Code Badge -->
         <div v-if="errorDetails.errorCode || errorDetails.httpStatus" class="flex items-center gap-2 mb-4">
-          <span v-if="errorDetails.errorCode" class="px-2 py-1 text-xs font-mono bg-red-500/20 text-red-400 rounded">
+          <span v-if="errorDetails.errorCode" class="px-2 py-1 font-mono text-[10px] tracking-[0.08em] uppercase border bg-red-500/10 text-red-400 border-red-500/30">
             {{ errorDetails.errorCode }}
           </span>
-          <span v-if="errorDetails.httpStatus" class="px-2 py-1 text-xs font-mono bg-orange-500/20 text-orange-400 rounded">
+          <span v-if="errorDetails.httpStatus" class="px-2 py-1 font-mono text-[10px] tracking-[0.08em] uppercase border bg-amber-500/10 text-amber-400 border-amber-500/30">
             HTTP {{ errorDetails.httpStatus }}
           </span>
           <span v-if="errorDetails.timestamp" class="text-xs text-foreground-muted ml-auto">
@@ -952,7 +964,7 @@ function copyAllErrorDetails() {
         <div class="mb-4">
           <p class="text-sm font-medium text-red-400 mb-2">{{ t('downloads.errorMessage') }}:</p>
           <div
-            class="bg-red-500/10 border border-red-500/30 rounded-lg p-4 cursor-context-menu"
+            class="bg-red-500/10 border border-red-500/30 p-4 cursor-context-menu"
             @contextmenu="openErrorContextMenu($event, t('contextMenu.error'), errorDetails.error)"
           >
             <p class="text-sm text-red-300 whitespace-pre-wrap break-words">{{ errorDetails.error }}</p>
@@ -962,7 +974,7 @@ function copyAllErrorDetails() {
         <!-- Suggestion (if available) -->
         <div v-if="errorDetails.suggestion" class="mb-4">
           <p class="text-sm font-medium text-blue-400 mb-2">{{ t('downloads.suggestion') }}:</p>
-          <div class="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+          <div class="bg-blue-500/10 border border-blue-500/30 p-4">
             <p class="text-sm text-blue-300">{{ errorDetails.suggestion }}</p>
           </div>
         </div>
@@ -976,8 +988,8 @@ function copyAllErrorDetails() {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
               </svg>
             </summary>
-            <div class="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3 mt-2">
-              <pre class="text-xs text-zinc-400 whitespace-pre-wrap break-words font-mono max-h-32 overflow-y-auto">{{ errorDetails.serverResponse }}</pre>
+            <div class="bg-background-main border border-white/[0.06] p-3 mt-2">
+              <pre class="text-xs text-foreground-muted whitespace-pre-wrap break-words font-mono max-h-32 overflow-y-auto">{{ errorDetails.serverResponse }}</pre>
             </div>
           </details>
         </div>
@@ -996,7 +1008,7 @@ function copyAllErrorDetails() {
         <div class="flex gap-3">
           <button
             @click="copyAllErrorDetails"
-            class="btn btn-secondary flex-1 flex items-center justify-center gap-2"
+            class="btn btn-secondary flex-1 flex items-center justify-center gap-2 font-mono text-[11px] tracking-[0.1em] uppercase"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -1005,7 +1017,7 @@ function copyAllErrorDetails() {
           </button>
           <button
             @click="closeErrorDetails"
-            class="btn btn-primary flex-1"
+            class="btn btn-primary flex-1 font-mono text-[11px] tracking-[0.1em] uppercase"
           >
             {{ t('common.close') }}
           </button>
@@ -1046,7 +1058,7 @@ function copyAllErrorDetails() {
     />
 
     <!-- Download History Toggle -->
-    <div class="mt-8 border-t border-zinc-800 pt-6">
+    <div class="mt-8 border-t border-white/[0.08] pt-6">
       <div class="flex items-center justify-between mb-4">
         <button
           @click="showHistory = !showHistory"
@@ -1073,7 +1085,7 @@ function copyAllErrorDetails() {
         <div
           v-for="entry in downloadStore.downloadHistory"
           :key="entry.id"
-          class="flex items-center gap-3 px-3 py-2 rounded-lg bg-background-secondary/30 text-sm"
+          class="flex items-center gap-3 px-3 py-2 border border-white/[0.06] bg-background-secondary/30 text-sm"
         >
           <!-- Status icon -->
           <div class="flex-shrink-0">
@@ -1094,23 +1106,62 @@ function copyAllErrorDetails() {
               <span
                 v-if="isDowngraded(entry)"
                 v-tooltip="t('downloads.downgradedTip', { requested: getQualityLabel(entry.quality), actual: getQualityLabel(entry.actualFormat) })"
-                class="ml-1.5 px-1.5 py-0.5 text-[10px] font-medium rounded bg-orange-500/20 text-orange-400 cursor-help"
+                class="ml-1.5 px-1.5 py-0.5 font-mono text-[10px] tracking-[0.08em] uppercase border bg-amber-500/10 text-amber-400 border-amber-500/30 cursor-help"
               >{{ t('downloads.downgraded') }}</span>
-              <span
+              <button
                 v-if="entry.substituted"
-                v-tooltip="t('downloads.substitutedTip')"
-                class="ml-1.5 px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/20 text-purple-400 cursor-help"
-              >{{ t('downloads.substituted') }}</span>
+                v-tooltip="entry.substitutedTracks?.length ? t('downloads.substitutedListTip') : t('downloads.substitutedTip')"
+                class="ml-1.5 px-1.5 py-0.5 font-mono text-[10px] tracking-[0.08em] uppercase border bg-purple-500/15 text-purple-400 border-purple-500/40"
+                :class="entry.substitutedTracks?.length ? 'hover:bg-purple-500/30 cursor-pointer' : 'cursor-help'"
+                @click.stop="showSubstituted(entry)"
+              >{{ t('downloads.substituted') }}<span v-if="entry.substitutedTracks?.length" class="font-mono ml-1">{{ entry.substitutedTracks.length }}</span></button>
             </p>
           </div>
           <!-- Type badge -->
-          <span class="text-xs px-2 py-0.5 rounded-full bg-background-tertiary text-foreground-muted flex-shrink-0">
+          <span class="px-1.5 py-0.5 font-mono text-[10px] tracking-[0.08em] uppercase border bg-background-main/60 text-foreground-muted border-white/[0.1] flex-shrink-0">
             {{ entry.type }}
           </span>
           <!-- Timestamp -->
           <span class="text-xs text-foreground-muted/50 flex-shrink-0 w-20 text-right">
             {{ new Date(entry.completedAt).toLocaleDateString() }}
           </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alternate-versions drill-down modal -->
+    <div
+      v-if="substitutedModal"
+      class="fixed inset-0 bg-black/70 z-[1000] flex items-center justify-center p-5"
+      @click="substitutedModal = null"
+    >
+      <div class="bg-background-secondary border border-white/10 w-full max-w-lg max-h-[70vh] flex flex-col shadow-[0_20px_60px_rgba(0,0,0,0.5)]" @click.stop>
+        <div class="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+          <div class="min-w-0">
+            <h3 class="font-display text-[13px] uppercase tracking-[0.08em] text-foreground">{{ t('downloads.substitutedListTitle') }}</h3>
+            <p class="text-[12px] text-foreground-muted truncate">{{ substitutedModal.title }}</p>
+          </div>
+          <button
+            class="p-1.5 text-foreground-muted hover:text-foreground hover:bg-background-tertiary transition-colors flex-shrink-0"
+            :aria-label="t('common.close')"
+            @click="substitutedModal = null"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <p class="px-4 pt-3 text-[12px] leading-relaxed text-foreground-muted">{{ t('downloads.substitutedTip') }}</p>
+        <div class="p-4 overflow-y-auto">
+          <div class="flex flex-col gap-1 font-mono text-[11px] bg-background-main border border-white/[0.06] p-2">
+            <div
+              v-for="tr in substitutedModal.tracks"
+              :key="tr.id"
+              class="px-2.5 py-2 bg-purple-500/5 border-l-2 border-purple-500"
+            >
+              <span class="text-foreground font-medium">{{ tr.artist ? `${tr.artist} - ${tr.title}` : tr.title }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1125,3 +1176,31 @@ function copyAllErrorDetails() {
     />
   </div>
 </template>
+
+<style scoped>
+/* Queue rows carry the Transfer Rack's status edge-light so the Downloads
+   view reads as the same instrument family. */
+.dl-unit::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgb(var(--fg-muted) / 0.5);
+}
+.dl-downloading::before {
+  background: rgb(var(--primary-500));
+  box-shadow: 0 0 10px rgb(var(--primary-500) / 0.5);
+}
+.dl-completed::before {
+  background: #22c55e;
+}
+.dl-error::before {
+  background: #ef4444;
+  box-shadow: 0 0 10px rgb(239 68 68 / 0.4);
+}
+.dl-paused::before {
+  background: #ffb454;
+}
+</style>

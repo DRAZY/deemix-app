@@ -84,43 +84,28 @@ const contextMenuItems = computed(() => [
 <template>
   <div class="space-y-8">
     <!-- Hero Search -->
-    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 to-primary-900 p-8">
+    <div class="relative overflow-hidden border border-white/[0.08] bg-background-secondary/60 p-8">
       <div class="relative z-10">
-        <h1 class="text-3xl font-bold mb-2">{{ t('home.welcome') }}</h1>
-        <p class="text-white/70 mb-6">{{ t('home.subtitle') }}</p>
+        <div class="font-mono text-[10px] tracking-[0.3em] text-primary-500 mb-2">// SIGNAL DECK</div>
+        <h1 class="font-display uppercase text-[36px] leading-[1] tracking-[-0.01em] mb-2">{{ t('home.welcome') }}</h1>
+        <p class="font-mono text-[11px] tracking-[0.06em] uppercase text-foreground-muted mb-6">{{ t('home.subtitle') }}</p>
 
         <form @submit.prevent="handleSearch" class="max-w-xl">
-          <div class="relative">
+          <div class="flex items-stretch h-12 border border-white/[0.1] bg-background-main/60 focus-within:border-primary-500/50 transition-colors">
+            <span class="flex items-center px-3 font-mono text-[10.5px] font-bold tracking-[0.1em] bg-primary-500 text-background-main select-none">QUERY</span>
             <input
               v-model="searchQuery"
               type="text"
               :placeholder="t('home.searchPlaceholder')"
-              class="w-full px-5 py-3 pl-12 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl
-                     text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/30"
+              class="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[13px] px-4 text-foreground placeholder:text-foreground-muted/60 caret-primary-500"
               @contextmenu="openSearchMenu"
             />
-            <svg
-              class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
           </div>
         </form>
       </div>
 
-      <!-- Background decoration -->
-      <div class="absolute inset-0 opacity-10">
-        <svg class="absolute -right-20 -top-20 w-96 h-96" viewBox="0 0 200 200">
-          <circle cx="100" cy="100" r="80" fill="white" />
-        </svg>
-        <svg class="absolute -left-10 -bottom-10 w-64 h-64" viewBox="0 0 200 200">
-          <circle cx="100" cy="100" r="60" fill="white" />
-        </svg>
-      </div>
+      <!-- Background decoration — oversized ghost brand glyph -->
+      <div class="absolute -right-6 -bottom-16 font-display text-[220px] leading-none text-white/[0.03] select-none pointer-events-none" aria-hidden="true">▮</div>
     </div>
 
     <!-- Loading State -->
@@ -141,8 +126,8 @@ const contextMenuItems = computed(() => [
       <!-- New Releases -->
       <section v-if="newReleases.length > 0">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-bold">{{ t('home.newReleases') }}</h2>
-          <router-link to="/new-releases" class="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1">
+          <h2 class="font-display text-[15px] uppercase tracking-[0.06em]">{{ t('home.newReleases') }}</h2>
+          <router-link to="/new-releases" class="font-mono text-[10px] tracking-[0.16em] uppercase text-primary-400 hover:text-primary-300 flex items-center gap-1">
             {{ t('home.seeAll') }}
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -161,8 +146,8 @@ const contextMenuItems = computed(() => [
       <!-- Top Tracks -->
       <section v-if="topTracks.length > 0">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-bold">{{ t('home.topTracks') }}</h2>
-          <router-link to="/charts?type=tracks" class="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1">
+          <h2 class="font-display text-[15px] uppercase tracking-[0.06em]">{{ t('home.topTracks') }}</h2>
+          <router-link to="/charts?type=tracks" class="font-mono text-[10px] tracking-[0.16em] uppercase text-primary-400 hover:text-primary-300 flex items-center gap-1">
             {{ t('home.seeAll') }}
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -181,8 +166,8 @@ const contextMenuItems = computed(() => [
       <!-- Most Streamed Albums -->
       <section v-if="topAlbums.length > 0">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-bold">{{ t('home.mostStreamedAlbums') }}</h2>
-          <router-link to="/charts?type=albums" class="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1">
+          <h2 class="font-display text-[15px] uppercase tracking-[0.06em]">{{ t('home.mostStreamedAlbums') }}</h2>
+          <router-link to="/charts?type=albums" class="font-mono text-[10px] tracking-[0.16em] uppercase text-primary-400 hover:text-primary-300 flex items-center gap-1">
             {{ t('home.seeAll') }}
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -201,8 +186,8 @@ const contextMenuItems = computed(() => [
       <!-- Popular Playlists -->
       <section v-if="popularPlaylists.length > 0">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="text-xl font-bold">{{ t('home.popularPlaylists') }}</h2>
-          <router-link to="/charts?type=playlists" class="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1">
+          <h2 class="font-display text-[15px] uppercase tracking-[0.06em]">{{ t('home.popularPlaylists') }}</h2>
+          <router-link to="/charts?type=playlists" class="font-mono text-[10px] tracking-[0.16em] uppercase text-primary-400 hover:text-primary-300 flex items-center gap-1">
             {{ t('home.seeAll') }}
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />

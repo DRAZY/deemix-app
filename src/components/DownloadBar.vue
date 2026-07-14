@@ -54,7 +54,7 @@ function getArtistName(item: any): string {
 </script>
 
 <template>
-  <div class="h-16 bg-background-secondary border-t border-zinc-800 flex items-center px-4 gap-4">
+  <div class="h-16 bg-background-secondary border-t border-white/[0.06] flex items-center px-4 gap-4">
     <!-- Current download info -->
     <div v-if="currentDownload" class="flex items-center gap-3 flex-1 min-w-0">
       <!-- Album art -->
@@ -62,9 +62,9 @@ function getArtistName(item: any): string {
         v-if="currentDownload.cover"
         :src="currentDownload.cover"
         :alt="currentDownload.title"
-        class="w-10 h-10 rounded object-cover bg-background-tertiary"
+        class="w-10 h-10 object-cover bg-background-tertiary border border-white/[0.08]"
       />
-      <div v-else class="w-10 h-10 rounded bg-background-tertiary flex items-center justify-center text-foreground-muted">
+      <div v-else class="w-10 h-10 bg-background-tertiary border border-white/[0.08] flex items-center justify-center text-foreground-muted">
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <circle cx="12" cy="12" r="10" stroke-width="2"/>
           <circle cx="12" cy="12" r="3" stroke-width="2"/>
@@ -79,15 +79,15 @@ function getArtistName(item: any): string {
 
       <!-- Progress bar -->
       <div class="w-48">
-        <div class="h-1.5 bg-background-tertiary rounded-full overflow-hidden">
+        <div class="h-1.5 bg-background-main border border-white/[0.06] overflow-hidden">
           <div
-            class="h-full bg-green-500 transition-all duration-300"
+            class="h-full bg-primary-500 transition-all duration-300"
             :style="{ width: `${progress}%` }"
           />
         </div>
-        <div class="flex justify-between mt-1">
-          <span class="text-xs text-foreground-muted">{{ progress }}%</span>
-          <span v-if="queueCount > 0" class="text-xs text-foreground-muted">
+        <div class="flex justify-between mt-1 font-mono text-[10px] tracking-[0.08em] text-foreground-muted">
+          <span class="text-primary-500">{{ progress }}%</span>
+          <span v-if="queueCount > 0" class="uppercase">
             +{{ queueCount }} in queue
           </span>
         </div>
@@ -96,7 +96,7 @@ function getArtistName(item: any): string {
       <!-- Controls -->
       <div class="flex items-center gap-2">
         <button
-          class="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          class="p-2 hover:bg-white/10 transition-colors"
           :title="downloadStore.isPaused ? 'Resume' : 'Pause'"
           @click="downloadStore.isPaused ? downloadStore.resumeQueue() : downloadStore.pauseQueue()"
         >
@@ -110,7 +110,7 @@ function getArtistName(item: any): string {
           </svg>
         </button>
         <button
-          class="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          class="p-2 hover:bg-white/10 transition-colors"
           title="Cancel"
           @click="downloadStore.cancelDownload(currentDownload.id)"
         >

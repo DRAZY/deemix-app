@@ -233,13 +233,13 @@ function getCountryFlag(code: string): string {
     <!-- Header with Country Selector -->
     <div class="flex items-center justify-between flex-wrap gap-4">
       <div class="flex items-center gap-4">
-        <h1 class="text-2xl font-bold">{{ t('charts.title') }}</h1>
+        <h1 class="font-display uppercase text-[22px] tracking-[0.02em]">{{ t('charts.title') }}</h1>
 
         <!-- Country Selector -->
         <div class="country-selector relative">
           <button
             @click.stop="showCountryDropdown = !showCountryDropdown"
-            class="flex items-center gap-2 px-3 py-2 bg-background-secondary rounded-lg hover:bg-background-tertiary transition-colors"
+            class="flex items-center gap-2 px-3 py-2 border border-white/[0.08] bg-background-secondary hover:bg-background-tertiary transition-colors"
           >
             <span class="text-lg">{{ getCountryFlag(selectedCountry.code) }}</span>
             <span class="font-medium">{{ selectedCountry.name }}</span>
@@ -293,7 +293,7 @@ function getCountryFlag(code: string): string {
       <button
         v-if="activeTab === 'tracks' && charts.tracks.length > 0 && authStore.isLoggedIn"
         @click="downloadChart"
-        class="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg font-medium transition-colors"
+        class="btn btn-primary flex items-center gap-2 font-mono text-[11px] tracking-[0.1em] uppercase"
       >
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -308,10 +308,10 @@ function getCountryFlag(code: string): string {
         v-for="tab in tabs"
         :key="tab.id"
         @click="changeTab(tab.id as typeof activeTab)"
-        class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+        class="flex items-center gap-2 px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] border transition-colors"
         :class="activeTab === tab.id
-          ? 'bg-primary-500 text-white'
-          : 'bg-background-tertiary text-foreground-muted hover:text-foreground'"
+          ? 'text-primary-500 border-primary-500/60 bg-primary-500/10'
+          : 'text-foreground-muted border-white/[0.08] hover:text-foreground hover:border-white/20'"
       >
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="tab.icon" />

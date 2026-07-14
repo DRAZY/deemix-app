@@ -175,6 +175,28 @@
     --logo-end: #88C0D0;
   }
 
+  /* Signal Theme - v2 "Signal Deck" acid chartreuse on blue-black */
+  [data-theme="signal"] {
+    --bg-main: 10 14 18;
+    --bg-secondary: 14 20 27;
+    --bg-tertiary: 19 27 36;
+    --fg-default: 215 225 232;
+    --fg-muted: 124 139 152;
+    --primary-50: 250 254 232;
+    --primary-100: 242 252 203;
+    --primary-200: 229 248 154;
+    --primary-300: 214 243 100;
+    --primary-400: 213 245 93;
+    --primary-500: 200 241 53;
+    --primary-600: 143 174 36;
+    --primary-700: 110 135 27;
+    --primary-800: 84 104 22;
+    --primary-900: 60 75 16;
+    --logo-start: #C8F135;
+    --logo-mid: #8FAE24;
+    --logo-end: #59C2D6;
+  }
+
   /* Light Mode */
   [data-mode="light"] {
     --bg-main: 250 250 252;
@@ -182,6 +204,22 @@
     --bg-tertiary: 229 231 235;
     --fg-default: 24 24 27;
     --fg-muted: 113 113 122;
+  }
+
+  /* Light-mode Signal: chartreuse #C8F135 is unreadable as text on white, so
+     the accent range shifts to its pressed-ink olive family. Paper-console
+     look; the CRT/vignette overlays are separately disabled in light mode. */
+  [data-mode="light"][data-theme="signal"] {
+    --bg-main: 246 247 243;
+    --bg-secondary: 238 240 232;
+    --bg-tertiary: 226 229 218;
+    --fg-default: 26 31 24;
+    --fg-muted: 106 115 100;
+    --primary-300: 143 174 36;
+    --primary-400: 122 148 30;
+    --primary-500: 101 123 25;
+    --primary-600: 84 104 22;
+    --primary-700: 68 84 18;
   }
 
   /* Light mode adjustments for specific themes */
@@ -212,6 +250,27 @@
 
   .btn-primary {
     @apply bg-primary-500 hover:bg-primary-600 text-white;
+  }
+
+  /* Chartreuse needs dark text for contrast (WCAG) */
+  [data-theme="signal"] .btn-primary {
+    color: rgb(10 14 18);
+  }
+
+  /* ...and light-mode Signal flips to dark-olive buttons, so text goes paper */
+  [data-mode="light"][data-theme="signal"] .btn-primary {
+    color: rgb(246 247 243);
+  }
+
+  /* Signal is a hard-edged console — no rounded buttons/inputs/cards */
+  [data-theme="signal"] .btn,
+  [data-theme="signal"] .input {
+    border-radius: 0;
+  }
+
+  [data-theme="signal"] .card {
+    border-radius: 0;
+    border: 1px solid rgb(255 255 255 / 0.07);
   }
 
   .btn-secondary {
@@ -309,4 +368,35 @@
   .space-y-2 > * {
     contain: layout style;
   }
+}
+
+/* ── Signal Deck atmosphere ──
+   Scanline + vignette overlays rendered by App.vue (.theme-crt / .theme-vig).
+   Hidden by default; only the Signal theme switches them on. Toned down from
+   the mockup (0.35 → 0.16) so long sessions stay comfortable. */
+.theme-crt,
+.theme-vig {
+  display: none;
+}
+[data-theme="signal"] .theme-crt {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.14) 0 1px, transparent 1px 3px);
+  opacity: 0.16;
+}
+[data-theme="signal"] .theme-vig {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  pointer-events: none;
+  background: radial-gradient(120% 100% at 50% 40%, transparent 62%, rgba(0, 0, 0, 0.38));
+}
+/* Light mode never gets the CRT treatment, whatever the theme setting */
+[data-mode="light"] .theme-crt,
+[data-mode="light"] .theme-vig {
+  display: none;
 }

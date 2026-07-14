@@ -569,41 +569,44 @@ const contextMenuItems = computed(() => {
     <!-- Back Button -->
     <BackButton />
 
+    <!-- Idle-state hero -->
+    <div v-if="!searchQuery && !isLoading && !hasResults()" class="pt-2">
+      <div class="font-mono text-[10px] tracking-[0.3em] text-primary-500 mb-2">// ACQUISITION CONSOLE</div>
+      <h1 class="font-display uppercase text-[44px] leading-[0.98] tracking-[-0.01em] text-foreground">
+        Pull the signal <span class="ghost-text">down.</span>
+      </h1>
+    </div>
+
     <!-- Search Header -->
     <div class="sticky top-0 z-10 bg-background-main pt-2 pb-4">
       <form @submit.prevent="handleSearch" class="mb-4">
           <div class="relative">
-            <input
-              v-model="searchQuery"
-              type="text"
-              :placeholder="t('search.placeholder')"
-              class="input pl-12 text-lg"
-              @paste="handlePaste"
-              @focus="handleSearchFocus"
-              @blur="handleSearchBlur"
-              @contextmenu="openSearchInputMenu"
-            />
-            <svg
-              class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground-muted"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            <div class="flex items-stretch h-14 border border-white/[0.08] bg-background-secondary/70 focus-within:border-primary-500/50 transition-colors">
+              <span class="flex items-center px-3.5 font-mono text-[11px] font-bold tracking-[0.1em] bg-primary-500 text-background-main select-none">QUERY</span>
+              <input
+                v-model="searchQuery"
+                type="text"
+                :placeholder="t('search.placeholder')"
+                class="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[14px] px-4 text-foreground placeholder:text-foreground-muted/60 caret-primary-500"
+                @paste="handlePaste"
+                @focus="handleSearchFocus"
+                @blur="handleSearchBlur"
+                @contextmenu="openSearchInputMenu"
+              />
+            </div>
+            <div class="mt-2 font-mono text-[10px] tracking-[0.06em] uppercase text-foreground-muted/80">{{ t('search.searchHint') }}</div>
 
           <!-- Search History Dropdown -->
           <div
             v-if="showHistory && searchHistory.length > 0"
-            class="absolute top-full left-0 right-0 mt-1 bg-background-secondary rounded-lg shadow-xl border border-white/10 overflow-hidden z-20"
+            class="absolute top-full left-0 right-0 mt-1 bg-background-secondary shadow-xl border border-white/10 overflow-hidden z-20"
           >
             <div class="flex items-center justify-between px-3 py-2 border-b border-white/10">
-              <span class="text-xs text-foreground-muted">{{ t('search.recentSearches') }}</span>
+              <span class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted">{{ t('search.recentSearches') }}</span>
               <button
                 type="button"
                 @click.stop="clearHistory"
-                class="text-xs text-foreground-muted hover:text-red-400 transition-colors"
+                class="font-mono text-[9.5px] tracking-[0.12em] uppercase text-foreground-muted hover:text-red-400 transition-colors"
               >
                 {{ t('search.clearHistory') }}
               </button>
@@ -614,16 +617,16 @@ const contextMenuItems = computed(() => {
                 :key="query"
                 type="button"
                 @click.stop="selectFromHistory(query)"
-                class="w-full px-3 py-2 text-left hover:bg-white/5 flex items-center gap-3 group"
+                class="w-full px-3 py-2 text-left hover:bg-primary-500/[0.06] flex items-center gap-3 group border-b border-white/[0.04] last:border-b-0"
               >
                 <svg class="w-4 h-4 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span class="flex-1 truncate">{{ query }}</span>
+                <span class="flex-1 truncate font-mono text-[12.5px]">{{ query }}</span>
                 <button
                   type="button"
                   @click.stop="removeFromHistory(query)"
-                  class="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 rounded transition-all"
+                  class="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/10 transition-all"
                 >
                   <svg class="w-4 h-4 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -642,16 +645,16 @@ const contextMenuItems = computed(() => {
             v-for="tab in tabs"
             :key="tab.id"
             @click="changeTab(tab.id as typeof activeTab)"
-            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+            class="px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] border transition-colors flex items-center gap-2"
             :class="activeTab === tab.id
-              ? 'bg-primary-500 text-white'
-              : 'bg-background-tertiary text-foreground-muted hover:text-foreground'"
+              ? 'text-primary-500 border-primary-500/60 bg-primary-500/10'
+              : 'text-foreground-muted border-white/[0.08] hover:text-foreground hover:border-white/20'"
           >
             {{ tab.label }}
             <span
               v-if="tab.id !== 'all' && resultCounts[tab.id + 's' as keyof typeof resultCounts] > 0"
-              class="text-xs px-1.5 py-0.5 rounded-full"
-              :class="activeTab === tab.id ? 'bg-white/20' : 'bg-background-main'"
+              class="text-[9.5px]"
+              :class="activeTab === tab.id ? 'text-primary-500/80' : 'text-foreground-muted/70'"
             >
               {{ resultCounts[tab.id + 's' as keyof typeof resultCounts].toLocaleString() }}
             </span>
@@ -662,10 +665,12 @@ const contextMenuItems = computed(() => {
         <button
           v-if="results.tracks.length > 0 || results.albums.length > 0"
           @click="toggleSelectionMode"
-          class="px-3 py-2 text-sm rounded-lg transition-colors flex items-center gap-2"
-          :class="isSelectionMode ? 'bg-primary-500 text-white' : 'bg-background-tertiary text-foreground-muted hover:text-foreground'"
+          class="px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] border transition-colors flex items-center gap-2"
+          :class="isSelectionMode
+            ? 'text-primary-500 border-primary-500/60 bg-primary-500/10'
+            : 'text-foreground-muted border-white/[0.08] hover:text-foreground hover:border-white/20'"
         >
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
           </svg>
           {{ isSelectionMode ? t('search.cancelSelection') : t('search.select') }}
@@ -675,30 +680,30 @@ const contextMenuItems = computed(() => {
       <!-- Selection Toolbar -->
       <div
         v-if="isSelectionMode"
-        class="flex items-center justify-between bg-background-tertiary rounded-lg px-4 py-2 mt-3"
+        class="flex items-center justify-between border border-white/[0.08] bg-background-secondary/70 px-4 py-2 mt-3"
       >
         <div class="flex items-center gap-4">
-          <span class="text-sm text-foreground-muted">
+          <span class="font-mono text-[10.5px] tracking-[0.08em] uppercase text-foreground-muted">
             {{ selectedCount }} {{ t('search.selected') }}
           </span>
           <button
             v-if="results.tracks.length > 0 && (activeTab === 'all' || activeTab === 'track')"
             @click="selectAllTracks"
-            class="text-sm text-primary-400 hover:text-primary-300"
+            class="font-mono text-[10.5px] tracking-[0.08em] uppercase text-primary-400 hover:text-primary-300"
           >
             {{ t('search.selectAllTracks') }}
           </button>
           <button
             v-if="results.albums.length > 0 && (activeTab === 'all' || activeTab === 'album')"
             @click="selectAllAlbums"
-            class="text-sm text-primary-400 hover:text-primary-300"
+            class="font-mono text-[10.5px] tracking-[0.08em] uppercase text-primary-400 hover:text-primary-300"
           >
             {{ t('search.selectAllAlbums') }}
           </button>
           <button
             v-if="selectedCount > 0"
             @click="clearSelection"
-            class="text-sm text-foreground-muted hover:text-foreground"
+            class="font-mono text-[10.5px] tracking-[0.08em] uppercase text-foreground-muted hover:text-foreground"
           >
             {{ t('search.clearSelection') }}
           </button>
@@ -707,12 +712,12 @@ const contextMenuItems = computed(() => {
           v-if="selectedCount > 0"
           @click="downloadSelected"
           :disabled="isDownloadingSelected"
-          class="btn btn-primary text-sm flex items-center gap-2"
+          class="btn btn-primary font-mono text-[11px] tracking-[0.1em] uppercase flex items-center gap-2"
         >
           <svg v-if="!isDownloadingSelected" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
           </svg>
-          <div v-else class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          <div v-else class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
           {{ t('search.downloadSelected') }}
         </button>
       </div>
@@ -746,28 +751,27 @@ const contextMenuItems = computed(() => {
     <div v-else-if="hasResults()" class="space-y-8">
       <!-- Tracks -->
       <section v-if="results.tracks.length > 0 && (activeTab === 'all' || activeTab === 'track')">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold">
-            {{ t('search.tracks') }}
-            <span v-if="pagination.tracks.total" class="text-sm font-normal text-foreground-muted ml-2">
-              ({{ results.tracks.length.toLocaleString() }} {{ t('search.of') }} {{ pagination.tracks.total.toLocaleString() }})
-            </span>
-          </h2>
+        <div class="flex items-center gap-3 mb-3">
+          <h2 class="font-display text-[14px] uppercase tracking-[0.06em]">{{ t('search.tracks') }}</h2>
+          <span v-if="pagination.tracks.total" class="font-mono text-[10px] text-foreground-muted">
+            {{ results.tracks.length.toLocaleString() }} / {{ pagination.tracks.total.toLocaleString() }}
+          </span>
+          <div class="flex-1 h-px bg-white/[0.06]"></div>
         </div>
-        <div class="space-y-1">
+        <div class="border-t border-white/[0.06]">
           <div
             v-for="track in results.tracks"
             :key="track.id"
             class="flex items-center gap-2"
-            :class="{ 'bg-primary-500/10 rounded-lg': isSelectionMode && selectedTracks.has(track.id) }"
+            :class="{ 'bg-primary-500/10': isSelectionMode && selectedTracks.has(track.id) }"
           >
             <!-- Selection checkbox -->
             <button
               v-if="isSelectionMode"
               @click="toggleTrackSelection(track.id)"
-              class="flex-shrink-0 w-6 h-6 rounded border-2 flex items-center justify-center transition-all ml-2"
+              class="flex-shrink-0 w-5 h-5 border flex items-center justify-center transition-all ml-2"
               :class="selectedTracks.has(track.id)
-                ? 'bg-primary-500 border-primary-500 text-white'
+                ? 'bg-primary-500 border-primary-500 text-background-main'
                 : 'border-foreground-muted/50 hover:border-primary-400'"
             >
               <svg v-if="selectedTracks.has(track.id)" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
@@ -784,7 +788,7 @@ const contextMenuItems = computed(() => {
           <button
             @click="loadMore('track')"
             :disabled="pagination.tracks.loading"
-            class="btn btn-secondary px-8"
+            class="px-8 py-2 font-mono text-[10.5px] tracking-[0.12em] uppercase border border-white/[0.1] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors disabled:opacity-50"
           >
             <span v-if="pagination.tracks.loading" class="flex items-center gap-2">
               <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
@@ -800,13 +804,12 @@ const contextMenuItems = computed(() => {
 
       <!-- Albums -->
       <section v-if="results.albums.length > 0 && (activeTab === 'all' || activeTab === 'album')">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold">
-            {{ t('search.albums') }}
-            <span v-if="pagination.albums.total" class="text-sm font-normal text-foreground-muted ml-2">
-              ({{ results.albums.length.toLocaleString() }} {{ t('search.of') }} {{ pagination.albums.total.toLocaleString() }})
-            </span>
-          </h2>
+        <div class="flex items-center gap-3 mb-3">
+          <h2 class="font-display text-[14px] uppercase tracking-[0.06em]">{{ t('search.albums') }}</h2>
+          <span v-if="pagination.albums.total" class="font-mono text-[10px] text-foreground-muted">
+            {{ results.albums.length.toLocaleString() }} / {{ pagination.albums.total.toLocaleString() }}
+          </span>
+          <div class="flex-1 h-px bg-white/[0.06]"></div>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <div
@@ -843,7 +846,7 @@ const contextMenuItems = computed(() => {
           <button
             @click="loadMore('album')"
             :disabled="pagination.albums.loading"
-            class="btn btn-secondary px-8"
+            class="px-8 py-2 font-mono text-[10.5px] tracking-[0.12em] uppercase border border-white/[0.1] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors disabled:opacity-50"
           >
             <span v-if="pagination.albums.loading" class="flex items-center gap-2">
               <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
@@ -859,13 +862,12 @@ const contextMenuItems = computed(() => {
 
       <!-- Artists -->
       <section v-if="results.artists.length > 0 && (activeTab === 'all' || activeTab === 'artist')">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold">
-            {{ t('search.artists') }}
-            <span v-if="pagination.artists.total" class="text-sm font-normal text-foreground-muted ml-2">
-              ({{ results.artists.length.toLocaleString() }} {{ t('search.of') }} {{ pagination.artists.total.toLocaleString() }})
-            </span>
-          </h2>
+        <div class="flex items-center gap-3 mb-3">
+          <h2 class="font-display text-[14px] uppercase tracking-[0.06em]">{{ t('search.artists') }}</h2>
+          <span v-if="pagination.artists.total" class="font-mono text-[10px] text-foreground-muted">
+            {{ results.artists.length.toLocaleString() }} / {{ pagination.artists.total.toLocaleString() }}
+          </span>
+          <div class="flex-1 h-px bg-white/[0.06]"></div>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <ArtistCard
@@ -879,7 +881,7 @@ const contextMenuItems = computed(() => {
           <button
             @click="loadMore('artist')"
             :disabled="pagination.artists.loading"
-            class="btn btn-secondary px-8"
+            class="px-8 py-2 font-mono text-[10.5px] tracking-[0.12em] uppercase border border-white/[0.1] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors disabled:opacity-50"
           >
             <span v-if="pagination.artists.loading" class="flex items-center gap-2">
               <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
@@ -895,13 +897,12 @@ const contextMenuItems = computed(() => {
 
       <!-- Playlists -->
       <section v-if="results.playlists.length > 0 && (activeTab === 'all' || activeTab === 'playlist')">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold">
-            {{ t('search.playlists') }}
-            <span v-if="pagination.playlists.total" class="text-sm font-normal text-foreground-muted ml-2">
-              ({{ results.playlists.length.toLocaleString() }} {{ t('search.of') }} {{ pagination.playlists.total.toLocaleString() }})
-            </span>
-          </h2>
+        <div class="flex items-center gap-3 mb-3">
+          <h2 class="font-display text-[14px] uppercase tracking-[0.06em]">{{ t('search.playlists') }}</h2>
+          <span v-if="pagination.playlists.total" class="font-mono text-[10px] text-foreground-muted">
+            {{ results.playlists.length.toLocaleString() }} / {{ pagination.playlists.total.toLocaleString() }}
+          </span>
+          <div class="flex-1 h-px bg-white/[0.06]"></div>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <AlbumCard
@@ -922,7 +923,7 @@ const contextMenuItems = computed(() => {
           <button
             @click="loadMore('playlist')"
             :disabled="pagination.playlists.loading"
-            class="btn btn-secondary px-8"
+            class="px-8 py-2 font-mono text-[10.5px] tracking-[0.12em] uppercase border border-white/[0.1] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors disabled:opacity-50"
           >
             <span v-if="pagination.playlists.loading" class="flex items-center gap-2">
               <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
@@ -963,3 +964,11 @@ const contextMenuItems = computed(() => {
     />
   </div>
 </template>
+
+<style scoped>
+/* Outlined ghost word in the hero headline (mockup h1.big .ghost) */
+.ghost-text {
+  color: transparent;
+  -webkit-text-stroke: 1px rgb(255 255 255 / 0.18);
+}
+</style>

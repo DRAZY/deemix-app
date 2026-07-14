@@ -285,6 +285,12 @@ onBeforeUnmount(() => {
       <!-- Download Panel (right sidebar) -->
       <DownloadPanel />
     </div>
+
+    <!-- Signal Deck atmosphere — scanlines + vignette. Purely decorative,
+         pointer-transparent, and only rendered visible by [data-theme="signal"]
+         CSS in main.css so other themes are untouched. -->
+    <div class="theme-crt" aria-hidden="true"></div>
+    <div class="theme-vig" aria-hidden="true"></div>
   </div>
 </template>
 

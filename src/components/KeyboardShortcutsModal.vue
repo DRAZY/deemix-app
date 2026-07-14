@@ -68,15 +68,15 @@ const displayShortcuts = computed(() => {
         <Transition name="scale">
           <div
             v-if="isVisible"
-            class="bg-background-secondary rounded-lg shadow-xl max-w-lg w-full overflow-hidden"
+            class="bg-background-secondary border border-white/10 shadow-2xl max-w-lg w-full overflow-hidden"
             role="dialog"
             aria-modal="true"
             aria-labelledby="shortcuts-title"
           >
             <!-- Header -->
-            <div class="px-6 py-4 border-b border-white/10 flex items-center justify-between">
-              <h2 id="shortcuts-title" class="text-lg font-semibold text-foreground flex items-center gap-2">
-                <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="px-6 py-4 border-b border-white/[0.08] flex items-center justify-between">
+              <h2 id="shortcuts-title" class="font-display text-[13px] uppercase tracking-[0.08em] text-foreground flex items-center gap-2">
+                <svg class="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                 </svg>
@@ -84,7 +84,7 @@ const displayShortcuts = computed(() => {
               </h2>
               <button
                 @click="emit('close')"
-                class="p-1 text-foreground-muted hover:text-foreground transition-colors rounded-lg hover:bg-white/10"
+                class="p-1 text-foreground-muted hover:text-foreground transition-colors hover:bg-background-tertiary"
                 aria-label="Close"
               >
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -101,12 +101,12 @@ const displayShortcuts = computed(() => {
                   :key="index"
                   class="flex items-center justify-between py-2"
                 >
-                  <span class="text-foreground-secondary">{{ shortcut.description }}</span>
+                  <span class="text-[13px] text-foreground-secondary">{{ shortcut.description }}</span>
                   <div class="flex items-center gap-1">
                     <kbd
                       v-for="(key, keyIndex) in shortcut.keys"
                       :key="keyIndex"
-                      class="px-2 py-1 text-xs font-mono bg-background-tertiary border border-white/10 rounded text-foreground-muted"
+                      class="px-1.5 py-0.5 text-[10px] font-mono bg-background-main border border-white/[0.15] text-foreground-muted"
                     >
                       {{ key }}
                     </kbd>
@@ -116,9 +116,9 @@ const displayShortcuts = computed(() => {
             </div>
 
             <!-- Footer -->
-            <div class="px-6 py-4 bg-background-tertiary border-t border-white/5">
+            <div class="px-6 py-4 bg-background-tertiary border-t border-white/[0.06]">
               <p class="text-xs text-foreground-muted text-center">
-                Press <kbd class="px-1.5 py-0.5 text-xs font-mono bg-background-secondary border border-white/10 rounded">Esc</kbd> to close
+                Press <kbd class="px-1.5 py-0.5 text-[10px] font-mono bg-background-main border border-white/[0.15]">Esc</kbd> to close
               </p>
             </div>
           </div>
@@ -147,6 +147,19 @@ const displayShortcuts = computed(() => {
 .scale-enter-from,
 .scale-leave-to {
   opacity: 0;
-  transform: scale(0.95);
+  transform: translateY(-8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-enter-active,
+  .fade-leave-active,
+  .scale-enter-active,
+  .scale-leave-active {
+    transition: none;
+  }
+  .scale-enter-from,
+  .scale-leave-to {
+    transform: none;
+  }
 }
 </style>

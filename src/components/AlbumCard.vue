@@ -128,15 +128,15 @@ const contextMenuItems = computed(() => [
         :alt="album.title"
         loading="lazy"
         decoding="async"
-        class="w-full h-full object-cover rounded-lg bg-background-tertiary shadow-md
-               group-hover:shadow-lg transition-shadow duration-200"
+        class="w-full h-full object-cover bg-background-tertiary border border-white/[0.08]
+               group-hover:border-primary-500/60 transition-colors duration-200"
         @error="handleImageError"
       />
       <!-- Fallback placeholder when no image or image fails to load -->
       <div
         v-else
-        class="w-full h-full rounded-lg bg-background-tertiary shadow-md
-               group-hover:shadow-lg transition-shadow duration-200
+        class="w-full h-full bg-background-tertiary border border-white/[0.08]
+               group-hover:border-primary-500/60 transition-colors duration-200
                flex items-center justify-center"
       >
         <svg class="w-12 h-12 text-foreground-muted/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -145,16 +145,15 @@ const contextMenuItems = computed(() => [
         </svg>
       </div>
       <!-- Download overlay -->
-      <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity
-                  rounded-lg flex items-center justify-center">
-        <div class="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center
-                    transform scale-90 group-hover:scale-100 transition-transform shadow-lg">
+      <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity
+                  flex items-center justify-center">
+        <div class="flex items-center gap-2 px-4 py-2 bg-primary-500 text-background-main
+                    font-mono text-[11px] font-bold tracking-[0.12em]
+                    transform scale-95 group-hover:scale-100 transition-transform shadow-[0_0_18px_rgba(0,0,0,0.4)]">
           <!-- Download icon -->
-          <svg v-if="!isDownloading" class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 18h16" />
-          </svg>
+          <template v-if="!isDownloading">GET&nbsp;↓</template>
           <!-- Loading spinner -->
-          <svg v-else class="w-6 h-6 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+          <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
@@ -164,11 +163,11 @@ const contextMenuItems = computed(() => [
     <!-- Title - click to navigate to album details -->
     <h3
       @click="navigate"
-      class="font-medium line-clamp-3 hover:text-primary-400 transition-colors cursor-pointer text-sm"
+      class="text-[13px] font-semibold line-clamp-3 hover:text-primary-400 transition-colors cursor-pointer"
     >
       {{ album.title }}
     </h3>
-    <p class="text-sm text-foreground-muted line-clamp-2"
+    <p class="text-[11.5px] text-foreground-muted line-clamp-2"
     >
       <span
         v-if="album.artist?.id != null"
@@ -181,8 +180,8 @@ const contextMenuItems = computed(() => [
         {{ album.artist?.name || t('common.variousArtists') }}
       </span>
     </p>
-    <p v-if="album.nb_tracks" class="text-xs text-foreground-muted/50">
-      {{ album.nb_tracks }} {{ album.nb_tracks === 1 ? 'track' : 'tracks' }}
+    <p v-if="album.nb_tracks" class="font-mono text-[9.5px] tracking-[0.12em] text-foreground-muted/60 mt-0.5">
+      {{ album.nb_tracks }} TRK
     </p>
 
     <!-- Context Menu -->
