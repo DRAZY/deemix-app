@@ -68,15 +68,20 @@ function handleAuthClick() {
     <!-- Brand block -->
     <div class="p-4" :class="isSlim ? 'pb-2' : 'p-5 pb-3'">
       <div class="flex items-center gap-2.5" :class="isSlim ? 'justify-center' : ''">
-        <!-- Themed brand mark — driven by each theme's logo gradient vars, so it
-             follows Signal (chartreuse→cyan) and every other palette. -->
+        <!-- Brand mark: the DM/RM Console Stack app icon. Tile stays blue-black
+             everywhere (it's the shipped icon); letters/cursor follow each
+             theme's logo vars so palettes still tint it. -->
         <div
-          class="w-9 h-9 flex-shrink-0 flex items-center justify-center border border-white/[0.1]"
-          style="background: linear-gradient(140deg, var(--logo-start), var(--logo-mid) 55%, var(--logo-end))"
+          class="w-9 h-9 flex-shrink-0 border border-white/[0.1]"
           role="img"
           :aria-label="t('sidebar.appName')"
         >
-          <span class="font-display text-[15px] leading-none" style="color: rgb(var(--bg-main))">D▮</span>
+          <svg viewBox="0 0 512 512" class="w-full h-full" aria-hidden="true">
+            <rect width="512" height="512" fill="#0A0E12" />
+            <text x="230" y="242" text-anchor="middle" font-size="158" letter-spacing="4" class="font-display" fill="var(--logo-start)">DM</text>
+            <text x="230" y="420" text-anchor="middle" font-size="158" letter-spacing="4" class="font-display" fill="var(--logo-start)">RM</text>
+            <rect x="400" y="292" width="42" height="128" fill="var(--logo-end)" />
+          </svg>
         </div>
         <div v-if="!isSlim" class="min-w-0">
           <h1 class="text-sm font-semibold leading-tight truncate">{{ t('sidebar.appName') }}</h1>

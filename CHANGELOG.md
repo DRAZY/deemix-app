@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [2.0.0-rc.2] — Unreleased
+
+### Changed
+
+- **New app icon: "DM/RM Console Stack."** The brand mark is now the DM/RM monogram — chartreuse stacked letters with a cyan block cursor on blue-black — replacing the legacy icon across every surface: macOS Dock (`icon.icns`, Apple rounded-rect with proper alpha margins), Windows taskbar/Explorer (`icon.ico`, 16–256 px), Linux (`icon.png`), the in-app sidebar mark (theme-adaptive: letters and cursor follow each palette's logo colors), and the dev favicon.
+
 ## [2.0.0-rc.1] — Unreleased
 
 ### Changed
