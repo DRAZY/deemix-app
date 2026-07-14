@@ -68,9 +68,9 @@ function handleAuthClick() {
     <!-- Brand block -->
     <div class="p-4" :class="isSlim ? 'pb-2' : 'p-5 pb-3'">
       <div class="flex items-center gap-2.5" :class="isSlim ? 'justify-center' : ''">
-        <!-- Brand mark: the DM/RM Console Stack app icon. Tile stays blue-black
-             everywhere (it's the shipped icon); letters/cursor follow each
-             theme's logo vars so palettes still tint it. -->
+        <!-- Brand mark: the DM/RM Console Stack app icon, in its fixed brand
+             colors (chartreuse letters, cyan cursor on blue-black) so it
+             matches the Dock/desktop icon on every theme. -->
         <div
           class="w-9 h-9 flex-shrink-0 border border-white/[0.1]"
           role="img"
@@ -78,9 +78,9 @@ function handleAuthClick() {
         >
           <svg viewBox="0 0 512 512" class="w-full h-full" aria-hidden="true">
             <rect width="512" height="512" fill="#0A0E12" />
-            <text x="230" y="242" text-anchor="middle" font-size="158" letter-spacing="4" class="font-display" fill="var(--logo-start)">DM</text>
-            <text x="230" y="420" text-anchor="middle" font-size="158" letter-spacing="4" class="font-display" fill="var(--logo-start)">RM</text>
-            <rect x="400" y="292" width="42" height="128" fill="var(--logo-end)" />
+            <text x="230" y="242" text-anchor="middle" font-size="158" letter-spacing="4" class="font-display" fill="#C8F135">DM</text>
+            <text x="230" y="420" text-anchor="middle" font-size="158" letter-spacing="4" class="font-display" fill="#C8F135">RM</text>
+            <rect x="400" y="292" width="42" height="128" fill="#59C2D6" />
           </svg>
         </div>
         <div v-if="!isSlim" class="min-w-0">
