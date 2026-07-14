@@ -538,11 +538,25 @@ async function openItemFolder(item: DownloadItem) {
   .delete-options { animation: none; }
 }
 
-/* Scrollbar */
-.rack-scroll::-webkit-scrollbar { width: 6px; }
-.rack-scroll::-webkit-scrollbar-track { background: transparent; }
-.rack-scroll::-webkit-scrollbar-thumb { background-color: rgb(var(--bg-tertiary)); }
-.rack-scroll::-webkit-scrollbar-thumb:hover { background-color: rgb(var(--fg-muted)); }
+/* Scrollbar — always visible and grabbable. The thumb used to be
+   --bg-tertiary, which is indistinguishable from the Signal background, so a
+   400-unit rack looked unscrollable except by mouse wheel. */
+.rack-scroll {
+  scrollbar-gutter: stable;
+}
+.rack-scroll::-webkit-scrollbar { width: 10px; }
+.rack-scroll::-webkit-scrollbar-track {
+  background: rgb(255 255 255 / 0.04);
+}
+.rack-scroll::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--fg-muted) / 0.4);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.rack-scroll::-webkit-scrollbar-thumb:hover,
+.rack-scroll::-webkit-scrollbar-thumb:active {
+  background-color: rgb(var(--primary-500) / 0.7);
+}
 
 /* Fault details modal */
 .modal-overlay {
