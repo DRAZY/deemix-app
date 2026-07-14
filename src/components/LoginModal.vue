@@ -167,11 +167,11 @@ function openDeezerExternal() {
         />
 
         <!-- Modal -->
-        <div class="relative bg-background-secondary rounded-2xl w-full max-w-md p-6 shadow-2xl">
+        <div class="relative bg-background-secondary border border-white/10 w-full max-w-md p-6 shadow-2xl">
           <!-- Close button -->
           <button
             @click="handleClose"
-            class="absolute top-4 right-4 p-2 hover:bg-white/10 rounded-lg transition-colors"
+            class="absolute top-4 right-4 p-2 hover:bg-background-tertiary transition-colors"
           >
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -180,17 +180,17 @@ function openDeezerExternal() {
 
           <!-- Header -->
           <div class="text-center mb-6">
-            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-              <svg v-if="!authStore.captchaRequired" class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="w-14 h-14 mx-auto mb-4 bg-primary-500 flex items-center justify-center">
+              <svg v-if="!authStore.captchaRequired" class="w-7 h-7 text-background-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              <svg v-else class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg v-else class="w-7 h-7 text-background-main" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
             </div>
-            <h2 class="text-xl font-bold">{{ authStore.captchaRequired ? t('login.captchaTitle') : t('login.title') }}</h2>
+            <h2 class="font-display text-[15px] uppercase tracking-[0.08em] text-foreground">{{ authStore.captchaRequired ? t('login.captchaTitle') : t('login.title') }}</h2>
             <p v-if="authStore.captchaRequired" class="text-sm text-foreground-muted mt-2">
               {{ t('login.captchaDescription') }}
             </p>
@@ -204,7 +204,7 @@ function openDeezerExternal() {
                 type="button"
                 @click="handleBrowserLogin"
                 :disabled="isBrowserLoginLoading"
-                class="w-full btn btn-primary py-4 flex items-center justify-center gap-3 text-lg"
+                class="w-full btn btn-primary font-mono text-[13px] tracking-[0.1em] uppercase py-4 flex items-center justify-center gap-3"
               >
                 <svg v-if="isBrowserLoginLoading" class="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
@@ -228,7 +228,7 @@ function openDeezerExternal() {
                 <button
                   type="button"
                   @click="handleBackFromCaptcha"
-                  class="w-full btn btn-secondary py-2 flex items-center justify-center gap-2"
+                  class="w-full py-2 font-mono text-[11px] tracking-[0.1em] uppercase border border-white/[0.1] text-foreground-muted hover:text-foreground transition-colors flex items-center justify-center gap-2"
                 >
                   <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -250,9 +250,9 @@ function openDeezerExternal() {
               </div>
 
               <!-- Help text -->
-              <div class="p-4 bg-background-tertiary rounded-lg">
+              <div class="p-4 bg-background-tertiary border border-white/[0.06]">
                 <div class="flex gap-3">
-                  <svg class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg class="w-5 h-5 text-primary-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -267,21 +267,21 @@ function openDeezerExternal() {
 
           <!-- Login Method Tabs -->
           <template v-if="!authStore.captchaRequired">
-          <div class="flex mb-6 bg-background-tertiary rounded-lg p-1">
+          <div class="flex mb-6 bg-background-tertiary border border-white/[0.06] p-1 gap-1">
             <button
               @click="loginMethod = 'email'"
-              class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all"
+              class="flex-1 py-2 px-4 font-mono text-[11px] tracking-[0.1em] uppercase transition-colors"
               :class="loginMethod === 'email'
-                ? 'bg-primary-500 text-white'
+                ? 'bg-primary-500 text-background-main'
                 : 'text-foreground-muted hover:text-foreground'"
             >
               {{ t('login.emailPassword') }}
             </button>
             <button
               @click="loginMethod = 'arl'"
-              class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all"
+              class="flex-1 py-2 px-4 font-mono text-[11px] tracking-[0.1em] uppercase transition-colors"
               :class="loginMethod === 'arl'
-                ? 'bg-primary-500 text-white'
+                ? 'bg-primary-500 text-background-main'
                 : 'text-foreground-muted hover:text-foreground'"
             >
               {{ t('login.arlToken') }}
@@ -364,7 +364,7 @@ function openDeezerExternal() {
                     </svg>
                   </button>
                 </div>
-                <p class="text-xs text-foreground-muted mt-1">
+                <p class="font-mono text-[10px] tracking-[0.08em] text-foreground-muted mt-1">
                   {{ arl.length }} / 192 characters
                 </p>
               </div>
@@ -392,7 +392,7 @@ function openDeezerExternal() {
             <button
               type="submit"
               :disabled="(loginMethod === 'email' ? !isEmailValid : !isArlValid) || authStore.isLoading"
-              class="w-full btn btn-primary py-3 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full btn btn-primary font-mono text-[11px] tracking-[0.1em] uppercase py-3 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg
                 v-if="authStore.isLoading"
@@ -409,9 +409,9 @@ function openDeezerExternal() {
           </form>
 
           <!-- Info -->
-          <div class="mt-6 p-4 bg-background-tertiary rounded-lg">
+          <div class="mt-6 p-4 bg-background-tertiary border border-white/[0.06]">
             <div class="flex gap-3">
-              <svg class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="w-5 h-5 text-primary-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -461,6 +461,19 @@ function openDeezerExternal() {
 }
 
 .modal-leave-to .bg-background-secondary {
-  transform: scale(0.95) translateY(10px);
+  transform: translateY(10px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-enter-active,
+  .modal-leave-active,
+  .modal-enter-active .bg-background-secondary,
+  .modal-leave-active .bg-background-secondary {
+    transition: none;
+  }
+  .modal-enter-from .bg-background-secondary,
+  .modal-leave-to .bg-background-secondary {
+    transform: none;
+  }
 }
 </style>

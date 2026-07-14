@@ -40,9 +40,9 @@ function handleBackdropClick(event: MouseEvent) {
 }
 
 const confirmButtonClasses = {
-  danger: 'bg-red-600 hover:bg-red-700 focus:ring-red-500',
-  warning: 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500',
-  primary: 'bg-primary-600 hover:bg-primary-700 focus:ring-primary-500'
+  danger: 'border border-red-500/40 text-red-400 hover:bg-red-500 hover:text-white focus:ring-red-500',
+  warning: 'border border-[#ffb454]/40 text-[#ffb454] hover:bg-[#ffb454] hover:text-background-main focus:ring-[#ffb454]',
+  primary: 'bg-primary-500 text-background-main hover:bg-primary-600 focus:ring-primary-500'
 }
 </script>
 
@@ -57,7 +57,7 @@ const confirmButtonClasses = {
         <Transition name="scale">
           <div
             v-if="isVisible"
-            class="bg-background-secondary rounded-lg shadow-xl max-w-md w-full overflow-hidden"
+            class="bg-background-secondary border border-white/10 shadow-2xl max-w-md w-full overflow-hidden"
             role="alertdialog"
             aria-modal="true"
             :aria-labelledby="'dialog-title'"
@@ -68,7 +68,7 @@ const confirmButtonClasses = {
               <div class="flex items-start gap-4">
                 <!-- Warning Icon -->
                 <div
-                  class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+                  class="flex-shrink-0 w-10 h-10 flex items-center justify-center"
                   :class="{
                     'bg-red-500/20': confirmStyle === 'danger',
                     'bg-yellow-500/20': confirmStyle === 'warning',
@@ -111,10 +111,10 @@ const confirmButtonClasses = {
                 </div>
 
                 <div class="flex-1">
-                  <h3 id="dialog-title" class="text-lg font-semibold text-foreground">
+                  <h3 id="dialog-title" class="font-display text-[13px] uppercase tracking-[0.08em] text-foreground">
                     {{ title }}
                   </h3>
-                  <p id="dialog-description" class="mt-2 text-sm text-foreground-muted">
+                  <p id="dialog-description" class="mt-2 text-sm text-foreground-muted leading-relaxed">
                     {{ message }}
                   </p>
                 </div>
@@ -122,16 +122,16 @@ const confirmButtonClasses = {
             </div>
 
             <!-- Actions -->
-            <div class="px-6 py-4 bg-background-tertiary flex justify-end gap-3">
+            <div class="px-6 py-4 bg-background-tertiary border-t border-white/[0.06] flex justify-end gap-3">
               <button
                 @click="handleCancel"
-                class="px-4 py-2 text-sm font-medium text-foreground-muted bg-background-secondary hover:bg-background-main rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-background-secondary"
+                class="px-4 py-2 font-mono text-[11px] tracking-[0.1em] uppercase border border-white/[0.1] text-foreground-muted hover:text-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-background-secondary"
               >
                 {{ cancelText }}
               </button>
               <button
                 @click="handleConfirm"
-                class="px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-background-secondary"
+                class="px-4 py-2 font-mono text-[11px] tracking-[0.1em] uppercase transition-colors focus:outline-none focus:ring-1 focus:ring-offset-2 focus:ring-offset-background-secondary"
                 :class="confirmButtonClasses[confirmStyle]"
               >
                 {{ confirmText }}
@@ -163,6 +163,19 @@ const confirmButtonClasses = {
 .scale-enter-from,
 .scale-leave-to {
   opacity: 0;
-  transform: scale(0.95);
+  transform: translateY(-8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-enter-active,
+  .fade-leave-active,
+  .scale-enter-active,
+  .scale-leave-active {
+    transition: none;
+  }
+  .scale-enter-from,
+  .scale-leave-to {
+    transform: none;
+  }
 }
 </style>

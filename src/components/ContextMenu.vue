@@ -110,18 +110,18 @@ onUnmounted(() => {
       <div
         v-if="show"
         ref="menuRef"
-        class="fixed z-[9999] min-w-[160px] py-1.5 bg-background-secondary border border-zinc-700 rounded-lg shadow-xl"
+        class="fixed z-[9999] min-w-[160px] py-1 bg-background-secondary border border-white/[0.1] shadow-xl"
         :style="{ left: `${adjustedX}px`, top: `${adjustedY}px` }"
       >
         <template v-for="(item, index) in items" :key="index">
-          <div v-if="item.divider" class="my-1 border-t border-zinc-700" />
+          <div v-if="item.divider" class="my-1 border-t border-white/[0.08]" />
           <button
             v-else
             @click="handleItemClick(item)"
-            class="w-full px-3 py-1.5 text-left text-sm flex items-center gap-2 transition-colors"
+            class="w-full px-3 py-1.5 text-left text-[12px] flex items-center gap-2 transition-colors"
             :class="item.disabled
               ? 'text-foreground-muted/50 cursor-not-allowed'
-              : 'text-foreground hover:bg-white/10'"
+              : 'text-foreground hover:bg-primary-500/[0.08]'"
             :disabled="item.disabled"
           >
             <!-- Copy icon -->
@@ -162,6 +162,17 @@ onUnmounted(() => {
 .context-menu-enter-from,
 .context-menu-leave-to {
   opacity: 0;
-  transform: scale(0.95);
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .context-menu-enter-active,
+  .context-menu-leave-active {
+    transition: opacity 0.1s ease;
+  }
+  .context-menu-enter-from,
+  .context-menu-leave-to {
+    transform: none;
+  }
 }
 </style>
