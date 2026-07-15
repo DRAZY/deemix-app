@@ -25,12 +25,6 @@ Entries from v1.7.5 onward use a compact format — short bullets, one line each
 
 - **Resync no longer creates wrong-numbered duplicate tracks (#102, #103).** When an unavailable track was resolved to an alternate release (the ISRC/FALLBACK "Alternate version" path), the downloader wrote the original track/disc numbers into a *shared cached* metadata object. A later download of the resolved track within the hour-long cache window then inherited another release's numbering — so a force resync could re-download a track that already existed, but named as e.g. track 1 or `1-01` instead of its real position, and the "skip existing files" check couldn't match the wrongly-named file. Track metadata now comes back as a defensive copy so one download can never poison another, and album downloads additionally pass the album tracklist's authoritative position as a backstop when Deezer's private record for a restricted track is missing its numbers.
 
-## [1.10.33] — 2026-07-08
-
-### Changed
-
-- Security hardening and minor improvements.
-
 ## [1.10.32] — 2026-07-08
 
 ### Changed

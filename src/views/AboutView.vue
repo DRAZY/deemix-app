@@ -51,13 +51,6 @@ const whatsNew: ReleaseNotes[] = [
     ]
   },
   {
-    version: '1.10.33',
-    date: '2026-07-08',
-    items: [
-      'Security hardening and minor improvements under the hood.'
-    ]
-  },
-  {
     version: '1.10.32',
     date: '2026-07-08',
     items: [

@@ -356,12 +356,16 @@ Build output is written to the `release/` directory.
 ```
 deemix-remastered/
 ├── src/                        # Vue frontend
+│   ├── assets/                 # Global styles
+│   │   └── main.css                # Tailwind layers + the CSS-variable theme system (Signal + 8 more, light-mode variants)
 │   ├── components/             # Reusable UI components (21)
 │   ├── composables/            # Composition functions
 │   │   ├── useContextMenu.ts       # Right-click menu handling
 │   │   ├── useKeyboardShortcuts.ts # Global keyboard shortcuts
 │   │   ├── useNetworkStatus.ts     # Online/offline detection
 │   │   └── useSearchHistory.ts     # Search history management
+│   ├── directives/             # Custom Vue directives
+│   │   └── tooltip.ts              # v-tooltip
 │   ├── i18n/locales/           # Translation files (21 languages)
 │   ├── services/               # API services
 │   │   └── deezerAPI.ts            # Deezer API wrapper with caching
@@ -390,7 +394,12 @@ deemix-remastered/
 │       ├── artistSync.ts           # Artist sync engine (#61)
 │       ├── spotifyAPI.ts           # Spotify API client
 │       └── spotifyConverter.ts     # Spotify-to-Deezer conversion
-├── public/                     # Static assets & icons
+├── docs/                       # Documentation
+│   ├── ARCHITECTURE.md             # Renderer / preload / main-process walkthrough
+│   ├── TROUBLESHOOTING.md          # Common issues & fixes
+│   ├── redesign/                   # Signal Deck design mockups (2.0 provenance)
+│   └── screenshots/                # README screenshots
+├── public/                     # Static assets & icons (DM/RM icon: .icns / .ico / .png + iconset)
 ├── dist/                       # Built frontend (generated)
 ├── dist-electron/              # Built Electron code (generated)
 └── release/                    # Packaged builds (generated)
