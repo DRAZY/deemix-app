@@ -137,7 +137,7 @@ const contextMenuItems = computed(() => [
       </button>
       <!-- Show index normally, play button on hover -->
       <template v-else>
-        <span class="group-hover:hidden font-mono text-[11px] text-foreground-muted">{{ index || '' }}</span>
+        <span class="group-hover:hidden font-mono text-[12px] text-foreground-muted">{{ index || '' }}</span>
         <button
           v-if="track.preview"
           @click="togglePlay"
@@ -173,11 +173,11 @@ const contextMenuItems = computed(() => [
 
     <!-- Track info -->
     <div class="flex-1 min-w-0">
-      <p class="text-[13px] font-semibold truncate" :class="isPlaying ? 'text-primary-400' : (track.explicit_lyrics ? 'text-primary-400' : '')">
+      <p class="text-[14.5px] font-semibold truncate" :class="isPlaying ? 'text-primary-400' : (track.explicit_lyrics ? 'text-primary-400' : '')">
         {{ track.title }}
         <span v-if="track.explicit_lyrics" class="font-mono text-[9px] border border-white/20 text-foreground-muted px-1 ml-1 align-middle">E</span>
       </p>
-      <div class="flex items-center gap-1 text-[11.5px] text-foreground-muted truncate">
+      <div class="flex items-center gap-1 text-[12.5px] text-foreground-muted truncate">
         <span
           v-if="track.artist?.id != null"
           @click.stop="goToArtist"
@@ -205,7 +205,7 @@ const contextMenuItems = computed(() => [
     </div>
 
     <!-- Duration -->
-    <span class="font-mono text-[11px] text-foreground-muted w-12 text-right">{{ duration }}</span>
+    <span class="font-mono text-[12px] text-foreground-muted w-12 text-right">{{ duration }}</span>
 
     <!-- Actions -->
     <div class="flex items-center gap-1.5">

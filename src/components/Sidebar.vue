@@ -190,7 +190,7 @@ function handleAuthClick() {
             </svg>
           </template>
 
-          <span v-if="!isSlim" class="flex-1 text-[13px] font-medium truncate">{{ item.label }}</span>
+          <span v-if="!isSlim" class="flex-1 text-[14.5px] font-medium truncate">{{ item.label }}</span>
 
           <!-- Badge -->
           <span
