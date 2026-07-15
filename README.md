@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="public/icon.png" alt="Deemix Remastered" width="128" height="128" />
+  <img src="docs/banner.png" alt="Deemix Remastered — Signal Deck" width="800" />
 </p>
-
-<h1 align="center">Deemix Remastered</h1>
 
 <p align="center">
   A modern, cross-platform desktop music downloader built entirely from scratch with Electron, Vue 3, and TypeScript.
