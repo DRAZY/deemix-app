@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [2.0.1] — 2026-07-15
+
+### Fixed
+
+- **Lyrics files now share the audio file's exact name (#104).** `.lrc` (and `.txt`) lyrics were named from the raw track title, ignoring the track-naming template — so `03 - Song.flac` got `Song.lrc`, and players that match lyrics by identical basename never loaded them. The lyrics filename is now derived directly from the real audio file path, so it matches under every naming template and on every download path (manual, album, playlist, sync).
+
 ## [2.0.0] — 2026-07-14
 
 ### Changed

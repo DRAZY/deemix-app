@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '2.0.1',
+    date: '2026-07-15',
+    items: [
+      'Fixed lyrics files not matching their audio file\'s name (#104). Synced .lrc (and plain .txt) lyrics were named from the bare track title, so with a naming template like "03 - Song" the lyrics file was called "Song.lrc" and players that match lyrics by filename never found it. Lyrics files now take their name directly from the actual audio file, so they always match — on every download path, including playlist and artist sync.'
+    ]
+  },
+  {
     version: '2.0.0',
     date: '2026-07-14',
     items: [

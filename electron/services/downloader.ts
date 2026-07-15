@@ -1300,7 +1300,7 @@ export class Downloader extends EventEmitter {
       // Save lyrics if requested
       if (options.saveLyrics && trackInfo.LYRICS) {
         try {
-          await this.saveLyrics(trackInfo, dir, options.syncedLyrics !== false)
+          await this.saveLyrics(trackInfo, decryptedPath, options.syncedLyrics !== false)
         } catch (error: any) {
           console.error(`[Downloader] Lyrics save error:`, error.message)
         }
@@ -3715,17 +3715,19 @@ export class Downloader extends EventEmitter {
     }
   }
 
-  private async saveLyrics(trackInfo: any, outputDir: string, saveSynced: boolean = true): Promise<void> {
+  private async saveLyrics(trackInfo: any, audioPath: string, saveSynced: boolean = true): Promise<void> {
     try {
       if (!trackInfo.LYRICS?.LYRICS_TEXT && !trackInfo.LYRICS?.LYRICS_SYNC_JSON) {
         return
       }
 
-      // Include VERSION in filename if present
-      const lyricsBaseTitle = trackInfo.SNG_TITLE || 'Unknown'
-      const lyricsVersion = trackInfo.VERSION
-      const fullTitle = lyricsVersion ? `${lyricsBaseTitle} (${lyricsVersion})` : lyricsBaseTitle
-      const baseName = this.sanitizeFilename(fullTitle)
+      // Lyrics files must share the audio file's exact basename (players match
+      // .lrc/.txt to audio by identical name), so derive it from the real path
+      // instead of rebuilding a name from the title — the audio name comes from
+      // the user's naming template (track/disc numbers included) and any second
+      // naming logic here would drift from it (#104).
+      const outputDir = path.dirname(audioPath)
+      const baseName = path.basename(audioPath, path.extname(audioPath))
 
       // Save plain lyrics
       if (trackInfo.LYRICS?.LYRICS_TEXT) {
