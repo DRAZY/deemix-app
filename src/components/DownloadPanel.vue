@@ -274,7 +274,7 @@ async function openItemFolder(item: DownloadItem) {
               {{ STAT_WORD[item.status] || item.status.toUpperCase() }}
             </span>
           </div>
-          <div class="font-mono text-[9.5px] text-foreground-muted mt-1 whitespace-nowrap overflow-hidden text-ellipsis" :title="getUnitSub(item)">
+          <div class="font-mono text-[11.5px] text-foreground-muted mt-1 whitespace-nowrap overflow-hidden text-ellipsis" :title="getUnitSub(item)">
             {{ getUnitSub(item) }}
           </div>
 
@@ -283,7 +283,7 @@ async function openItemFolder(item: DownloadItem) {
             <i v-for="(seg, idx) in vuSegments(item)" :key="idx" :class="seg"></i>
           </div>
 
-          <div class="flex justify-between font-mono text-[9.5px] text-foreground-muted mt-2">
+          <div class="flex justify-between font-mono text-[11px] text-foreground-muted mt-2">
             <span>{{ getUnitDetail(item) }}</span>
             <b class="font-medium text-foreground/70">{{ getUnitPercent(item) }}</b>
           </div>
