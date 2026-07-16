@@ -13,6 +13,8 @@ interface ElectronStorageCredentials {
   spotifyClientId?: string
   spotifyClientSecret?: string
   spotifyUsername?: string
+  qobuzUserId?: string
+  qobuzToken?: string
 }
 
 interface ElectronStorageResult {
@@ -61,6 +63,9 @@ declare global {
       deezerLogin: {
         openLoginWindow: () => Promise<{ success: boolean; arl?: string; error?: string }>
         closeLoginWindow: () => Promise<void>
+      }
+      qobuzLogin: {
+        openLoginWindow: () => Promise<{ success: boolean; userId?: string; token?: string; error?: string }>
       }
       playlistSync: {
         onSyncStart: (callback: (data: { playlistId: string }) => void) => void

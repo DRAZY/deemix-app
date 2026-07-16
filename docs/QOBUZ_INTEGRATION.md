@@ -70,8 +70,25 @@ for Qobuz — fetch the file, tag it, done.
       quality-negotiation, not an error.
       **Auth mechanism + native no-decrypt path are now proven, not assumed.**
       Phases 2–6 are the remaining (real) integration work.
-- [ ] Phase 2 — credentials plumbing (settingsStore, SettingsView panel, main.ts
-      safeStorage persistence + startup restore). Clone the Spotify section.
+- [~] **Phase 2a — main-process token capture + persistence + restore. DONE +
+      VERIFIED where headlessly possible (2026-07-16).**
+        - `qobuz:openLoginWindow` IPC (main.ts): opens play.qobuz.com/login in a
+          sandboxed BrowserWindow, polls the page's localStorage for the
+          user_auth_token + id the web player stores post-login, returns them.
+          Mirrors the Deezer ARL cookie-capture. **BUILT, NOT EXERCISED** — needs
+          a live Electron run + a real interactive login to verify end to end
+          (DEFERRED-VERIFY).
+        - safeStorage persistence: `qobuzUserId`/`qobuzToken` added to
+          save/loadCredentials (encrypted, same as ARL/Spotify secret).
+        - Startup restore: main.ts boot restores the Qobuz session from stored
+          creds → `qobuzAuth.restoreSession`. **VERIFIED**: restoreSession →
+          authenticated catalog/search returned **HTTP 200** (exact startup path).
+        - IPC bridge: `window.electronAPI.qobuzLogin.openLoginWindow` exposed
+          (preload + electron.d.ts); credential types extended.
+        - typecheck ✓, vite build ✓, handler present in compiled dist-electron/main.js ✓.
+- [ ] **Phase 2b — Settings UI: `settingsStore` qobuz fields + a "Connect Qobuz
+      Account" panel in SettingsView that calls the login window and persists the
+      token. This is what lets the deferred BrowserWindow flow be exercised in-app.**
 - [ ] Phase 3 — native download branch: add a `service` discriminator to
       `DownloadOptions`/`DownloadItem`; branch `processDownload` so Qobuz skips
       `decryptFile` (fetched file IS the output). This is the one real refactor —

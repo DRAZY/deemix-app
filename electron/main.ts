@@ -6,6 +6,7 @@ import { DeemixServer } from './server'
 import { playlistSync } from './services/playlistSync'
 import { artistSync } from './services/artistSync'
 import { spotifyAPI } from './services/spotifyAPI'
+import { qobuzAuth } from './services/qobuzAuth'
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 // Squirrel startup is handled by electron-builder
@@ -333,6 +334,13 @@ async function initServer() {
       if (spotifyClientId && spotifyClientSecret) {
         spotifyAPI.setCredentials(spotifyClientId, spotifyClientSecret)
         console.log('[Main] Spotify credentials restored from storage')
+      }
+      // Restore Qobuz session (browser-minted token) if present.
+      const qobuzUserId = decodeField(credData.qobuzUserId)
+      const qobuzToken = decodeField(credData.qobuzToken)
+      if (qobuzUserId && qobuzToken) {
+        qobuzAuth.restoreSession(qobuzToken, Number(qobuzUserId))
+        console.log('[Main] Qobuz session restored from storage')
       }
     } catch (e: any) {
       if (e.code !== 'ENOENT') {
@@ -871,9 +879,94 @@ ipcMain.handle('deezer:closeLoginWindow', () => {
   }
 })
 
+// --- Qobuz login: capture user_auth_token from a real browser session ---
+// Qobuz moved to OAuth+reCAPTCHA (2026-04), so raw email/password login no
+// longer works. We open the real play.qobuz.com login in a window, let the user
+// authenticate, and poll the page's localStorage for the token the web player
+// stores after a successful login — the token-based analogue of the Deezer ARL
+// cookie capture above.
+let qobuzLoginWindow: BrowserWindow | null = null
+
+ipcMain.handle('qobuz:openLoginWindow', async () => {
+  if (qobuzLoginWindow) {
+    qobuzLoginWindow.focus()
+    return { success: false, error: 'Login window already open' }
+  }
+
+  return new Promise((resolve) => {
+    let resolved = false
+    let pollInterval: NodeJS.Timeout | null = null
+
+    const finish = (result: any) => {
+      if (resolved) return
+      resolved = true
+      if (pollInterval) clearInterval(pollInterval)
+      if (qobuzLoginWindow) {
+        qobuzLoginWindow.close()
+        qobuzLoginWindow = null
+      }
+      resolve(result)
+    }
+
+    qobuzLoginWindow = new BrowserWindow({
+      width: 520,
+      height: 720,
+      parent: mainWindow || undefined,
+      modal: false,
+      show: false,
+      title: 'Login to Qobuz',
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        partition: 'persist:qobuz-login',
+      },
+    })
+
+    qobuzLoginWindow.loadURL('https://play.qobuz.com/login')
+    qobuzLoginWindow.once('ready-to-show', () => qobuzLoginWindow?.show())
+
+    // Scan localStorage for the entry holding user id + user_auth_token. The web
+    // player persists the authenticated user object after login completes.
+    const probe = `(() => {
+      for (const k of Object.keys(localStorage)) {
+        try {
+          const o = JSON.parse(localStorage.getItem(k));
+          const token = o && (o.user_auth_token || (o.credential && o.credential.user_auth_token) || (o.user && o.user.credential && o.user.credential.user_auth_token));
+          const id = o && ((o.user && o.user.id) || o.id);
+          if (token && id) return JSON.stringify({ userId: String(id), token });
+        } catch (e) {}
+      }
+      return '';
+    })()`
+
+    const checkForToken = async () => {
+      if (!qobuzLoginWindow || resolved) return
+      try {
+        const raw = await qobuzLoginWindow.webContents.executeJavaScript(probe, true)
+        if (raw) {
+          const { userId, token } = JSON.parse(raw)
+          console.log('[QobuzLogin] token captured for user', userId)
+          finish({ success: true, userId, token })
+        }
+      } catch (err) {
+        /* page may be mid-navigation; keep polling */
+      }
+    }
+
+    pollInterval = setInterval(checkForToken, 700)
+    qobuzLoginWindow.webContents.on('did-finish-load', checkForToken)
+
+    qobuzLoginWindow.on('closed', () => {
+      qobuzLoginWindow = null
+      finish({ success: false, error: 'Login window closed' })
+    })
+  })
+})
+
 // Persistent storage for credentials (stored in userData, not localStorage)
 // This fixes session persistence issues with file:// protocol
-ipcMain.handle('storage:saveCredentials', async (_, credentials: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string }) => {
+ipcMain.handle('storage:saveCredentials', async (_, credentials: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string; qobuzUserId?: string; qobuzToken?: string }) => {
   try {
     const credentialsPath = getCredentialsPath()
     const data: any = {}
@@ -918,6 +1011,8 @@ ipcMain.handle('storage:saveCredentials', async (_, credentials: { arl?: string;
     storeCredential(credentials.spotifyClientId, 'spotifyClientId')
     storeCredential(credentials.spotifyClientSecret, 'spotifyClientSecret')
     storeCredential(credentials.spotifyUsername, 'spotifyUsername')
+    storeCredential(credentials.qobuzUserId, 'qobuzUserId')
+    storeCredential(credentials.qobuzToken, 'qobuzToken')
 
     await mkdir(app.getPath('userData'), { recursive: true })
     await writeFile(credentialsPath, JSON.stringify(data, null, 2))
@@ -963,11 +1058,13 @@ ipcMain.handle('storage:loadCredentials', async () => {
       return stored.data
     }
 
-    const result: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string } = {}
+    const result: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string; qobuzUserId?: string; qobuzToken?: string } = {}
     result.arl = decodeCredential(data.arl)
     result.spotifyClientId = decodeCredential(data.spotifyClientId)
     result.spotifyClientSecret = decodeCredential(data.spotifyClientSecret)
     result.spotifyUsername = decodeCredential(data.spotifyUsername)
+    result.qobuzUserId = decodeCredential(data.qobuzUserId)
+    result.qobuzToken = decodeCredential(data.qobuzToken)
 
     console.log('[Main] Credentials loaded from userData')
     return { success: true, credentials: result }

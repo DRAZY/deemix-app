@@ -58,6 +58,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     closeLoginWindow: () => ipcRenderer.invoke('deezer:closeLoginWindow')
   },
 
+  qobuzLogin: {
+    openLoginWindow: () => ipcRenderer.invoke('qobuz:openLoginWindow')
+  },
+
   // Playlist sync events
   playlistSync: {
     onSyncStart: (callback: (data: { playlistId: string }) => void) => {
@@ -94,7 +98,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Persistent storage (stored in userData, not localStorage)
   // This fixes session persistence issues with file:// protocol
   storage: {
-    saveCredentials: (credentials: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string }) =>
+    saveCredentials: (credentials: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string; qobuzUserId?: string; qobuzToken?: string }) =>
       ipcRenderer.invoke('storage:saveCredentials', credentials),
     loadCredentials: () => ipcRenderer.invoke('storage:loadCredentials'),
     saveSettings: (settings: object) => ipcRenderer.invoke('storage:saveSettings', settings),
