@@ -85,11 +85,16 @@ class QobuzAuth {
 
     const bundle = await this.httpText(QOBUZ_PLAY_BASE + bundlePath)
 
-    const appId = bundle.match(/production:\{[^}]*?api:\{[^}]*?appId:"(\d+)"/)?.[1]
+    // Extract app_id AND app_secret from the SAME production block — there are
+    // several appId/appSecret literals scattered through the bundle, and a
+    // first-match regex grabs the wrong secret (found during the 2026-07-16 live
+    // probe: production is appId 798273057 / appSecret 05a4851e…, but a stray
+    // f686f063… appears earlier and must not be picked up).
+    const prod = bundle.match(/production:\{api:\{appId:"(\d+)",appSecret:"([a-z0-9]{32})"/)
+    const appId = prod?.[1]
     if (!appId) throw new Error('Qobuz: could not extract app_id from bundle')
 
-    // Preferred: literal secret present in current bundles.
-    let appSecret = bundle.match(/appSecret:"([a-z0-9]{32})"/)?.[1] ?? ''
+    let appSecret = prod?.[2] ?? ''
 
     // Fallback: reconstruct from the obfuscated per-timezone seed/info/extras
     // split used by older bundles (seed + info + extras, drop trailing 44, b64

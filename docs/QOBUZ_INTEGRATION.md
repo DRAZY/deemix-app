@@ -23,11 +23,30 @@ for Qobuz — fetch the file, tag it, done.
       `bun scripts/qobuz-spike.ts` scrapes app_id + app_secret from the live
       bundle (8.2.0-b034: app_id `798273057`, literal app_secret present).
       Request-signing (md5 scheme) and the API client are implemented.
-- [ ] **Phase 1b — validate login + getFileUrl end-to-end.** BLOCKED ON CREDS.
-      Needs a paid Qobuz account. Set `QOBUZ_EMAIL` / `QOBUZ_PASSWORD` in
-      `~/.claude/.env` (never committed), then re-run the spike — Phase 2 logs in,
-      resolves a hi-res getFileUrl, and sniffs the FLAC magic bytes to confirm
-      it's real, unencrypted audio. Optionally `QOBUZ_TEST_TRACK_ID`.
+- [~] **Phase 1b — validate login + getFileUrl end-to-end. BLOCKED — external
+      infra change discovered (2026-07-16 live probe with a real account).**
+      Login (and *every* api.json/0.2 call, including the formerly app_id-only
+      `catalog/search`) now returns **HTTP 401 `"User authentication is required"`**.
+      Response headers show the surface sits behind a **Kong API gateway**
+      (`x-kong-response-latency`) + Akamai edge. Findings:
+        - app_id/app_secret scrape still works (production block: app_id
+          `798273057`, app_secret `05a4851e…`; note a decoy `f686f063…` earlier
+          in the bundle — scraper now reads both from the same production block).
+        - `user/login` via GET **and** POST with email+password+app_id → 401.
+        - Sending app_id as query yields 401 "auth required"; omitting it yields
+          400 "missing app_id parameter" — so the API checks app_id presence,
+          then still demands a user auth the classic flow no longer satisfies.
+        - No `Set-Cookie` from the login page; session is likely established via
+          an XHR/token handshake the OSS flow (streamrip/qobuz-dl) predates.
+      **Conclusion:** the reverse-engineered app_id+password flow that all the
+      OSS tools document appears **stale against Qobuz's current (2026)
+      gateway.** This is not a bug in our code — the code faithfully implements
+      the documented flow; Qobuz changed the infra. Caught on day one, before
+      building the integration on a broken foundation (the whole point of
+      risk-first). **Next:** research how *currently-maintained* tools
+      (streamrip @ 2026) authenticate against the Kong gateway — newer app_id,
+      a signed bootstrap, or a browser-session/bearer-token flow — before any
+      further build. Until that's known, Phases 2–6 are on hold.
 - [ ] Phase 2 — credentials plumbing (settingsStore, SettingsView panel, main.ts
       safeStorage persistence + startup restore). Clone the Spotify section.
 - [ ] Phase 3 — native download branch: add a `service` discriminator to
