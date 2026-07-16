@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [2.1.0-rc.1] — Unreleased
+
+### Added
+
+- **Qobuz integration (hi-res downloads).** Connect your Qobuz account (Settings → Qobuz) via a real Qobuz login window — your session token is stored encrypted. Paste a Qobuz track, album, or playlist link into the Link Analyzer and download it, or it flows through the same Transfer Rack queue as everything else. Qobuz files come down DRM-free, so downloads can reach true hi-res FLAC (up to 24-bit/192 kHz) when your plan and the track allow, and files are tagged (title/artist/album/ISRC + embedded cover art) and organized with your existing folder-structure and track-naming templates. Albums and playlists download as one grouped queue item. A paid Qobuz plan is required (free accounts can't download). Deezer and Spotify behavior is unchanged.
+
 ## [2.0.1] — 2026-07-15
 
 ### Fixed
