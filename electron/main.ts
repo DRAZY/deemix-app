@@ -882,9 +882,11 @@ ipcMain.handle('deezer:closeLoginWindow', () => {
 // --- Qobuz login: capture user_auth_token from a real browser session ---
 // Qobuz moved to OAuth+reCAPTCHA (2026-04), so raw email/password login no
 // longer works. We open the real play.qobuz.com login in a window, let the user
-// authenticate, and poll the page's localStorage for the token the web player
-// stores after a successful login — the token-based analogue of the Deezer ARL
-// cookie capture above.
+// authenticate, and intercept the `user/login` API RESPONSE (which carries the
+// user_auth_token + user id) via the Chrome DevTools Protocol — the token is NOT
+// stored under any plainly-named localStorage key, so response interception is
+// the reliable capture. The partition is cleared on open so a fresh login POST
+// always fires (analogous to the Deezer flow clearing cookies each time).
 let qobuzLoginWindow: BrowserWindow | null = null
 
 ipcMain.handle('qobuz:openLoginWindow', async () => {
@@ -892,6 +894,10 @@ ipcMain.handle('qobuz:openLoginWindow', async () => {
     qobuzLoginWindow.focus()
     return { success: false, error: 'Login window already open' }
   }
+
+  // Force a fresh login so the user/login request happens (and CDP can catch it).
+  const qSession = session.fromPartition('persist:qobuz-login')
+  await qSession.clearStorageData({ storages: ['cookies', 'localstorage'] })
 
   return new Promise((resolve) => {
     let resolved = false
@@ -902,6 +908,9 @@ ipcMain.handle('qobuz:openLoginWindow', async () => {
       resolved = true
       if (pollInterval) clearInterval(pollInterval)
       if (qobuzLoginWindow) {
+        try {
+          if (qobuzLoginWindow.webContents.debugger.isAttached()) qobuzLoginWindow.webContents.debugger.detach()
+        } catch { /* ignore */ }
         qobuzLoginWindow.close()
         qobuzLoginWindow = null
       }
@@ -927,31 +936,81 @@ ipcMain.handle('qobuz:openLoginWindow', async () => {
       },
     })
 
+    // Primary capture: intercept the user/login API response body via CDP.
+    const wc = qobuzLoginWindow.webContents
+    try {
+      wc.debugger.attach('1.3')
+      wc.debugger.sendCommand('Network.enable')
+      const loginRequestIds = new Set<string>()
+      wc.debugger.on('message', async (_e, method, params) => {
+        try {
+          if (method === 'Network.responseReceived' && /\/api\.json\/[\d.]+\/user\/login/.test(params.response?.url || '')) {
+            loginRequestIds.add(params.requestId)
+          }
+          if (method === 'Network.loadingFinished' && loginRequestIds.has(params.requestId)) {
+            loginRequestIds.delete(params.requestId)
+            const res: any = await wc.debugger.sendCommand('Network.getResponseBody', { requestId: params.requestId })
+            const body = res.base64Encoded ? Buffer.from(res.body, 'base64').toString('utf8') : res.body
+            const json = JSON.parse(body)
+            if (json?.user_auth_token && json?.user?.id) {
+              console.log('[QobuzLogin] token captured via user/login response for user', json.user.id)
+              finish({ success: true, userId: String(json.user.id), token: json.user_auth_token })
+            }
+          }
+        } catch (err: any) {
+          console.log('[QobuzLogin] CDP message handling error:', err?.message)
+        }
+      })
+    } catch (err: any) {
+      console.log('[QobuzLogin] debugger attach failed, relying on localStorage fallback:', err?.message)
+    }
+
     qobuzLoginWindow.loadURL('https://play.qobuz.com/login')
     qobuzLoginWindow.once('ready-to-show', () => qobuzLoginWindow?.show())
 
-    // Scan localStorage for the entry holding user id + user_auth_token. The web
-    // player persists the authenticated user object after login completes.
+    // Deep-scan localStorage for the node holding user_auth_token (+ the user id
+    // that sits with it). Qobuz's web player may store the auth nested and/or as
+    // redux-persist double-stringified JSON, so we recurse into objects AND into
+    // strings that are themselves JSON. Also returns the localStorage key names
+    // for one-time diagnostics if capture ever misses.
     const probe = `(() => {
+      const found = { keys: Object.keys(localStorage), token: null, id: null };
+      const visit = (v) => {
+        if (found.token) return;
+        if (typeof v === 'string') {
+          const s = v.trim();
+          if (s && (s[0] === '{' || s[0] === '[')) { try { visit(JSON.parse(s)); } catch (e) {} }
+          return;
+        }
+        if (v && typeof v === 'object') {
+          if (typeof v.user_auth_token === 'string' && v.user_auth_token.length > 20) {
+            found.token = v.user_auth_token;
+            found.id = String((v.user && v.user.id) || v.id || '');
+          }
+          for (const k of Object.keys(v)) { if (found.token) break; visit(v[k]); }
+        }
+      };
       for (const k of Object.keys(localStorage)) {
-        try {
-          const o = JSON.parse(localStorage.getItem(k));
-          const token = o && (o.user_auth_token || (o.credential && o.credential.user_auth_token) || (o.user && o.user.credential && o.user.credential.user_auth_token));
-          const id = o && ((o.user && o.user.id) || o.id);
-          if (token && id) return JSON.stringify({ userId: String(id), token });
-        } catch (e) {}
+        if (found.token) break;
+        const raw = localStorage.getItem(k);
+        try { visit(JSON.parse(raw)); } catch (e) { visit(raw); }
       }
-      return '';
+      return JSON.stringify(found);
     })()`
 
+    let loggedKeys = false
     const checkForToken = async () => {
       if (!qobuzLoginWindow || resolved) return
       try {
         const raw = await qobuzLoginWindow.webContents.executeJavaScript(probe, true)
-        if (raw) {
-          const { userId, token } = JSON.parse(raw)
-          console.log('[QobuzLogin] token captured for user', userId)
-          finish({ success: true, userId, token })
+        const found = JSON.parse(raw || '{}')
+        if (!loggedKeys) {
+          loggedKeys = true
+          console.log('[QobuzLogin] localStorage keys:', JSON.stringify(found.keys))
+        }
+        if (found.token && found.id) {
+          console.log('[QobuzLogin] token captured for user', found.id)
+          finish({ success: true, userId: found.id, token: found.token })
         }
       } catch (err) {
         /* page may be mid-navigation; keep polling */
