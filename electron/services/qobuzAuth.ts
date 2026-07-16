@@ -8,15 +8,28 @@
  * Auth model (reverse-engineered, same surface the Qobuz web player uses):
  *   - app_id + app_secret  → scraped from play.qobuz.com's bundle.js (see
  *     fetchAppCredentials). app_secret is used ONLY to sign requests, never sent.
- *   - user_auth_token      → from user/login with the subscriber's email+password.
+ *   - user_auth_token      → obtained from a real browser login session (see below).
  *
- * SECURITY: credentials are NEVER hardcoded or committed. login() takes them from
- * the caller, which sources them from safeStorage / env — the same posture as the
- * Deezer ARL and Spotify secret.
+ * IMPORTANT — auth changed April 2026 (confirmed via live probe + streamrip PR
+ * #955 / issues #954/#956): Qobuz put api.json/0.2 behind a gateway and moved web
+ * login to OAuth+reCAPTCHA. Posting email+password to `user/login` now returns
+ * 401 "User authentication is required" for everyone — the classic OSS flow is
+ * dead. The working path is TOKEN-based: get a `user_auth_token` (+ numeric
+ * user id) from a genuine logged-in play.qobuz.com session, then call api.json
+ * with `X-App-Id` + `X-User-Auth-Token`. The token must be minted under the same
+ * app_id you send, and expires in days (needs re-capture).
  *
- * STATUS: scaffold. fetchAppCredentials + signRequest are implemented and
- * verified against the live 8.2.0 bundle. login/getFileUrl/catalog are wired but
- * pending end-to-end validation against a real subscriber account (needs creds).
+ * In-app plan: render play.qobuz.com/login in a sandboxed BrowserWindow, let the
+ * user complete the real OAuth login, and intercept the api.json `user/login`
+ * response (or read localStorage) to lift id + token — the EXACT pattern this app
+ * already uses to capture the Deezer ARL. loginWithToken() is that endpoint.
+ *
+ * SECURITY: credentials/tokens are NEVER hardcoded or committed. Auth values come
+ * from the caller (safeStorage / env), same posture as the Deezer ARL.
+ *
+ * STATUS: scaffold. fetchAppCredentials + signRequest verified against the live
+ * 8.2.0 bundle. Token auth + getFileUrl/catalog pending end-to-end validation
+ * with a real browser-minted token.
  */
 import crypto from 'crypto'
 
@@ -150,27 +163,34 @@ class QobuzAuth {
     return crypto.createHash('md5').update(raw).digest('hex')
   }
 
-  /** Authenticate a subscriber. Credentials come from the caller (secure store). */
-  async login(email: string, password: string): Promise<QobuzSession> {
-    const { appId } = await this.fetchAppCredentials()
-    const params = new URLSearchParams({ email, password, app_id: appId })
-    const json = await this.apiGet(`user/login?${params.toString()}`)
+  /**
+   * DEAD PATH (kept only to fail loudly). Qobuz's gateway rejects raw
+   * email+password logins since April 2026 — this will 401. Use loginWithToken.
+   */
+  async login(_email: string, _password: string): Promise<QobuzSession> {
+    throw new Error(
+      'Qobuz: email/password login is no longer accepted by Qobuz (OAuth-gated since 2026-04). ' +
+        'Use loginWithToken() with a user_auth_token captured from a browser session.'
+    )
+  }
 
-    const token = json?.user_auth_token
-    if (!token) throw new Error('Qobuz: login failed (no user_auth_token returned)')
+  /**
+   * Authenticate with a browser-minted user_auth_token (the current working
+   * path). Validates the token with one authenticated call and reads the
+   * subscription label so we can reject free accounts (which can't download).
+   */
+  async loginWithToken(userId: number, userAuthToken: string): Promise<QobuzSession> {
+    await this.fetchAppCredentials()
+    this.session = { userAuthToken, userId, isValid: true }
 
-    // Free accounts cannot download; the API returns no usable credential params.
-    const label = json?.user?.credential?.parameters?.short_label
-    if (!json?.user?.credential?.parameters) {
-      throw new Error('Qobuz: this account has no active subscription — downloads require a paid plan')
+    // Validate + fetch subscription entitlement.
+    const me = await this.apiGet(`user/get?user_id=${userId}&app_id=${this.appCreds!.appId}`, true)
+    const params = me?.credential?.parameters
+    if (!params) {
+      this.session = null
+      throw new Error('Qobuz: token invalid, or account has no active subscription (downloads need a paid plan)')
     }
-
-    this.session = {
-      userAuthToken: token,
-      userId: json.user.id,
-      credentialLabel: label,
-      isValid: true,
-    }
+    this.session.credentialLabel = params.short_label
     return this.session
   }
 

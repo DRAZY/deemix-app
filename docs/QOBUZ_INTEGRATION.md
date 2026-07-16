@@ -39,14 +39,25 @@ for Qobuz — fetch the file, tag it, done.
         - No `Set-Cookie` from the login page; session is likely established via
           an XHR/token handshake the OSS flow (streamrip/qobuz-dl) predates.
       **Conclusion:** the reverse-engineered app_id+password flow that all the
-      OSS tools document appears **stale against Qobuz's current (2026)
-      gateway.** This is not a bug in our code — the code faithfully implements
-      the documented flow; Qobuz changed the infra. Caught on day one, before
-      building the integration on a broken foundation (the whole point of
-      risk-first). **Next:** research how *currently-maintained* tools
-      (streamrip @ 2026) authenticate against the Kong gateway — newer app_id,
-      a signed bootstrap, or a browser-session/bearer-token flow — before any
-      further build. Until that's known, Phases 2–6 are on hold.
+      OSS tools document is **dead** — not a bug in our code, Qobuz changed the
+      infra. Caught on day one, before building on a broken foundation.
+- [x] **Phase 1c — RESOLVED: found the current working handshake (2026-07-16
+      research, corroborated by streamrip PR #955 + issues #954/#956).**
+      Qobuz moved web login to **OAuth+reCAPTCHA in April 2026**; raw
+      email/password to `user/login` 401s for everyone now. **Working path is
+      TOKEN-based:** capture a `user_auth_token` (+ numeric user id) from a real
+      logged-in play.qobuz.com session, then call api.json with `X-App-Id` +
+      `X-User-Auth-Token`. app_id `798273057` is correct; token must be minted
+      under the same app_id and expires in ~days. Our datacenter/Akamai IP theory
+      was a red herring — it's purely the auth scheme. `qobuzAuth.ts` updated:
+      `login()` now fails loudly, `loginWithToken()` is the real entry.
+      **Natural in-app fit:** capture the token by rendering play.qobuz.com/login
+      in a sandboxed BrowserWindow and intercepting the `user/login` response —
+      the *exact* pattern this app already uses for the Deezer ARL.
+- [ ] **Phase 1d — validate token auth end-to-end.** Set `QOBUZ_USER_ID` +
+      `QOBUZ_AUTH_TOKEN` in `~/.claude/.env` (from DevTools on a logged-in
+      play.qobuz.com), re-run the spike → validates token, resolves a hi-res
+      getFileUrl, sniffs `fLaC` magic bytes. Then Phases 2–6 proceed.
 - [ ] Phase 2 — credentials plumbing (settingsStore, SettingsView panel, main.ts
       safeStorage persistence + startup restore). Clone the Spotify section.
 - [ ] Phase 3 — native download branch: add a `service` discriminator to
