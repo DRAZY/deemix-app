@@ -198,3 +198,18 @@ for Qobuz — fetch the file, tag it, done.
   Qobuz URL → Download.
 - Still TODO: folder-template naming parity + Qobuz tags from API metadata
   (Phase 3c/5); i18n strings; album/playlist progress grouping in the rack.
+
+## Phase 3c — tagging (2026-07-16)
+
+- Qobuz files arrive untagged, so after download we tag them by REUSING the
+  Deezer tagger (`tagFile`/`tagFlacFile`) via a Qobuz→trackInfo shim
+  (`qobuzMetaToTrackInfo`) rather than hand-rolling a FLAC writer.
+- Cover art: the taggers' cover step was Deezer-CDN-hash-only; added a small safe
+  `options.prefetchedCover?: Buffer` hook so a pre-fetched image (Qobuz's cover
+  URL) is used instead — Deezer path unchanged.
+- VERIFIED end-to-end (MP3, real file): downloaded "Creep", read tags back with
+  music-metadata → title/artist/album/albumartist/track/ISRC all correct + cover
+  image/jpeg 115KB embedded. FLAC path uses the same shim + prefetchedCover +
+  tagFlacFile (wired; verify with quality=FLAC).
+- Minor: disc number came back undefined for a single-disc track (media_number
+  absent at track level) — cosmetic.

@@ -98,6 +98,7 @@ export interface DownloadOptions {
   trackId: string | number
   outputPath: string
   service?: 'deezer' | 'qobuz'  // download backend; defaults to deezer
+  prefetchedCover?: Buffer      // pre-fetched cover art (e.g. Qobuz URL), used instead of the Deezer-hash CDN fetch
   quality: 'MP3_128' | 'MP3_320' | 'FLAC'
   bitrateFallback?: boolean  // Whether to fallback to lower bitrates if preferred unavailable
   isrcFallback?: boolean     // Whether to resolve an unavailable track to an ISRC-matched alternate release (may be a different master)
@@ -885,6 +886,27 @@ export class Downloader extends EventEmitter {
         this.emit('progress', progress)
       })
 
+      // Qobuz files arrive untagged — tag them from the API metadata by reusing
+      // the Deezer tagger via a Deezer-shaped shim + a pre-fetched cover buffer.
+      progress.status = 'tagging'
+      this.emit('progress', progress)
+      try {
+        const shim = this.qobuzMetaToTrackInfo(meta)
+        const coverUrl = meta?.album?.image?.large || meta?.album?.image?.small
+        let cover: Buffer | undefined
+        if (coverUrl) {
+          try {
+            const cr = await fetch(coverUrl)
+            if (cr.ok) cover = Buffer.from(await cr.arrayBuffer())
+          } catch { /* cover optional */ }
+        }
+        const tagOptions = { ...options, embedArtwork: true, prefetchedCover: cover }
+        if (ext === 'flac') await this.tagFlacFile(result.path, shim, tagOptions)
+        else await this.tagFile(result.path, shim, tagOptions)
+      } catch (tagErr: any) {
+        console.error(`[Downloader] Qobuz tagging error (file kept):`, tagErr.message)
+      }
+
       progress.status = 'completed'
       progress.progress = 100
       this.emit('complete', { ...progress, path: result.path })
@@ -896,6 +918,32 @@ export class Downloader extends EventEmitter {
     }
     // NOTE: concurrency (currentDownloads--) and queue re-processing are handled
     // by the processQueue() wrapper's .finally(); do not touch them here.
+  }
+
+  /** Map Qobuz track metadata into the Deezer-shaped trackInfo the tagger reads. */
+  private qobuzMetaToTrackInfo(meta: any): any {
+    const album = meta?.album || {}
+    const date = album.release_date_original || album.released_at || ''
+    return {
+      SNG_ID: meta?.id,
+      SNG_TITLE: meta?.title || '',
+      VERSION: meta?.version || '',
+      ART_NAME: meta?.performer?.name || album?.artist?.name || 'Unknown Artist',
+      ALB_TITLE: album.title || '',
+      ALB_ART_NAME: album?.artist?.name || '',
+      ALB_UPC: album.upc || '',
+      LABEL_NAME: album?.label?.name || '',
+      COPYRIGHT: meta?.copyright || '',
+      ISRC: meta?.isrc || '',
+      TRACK_NUMBER: meta?.track_number || undefined,
+      TRACKS_COUNT: album.tracks_count || undefined,
+      DISK_NUMBER: meta?.media_number || 1,
+      DISKS_COUNT: album.media_count || 1,
+      DURATION: meta?.duration || 0,
+      EXPLICIT_LYRICS: meta?.parental_warning ? 1 : 0,
+      PHYSICAL_RELEASE_DATE: date,
+      // No ALB_PICTURE (Deezer hash) — cover comes via options.prefetchedCover.
+    }
   }
 
   private async processDownload(downloadId: string, options: DownloadOptions): Promise<void> {
@@ -2570,15 +2618,16 @@ export class Downloader extends EventEmitter {
       }
 
       // Embed artwork if requested
-      if (tagSettings.cover && options.embedArtwork && trackInfo.ALB_PICTURE) {
+      if (tagSettings.cover && options.embedArtwork && (trackInfo.ALB_PICTURE || options.prefetchedCover)) {
         try {
           const artworkSize = albumCoverSettings.embeddedArtworkSize || 800
           // Use quality 90 to match original deemix (was 80)
           const quality = albumCoverSettings.jpegImageQuality || 90
 
-          // Use cached artwork to avoid re-downloading for each track in album
-          console.log(`[Downloader] Getting embedded artwork (cached): ${trackInfo.ALB_PICTURE}`)
-          const artworkBuffer = await this.getCachedArtwork(trackInfo.ALB_PICTURE, artworkSize, quality)
+          // Prefer a pre-fetched cover (e.g. Qobuz, whose art is a full URL not a
+          // Deezer hash); otherwise fetch from Deezer's CDN via the hash.
+          const artworkBuffer = options.prefetchedCover
+            || await this.getCachedArtwork(trackInfo.ALB_PICTURE, artworkSize, quality)
 
           tags.image = {
             mime: 'image/jpeg',
@@ -3007,14 +3056,15 @@ export class Downloader extends EventEmitter {
 
       // Download cover image if needed (using cache)
       let pictureData: Buffer | null = null
-      if (tagSettings.cover && options.embedArtwork && trackInfo.ALB_PICTURE) {
+      if (tagSettings.cover && options.embedArtwork && (trackInfo.ALB_PICTURE || options.prefetchedCover)) {
         try {
           const artworkSize = albumCoverSettings.embeddedArtworkSize || 800
           const quality = albumCoverSettings.jpegImageQuality || 90
 
-          console.log(`[Downloader] Getting FLAC cover (cached): ${trackInfo.ALB_PICTURE}`)
-          pictureData = await this.getCachedArtwork(trackInfo.ALB_PICTURE, artworkSize, quality)
-          console.log(`[Downloader] FLAC cover from cache: ${pictureData.length} bytes`)
+          // Prefer a pre-fetched cover (Qobuz) over the Deezer-hash CDN fetch.
+          pictureData = options.prefetchedCover
+            || await this.getCachedArtwork(trackInfo.ALB_PICTURE, artworkSize, quality)
+          console.log(`[Downloader] FLAC cover: ${pictureData.length} bytes`)
         } catch (e) {
           console.error('[Downloader] Failed to get cover for FLAC:', e)
         }
