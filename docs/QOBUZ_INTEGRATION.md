@@ -86,9 +86,19 @@ for Qobuz — fetch the file, tag it, done.
         - IPC bridge: `window.electronAPI.qobuzLogin.openLoginWindow` exposed
           (preload + electron.d.ts); credential types extended.
         - typecheck ✓, vite build ✓, handler present in compiled dist-electron/main.js ✓.
-- [ ] **Phase 2b — Settings UI: `settingsStore` qobuz fields + a "Connect Qobuz
-      Account" panel in SettingsView that calls the login window and persists the
-      token. This is what lets the deferred BrowserWindow flow be exercised in-app.**
+- [~] **Phase 2b — Settings UI. BUILT (typecheck ✓, vite build ✓, panel present
+      in built SettingsView chunk).**
+        - `settingsStore`: `qobuzUserId`/`qobuzToken` fields, loaded on startup;
+          `isQobuzConnected`, `connectQobuz()` (opens login window → persists
+          token encrypted), `disconnectQobuz()`.
+        - `SettingsView`: a "Qobuz · HI-RES" section (registered in the section
+          keyword/expand registries) with Connect / Connected-as / Disconnect.
+      **DEFERRED-VERIFY (the whole point of this phase):** the click → login
+      window → token capture → persist → "Connected" round-trip needs the
+      Electron app running + a real interactive Qobuz login (reCAPTCHA, real
+      account). Cannot be automated headlessly — this is the User's to exercise
+      by running `bun run electron:dev` (or an RC build) and clicking Connect.
+      UI strings are English literals for now (WIP); i18n keys come at polish.
 - [ ] Phase 3 — native download branch: add a `service` discriminator to
       `DownloadOptions`/`DownloadItem`; branch `processDownload` so Qobuz skips
       `decryptFile` (fetched file IS the output). This is the one real refactor —

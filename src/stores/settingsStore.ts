@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { setLocale } from '../i18n'
 
 export type ColorTheme = 'signal' | 'violet' | 'spotify' | 'rose' | 'ocean' | 'sunset' | 'mint' | 'dracula' | 'nord'
@@ -130,6 +130,9 @@ export interface Settings {
   spotifyClientId: string
   spotifyClientSecret: string
   spotifyUsername: string
+  // Qobuz integration (browser-minted token; see qobuzAuth.ts)
+  qobuzUserId: string
+  qobuzToken: string
 }
 
 export const defaultSettings: Settings = {
@@ -237,7 +240,10 @@ export const defaultSettings: Settings = {
   // Spotify integration
   spotifyClientId: '',
   spotifyClientSecret: '',
-  spotifyUsername: ''
+  spotifyUsername: '',
+  // Qobuz integration
+  qobuzUserId: '',
+  qobuzToken: ''
 }
 
 function applyColorTheme(theme: ColorTheme) {
@@ -540,6 +546,12 @@ export const useSettingsStore = defineStore('settings', () => {
           if (result.credentials.spotifyUsername) {
             settings.value.spotifyUsername = result.credentials.spotifyUsername
           }
+          if (result.credentials.qobuzUserId) {
+            settings.value.qobuzUserId = result.credentials.qobuzUserId
+          }
+          if (result.credentials.qobuzToken) {
+            settings.value.qobuzToken = result.credentials.qobuzToken
+          }
           return // Successfully loaded from userData
         }
       } catch (e) {
@@ -657,6 +669,33 @@ export const useSettingsStore = defineStore('settings', () => {
     settings.value.spotifyClientSecret = clientSecret
     settings.value.spotifyUsername = username
     await saveSecureSpotifyCredentials(clientId, clientSecret, username)
+  }
+
+  const isQobuzConnected = computed(() => !!settings.value.qobuzUserId && !!settings.value.qobuzToken)
+
+  /**
+   * Open the Qobuz login window (real OAuth login), capture the browser-minted
+   * token, persist it encrypted, and push it to the backend session. Returns
+   * true on success. See qobuzAuth.ts for why token auth is required.
+   */
+  async function connectQobuz(): Promise<{ success: boolean; error?: string }> {
+    if (!window.electronAPI?.qobuzLogin) return { success: false, error: 'Not available in browser' }
+    const res = await window.electronAPI.qobuzLogin.openLoginWindow()
+    if (!res.success || !res.userId || !res.token) {
+      return { success: false, error: res.error || 'Login was not completed' }
+    }
+    settings.value.qobuzUserId = res.userId
+    settings.value.qobuzToken = res.token
+    await window.electronAPI.storage.saveCredentials({ qobuzUserId: res.userId, qobuzToken: res.token })
+    return { success: true }
+  }
+
+  async function disconnectQobuz() {
+    settings.value.qobuzUserId = ''
+    settings.value.qobuzToken = ''
+    if (window.electronAPI?.storage) {
+      await window.electronAPI.storage.saveCredentials({ qobuzUserId: '', qobuzToken: '' })
+    }
   }
 
   function setColorTheme(theme: ColorTheme) {
@@ -845,6 +884,9 @@ export const useSettingsStore = defineStore('settings', () => {
     setTheme,
     setArl,
     setSpotifyCredentials,
+    isQobuzConnected,
+    connectQobuz,
+    disconnectQobuz,
     exportSettings,
     importSettings,
     exportConfiguration,

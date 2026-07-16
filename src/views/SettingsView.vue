@@ -33,6 +33,7 @@ const sectionSearchTerms: Record<string, string[]> = {
   other: ['other', 'update', 'compilation', 'separator', 'null', 'id3v1', 'various artists', 'casing', 'date format', 'preview', 'volume'],
   accounts: ['account', 'deezer', 'arl', 'login', 'token', 'authentication'],
   spotify: ['spotify', 'client', 'secret', 'import', 'playlist', 'username'],
+  qobuz: ['qobuz', 'hi-res', 'hires', 'flac', 'lossless', 'token', 'login', 'account', 'connect'],
   backup: ['backup', 'restore', 'export', 'import', 'recover', 'snapshot', 'segments', 'profile', 'sync', 'favourites', 'favorites', 'credentials', 'migrate']
 }
 
@@ -158,6 +159,7 @@ const expandedSections = ref({
   other: false,
   accounts: true,
   spotify: true,
+  qobuz: true,
   // Closed by default so it doesn't dominate the settings page; users open it
   // intentionally when they need to back up or restore (#72).
   backup: false
@@ -311,6 +313,38 @@ async function testSpotifyConnection() {
   } finally {
     spotifyLoading.value = false
   }
+}
+
+// --- Qobuz (WIP) ---
+const qobuzConnecting = ref(false)
+const qobuzStatus = ref<'idle' | 'success' | 'error'>('idle')
+const qobuzMessage = ref('')
+
+async function connectQobuz() {
+  qobuzConnecting.value = true
+  qobuzStatus.value = 'idle'
+  qobuzMessage.value = ''
+  try {
+    const res = await settingsStore.connectQobuz()
+    if (res.success) {
+      qobuzStatus.value = 'success'
+      qobuzMessage.value = 'Connected to Qobuz'
+    } else {
+      qobuzStatus.value = 'error'
+      qobuzMessage.value = res.error || 'Could not connect'
+    }
+  } catch (e: any) {
+    qobuzStatus.value = 'error'
+    qobuzMessage.value = e.message || 'Could not connect'
+  } finally {
+    qobuzConnecting.value = false
+  }
+}
+
+async function disconnectQobuz() {
+  await settingsStore.disconnectQobuz()
+  qobuzStatus.value = 'idle'
+  qobuzMessage.value = ''
 }
 
 function openSpotifyDeveloper() {
@@ -1990,6 +2024,61 @@ async function reindexLibrary() {
             {{ t('settings.spotify.credentialsHelp') }}
           </p>
         </div>
+      </div>
+    </section>
+
+    <!-- Qobuz Integration (WIP — feature/qobuz-integration) -->
+    <section v-if="isSectionVisible('qobuz')" class="card">
+      <h2
+        @click="toggleSection('qobuz')"
+        class="font-display text-[13px] uppercase tracking-[0.08em] border-b border-white/[0.08] pb-2 flex items-center gap-2 cursor-pointer hover:text-primary-400 transition-colors select-none"
+      >
+        <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+        </svg>
+        Qobuz <span class="font-mono text-[9px] px-1.5 py-0.5 border border-primary-500/40 text-primary-400 tracking-[0.12em]">HI-RES</span>
+        <svg
+          class="w-4 h-4 ml-auto transition-transform duration-200"
+          :class="{ 'rotate-180': expandedSections.qobuz }"
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </h2>
+
+      <div v-show="expandedSections.qobuz" class="space-y-5 pt-6">
+        <p class="text-sm text-foreground-muted">
+          Connect your Qobuz account to download hi-res FLAC (up to 24-bit/192&nbsp;kHz). A paid Qobuz plan is required; free accounts can't download.
+        </p>
+
+        <div v-if="settingsStore.isQobuzConnected" class="flex items-center gap-3">
+          <span class="font-mono text-[10.5px] tracking-[0.12em] uppercase text-green-400 border-l-2 border-green-400 pl-2">Connected · user {{ settingsStore.settings.qobuzUserId }}</span>
+          <button
+            @click="disconnectQobuz"
+            class="ml-auto px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-white/[0.1] text-foreground-muted hover:text-red-400 hover:border-red-400/50 transition-colors"
+          >
+            Disconnect
+          </button>
+        </div>
+
+        <button
+          v-else
+          type="button"
+          @click="connectQobuz"
+          :disabled="qobuzConnecting"
+          class="btn btn-primary font-mono text-[11px] uppercase tracking-[0.12em] disabled:opacity-50"
+        >
+          <span v-if="qobuzConnecting">Opening login…</span>
+          <span v-else>Connect Qobuz Account</span>
+        </button>
+
+        <div v-if="qobuzMessage" class="flex items-center gap-2">
+          <span :class="qobuzStatus === 'success' ? 'text-green-400' : 'text-red-400'" class="text-sm">{{ qobuzMessage }}</span>
+        </div>
+
+        <p class="text-xs text-foreground-muted pt-3 border-t border-white/[0.08]">
+          A Qobuz login window opens; sign in normally. Your session token is stored encrypted and refreshes when you reconnect.
+        </p>
       </div>
     </section>
 
