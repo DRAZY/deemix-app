@@ -877,7 +877,13 @@ export class Downloader extends EventEmitter {
 
       const q = options.quality === 'FLAC' ? 'flac' : options.quality === 'MP3_128' ? '128' : '320'
       const ext = q === 'flac' ? 'flac' : 'mp3'
-      const outputPath = path.join(options.outputPath, `${this.sanitizeFilename(artist)} - ${this.sanitizeFilename(title)}.${ext}`)
+
+      // Build the path from the user's folder-structure + track-naming templates
+      // (reuses the Deezer path builder via the Qobuz→trackInfo shim), then ensure
+      // the directory exists.
+      const shim = this.qobuzMetaToTrackInfo(meta)
+      const outputPath = this.buildOutputPath(shim, options, options.quality)
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true })
 
       const result = await downloadQobuzTrack(options.trackId, q as '128' | '320' | 'flac', outputPath, (recv, total) => {
         progress.downloaded = recv
@@ -891,7 +897,6 @@ export class Downloader extends EventEmitter {
       progress.status = 'tagging'
       this.emit('progress', progress)
       try {
-        const shim = this.qobuzMetaToTrackInfo(meta)
         const coverUrl = meta?.album?.image?.large || meta?.album?.image?.small
         let cover: Buffer | undefined
         if (coverUrl) {

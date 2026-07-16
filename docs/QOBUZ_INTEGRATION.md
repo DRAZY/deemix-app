@@ -213,3 +213,17 @@ for Qobuz — fetch the file, tag it, done.
   tagFlacFile (wired; verify with quality=FLAC).
 - Minor: disc number came back undefined for a single-disc track (media_number
   absent at track level) — cosmetic.
+
+## Folder-template parity (2026-07-16)
+
+- `processQobuzDownload` now builds the output path via the shared
+  `buildOutputPath(shim, options, quality)` — the SAME folder-structure +
+  track-naming template engine Deezer uses — instead of a flat hardcode.
+- `/api/qobuz/download` passes the full folderSettings/trackTemplates/
+  metadataSettings from the user's settings.
+- VERIFIED: download → `buildOutputPath - isSingle: true` in log, file lands at
+  the templated single path (flat "Artist - Title" per the user's settings,
+  matching Deezer single behavior). Fresh mtime confirms it's the new download.
+- GAP (next): album/playlist URL downloads still loop each track as an isSingle
+  track, so they don't yet group into an "Artist - Album/NN - Title" folder —
+  needs album-context (isSingle:false + albumFolder). Single tracks have parity.

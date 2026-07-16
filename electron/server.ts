@@ -3113,12 +3113,45 @@ export class DeemixServer extends EventEmitter {
       // Enqueue through the shared download queue so the item appears in the
       // Transfer Rack with live progress (Qobuz items route to the no-decrypt
       // path via the service discriminator). Returns the queue id immediately.
+      // Pass the same folder/template/metadata settings the Deezer path uses so
+      // Qobuz files follow the user's folder structure and tag settings.
       const qualityMap: Record<string, 'MP3_128' | 'MP3_320' | 'FLAC'> = { '128': 'MP3_128', '320': 'MP3_320', 'flac': 'FLAC' }
       const downloadId = await downloader.download({
         service: 'qobuz',
         trackId,
         outputPath: this.settings.downloadPath,
         quality: qualityMap[this.settings.quality] || 'MP3_320',
+        createFolders: true,
+        artistFolder: this.settings.createArtistFolder,
+        albumFolder: this.settings.createAlbumFolder,
+        embedArtwork: this.settings.embedArtwork,
+        isSingle: true,
+        folderSettings: {
+          createPlaylistFolder: this.settings.createPlaylistFolder,
+          createArtistFolder: this.settings.createArtistFolder,
+          createAlbumFolder: this.settings.createAlbumFolder,
+          createCDFolder: this.settings.createCDFolder,
+          createPlaylistStructure: this.settings.createPlaylistStructure,
+          createSinglesStructure: this.settings.createSinglesStructure,
+          playlistFolderTemplate: this.settings.playlistFolderTemplate,
+          albumFolderTemplate: this.settings.albumFolderTemplate,
+          artistFolderTemplate: this.settings.artistFolderTemplate,
+        },
+        trackTemplates: {
+          trackNameTemplate: this.settings.trackNameTemplate,
+          albumTrackTemplate: this.settings.albumTrackTemplate,
+          playlistTrackTemplate: this.settings.playlistTrackTemplate,
+        },
+        metadataSettings: {
+          tags: this.settings.tags,
+          albumCovers: this.settings.albumCovers,
+          artistSeparator: this.settings.artistSeparator,
+          dateFormatFlac: this.settings.dateFormatFlac,
+          titleCasing: this.settings.titleCasing,
+          artistCasing: this.settings.artistCasing,
+          removeAlbumVersion: this.settings.removeAlbumVersion,
+          featuredArtistsHandling: this.settings.featuredArtistsHandling,
+        } as any,
       })
       this.sendJSON(res, { success: true, downloadId })
     } catch (error: any) {
