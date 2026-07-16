@@ -54,10 +54,22 @@ for Qobuz — fetch the file, tag it, done.
       **Natural in-app fit:** capture the token by rendering play.qobuz.com/login
       in a sandboxed BrowserWindow and intercepting the `user/login` response —
       the *exact* pattern this app already uses for the Deezer ARL.
-- [ ] **Phase 1d — validate token auth end-to-end.** Set `QOBUZ_USER_ID` +
-      `QOBUZ_AUTH_TOKEN` in `~/.claude/.env` (from DevTools on a logged-in
-      play.qobuz.com), re-run the spike → validates token, resolves a hi-res
-      getFileUrl, sniffs `fLaC` magic bytes. Then Phases 2–6 proceed.
+- [x] **Phase 1d — VALIDATED END-TO-END (2026-07-16, real Studio account).**
+      `bun scripts/qobuz-spike.ts` with a browser-minted token proved the whole
+      chain through the committed service code:
+        - scrape app_id + candidate secrets ✓
+        - `loginWithToken` → token accepted, plan **Studio** ✓ (first 2xx auth call)
+        - `search` "get lucky" → 200, track 8767428 ✓
+        - `getFileUrl` → 200, real Akamai CDN URL, format 7 (24-bit/44.1 FLAC) ✓
+        - downloaded first bytes → **`fLaC` magic number ✓ — no-decryption CONFIRMED empirically**
+      **Critical implementation detail proven:** the working signing secret is
+      NOT the production literal — it's a per-timezone-derived candidate
+      (`extractSecretCandidates` collects all; `getFileUrl` resolves the winner by
+      trial and caches it). This is now in the code, not just a note.
+      Requested format 27 (24/192) degraded to 7 for this track = normal
+      quality-negotiation, not an error.
+      **Auth mechanism + native no-decrypt path are now proven, not assumed.**
+      Phases 2–6 are the remaining (real) integration work.
 - [ ] Phase 2 — credentials plumbing (settingsStore, SettingsView panel, main.ts
       safeStorage persistence + startup restore). Clone the Spotify section.
 - [ ] Phase 3 — native download branch: add a `service` discriminator to

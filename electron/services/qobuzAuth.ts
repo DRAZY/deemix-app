@@ -70,6 +70,12 @@ export interface QobuzFileUrl {
 
 class QobuzAuth {
   private appCreds: QobuzAppCredentials | null = null
+  // The bundle carries several candidate app_secrets (per-timezone obfuscated
+  // splits + literals); only ONE signs valid, and it is NOT the production
+  // literal (verified 2026-07-16: the working secret was a timezone-derived
+  // candidate). We collect all candidates and resolve the winner by trial on
+  // the first getFileUrl, then cache it.
+  private secretCandidates: string[] = []
   private session: QobuzSession | null = null
 
   isLoggedIn(): boolean {
@@ -98,49 +104,50 @@ class QobuzAuth {
 
     const bundle = await this.httpText(QOBUZ_PLAY_BASE + bundlePath)
 
-    // Extract app_id AND app_secret from the SAME production block — there are
-    // several appId/appSecret literals scattered through the bundle, and a
-    // first-match regex grabs the wrong secret (found during the 2026-07-16 live
-    // probe: production is appId 798273057 / appSecret 05a4851e…, but a stray
-    // f686f063… appears earlier and must not be picked up).
-    const prod = bundle.match(/production:\{api:\{appId:"(\d+)",appSecret:"([a-z0-9]{32})"/)
-    const appId = prod?.[1]
+    const appId = bundle.match(/production:\{api:\{appId:"(\d+)"/)?.[1]
     if (!appId) throw new Error('Qobuz: could not extract app_id from bundle')
 
-    let appSecret = prod?.[2] ?? ''
-
-    // Fallback: reconstruct from the obfuscated per-timezone seed/info/extras
-    // split used by older bundles (seed + info + extras, drop trailing 44, b64
-    // decode → utf8). Implemented lazily only if the literal is absent.
-    if (!appSecret) {
-      appSecret = this.reconstructSecretFromSeeds(bundle)
+    this.secretCandidates = this.extractSecretCandidates(bundle)
+    if (this.secretCandidates.length === 0) {
+      throw new Error('Qobuz: could not extract any app_secret candidates from bundle')
     }
-    if (!appSecret) throw new Error('Qobuz: could not extract app_secret from bundle')
 
-    this.appCreds = { appId, appSecret }
+    // appSecret here is the first candidate as a placeholder; the real one is
+    // resolved by trial in getFileUrl (see resolveSecret).
+    this.appCreds = { appId, appSecret: this.secretCandidates[0] }
     return this.appCreds
   }
 
   /**
-   * Legacy fallback secret extraction. Older bundles split the secret across
-   * `initialSeed("<seed>", window.utimezone.<tz>)` plus per-timezone
-   * `info`/`extras` base64 chunks; concatenate seed+info+extras, strip the
-   * trailing 44 chars, base64-decode. Returns '' if the layout isn't found.
+   * Collect every candidate app_secret from the bundle. The working secret is
+   * split across per-timezone `initialSeed("<seed>", window.utimezone.<tz>)`
+   * plus `name:"Region/City",info:"<b64>",extras:"<b64>"` blocks: concatenate
+   * seed+info+extras, drop the trailing 44 chars, base64-decode → utf8. We also
+   * include any literal appSecret values as fallbacks. Only one candidate signs
+   * valid (resolved at call time), so we return all of them.
    */
-  private reconstructSecretFromSeeds(bundle: string): string {
-    const seedMatch = bundle.match(/initialSeed\("([a-zA-Z0-9=]+)",window\.utimezone\.([a-z]+)\)/)
-    if (!seedMatch) return ''
-    const seed = seedMatch[1]
-    const tzInfo = bundle.match(
-      new RegExp(`name:"[a-z]+/[a-zA-Z_]+",info:"([a-zA-Z0-9=]+)",extras:"([a-zA-Z0-9=]+)"`)
-    )
-    if (!tzInfo) return ''
-    const combined = seed + tzInfo[1] + tzInfo[2]
-    try {
-      return Buffer.from(combined.slice(0, -44), 'base64').toString('utf-8')
-    } catch {
-      return ''
+  private extractSecretCandidates(bundle: string): string[] {
+    const seeds: Record<string, string> = {}
+    for (const m of bundle.matchAll(/initialSeed\("([\w=]+)",window\.utimezone\.([a-z]+)\)/g)) {
+      seeds[m[2]] = m[1]
     }
+    const info: Record<string, { info: string; extras: string }> = {}
+    for (const m of bundle.matchAll(/name:"[A-Za-z]+\/([A-Za-z_]+)",info:"([\w=]+)",extras:"([\w=]+)"/g)) {
+      info[m[1].toLowerCase()] = { info: m[2], extras: m[3] }
+    }
+    const candidates: string[] = []
+    for (const tz of Object.keys(seeds)) {
+      if (!info[tz]) continue
+      const combined = seeds[tz] + info[tz].info + info[tz].extras
+      try {
+        const secret = Buffer.from(combined.slice(0, -44), 'base64').toString('utf-8')
+        if (/^[a-z0-9]{32}$/.test(secret)) candidates.push(secret)
+      } catch {
+        /* skip malformed */
+      }
+    }
+    for (const m of bundle.matchAll(/appSecret:"([a-z0-9]{32})"/g)) candidates.push(m[1])
+    return [...new Set(candidates)]
   }
 
   /**
@@ -204,37 +211,55 @@ class QobuzAuth {
 
   /** Resolve a signed, direct download URL for a track at a requested format. */
   async getFileUrl(trackId: string | number, formatId: QobuzFormatId): Promise<QobuzFileUrl> {
-    const { appId, appSecret } = await this.fetchAppCredentials()
+    const { appId } = await this.fetchAppCredentials()
     if (!this.session) throw new Error('Qobuz: not logged in')
 
-    const ts = Math.floor(Date.now() / 1000)
-    const sig = this.signRequest(
-      'track',
-      'getFileUrl',
-      { format_id: formatId, intent: 'stream', track_id: trackId },
-      ts,
-      appSecret
-    )
-    const params = new URLSearchParams({
-      request_ts: String(ts),
-      request_sig: sig,
-      track_id: String(trackId),
-      format_id: String(formatId),
-      intent: 'stream',
-      app_id: appId,
-    })
-    const json = await this.apiGet(`track/getFileUrl?${params.toString()}`, true)
+    // Try candidate secrets in order; cache the first that signs valid (moves it
+    // to the front so subsequent calls hit it immediately). A signature failure
+    // is the only reason to advance — any other response (incl. a restrictions
+    // payload) means the secret was accepted.
+    let lastMessage = ''
+    for (const secret of this.secretCandidates) {
+      const ts = Math.floor(Date.now() / 1000)
+      const sig = this.signRequest(
+        'track',
+        'getFileUrl',
+        { format_id: formatId, intent: 'stream', track_id: trackId },
+        ts,
+        secret
+      )
+      const params = new URLSearchParams({
+        request_ts: String(ts),
+        request_sig: sig,
+        track_id: String(trackId),
+        format_id: String(formatId),
+        intent: 'stream',
+        app_id: appId,
+      })
+      const json = await this.apiGetRaw(`track/getFileUrl?${params.toString()}`, true)
 
-    if (!json?.url) {
-      return { url: '', formatId, restricted: true }
+      if (json?.status === 'error' && /signature/i.test(json?.message ?? '')) {
+        lastMessage = json.message
+        continue // wrong secret — try the next candidate
+      }
+      // Secret accepted. Pin it to the front for future calls.
+      this.secretCandidates = [secret, ...this.secretCandidates.filter((s) => s !== secret)]
+
+      if (!json?.url) return { url: '', formatId, restricted: true }
+      return {
+        url: json.url,
+        formatId: json.format_id ?? formatId,
+        mimeType: json.mime_type,
+        bitDepth: json.bit_depth,
+        samplingRate: json.sampling_rate,
+      }
     }
-    return {
-      url: json.url,
-      formatId: json.format_id ?? formatId,
-      mimeType: json.mime_type,
-      bitDepth: json.bit_depth,
-      samplingRate: json.sampling_rate,
-    }
+    throw new Error(`Qobuz: no app_secret candidate produced a valid signature (${lastMessage})`)
+  }
+
+  async search(query: string, limit = 10): Promise<any> {
+    const { appId } = await this.fetchAppCredentials()
+    return this.apiGet(`catalog/search?query=${encodeURIComponent(query)}&limit=${limit}&app_id=${appId}`, true)
   }
 
   async getTrack(trackId: string | number): Promise<any> {
@@ -264,6 +289,21 @@ class QobuzAuth {
       throw new Error(`Qobuz API ${pathAndQuery.split('?')[0]} failed: HTTP ${res.status}`)
     }
     return res.json()
+  }
+
+  /** Like apiGet but returns the parsed body regardless of HTTP status, so the
+   *  caller can inspect error payloads (used by getFileUrl's secret trial). */
+  private async apiGetRaw(pathAndQuery: string, auth = false): Promise<any> {
+    const headers: Record<string, string> = {}
+    if (this.appCreds) headers['X-App-Id'] = this.appCreds.appId
+    if (auth && this.session) headers['X-User-Auth-Token'] = this.session.userAuthToken
+
+    const res = await fetch(`${QOBUZ_API_BASE}/${pathAndQuery}`, { headers })
+    try {
+      return await res.json()
+    } catch {
+      return { status: 'error', message: `HTTP ${res.status}` }
+    }
   }
 
   private async httpText(url: string): Promise<string> {

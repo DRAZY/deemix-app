@@ -41,7 +41,14 @@ async function main() {
   const session = await qobuzAuth.loginWithToken(Number(userId), token)
   console.log('✓ Token accepted · userId', session.userId, '· plan', session.credentialLabel ?? '(unknown)')
 
-  const trackId = process.env.QOBUZ_TEST_TRACK_ID || '5966783' // sample
+  // Use an override, else search for a real, unrestricted track (proves search too).
+  let trackId = process.env.QOBUZ_TEST_TRACK_ID
+  if (!trackId) {
+    const results = await qobuzAuth.search('daft punk get lucky', 1)
+    trackId = String(results?.tracks?.items?.[0]?.id ?? '')
+    console.log('✓ Search OK · sample track:', results?.tracks?.items?.[0]?.title, '(' + trackId + ')')
+  }
+  if (!trackId) throw new Error('No track id to test')
   const fileUrl = await qobuzAuth.getFileUrl(trackId, QOBUZ_FORMAT.FLAC_HIRES_192)
   if (fileUrl.restricted || !fileUrl.url) {
     console.log('⚠ getFileUrl returned no URL (track not eligible at this quality on this account)')
