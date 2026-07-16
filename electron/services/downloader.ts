@@ -7,6 +7,8 @@ import { Blowfish } from 'egoroof-blowfish'
 import { deezerAuth } from './deezerAuth'
 import { applyMergeFromMeta, replayGainString, type ResolvedMeta, type RetagFields } from './retagger'
 import { libraryIndex } from './libraryIndex'
+import { qobuzAuth } from './qobuzAuth'
+import { downloadQobuzTrack } from './qobuzDownloader'
 
 export interface FolderSettings {
   createPlaylistFolder: boolean
@@ -95,6 +97,7 @@ export interface MetadataSettings {
 export interface DownloadOptions {
   trackId: string | number
   outputPath: string
+  service?: 'deezer' | 'qobuz'  // download backend; defaults to deezer
   quality: 'MP3_128' | 'MP3_320' | 'FLAC'
   bitrateFallback?: boolean  // Whether to fallback to lower bitrates if preferred unavailable
   isrcFallback?: boolean     // Whether to resolve an unavailable track to an ISRC-matched alternate release (may be a different master)
@@ -849,6 +852,52 @@ export class Downloader extends EventEmitter {
     }
   }
 
+  /**
+   * Qobuz download path — flows through the same queue/events as Deezer so it
+   * shows in the Transfer Rack with live progress, but skips the entire Deezer
+   * metadata/URL/decrypt pipeline: getFileUrl returns a plain file we stream to
+   * disk (see qobuzDownloader.ts). Naming is a sanitized "Artist - Title" for now
+   * (folder-template parity is a later slice).
+   */
+  private async processQobuzDownload(
+    downloadId: string,
+    options: DownloadOptions,
+    progress: DownloadProgress
+  ): Promise<void> {
+    progress.status = 'downloading'
+    this.emit('start', progress)
+    try {
+      const meta = await qobuzAuth.getTrack(options.trackId)
+      const artist = meta?.performer?.name || meta?.album?.artist?.name || 'Unknown Artist'
+      const title = meta?.title || `track-${options.trackId}`
+      progress.trackTitle = title
+      progress.trackArtist = artist
+      this.emit('progress', progress)
+
+      const q = options.quality === 'FLAC' ? 'flac' : options.quality === 'MP3_128' ? '128' : '320'
+      const ext = q === 'flac' ? 'flac' : 'mp3'
+      const outputPath = path.join(options.outputPath, `${this.sanitizeFilename(artist)} - ${this.sanitizeFilename(title)}.${ext}`)
+
+      const result = await downloadQobuzTrack(options.trackId, q as '128' | '320' | 'flac', outputPath, (recv, total) => {
+        progress.downloaded = recv
+        progress.total = total
+        progress.progress = total ? Math.floor((recv / total) * 100) : 0
+        this.emit('progress', progress)
+      })
+
+      progress.status = 'completed'
+      progress.progress = 100
+      this.emit('complete', { ...progress, path: result.path })
+    } catch (error: any) {
+      console.error(`[Downloader] Qobuz download error for ${downloadId}:`, error.message)
+      progress.status = 'error'
+      progress.error = error.message
+      this.emit('error', progress)
+    }
+    // NOTE: concurrency (currentDownloads--) and queue re-processing are handled
+    // by the processQueue() wrapper's .finally(); do not touch them here.
+  }
+
   private async processDownload(downloadId: string, options: DownloadOptions): Promise<void> {
     console.log(`[Downloader] processDownload starting for ${downloadId}, track: ${options.trackId}`)
     console.log(`[Downloader] Requested quality: ${options.quality}`)
@@ -857,6 +906,11 @@ export class Downloader extends EventEmitter {
     if (!progress) {
       console.error(`[Downloader] No progress found for ${downloadId}`)
       return
+    }
+
+    // Qobuz downloads use a completely separate, decryption-free path.
+    if (options.service === 'qobuz') {
+      return this.processQobuzDownload(downloadId, options, progress)
     }
 
     progress.status = 'downloading'

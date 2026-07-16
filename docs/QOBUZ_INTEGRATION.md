@@ -163,3 +163,20 @@ for Qobuz — fetch the file, tag it, done.
   not a silent hang.
 - Paid account required to build/test. Free = no downloads.
 - ToS gray area = same as Deezer, not worse. Extend the existing disclaimer.
+
+## Phase 3b-2 — queue integration (2026-07-16)
+
+- `DownloadOptions.service?: 'deezer'|'qobuz'`; `processDownload` branches to
+  `processQobuzDownload` at the top (no-decrypt path, emits the same
+  start/progress/complete/error events as Deezer → shows in the Transfer Rack).
+- Concurrency: the Qobuz branch does NOT touch `currentDownloads` or call
+  `processQueue` — the `processQueue()` wrapper's `.finally()` owns that (verified
+  no desync).
+- `/api/qobuz/download` now enqueues via `downloader.download({service:'qobuz'})`
+  and returns a `downloadId` immediately.
+- VERIFIED live (:6596): enqueue → app log shows the item through
+  `processQueue → processDownload → finished`, currentDownloads back to 0, and a
+  real 9.5MB `Radiohead - Creep.mp3` produced. Visual Transfer Rack rendering not
+  yet eyeballed (same events, so wired) — User can watch it live.
+- Still TODO: folder-template naming parity (Phase 3c tags), album/playlist
+  fan-out, and the Link Analyzer URL entry point (Phase 4).

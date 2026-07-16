@@ -11,7 +11,6 @@ import { downloader, DownloadProgress } from './services/downloader'
 import { spotifyAPI } from './services/spotifyAPI'
 import { spotifyConverter } from './services/spotifyConverter'
 import { qobuzAuth } from './services/qobuzAuth'
-import { downloadQobuzTrack } from './services/qobuzDownloader'
 import { playlistSync } from './services/playlistSync'
 import { artistSync, type FirstSyncMode, type ArtistSyncFilters } from './services/artistSync'
 import { scanFolder, retagFile, retagFileInFolder, type RetagFields } from './services/retagger'
@@ -3089,28 +3088,20 @@ export class DeemixServer extends EventEmitter {
         this.sendJSON(res, { success: false, error: 'Invalid download path' }, 400)
         return
       }
-      const meta = await qobuzAuth.getTrack(trackId)
-      const artist = this.sanitizeName(meta?.performer?.name || meta?.album?.artist?.name || 'Unknown Artist')
-      const title = this.sanitizeName(meta?.title || `track-${trackId}`)
-      const ext = this.settings.quality === 'flac' ? 'flac' : 'mp3'
-      const outputPath = join(this.settings.downloadPath, `${artist} - ${title}.${ext}`)
-
-      const result = await downloadQobuzTrack(trackId, this.settings.quality, outputPath)
-      this.sendJSON(res, {
-        success: true,
-        path: result.path,
-        bytes: result.bytes,
-        formatId: result.formatId,
-        bitDepth: result.bitDepth,
-        samplingRate: result.samplingRate,
+      // Enqueue through the shared download queue so the item appears in the
+      // Transfer Rack with live progress (Qobuz items route to the no-decrypt
+      // path via the service discriminator). Returns the queue id immediately.
+      const qualityMap: Record<string, 'MP3_128' | 'MP3_320' | 'FLAC'> = { '128': 'MP3_128', '320': 'MP3_320', 'flac': 'FLAC' }
+      const downloadId = await downloader.download({
+        service: 'qobuz',
+        trackId,
+        outputPath: this.settings.downloadPath,
+        quality: qualityMap[this.settings.quality] || 'MP3_320',
       })
+      this.sendJSON(res, { success: true, downloadId })
     } catch (error: any) {
       this.sendJSON(res, { success: false, error: error.message }, 500)
     }
-  }
-
-  private sanitizeName(name: string): string {
-    return name.replace(/[/\\:*?"<>|]/g, '_').replace(/\s+/g, ' ').trim().slice(0, 180)
   }
 
   private async handleStaticFile(path: string, res: ServerResponse): Promise<void> {
