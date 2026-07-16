@@ -93,12 +93,20 @@ for Qobuz — fetch the file, tag it, done.
           token encrypted), `disconnectQobuz()`.
         - `SettingsView`: a "Qobuz · HI-RES" section (registered in the section
           keyword/expand registries) with Connect / Connected-as / Disconnect.
-      **DEFERRED-VERIFY (the whole point of this phase):** the click → login
-      window → token capture → persist → "Connected" round-trip needs the
-      Electron app running + a real interactive Qobuz login (reCAPTCHA, real
-      account). Cannot be automated headlessly — this is the User's to exercise
-      by running `bun run electron:dev` (or an RC build) and clicking Connect.
+      **VERIFIED END-TO-END IN-APP (2026-07-16, real login).** Connect → login
+      window → user authenticates → token captured → persisted → "Connected ·
+      user 1043055". Evidence: app log `token captured via user/login response
+      for user 1043055`; credentials.json gained encrypted `qobuzUserId`/`qobuzToken`.
+      Two fixes were needed along the way (both committed):
+        1. **Window ≥1024px** — Qobuz's web player hard-refuses to render narrower
+           ("needs a screen size at least 1024 pixels"). Was 520 (Deezer clone).
+        2. **Token is NOT in any named localStorage key** — live diagnostic showed
+           only `localuser`/`settings-<id>`/`player-0`/analytics; no token field.
+           So capture reads the **user/login network RESPONSE via CDP**
+           (Network.getResponseBody), and the partition is cleared on open so a
+           fresh login POST fires. This is how streamrip PR #955 does it.
       UI strings are English literals for now (WIP); i18n keys come at polish.
+      **Phase 2 complete. Next: Phase 3 — native download branch.**
 - [ ] Phase 3 — native download branch: add a `service` discriminator to
       `DownloadOptions`/`DownloadItem`; branch `processDownload` so Qobuz skips
       `decryptFile` (fetched file IS the output). This is the one real refactor —
