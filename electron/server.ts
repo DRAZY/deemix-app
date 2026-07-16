@@ -10,6 +10,8 @@ import { urlHasHost } from './utils/urlHost'
 import { downloader, DownloadProgress } from './services/downloader'
 import { spotifyAPI } from './services/spotifyAPI'
 import { spotifyConverter } from './services/spotifyConverter'
+import { qobuzAuth } from './services/qobuzAuth'
+import { downloadQobuzTrack } from './services/qobuzDownloader'
 import { playlistSync } from './services/playlistSync'
 import { artistSync, type FirstSyncMode, type ArtistSyncFilters } from './services/artistSync'
 import { scanFolder, retagFile, retagFileInFolder, type RetagFields } from './services/retagger'
@@ -848,6 +850,20 @@ export class DeemixServer extends EventEmitter {
 
       case '/info-spotify':
         this.handleInfoSpotify(res)
+        break
+
+      // --- Qobuz (WIP) ---
+      case '/api/qobuz/session':
+        await this.handleQobuzSession(req, res)
+        break
+      case '/api/qobuz/status':
+        this.handleQobuzStatus(res)
+        break
+      case '/api/qobuz/search':
+        await this.handleQobuzSearch(url, res)
+        break
+      case '/api/qobuz/download':
+        await this.handleQobuzDownload(req, res)
         break
 
       // Playlist Sync routes
@@ -3004,6 +3020,97 @@ export class DeemixServer extends EventEmitter {
       configured: spotifyAPI.hasCredentials(),
       message: spotifyAPI.hasCredentials() ? 'Spotify is configured' : 'Spotify credentials not set'
     })
+  }
+
+  // --- Qobuz (WIP) ---
+
+  /** Push a browser-captured token into the backend session (called by the
+   *  renderer right after Connect so Qobuz is usable without an app restart). */
+  private async handleQobuzSession(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const userId = Number(body.userId)
+      const token = String(body.token || '')
+      if (!userId || !token) {
+        this.sendJSON(res, { success: false, error: 'userId and token required' }, 400)
+        return
+      }
+      const session = await qobuzAuth.loginWithToken(userId, token)
+      this.sendJSON(res, { success: true, userId: session.userId, plan: session.credentialLabel })
+    } catch (error: any) {
+      this.sendJSON(res, { success: false, error: error.message }, 401)
+    }
+  }
+
+  private handleQobuzStatus(res: ServerResponse): void {
+    const s = qobuzAuth.getSession()
+    this.sendJSON(res, {
+      connected: qobuzAuth.isLoggedIn(),
+      userId: s?.userId,
+      plan: s?.credentialLabel,
+    })
+  }
+
+  private async handleQobuzSearch(url: URL, res: ServerResponse): Promise<void> {
+    const query = url.searchParams.get('q')
+    const limit = Number(url.searchParams.get('limit') || '25')
+    if (!query) {
+      this.sendJSON(res, { error: 'q parameter required' }, 400)
+      return
+    }
+    if (!qobuzAuth.isLoggedIn()) {
+      this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
+      return
+    }
+    try {
+      const results = await qobuzAuth.search(query, limit)
+      this.sendJSON(res, results)
+    } catch (error: any) {
+      this.sendJSON(res, { error: error.message }, 500)
+    }
+  }
+
+  /** Download a single Qobuz track to the library folder (no-decrypt path).
+   *  Full queue/UI + folder-template integration is the next slice; this writes
+   *  a sanitized "Artist - Title.flac" so the mechanic is usable and testable. */
+  private async handleQobuzDownload(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const trackId = body.trackId
+      if (!trackId) {
+        this.sendJSON(res, { success: false, error: 'trackId required' }, 400)
+        return
+      }
+      if (!qobuzAuth.isLoggedIn()) {
+        this.sendJSON(res, { success: false, error: 'Qobuz not connected' }, 401)
+        return
+      }
+      if (!validateDownloadPath(this.settings.downloadPath)) {
+        this.sendJSON(res, { success: false, error: 'Invalid download path' }, 400)
+        return
+      }
+      const meta = await qobuzAuth.getTrack(trackId)
+      const artist = this.sanitizeName(meta?.performer?.name || meta?.album?.artist?.name || 'Unknown Artist')
+      const title = this.sanitizeName(meta?.title || `track-${trackId}`)
+      const ext = this.settings.quality === 'flac' ? 'flac' : 'mp3'
+      const outputPath = join(this.settings.downloadPath, `${artist} - ${title}.${ext}`)
+
+      const result = await downloadQobuzTrack(trackId, this.settings.quality, outputPath)
+      this.sendJSON(res, {
+        success: true,
+        path: result.path,
+        bytes: result.bytes,
+        formatId: result.formatId,
+        bitDepth: result.bitDepth,
+        samplingRate: result.samplingRate,
+      })
+    } catch (error: any) {
+      this.sendJSON(res, { success: false, error: error.message }, 500)
+    }
+  }
+
+  private sanitizeName(name: string): string {
+    return name.replace(/[/\\:*?"<>|]/g, '_').replace(/\s+/g, ' ').trim().slice(0, 180)
   }
 
   private async handleStaticFile(path: string, res: ServerResponse): Promise<void> {

@@ -115,11 +115,20 @@ for Qobuz — fetch the file, tag it, done.
       independently as FLAC 24-bit/44.1kHz, 248s → COMPLETE VALID FLAC.
       Finding: Qobuz FLAC arrives with NO embedded title/artist tags, so tags
       must be written from the API metadata (Phase 3c).
-- [ ] Phase 3b — wire into the app: `service` discriminator on
-      `DownloadOptions`/`DownloadItem`; branch the queue so Qobuz items route to
-      `downloadQobuzTrack` (skipping the Deezer `deezerAuth`/`decryptFile` path);
-      `/api/qobuz/{search,track,album,playlist,download}` routes; folder/naming
-      templates applied to the output path.
+- [~] Phase 3b — backend routes + session wiring. DONE + VERIFIED (2026-07-16,
+      live against the running app on :6596).
+        - `/api/qobuz/session` (POST) → pushes a captured token into the backend
+          session; `connectQobuz` now calls it so Qobuz works without a restart.
+        - `/api/qobuz/status` → **HTTP 200** `{connected:true, userId:1043055}`.
+        - `/api/qobuz/search?q=` → **HTTP 200** (found "Creep" / Radiohead).
+        - `/api/qobuz/download` (POST {trackId}) → **HTTP 200**, wrote
+          `Radiohead - Creep.mp3` (9.55 MB) to the library; respects the app's
+          quality setting (came down MP3-320 because quality=320; FLAC when flac).
+        - Boot restore confirmed: `[Main] Qobuz session restored from storage`.
+      Still simple: writes "Artist - Title.ext" (no folder-template structure yet)
+      and is not yet in the Transfer Rack queue/UI — that's Phase 3b-2.
+- [ ] Phase 3b-2 — full queue/UI integration (`service` discriminator so Qobuz
+      items show in the Transfer Rack with progress) + folder/naming templates.
 - [ ] Phase 3c — tag the downloaded FLAC from Qobuz API metadata (title, artist,
       album, ISRC/UPC, cover) since files arrive untagged.
 - [ ] Phase 4 — catalog + Link Analyzer: `isQobuzUrl` in BOTH `urlHost.ts`

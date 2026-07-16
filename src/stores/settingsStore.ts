@@ -687,6 +687,18 @@ export const useSettingsStore = defineStore('settings', () => {
     settings.value.qobuzUserId = res.userId
     settings.value.qobuzToken = res.token
     await window.electronAPI.storage.saveCredentials({ qobuzUserId: res.userId, qobuzToken: res.token })
+
+    // Push into the backend session so Qobuz is usable immediately (no restart).
+    try {
+      const port = window.electronAPI ? await window.electronAPI.getServerPort() : 6595
+      await fetch(`http://127.0.0.1:${port}/api/qobuz/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: res.userId, token: res.token }),
+      })
+    } catch (e) {
+      console.error('[Settings] Failed to push Qobuz session to backend:', e)
+    }
     return { success: true }
   }
 
