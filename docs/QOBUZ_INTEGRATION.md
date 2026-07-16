@@ -180,3 +180,21 @@ for Qobuz — fetch the file, tag it, done.
   yet eyeballed (same events, so wired) — User can watch it live.
 - Still TODO: folder-template naming parity (Phase 3c tags), album/playlist
   fan-out, and the Link Analyzer URL entry point (Phase 4).
+
+## Phase 4 — URL entry point / Link Analyzer (2026-07-16)
+
+- `isQobuzUrl` added to BOTH urlHost.ts copies (matches qobuz.com incl.
+  open./play./www.).
+- `qobuzAuth.parseUrl` (track/album/playlist/artist + id, handles open + store
+  forms) and `analyzeUrl`; `/api/qobuz/analyze` route.
+- LinkAnalyzerView: Qobuz branch in `analyzeLink` → `analyzeQobuzLink` → renders
+  a Qobuz result card with a Download button; `downloadQobuz` enqueues the
+  track (or every album/playlist track) via /api/qobuz/download.
+- VERIFIED (backend, live :6596): analyze track URL → 200 (Creep/Radiohead);
+  analyze real album URL → 200 (OK Computer OKNOTOK, 23 tracks). Frontend
+  typecheck ✓ / build ✓ / branch present in built LinkAnalyzerView chunk.
+- DEFERRED-VERIFY: the in-app paste→analyze→download→rack interaction (needs the
+  running app + a click) — User can now exercise it live: Link Analyzer → paste a
+  Qobuz URL → Download.
+- Still TODO: folder-template naming parity + Qobuz tags from API metadata
+  (Phase 3c/5); i18n strings; album/playlist progress grouping in the rack.

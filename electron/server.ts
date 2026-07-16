@@ -861,6 +861,9 @@ export class DeemixServer extends EventEmitter {
       case '/api/qobuz/search':
         await this.handleQobuzSearch(url, res)
         break
+      case '/api/qobuz/analyze':
+        await this.handleQobuzAnalyze(req, res)
+        break
       case '/api/qobuz/download':
         await this.handleQobuzDownload(req, res)
         break
@@ -3048,6 +3051,25 @@ export class DeemixServer extends EventEmitter {
       userId: s?.userId,
       plan: s?.credentialLabel,
     })
+  }
+
+  private async handleQobuzAnalyze(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const link = String(body.url || '')
+      if (!link) {
+        this.sendJSON(res, { error: 'url required' }, 400)
+        return
+      }
+      if (!qobuzAuth.isLoggedIn()) {
+        this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
+        return
+      }
+      const result = await qobuzAuth.analyzeUrl(link)
+      this.sendJSON(res, result)
+    } catch (error: any) {
+      this.sendJSON(res, { error: error.message }, 400)
+    }
   }
 
   private async handleQobuzSearch(url: URL, res: ServerResponse): Promise<void> {

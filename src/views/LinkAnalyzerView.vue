@@ -5,7 +5,7 @@ import { useDownloadStore } from '../stores/downloadStore'
 import { useAuthStore } from '../stores/authStore'
 import { useToastStore } from '../stores/toastStore'
 import BackButton from '../components/BackButton.vue'
-import { isDeezerUrl, isSpotifyUrl } from '../utils/urlHost'
+import { isDeezerUrl, isSpotifyUrl, isQobuzUrl } from '../utils/urlHost'
 import ContextMenu from '../components/ContextMenu.vue'
 import { useContextMenu } from '../composables/useContextMenu'
 
@@ -27,6 +27,10 @@ const spotifyResult = ref<any>(null)
 const isConverting = ref(false)
 const conversionResult = ref<any>(null)
 const conversionProgress = ref({ current: 0, total: 0 })
+
+// Qobuz-specific state (WIP)
+const qobuzResult = ref<any>(null)
+const qobuzDownloading = ref(false)
 
 // Get the actual server port on mount
 onMounted(async () => {
@@ -104,7 +108,7 @@ const subtitle = computed(() => {
 async function analyzeLink() {
   const url = linkInput.value.trim()
   if (!url) {
-    error.value = 'Please enter a Deezer or Spotify link'
+    error.value = 'Please enter a Deezer, Spotify, or Qobuz link'
     return
   }
 
@@ -113,6 +117,7 @@ async function analyzeLink() {
   result.value = null
   spotifyResult.value = null
   conversionResult.value = null
+  qobuzResult.value = null
   isSpotifyLink.value = false
 
   try {
@@ -125,16 +130,63 @@ async function analyzeLink() {
     if (isSpotifyUrl(url)) {
       isSpotifyLink.value = true
       await analyzeSpotifyLink(url)
+    } else if (isQobuzUrl(url)) {
+      await analyzeQobuzLink(url)
     } else if (isDeezerUrl(url)) {
       await analyzeDeezerLink(url)
     } else {
-      error.value = 'Please enter a valid Deezer or Spotify link'
+      error.value = 'Please enter a valid Deezer, Spotify, or Qobuz link'
     }
   } catch (err: any) {
     console.error('[LinkAnalyzer] Error:', err)
     error.value = `Failed to connect to server (port ${serverPort.value}). ${err.message || ''}`
   } finally {
     isAnalyzing.value = false
+  }
+}
+
+async function analyzeQobuzLink(url: string) {
+  const resp = await fetch(`http://localhost:${serverPort.value}/api/qobuz/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url }),
+  })
+  const data = await resp.json()
+  if (!resp.ok) {
+    error.value = data.error === 'Qobuz not connected'
+      ? 'Connect your Qobuz account in Settings first.'
+      : data.error || 'Failed to analyze Qobuz link'
+    return
+  }
+  qobuzResult.value = data
+}
+
+// Collect the track ids a Qobuz analyze result implies (single track, or all
+// tracks of an album/playlist).
+function qobuzTrackIds(q: any): (string | number)[] {
+  if (!q) return []
+  if (q.type === 'track') return [q.id]
+  const items = q.data?.tracks?.items || []
+  return items.map((t: any) => t.id).filter(Boolean)
+}
+
+async function downloadQobuz() {
+  const ids = qobuzTrackIds(qobuzResult.value)
+  if (!ids.length) return
+  qobuzDownloading.value = true
+  try {
+    for (const trackId of ids) {
+      await fetch(`http://localhost:${serverPort.value}/api/qobuz/download`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trackId }),
+      })
+    }
+    toastStore.success(`Queued ${ids.length} Qobuz track${ids.length > 1 ? 's' : ''} for download`)
+  } catch (e: any) {
+    toastStore.error(`Qobuz download failed: ${e.message}`)
+  } finally {
+    qobuzDownloading.value = false
   }
 }
 
@@ -905,6 +957,37 @@ async function pasteLink() {
           <div class="flex-1 h-px bg-white/[0.06]"></div>
         </div>
         <p class="text-sm text-foreground-muted">Login to view country availability</p>
+      </div>
+    </div>
+
+    <!-- Qobuz Results Section (WIP) -->
+    <div v-if="qobuzResult" class="bg-background-secondary/60 border border-white/[0.08] p-5">
+      <div class="flex items-center gap-4">
+        <img
+          v-if="qobuzResult.data?.image?.large || qobuzResult.data?.album?.image?.large"
+          :src="qobuzResult.data?.image?.large || qobuzResult.data?.album?.image?.large"
+          class="w-24 h-24 object-cover border border-white/[0.08]"
+          alt="cover"
+        />
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="font-mono text-[10px] tracking-[0.12em] uppercase text-primary-400 border border-primary-500/40 px-1.5 py-0.5">{{ qobuzResult.type }}</span>
+            <span class="font-mono text-[10px] tracking-[0.12em] uppercase text-foreground-muted">Qobuz</span>
+          </div>
+          <h3 class="text-lg font-semibold truncate">{{ qobuzResult.data?.title }}</h3>
+          <p class="text-foreground-muted truncate">
+            {{ qobuzResult.data?.performer?.name || qobuzResult.data?.artist?.name }}
+          </p>
+          <p v-if="qobuzResult.data?.tracks?.total" class="text-sm text-foreground-muted mt-1">{{ qobuzResult.data.tracks.total }} tracks</p>
+        </div>
+        <button
+          @click="downloadQobuz"
+          :disabled="qobuzDownloading"
+          class="btn btn-primary font-mono text-[11px] uppercase tracking-[0.12em] disabled:opacity-50 flex-shrink-0"
+        >
+          <span v-if="qobuzDownloading">Queuing…</span>
+          <span v-else>Download ↓</span>
+        </button>
       </div>
     </div>
 

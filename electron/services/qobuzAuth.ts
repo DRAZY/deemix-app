@@ -262,6 +262,29 @@ class QobuzAuth {
     return this.apiGet(`catalog/search?query=${encodeURIComponent(query)}&limit=${limit}&app_id=${appId}`, true)
   }
 
+  /**
+   * Parse a Qobuz URL into a {type, id}. Handles the web-player/open forms
+   * (open.qobuz.com/track/ID, play.qobuz.com/album/ID) and the store form
+   * (www.qobuz.com/us-en/album/slug/ID). Returns null if not recognized.
+   */
+  parseUrl(url: string): { type: 'track' | 'album' | 'playlist' | 'artist'; id: string } | null {
+    const m = url.match(/(?:^|\/)(track|album|playlist|artist)\/(?:[^/]+\/)*([A-Za-z0-9]+)(?:[/?#]|$)/)
+    if (!m) return null
+    return { type: m[1] as any, id: m[2] }
+  }
+
+  /** Resolve a pasted Qobuz URL to its catalog object (track/album/playlist/artist). */
+  async analyzeUrl(url: string): Promise<{ type: string; id: string; data: any }> {
+    const parsed = this.parseUrl(url)
+    if (!parsed) throw new Error('Unrecognized Qobuz URL')
+    const data =
+      parsed.type === 'track' ? await this.getTrack(parsed.id)
+      : parsed.type === 'album' ? await this.getAlbum(parsed.id)
+      : parsed.type === 'playlist' ? await this.getPlaylist(parsed.id)
+      : await this.apiGet(`artist/get?artist_id=${parsed.id}&app_id=${(await this.fetchAppCredentials()).appId}`, true)
+    return { type: parsed.type, id: parsed.id, data }
+  }
+
   async getTrack(trackId: string | number): Promise<any> {
     const { appId } = await this.fetchAppCredentials()
     return this.apiGet(`track/get?track_id=${trackId}&app_id=${appId}`, true)
