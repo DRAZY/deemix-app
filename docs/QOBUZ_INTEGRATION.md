@@ -227,3 +227,17 @@ for Qobuz — fetch the file, tag it, done.
 - GAP (next): album/playlist URL downloads still loop each track as an isSingle
   track, so they don't yet group into an "Artist - Album/NN - Title" folder —
   needs album-context (isSingle:false + albumFolder). Single tracks have parity.
+
+## Album-folder grouping (2026-07-16) — folder parity COMPLETE
+
+- Route accepts `partOfAlbum` + optional `album {title,artist}`; when set,
+  `isSingle:false` + albumContext, so buildOutputPath creates the album folder.
+  (The shim already carried per-track album title/artist; isSingle:false was the
+  missing trigger.)
+- LinkAnalyzer passes partOfAlbum + album for album/playlist downloads.
+- VERIFIED: 2 tracks of "OK Computer OKNOTOK" landed in
+  `Radiohead - OK Computer OKNOTOK 1997 2017/01 - Airbag (Remastered).mp3` +
+  `02 - Paranoid Android (Remastered).mp3`. Singles + albums now both have full
+  folder/naming parity with the Deezer path.
+- Remaining polish: i18n strings; album/playlist grouped progress in the rack
+  (they currently appear as individual track items).

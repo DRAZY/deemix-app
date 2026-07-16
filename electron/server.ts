@@ -3125,7 +3125,10 @@ export class DeemixServer extends EventEmitter {
         artistFolder: this.settings.createArtistFolder,
         albumFolder: this.settings.createAlbumFolder,
         embedArtwork: this.settings.embedArtwork,
-        isSingle: true,
+        // When part of an album/playlist download, mark NOT-single so the album
+        // folder + album track template apply (tracks nest in "Artist - Album/").
+        isSingle: body.partOfAlbum !== true,
+        albumContext: body.album ? { albumTitle: body.album.title, albumArtist: body.album.artist } as any : undefined,
         folderSettings: {
           createPlaylistFolder: this.settings.createPlaylistFolder,
           createArtistFolder: this.settings.createArtistFolder,

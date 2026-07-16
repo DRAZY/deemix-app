@@ -171,15 +171,21 @@ function qobuzTrackIds(q: any): (string | number)[] {
 }
 
 async function downloadQobuz() {
-  const ids = qobuzTrackIds(qobuzResult.value)
+  const q = qobuzResult.value
+  const ids = qobuzTrackIds(q)
   if (!ids.length) return
+  // Album/playlist tracks download as part of a set → nest in an album folder.
+  const partOfAlbum = q.type === 'album' || q.type === 'playlist'
+  const album = q.type === 'album'
+    ? { title: q.data?.title, artist: q.data?.artist?.name }
+    : undefined
   qobuzDownloading.value = true
   try {
     for (const trackId of ids) {
       await fetch(`http://localhost:${serverPort.value}/api/qobuz/download`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trackId }),
+        body: JSON.stringify({ trackId, partOfAlbum, album }),
       })
     }
     toastStore.success(`Queued ${ids.length} Qobuz track${ids.length > 1 ? 's' : ''} for download`)
