@@ -492,9 +492,13 @@ export const useDownloadStore = defineStore('downloads', () => {
     saveDownloads()
 
     try {
-      const requestBody: Record<string, any> = { trackId: track.id }
-      if (playlistName) requestBody.playlistName = playlistName
-      const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/download`, {
+      // Qobuz-sourced search results route to the Qobuz download endpoint (which
+      // returns { downloadId }); Deezer uses /api/download (returns { id }).
+      const isQobuz = (track as any).source === 'qobuz'
+      const requestBody: Record<string, any> = { trackId: isQobuz ? ((track as any).qobuzId ?? track.id) : track.id }
+      if (playlistName && !isQobuz) requestBody.playlistName = playlistName
+      const endpoint = isQobuz ? '/api/qobuz/download' : '/api/download'
+      const response = await fetch(`http://127.0.0.1:${serverPort.value}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)
@@ -515,10 +519,11 @@ export const useDownloadStore = defineStore('downloads', () => {
       }
 
       const data = await response.json()
-      if (data.id) {
-        item.id = data.id
+      const dlId = data.id || data.downloadId
+      if (dlId) {
+        item.id = dlId
         saveDownloads()
-        registerForPolling(data.id, [data.id], 'track')
+        registerForPolling(dlId, [dlId], 'track')
       } else {
         throw new Error('Server did not return a download ID')
       }
@@ -530,6 +535,12 @@ export const useDownloadStore = defineStore('downloads', () => {
 
   async function addAlbumDownload(album: Album, tracks: Track[], refreshTags = false) {
     const toastStore = useToastStore()
+
+    // Qobuz-sourced album → grouped Qobuz download path.
+    if ((album as any).source === 'qobuz') {
+      await addQobuzAlbumDownload({ type: 'album', id: String((album as any).qobuzId ?? album.id), data: (album as any).qobuzData || album })
+      return
+    }
 
     // Check if already downloaded (completed). Refresh-tags intentionally
     // re-processes existing files, so it bypasses this guard.

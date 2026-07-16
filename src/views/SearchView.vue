@@ -31,6 +31,8 @@ const bulkAborted = ref(false)
 
 const searchQuery = ref('')
 const activeTab = ref<'all' | 'track' | 'album' | 'artist' | 'playlist'>('all')
+const searchSource = ref<'deezer' | 'qobuz'>('deezer')
+const qobuzConnected = ref(false)
 const isLoading = ref(false)
 const hasError = ref(false)
 const showHistory = ref(false)
@@ -203,10 +205,28 @@ const resultCounts = computed(() => ({
   playlists: pagination.value.playlists.total || results.value.playlists.length
 }))
 
+// Whether the Qobuz account is connected (gates the Qobuz source toggle).
+async function checkQobuzConnected() {
+  try {
+    const port = window.electronAPI ? await window.electronAPI.getServerPort() : serverPort.value
+    const r = await fetch(`http://127.0.0.1:${port}/api/qobuz/status`)
+    const d = await r.json()
+    qobuzConnected.value = !!d.connected
+  } catch { qobuzConnected.value = false }
+}
+
+// Switch search source; if there's a query, re-run the search immediately.
+function setSearchSource(src: 'deezer' | 'qobuz') {
+  if (searchSource.value === src) return
+  searchSource.value = src
+  if (searchQuery.value.trim()) performSearch()
+}
+
 onMounted(async () => {
   if (window.electronAPI) {
     serverPort.value = await window.electronAPI.getServerPort()
   }
+  checkQobuzConnected()
   if (route.query.paste) {
     // Global paste routed here — trigger bulk download
     const pasteText = route.query.paste as string
@@ -249,6 +269,50 @@ function resetPagination() {
   results.value = { tracks: [], albums: [], artists: [], playlists: [] }
 }
 
+// Map Qobuz catalog objects into the Deezer-shaped objects the cards render,
+// tagged with source:'qobuz' + qobuzId so downloadStore routes them correctly.
+function mapQobuzTrack(t: any) {
+  return {
+    id: t.id, title: t.title, duration: t.duration,
+    artist: { name: t.performer?.name || t.album?.artist?.name || '' },
+    album: { title: t.album?.title, cover_small: t.album?.image?.small, cover_medium: t.album?.image?.large, cover_big: t.album?.image?.large },
+    explicit_lyrics: !!t.parental_warning,
+    source: 'qobuz', qobuzId: t.id,
+  }
+}
+function mapQobuzAlbum(a: any) {
+  return {
+    id: a.id, title: a.title, nb_tracks: a.tracks_count,
+    artist: { name: a.artist?.name || '' },
+    cover_small: a.image?.small, cover_medium: a.image?.large, cover_big: a.image?.large,
+    source: 'qobuz', qobuzId: a.id, qobuzData: { title: a.title, artist: a.artist, image: a.image, tracks_count: a.tracks_count },
+  }
+}
+
+async function performQobuzSearch() {
+  const port = window.electronAPI ? await window.electronAPI.getServerPort() : serverPort.value
+  serverPort.value = port
+  const resp = await fetch(`http://127.0.0.1:${port}/api/qobuz/search?q=${encodeURIComponent(searchQuery.value)}&limit=${RESULTS_PER_PAGE}`)
+  if (!resp.ok) {
+    const e = await resp.json().catch(() => ({}))
+    throw new Error(e.error === 'Qobuz not connected' ? 'Connect your Qobuz account in Settings first.' : (e.error || 'Qobuz search failed'))
+  }
+  const d = await resp.json()
+  results.value = {
+    tracks: (d.tracks?.items || []).map(mapQobuzTrack),
+    albums: (d.albums?.items || []).map(mapQobuzAlbum),
+    artists: [],
+    playlists: [],
+  }
+  // Qobuz search is single-page here; disable "load more".
+  pagination.value = {
+    tracks: { index: 0, hasMore: false, loading: false, total: d.tracks?.total || results.value.tracks.length },
+    albums: { index: 0, hasMore: false, loading: false, total: d.albums?.total || results.value.albums.length },
+    artists: { index: 0, hasMore: false, loading: false, total: 0 },
+    playlists: { index: 0, hasMore: false, loading: false, total: 0 },
+  }
+}
+
 async function performSearch() {
   if (!searchQuery.value.trim()) return
 
@@ -256,6 +320,25 @@ async function performSearch() {
   const query = searchQuery.value.trim()
   if (textContainsHostUrl(query, ['deezer.com', 'deezer.page.link', 'spotify.com', 'spotify.link']) || query.startsWith('spotify:')) {
     router.push({ path: '/analyzer', query: { url: query } })
+    return
+  }
+
+  // Qobuz source → search Qobuz's catalog instead of Deezer.
+  if (searchSource.value === 'qobuz') {
+    isLoading.value = true
+    hasError.value = false
+    showHistory.value = false
+    resetPagination()
+    addToHistory(searchQuery.value)
+    router.replace({ query: { q: searchQuery.value, type: activeTab.value } })
+    try {
+      await performQobuzSearch()
+    } catch (e: any) {
+      hasError.value = true
+      toastStore.error(e.message || 'Qobuz search failed')
+    } finally {
+      isLoading.value = false
+    }
     return
   }
 
@@ -594,6 +677,24 @@ const contextMenuItems = computed(() => {
                 @contextmenu="openSearchInputMenu"
               />
             </div>
+            <!-- Source selector: search Deezer or Qobuz's catalog -->
+            <div class="mt-2 flex items-center gap-2">
+              <span class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted/70">Source</span>
+              <button
+                type="button"
+                @click="setSearchSource('deezer')"
+                class="font-mono text-[10px] tracking-[0.12em] uppercase px-2.5 py-1 border transition-colors"
+                :class="searchSource === 'deezer' ? 'border-primary-500/60 text-primary-400 bg-primary-500/10' : 'border-white/[0.1] text-foreground-muted hover:text-foreground'"
+              >Deezer</button>
+              <button
+                type="button"
+                @click="qobuzConnected ? setSearchSource('qobuz') : null"
+                :disabled="!qobuzConnected"
+                :title="qobuzConnected ? '' : 'Connect your Qobuz account in Settings'"
+                class="font-mono text-[10px] tracking-[0.12em] uppercase px-2.5 py-1 border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                :class="searchSource === 'qobuz' ? 'border-primary-500/60 text-primary-400 bg-primary-500/10' : 'border-white/[0.1] text-foreground-muted hover:text-foreground'"
+              >Qobuz <span class="text-[8px] align-top">HI-RES</span></button>
+            </div>
             <div class="mt-2 font-mono text-[10px] tracking-[0.06em] uppercase text-foreground-muted/80">{{ t('search.searchHint') }}</div>
 
           <!-- Search History Dropdown -->
@@ -752,7 +853,7 @@ const contextMenuItems = computed(() => {
       <!-- Tracks -->
       <section v-if="results.tracks.length > 0 && (activeTab === 'all' || activeTab === 'track')">
         <div class="flex items-center gap-3 mb-3">
-          <h2 class="font-display text-[14px] uppercase tracking-[0.06em]">{{ t('search.tracks') }}</h2>
+          <h2 class="font-display text-[14px] uppercase tracking-[0.06em]">{{ t('search.tracks') }}<span v-if="searchSource === 'qobuz'" class="ml-2 font-mono text-[9px] px-1.5 py-0.5 border border-primary-500/40 text-primary-400 tracking-[0.12em] align-middle">QOBUZ</span></h2>
           <span v-if="pagination.tracks.total" class="font-mono text-[10px] text-foreground-muted">
             {{ results.tracks.length.toLocaleString() }} / {{ pagination.tracks.total.toLocaleString() }}
           </span>
@@ -805,7 +906,7 @@ const contextMenuItems = computed(() => {
       <!-- Albums -->
       <section v-if="results.albums.length > 0 && (activeTab === 'all' || activeTab === 'album')">
         <div class="flex items-center gap-3 mb-3">
-          <h2 class="font-display text-[14px] uppercase tracking-[0.06em]">{{ t('search.albums') }}</h2>
+          <h2 class="font-display text-[14px] uppercase tracking-[0.06em]">{{ t('search.albums') }}<span v-if="searchSource === 'qobuz'" class="ml-2 font-mono text-[9px] px-1.5 py-0.5 border border-primary-500/40 text-primary-400 tracking-[0.12em] align-middle">QOBUZ</span></h2>
           <span v-if="pagination.albums.total" class="font-mono text-[10px] text-foreground-muted">
             {{ results.albums.length.toLocaleString() }} / {{ pagination.albums.total.toLocaleString() }}
           </span>
