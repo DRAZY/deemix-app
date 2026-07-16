@@ -909,8 +909,12 @@ ipcMain.handle('qobuz:openLoginWindow', async () => {
     }
 
     qobuzLoginWindow = new BrowserWindow({
-      width: 520,
-      height: 720,
+      // Qobuz's web player hard-refuses to render below 1024px wide ("needs a
+      // screen size at least 1024 pixels"), unlike Deezer's login — so this
+      // window must clear that bar.
+      width: 1100,
+      height: 780,
+      minWidth: 1024,
       parent: mainWindow || undefined,
       modal: false,
       show: false,
