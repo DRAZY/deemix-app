@@ -107,10 +107,21 @@ for Qobuz — fetch the file, tag it, done.
            fresh login POST fires. This is how streamrip PR #955 does it.
       UI strings are English literals for now (WIP); i18n keys come at polish.
       **Phase 2 complete. Next: Phase 3 — native download branch.**
-- [ ] Phase 3 — native download branch: add a `service` discriminator to
-      `DownloadOptions`/`DownloadItem`; branch `processDownload` so Qobuz skips
-      `decryptFile` (fetched file IS the output). This is the one real refactor —
-      `processDownload` currently calls the `deezerAuth` singleton directly.
+- [~] Phase 3a — native download core. DONE + VERIFIED (2026-07-16).
+      `electron/services/qobuzDownloader.ts` + `scripts/qobuz-download-spike.ts`.
+      `downloadQobuzTrack(trackId, quality, outputPath)`: getFileUrl → stream the
+      unencrypted CDN file to disk (NO decrypt stage), removes partials on failure.
+      VERIFIED: downloaded "Get Lucky" = 51.48 MB, music-metadata parsed it
+      independently as FLAC 24-bit/44.1kHz, 248s → COMPLETE VALID FLAC.
+      Finding: Qobuz FLAC arrives with NO embedded title/artist tags, so tags
+      must be written from the API metadata (Phase 3c).
+- [ ] Phase 3b — wire into the app: `service` discriminator on
+      `DownloadOptions`/`DownloadItem`; branch the queue so Qobuz items route to
+      `downloadQobuzTrack` (skipping the Deezer `deezerAuth`/`decryptFile` path);
+      `/api/qobuz/{search,track,album,playlist,download}` routes; folder/naming
+      templates applied to the output path.
+- [ ] Phase 3c — tag the downloaded FLAC from Qobuz API metadata (title, artist,
+      album, ISRC/UPC, cover) since files arrive untagged.
 - [ ] Phase 4 — catalog + Link Analyzer: `isQobuzUrl` in BOTH `urlHost.ts`
       copies; `/api/qobuz/{auth,status,analyze,track,album,playlist}` routes;
       Qobuz branch in `LinkAnalyzerView.analyzeLink`. Single track → album →
