@@ -172,23 +172,23 @@ function qobuzTrackIds(q: any): (string | number)[] {
 
 async function downloadQobuz() {
   const q = qobuzResult.value
-  const ids = qobuzTrackIds(q)
-  if (!ids.length) return
-  // Album/playlist tracks download as part of a set → nest in an album folder.
-  const partOfAlbum = q.type === 'album' || q.type === 'playlist'
-  const album = q.type === 'album'
-    ? { title: q.data?.title, artist: q.data?.artist?.name }
-    : undefined
+  if (!q) return
   qobuzDownloading.value = true
   try {
-    for (const trackId of ids) {
+    if (q.type === 'album' || q.type === 'playlist') {
+      // Grouped: one Transfer Rack row aggregating all tracks (like Deezer albums).
+      await downloadStore.addQobuzAlbumDownload(q)
+      const n = qobuzTrackIds(q).length
+      toastStore.success(`Queued "${q.data?.title || 'Qobuz ' + q.type}" (${n} tracks)`)
+    } else {
+      // Single track.
       await fetch(`http://localhost:${serverPort.value}/api/qobuz/download`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trackId, partOfAlbum, album }),
+        body: JSON.stringify({ trackId: q.id }),
       })
+      toastStore.success('Queued Qobuz track for download')
     }
-    toastStore.success(`Queued ${ids.length} Qobuz track${ids.length > 1 ? 's' : ''} for download`)
   } catch (e: any) {
     toastStore.error(`Qobuz download failed: ${e.message}`)
   } finally {

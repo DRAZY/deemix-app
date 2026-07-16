@@ -628,6 +628,65 @@ export const useDownloadStore = defineStore('downloads', () => {
     }
   }
 
+  /**
+   * Qobuz album/playlist download — creates ONE grouped parent row (like the
+   * Deezer album path) whose children are the enqueued Qobuz tracks, so the
+   * Transfer Rack shows a single aggregated album unit instead of N track rows.
+   * `qobuz` is the analyze result: { type, id, data }.
+   */
+  async function addQobuzAlbumDownload(qobuz: { type: string; id: string; data: any }) {
+    await syncSettingsToServer()
+    const settingsStore = useSettingsStore()
+    const d = qobuz.data || {}
+    const groupId = `qobuzalbum_${qobuz.id}_${Date.now()}`
+    const trackTotal = d.tracks?.items?.length || d.tracks_count || 0
+
+    const item: DownloadItem = {
+      id: groupId,
+      album: { id: qobuz.id, title: d.title, artist: { name: d.artist?.name } } as any,
+      title: d.title || 'Qobuz Album',
+      artist: d.artist?.name || (qobuz.type === 'playlist' ? (d.owner?.name || 'Playlist') : 'Unknown Artist'),
+      cover: d.image?.large || d.image?.small || d.images?.[0] || '',
+      progress: 0,
+      status: 'pending',
+      type: 'album',
+      addedAt: new Date().toISOString(),
+      quality: settingsStore.settings.quality,
+      totalTracks: trackTotal,
+      completedTracks: 0,
+      failedTracks: [],
+      trackIds: [],
+    }
+    downloads.value = [item, ...downloads.value]
+    saveDownloads()
+
+    try {
+      const body = qobuz.type === 'playlist' ? { playlistId: qobuz.id } : { albumId: qobuz.id }
+      const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/qobuz/download-album`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err.error || 'Qobuz album download request failed')
+      }
+      const data = await response.json()
+      if (data.ids && data.ids.length > 0) {
+        item.trackIds = data.ids
+        item.totalTracks = data.ids.length
+        item.status = 'downloading'
+        saveDownloads()
+        registerForPolling(groupId, data.ids, 'album')
+      } else {
+        throw new Error('Server did not return download IDs')
+      }
+    } catch (error: any) {
+      console.error('[DownloadStore] Qobuz album download error:', error.message)
+      updateDownloadStatus(groupId, 'error', error.message || String(error))
+    }
+  }
+
   async function addPlaylistDownload(playlist: Playlist, tracks: Track[], refreshTags = false) {
     const toastStore = useToastStore()
 
@@ -1509,6 +1568,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     init,
     addDownload,
     addAlbumDownload,
+    addQobuzAlbumDownload,
     addPlaylistDownload,
     addBatchDownload,
     cancelDownload,

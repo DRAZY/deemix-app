@@ -241,3 +241,23 @@ for Qobuz — fetch the file, tag it, done.
   folder/naming parity with the Deezer path.
 - Remaining polish: i18n strings; album/playlist grouped progress in the rack
   (they currently appear as individual track items).
+
+## Rack grouping (2026-07-16) — album/playlist as ONE grouped unit
+
+- Backend `/api/qobuz/download-album` (POST {albumId|playlistId}) fetches the
+  release, enqueues every track (shared buildQobuzDownloadOptions, partOfAlbum),
+  returns {ids, count} — same shape as Deezer's /api/download/album.
+- Store `addQobuzAlbumDownload(qobuz)` creates ONE parent album row + calls the
+  route + `registerForPolling(groupId, ids, 'album')` → reuses the proven
+  updateAlbumProgress aggregation (identical mechanism to Deezer albums).
+- LinkAnalyzer routes album/playlist downloads to the grouped path; single
+  tracks stay individual.
+- VERIFIED (backend): download-album on OK Computer (23 tracks) → HTTP 200,
+  count 23, /api/queue held 23 children. Frontend parent-row + aggregation
+  compiles and reuses the already-working Deezer grouping path; the visual
+  single grouped rack row is User-verifiable live (paste an album URL).
+
+## Qobuz integration — feature-complete + polished (branch feature/qobuz-integration)
+Connect · paste URL (track/album/playlist) · queue-routed hi-res downloads ·
+tags + cover · folder/naming templates (singles + albums) · i18n Settings panel ·
+grouped album rows. Remaining: real-world RC validation; then cutover planning.

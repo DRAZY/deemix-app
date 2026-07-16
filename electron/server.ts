@@ -867,6 +867,9 @@ export class DeemixServer extends EventEmitter {
       case '/api/qobuz/download':
         await this.handleQobuzDownload(req, res)
         break
+      case '/api/qobuz/download-album':
+        await this.handleQobuzDownloadAlbum(req, res)
+        break
 
       // Playlist Sync routes
       case '/api/sync/playlists':
@@ -3113,50 +3116,91 @@ export class DeemixServer extends EventEmitter {
       // Enqueue through the shared download queue so the item appears in the
       // Transfer Rack with live progress (Qobuz items route to the no-decrypt
       // path via the service discriminator). Returns the queue id immediately.
-      // Pass the same folder/template/metadata settings the Deezer path uses so
-      // Qobuz files follow the user's folder structure and tag settings.
-      const qualityMap: Record<string, 'MP3_128' | 'MP3_320' | 'FLAC'> = { '128': 'MP3_128', '320': 'MP3_320', 'flac': 'FLAC' }
-      const downloadId = await downloader.download({
-        service: 'qobuz',
-        trackId,
-        outputPath: this.settings.downloadPath,
-        quality: qualityMap[this.settings.quality] || 'MP3_320',
-        createFolders: true,
-        artistFolder: this.settings.createArtistFolder,
-        albumFolder: this.settings.createAlbumFolder,
-        embedArtwork: this.settings.embedArtwork,
-        // When part of an album/playlist download, mark NOT-single so the album
-        // folder + album track template apply (tracks nest in "Artist - Album/").
-        isSingle: body.partOfAlbum !== true,
-        albumContext: body.album ? { albumTitle: body.album.title, albumArtist: body.album.artist } as any : undefined,
-        folderSettings: {
-          createPlaylistFolder: this.settings.createPlaylistFolder,
-          createArtistFolder: this.settings.createArtistFolder,
-          createAlbumFolder: this.settings.createAlbumFolder,
-          createCDFolder: this.settings.createCDFolder,
-          createPlaylistStructure: this.settings.createPlaylistStructure,
-          createSinglesStructure: this.settings.createSinglesStructure,
-          playlistFolderTemplate: this.settings.playlistFolderTemplate,
-          albumFolderTemplate: this.settings.albumFolderTemplate,
-          artistFolderTemplate: this.settings.artistFolderTemplate,
-        },
-        trackTemplates: {
-          trackNameTemplate: this.settings.trackNameTemplate,
-          albumTrackTemplate: this.settings.albumTrackTemplate,
-          playlistTrackTemplate: this.settings.playlistTrackTemplate,
-        },
-        metadataSettings: {
-          tags: this.settings.tags,
-          albumCovers: this.settings.albumCovers,
-          artistSeparator: this.settings.artistSeparator,
-          dateFormatFlac: this.settings.dateFormatFlac,
-          titleCasing: this.settings.titleCasing,
-          artistCasing: this.settings.artistCasing,
-          removeAlbumVersion: this.settings.removeAlbumVersion,
-          featuredArtistsHandling: this.settings.featuredArtistsHandling,
-        } as any,
-      })
+      const downloadId = await downloader.download(
+        this.buildQobuzDownloadOptions(trackId, body.partOfAlbum === true, body.album)
+      )
       this.sendJSON(res, { success: true, downloadId })
+    } catch (error: any) {
+      this.sendJSON(res, { success: false, error: error.message }, 500)
+    }
+  }
+
+  /** Shared Qobuz download options — the same folder/template/metadata settings
+   *  the Deezer path uses, so Qobuz files follow the user's structure + tags. */
+  private buildQobuzDownloadOptions(trackId: string | number, partOfAlbum: boolean, album?: { title?: string; artist?: string }): any {
+    const qualityMap: Record<string, 'MP3_128' | 'MP3_320' | 'FLAC'> = { '128': 'MP3_128', '320': 'MP3_320', 'flac': 'FLAC' }
+    return {
+      service: 'qobuz',
+      trackId,
+      outputPath: this.settings.downloadPath,
+      quality: qualityMap[this.settings.quality] || 'MP3_320',
+      createFolders: true,
+      artistFolder: this.settings.createArtistFolder,
+      albumFolder: this.settings.createAlbumFolder,
+      embedArtwork: this.settings.embedArtwork,
+      // Part of an album → NOT-single, so the album folder + album track template
+      // apply (tracks nest in "Artist - Album/").
+      isSingle: !partOfAlbum,
+      albumContext: album ? { albumTitle: album.title, albumArtist: album.artist } : undefined,
+      folderSettings: {
+        createPlaylistFolder: this.settings.createPlaylistFolder,
+        createArtistFolder: this.settings.createArtistFolder,
+        createAlbumFolder: this.settings.createAlbumFolder,
+        createCDFolder: this.settings.createCDFolder,
+        createPlaylistStructure: this.settings.createPlaylistStructure,
+        createSinglesStructure: this.settings.createSinglesStructure,
+        playlistFolderTemplate: this.settings.playlistFolderTemplate,
+        albumFolderTemplate: this.settings.albumFolderTemplate,
+        artistFolderTemplate: this.settings.artistFolderTemplate,
+      },
+      trackTemplates: {
+        trackNameTemplate: this.settings.trackNameTemplate,
+        albumTrackTemplate: this.settings.albumTrackTemplate,
+        playlistTrackTemplate: this.settings.playlistTrackTemplate,
+      },
+      metadataSettings: {
+        tags: this.settings.tags,
+        albumCovers: this.settings.albumCovers,
+        artistSeparator: this.settings.artistSeparator,
+        dateFormatFlac: this.settings.dateFormatFlac,
+        titleCasing: this.settings.titleCasing,
+        artistCasing: this.settings.artistCasing,
+        removeAlbumVersion: this.settings.removeAlbumVersion,
+        featuredArtistsHandling: this.settings.featuredArtistsHandling,
+      },
+    }
+  }
+
+  /** Enqueue every track of a Qobuz album/playlist and return their queue ids,
+   *  so the store can group them under one Transfer Rack row (like Deezer). */
+  private async handleQobuzDownloadAlbum(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const albumId = body.albumId
+      const playlistId = body.playlistId
+      if (!albumId && !playlistId) {
+        this.sendJSON(res, { success: false, error: 'albumId or playlistId required' }, 400)
+        return
+      }
+      if (!qobuzAuth.isLoggedIn()) {
+        this.sendJSON(res, { success: false, error: 'Qobuz not connected' }, 401)
+        return
+      }
+      if (!validateDownloadPath(this.settings.downloadPath)) {
+        this.sendJSON(res, { success: false, error: 'Invalid download path' }, 400)
+        return
+      }
+      const data = albumId ? await qobuzAuth.getAlbum(albumId) : await qobuzAuth.getPlaylist(playlistId)
+      const tracks = data?.tracks?.items || []
+      const album = albumId ? { title: data?.title, artist: data?.artist?.name } : undefined
+
+      const ids: string[] = []
+      for (const t of tracks) {
+        if (!t?.id) continue
+        const id = await downloader.download(this.buildQobuzDownloadOptions(t.id, true, album))
+        ids.push(id)
+      }
+      this.sendJSON(res, { ids, count: ids.length })
     } catch (error: any) {
       this.sendJSON(res, { success: false, error: error.message }, 500)
     }
