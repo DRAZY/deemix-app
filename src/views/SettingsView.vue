@@ -328,14 +328,14 @@ async function connectQobuz() {
     const res = await settingsStore.connectQobuz()
     if (res.success) {
       qobuzStatus.value = 'success'
-      qobuzMessage.value = 'Connected to Qobuz'
+      qobuzMessage.value = t('settings.qobuz.connectedTo')
     } else {
       qobuzStatus.value = 'error'
-      qobuzMessage.value = res.error || 'Could not connect'
+      qobuzMessage.value = res.error || t('settings.qobuz.couldNotConnect')
     }
   } catch (e: any) {
     qobuzStatus.value = 'error'
-    qobuzMessage.value = e.message || 'Could not connect'
+    qobuzMessage.value = e.message || t('settings.qobuz.couldNotConnect')
   } finally {
     qobuzConnecting.value = false
   }
@@ -2036,7 +2036,7 @@ async function reindexLibrary() {
         <svg class="w-5 h-5 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
         </svg>
-        Qobuz <span class="font-mono text-[9px] px-1.5 py-0.5 border border-primary-500/40 text-primary-400 tracking-[0.12em]">HI-RES</span>
+        {{ t('settings.qobuz.title') }} <span class="font-mono text-[9px] px-1.5 py-0.5 border border-primary-500/40 text-primary-400 tracking-[0.12em]">HI-RES</span>
         <svg
           class="w-4 h-4 ml-auto transition-transform duration-200"
           :class="{ 'rotate-180': expandedSections.qobuz }"
@@ -2048,16 +2048,16 @@ async function reindexLibrary() {
 
       <div v-show="expandedSections.qobuz" class="space-y-5 pt-6">
         <p class="text-sm text-foreground-muted">
-          Connect your Qobuz account to download hi-res FLAC (up to 24-bit/192&nbsp;kHz). A paid Qobuz plan is required; free accounts can't download.
+          {{ t('settings.qobuz.description') }}
         </p>
 
         <div v-if="settingsStore.isQobuzConnected" class="flex items-center gap-3">
-          <span class="font-mono text-[10.5px] tracking-[0.12em] uppercase text-green-400 border-l-2 border-green-400 pl-2">Connected · user {{ settingsStore.settings.qobuzUserId }}</span>
+          <span class="font-mono text-[10.5px] tracking-[0.12em] uppercase text-green-400 border-l-2 border-green-400 pl-2">{{ t('settings.qobuz.connected') }} · user {{ settingsStore.settings.qobuzUserId }}</span>
           <button
             @click="disconnectQobuz"
             class="ml-auto px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-white/[0.1] text-foreground-muted hover:text-red-400 hover:border-red-400/50 transition-colors"
           >
-            Disconnect
+            {{ t('settings.qobuz.disconnect') }}
           </button>
         </div>
 
@@ -2068,8 +2068,8 @@ async function reindexLibrary() {
           :disabled="qobuzConnecting"
           class="btn btn-primary font-mono text-[11px] uppercase tracking-[0.12em] disabled:opacity-50"
         >
-          <span v-if="qobuzConnecting">Opening login…</span>
-          <span v-else>Connect Qobuz Account</span>
+          <span v-if="qobuzConnecting">{{ t('settings.qobuz.connecting') }}</span>
+          <span v-else>{{ t('settings.qobuz.connect') }}</span>
         </button>
 
         <div v-if="qobuzMessage" class="flex items-center gap-2">
@@ -2077,7 +2077,7 @@ async function reindexLibrary() {
         </div>
 
         <p class="text-xs text-foreground-muted pt-3 border-t border-white/[0.08]">
-          A Qobuz login window opens; sign in normally. Your session token is stored encrypted and refreshes when you reconnect.
+          {{ t('settings.qobuz.help') }}
         </p>
       </div>
     </section>

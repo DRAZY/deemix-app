@@ -560,6 +560,18 @@
       "selectNone": "Select none",
       "expandProfiles": "Show profiles list",
       "subsetCount": "{n} of {total}"
+    },
+    "qobuz": {
+      "title": "Qobuz",
+      "description": "Connect your Qobuz account to download hi-res FLAC (up to 24-bit/192 kHz). A paid Qobuz plan is required; free accounts can't download.",
+      "connect": "Connect Qobuz Account",
+      "connecting": "Opening login…",
+      "connected": "Connected",
+      "connectedTo": "Connected to Qobuz",
+      "disconnect": "Disconnect",
+      "couldNotConnect": "Could not connect",
+      "loginNotCompleted": "Login was not completed",
+      "help": "A Qobuz login window opens; sign in normally. Your session token is stored encrypted and refreshes when you reconnect."
     }
   },
   "login": {
