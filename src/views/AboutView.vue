@@ -38,7 +38,7 @@ const whatsNew: ReleaseNotes[] = [
     version: '2.0.2',
     date: '2026-07-16',
     items: [
-      'Restored the "New Releases" section on the Home tab. Deezer retired the public endpoint that fed it, so the section had quietly disappeared. New Releases now pulls from Deezer\'s live editorial feed — the Home tab shows a cross-genre pick, and the See-All page gathers fresh selections across the main genres for a fuller browse.'
+      'Restored the "New Releases" section on the Home tab — and made it show genuinely new, dated releases. Deezer retired the public endpoint that fed it, so the section had quietly disappeared. New Releases now reads Deezer\'s real "freshest releases" feed (the same one on the Deezer site), so you get actual recent albums newest-first instead of old catalog. The See-All page shows more of the same, from the last 90 days. No sign-in needed.'
     ]
   },
   {

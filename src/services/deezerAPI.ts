@@ -251,43 +251,21 @@ class DeezerAPI {
     return data.data || []
   }
 
-  // Mainstream Deezer genre IDs used to widen the New Releases pool. The genre-0
-  // ("All") selection only returns ~10 albums, so the See-All page aggregates a
-  // fresh pick from each of these to build a richer browse grid.
-  private readonly NEW_RELEASE_GENRES = [132, 116, 152, 113, 165, 85, 106, 84, 464, 129, 98, 169]
-
   // New Releases — Deezer retired the public `/editorial/{genre}/releases` endpoint
-  // (it now returns an empty list), so we source fresh/featured albums from the
-  // still-live `/editorial/{genre}/selection` editorial feed instead. Genre 0 gives
-  // Deezer's cross-genre pick (~10). When a larger list is requested (the See-All
-  // page), we aggregate one selection per mainstream genre and de-dupe by album id.
-  async getNewReleases(limit: number = 20, genre: number = 0): Promise<Album[]> {
-    const base = await this.fetch<{ data: Album[] }>(`/editorial/${genre}/selection`)
-    const primary = base.data || []
-
-    // Small request → the cross-genre selection alone is enough.
-    if (limit <= primary.length || genre !== 0) {
-      return primary.slice(0, limit)
+  // (it now returns an empty list for every genre), and `/editorial/selection` is an
+  // undated editorial grab-bag that drags in old catalog. The genuine, date-stamped
+  // "freshest releases" feed lives only on Deezer's private gw-light-api (the same
+  // one that powers the site's "New releases for you"), which must be called
+  // server-side with cookies — so this proxies the local server's /api/new-releases,
+  // exactly like getChartFromServer. Works for guests; no login required.
+  async getNewReleases(limit: number = 20): Promise<Album[]> {
+    const serverPort = window.electronAPI ? await window.electronAPI.getServerPort() : 6595
+    const response = await fetch(`http://127.0.0.1:${serverPort}/api/new-releases?limit=${limit}`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch new releases: ${response.status}`)
     }
-
-    // Larger request → widen the pool with per-genre editorial selections.
-    const byId = new Map<string | number, Album>()
-    for (const album of primary) byId.set(album.id, album)
-
-    const genreResults = await Promise.all(
-      this.NEW_RELEASE_GENRES.map(g =>
-        this.fetch<{ data: Album[] }>(`/editorial/${g}/selection`)
-          .then(r => r.data || [])
-          .catch(() => [] as Album[])
-      )
-    )
-    for (const albums of genreResults) {
-      for (const album of albums) {
-        if (!byId.has(album.id)) byId.set(album.id, album)
-      }
-    }
-
-    return Array.from(byId.values()).slice(0, limit)
+    const data = await response.json()
+    return data.data || []
   }
 
   // Track

@@ -817,8 +817,8 @@ export class DeemixServer extends EventEmitter {
         await this.handleChartCountries(res)
         break
 
-      case '/api/editorial/releases':
-        await this.handleEditorialReleases(url, res)
+      case '/api/new-releases':
+        await this.handleNewReleases(url, res)
         break
 
       case '/api/analyze':
@@ -2444,15 +2444,17 @@ export class DeemixServer extends EventEmitter {
     }
   }
 
-  private async handleEditorialReleases(url: URL, res: ServerResponse): Promise<void> {
+  private async handleNewReleases(url: URL, res: ServerResponse): Promise<void> {
     const limit = parseInt(url.searchParams.get('limit') || '20', 10)
-    const genre = url.searchParams.get('genre') || '0' // 0 = all genres
 
     try {
-      // Deezer editorial releases endpoint returns new album releases
-      const response = await this.deezerPublicAPI(`/editorial/${genre}/releases?limit=${limit}`)
-      this.sendJSON(res, response)
+      // Deezer retired the public /editorial/{genre}/releases endpoint (empty now),
+      // so genuine date-stamped new releases come from the private gw-light-api home
+      // feed via deezerAuth. Works for guests — no login required.
+      const albums = await deezerAuth.getNewReleases(limit)
+      this.sendJSON(res, { data: albums, total: albums.length })
     } catch (error: any) {
+      console.error('[Server] New releases fetch error:', error.message)
       this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
     }
   }
