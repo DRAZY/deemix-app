@@ -81,15 +81,19 @@ function togglePlay() {
   playerStore.play(props.track)
 }
 
+// Qobuz-sourced tracks carry Qobuz ids — their artist/album pages load from the
+// Qobuz backend, flagged via the source query param (mirrors AlbumCard).
 function goToArtist() {
   if (props.track.artist?.id != null) {
-    router.push(`/artist/${props.track.artist.id}`)
+    const query = props.track.source === 'qobuz' ? { source: 'qobuz' } : undefined
+    router.push({ path: `/artist/${props.track.artist.id}`, query })
   }
 }
 
 function goToAlbum() {
   if (props.track.album?.id != null) {
-    router.push(`/album/${props.track.album.id}`)
+    const query = props.track.source === 'qobuz' ? { source: 'qobuz' } : undefined
+    router.push({ path: `/album/${props.track.album.id}`, query })
   }
 }
 

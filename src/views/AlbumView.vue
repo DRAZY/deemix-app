@@ -70,7 +70,7 @@ async function loadAlbum() {
       album.value = {
         id: a.id, title: a.title, record_type: 'album',
         cover_small: a.image?.small, cover_medium: a.image?.large, cover_big: a.image?.large,
-        artist: { name: a.artist?.name || '' } as any,
+        artist: { id: a.artist?.id, name: a.artist?.name || '' } as any,
         nb_tracks: a.tracks_count,
         release_date: a.release_date_original || a.released_at,
         source: 'qobuz', qobuzId: a.id,
@@ -78,8 +78,8 @@ async function loadAlbum() {
       } as any
       tracks.value = (a.tracks?.items || []).map((t: any) => ({
         id: t.id, title: t.title, duration: t.duration,
-        artist: { name: t.performer?.name || a.artist?.name || '' },
-        album: { title: a.title, cover_small: a.image?.small, cover_medium: a.image?.large },
+        artist: { id: t.performer?.id ?? a.artist?.id, name: t.performer?.name || a.artist?.name || '' },
+        album: { id: a.id, title: a.title, cover_small: a.image?.small, cover_medium: a.image?.large },
         track_position: t.track_number, disk_number: t.media_number,
         source: 'qobuz', qobuzId: t.id,
       })) as any
@@ -252,7 +252,7 @@ const contextMenuItems = computed(() => {
           <p class="text-foreground-muted mb-4">
             <router-link
               v-if="album.artist?.id != null"
-              :to="`/artist/${album.artist.id}`"
+              :to="{ path: `/artist/${album.artist.id}`, query: (album as any).source === 'qobuz' ? { source: 'qobuz' } : undefined }"
               class="hover:text-primary-400 transition-colors"
             >
               {{ album.artist.name }}

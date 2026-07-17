@@ -908,6 +908,25 @@ export class Downloader extends EventEmitter {
       }
       fs.mkdirSync(path.dirname(outputPath), { recursive: true })
 
+      // Folder context on the progress object — same fields the Deezer path sets.
+      // The renderer derives item.path from these for "open folder" and Delete
+      // Files on album/playlist rows; without them Qobuz rows couldn't delete
+      // their folders.
+      const trackDir = path.dirname(outputPath)
+      progress.albumFolder = trackDir
+      // Multi-disc albums nest tracks in CD subfolders — the deletable root is one
+      // level up (matches the Deezer path's multi-disc handling).
+      const isMultiDisc = (shim.DISKS_COUNT || 1) > 1 && options.folderSettings?.createCDFolder
+      progress.albumRootFolder = (isMultiDisc && !options.isFromPlaylist) ? path.dirname(trackDir) : trackDir
+      if (options.isFromPlaylist && options.playlistName && options.folderSettings?.createPlaylistFolder) {
+        const playlistFolder = this.sanitizeFilename(
+          (options.folderSettings.playlistFolderTemplate || '%playlist%')
+            .replace(/%playlist%/gi, options.playlistName)
+            .replace(/%owner%/gi, options.playlistOwner || '')
+        )
+        progress.playlistFolder = path.join(options.outputPath, playlistFolder)
+      }
+
       const result = await downloadQobuzTrack(options.trackId, q as '128' | '320' | 'flac', outputPath, (recv, total) => {
         progress.downloaded = recv
         progress.total = total

@@ -96,11 +96,12 @@ async function downloadAlbum() {
 
 function navigateToArtist(event: Event) {
   event.stopPropagation()
+  const query = (props.album as any).source === 'qobuz' ? { source: 'qobuz' } : undefined
   if (props.type === 'playlist') {
     // Playlist creators are users, not artists — navigate to the playlist instead
-    router.push(`/playlist/${props.album.id}`)
+    router.push({ path: `/playlist/${props.album.id}`, query })
   } else if (props.album.artist?.id != null && props.album.artist.id !== 0) {
-    router.push(`/artist/${props.album.artist.id}`)
+    router.push({ path: `/artist/${props.album.artist.id}`, query })
   }
 }
 

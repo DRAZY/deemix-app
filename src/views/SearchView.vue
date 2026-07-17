@@ -274,8 +274,9 @@ function resetPagination() {
 function mapQobuzTrack(t: any) {
   return {
     id: t.id, title: t.title, duration: t.duration,
-    artist: { name: t.performer?.name || t.album?.artist?.name || '' },
-    album: { title: t.album?.title, cover_small: t.album?.image?.small, cover_medium: t.album?.image?.large, cover_big: t.album?.image?.large },
+    // Qobuz artist id rides along so the artist name links to the Qobuz artist page.
+    artist: { id: t.performer?.id ?? t.album?.artist?.id, name: t.performer?.name || t.album?.artist?.name || '' },
+    album: { id: t.album?.id, title: t.album?.title, cover_small: t.album?.image?.small, cover_medium: t.album?.image?.large, cover_big: t.album?.image?.large },
     explicit_lyrics: !!t.parental_warning,
     source: 'qobuz', qobuzId: t.id,
   }
@@ -283,7 +284,7 @@ function mapQobuzTrack(t: any) {
 function mapQobuzAlbum(a: any) {
   return {
     id: a.id, title: a.title, nb_tracks: a.tracks_count,
-    artist: { name: a.artist?.name || '' },
+    artist: { id: a.artist?.id, name: a.artist?.name || '' },
     cover_small: a.image?.small, cover_medium: a.image?.large, cover_big: a.image?.large,
     source: 'qobuz', qobuzId: a.id, qobuzData: { title: a.title, artist: a.artist, image: a.image, tracks_count: a.tracks_count },
   }

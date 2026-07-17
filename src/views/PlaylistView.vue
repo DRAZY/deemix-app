@@ -56,8 +56,8 @@ onMounted(async () => {
       } as any
       tracks.value = (p.tracks?.items || []).map((t: any) => ({
         id: t.id, title: t.title, duration: t.duration,
-        artist: { name: t.performer?.name || '' },
-        album: { title: t.album?.title, cover_small: t.album?.image?.small, cover_medium: t.album?.image?.large },
+        artist: { id: t.performer?.id, name: t.performer?.name || '' },
+        album: { id: t.album?.id, title: t.album?.title, cover_small: t.album?.image?.small, cover_medium: t.album?.image?.large },
         source: 'qobuz', qobuzId: t.id,
       })) as any
     } catch (error) {
