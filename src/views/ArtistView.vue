@@ -156,6 +156,39 @@ async function loadArtist(artistId: string) {
   featuredInAlbums.value = []
   activeFilter.value = 'all'
 
+  // Qobuz artist: load from the Qobuz backend (its id isn't a Deezer id).
+  if (route.query.source === 'qobuz') {
+    try {
+      const port = window.electronAPI ? await window.electronAPI.getServerPort() : (downloadStore.serverPort || 6595)
+      const resp = await fetch(`http://127.0.0.1:${port}/api/qobuz/artist?id=${artistId}`)
+      if (!resp.ok) throw new Error('Qobuz artist load failed')
+      const a = await resp.json()
+      artist.value = {
+        id: a.id, name: a.name,
+        picture_medium: a.image?.medium || a.image?.small || a.picture || '',
+        picture_big: a.image?.large || a.picture || '',
+        nb_album: a.albums_count,
+      } as any
+      albums.value = (a.albums?.items || []).map((al: any) => ({
+        id: al.id, title: al.title, record_type: 'album',
+        cover_small: al.image?.small, cover_medium: al.image?.large, cover_big: al.image?.large,
+        artist: { name: a.name },
+        nb_tracks: al.tracks_count,
+        release_date: al.release_date_original || al.released_at,
+        source: 'qobuz', qobuzId: al.id,
+        qobuzData: { title: al.title, artist: { name: a.name }, image: al.image, tracks_count: al.tracks_count },
+      }))
+    } catch (e) {
+      console.error('[ArtistView] Qobuz load error:', e)
+      hasError.value = true
+    } finally {
+      isLoading.value = false
+      isLoadingDetails.value = false
+      isLoadingFeatured.value = false
+    }
+    return
+  }
+
   try {
     // First load artist info and top tracks quickly
     const [artistData, tracksData] = await Promise.all([

@@ -285,6 +285,11 @@ class QobuzAuth {
     return { type: parsed.type, id: parsed.id, data }
   }
 
+  async getArtist(artistId: string | number, limit = 100): Promise<any> {
+    const { appId } = await this.fetchAppCredentials()
+    return this.apiGet(`artist/get?artist_id=${artistId}&extra=albums&limit=${limit}&app_id=${appId}`, true)
+  }
+
   async getTrack(trackId: string | number): Promise<any> {
     const { appId } = await this.fetchAppCredentials()
     return this.apiGet(`track/get?track_id=${trackId}&app_id=${appId}`, true)
