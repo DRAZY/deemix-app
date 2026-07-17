@@ -10,7 +10,7 @@ import { urlHasHost } from './utils/urlHost'
 import { downloader, DownloadProgress } from './services/downloader'
 import { spotifyAPI } from './services/spotifyAPI'
 import { spotifyConverter } from './services/spotifyConverter'
-import { qobuzAuth } from './services/qobuzAuth'
+import { qobuzAuth, QOBUZ_FORMAT } from './services/qobuzAuth'
 import { playlistSync } from './services/playlistSync'
 import { artistSync, type FirstSyncMode, type ArtistSyncFilters } from './services/artistSync'
 import { scanFolder, retagFile, retagFileInFolder, type RetagFields } from './services/retagger'
@@ -875,6 +875,9 @@ export class DeemixServer extends EventEmitter {
         break
       case '/api/qobuz/discover':
         await this.handleQobuzDiscover(res)
+        break
+      case '/api/qobuz/preview':
+        await this.handleQobuzPreview(url, res)
         break
       case '/api/qobuz/download':
         await this.handleQobuzDownload(req, res)
@@ -3161,6 +3164,31 @@ export class DeemixServer extends EventEmitter {
     }
     this.qobuzDiscoverCache = { data, timestamp: Date.now() }
     this.sendJSON(res, data)
+  }
+
+  /** Resolve a playable stream URL for a Qobuz track preview. Qobuz has no
+   *  static 30s preview clips like Deezer — the renderer requests a signed
+   *  MP3 stream URL on demand and caps playback client-side. */
+  private async handleQobuzPreview(url: URL, res: ServerResponse): Promise<void> {
+    const id = url.searchParams.get('id')
+    if (!id) {
+      this.sendJSON(res, { error: 'id required' }, 400)
+      return
+    }
+    if (!qobuzAuth.isLoggedIn()) {
+      this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
+      return
+    }
+    try {
+      const file = await qobuzAuth.getFileUrl(id, QOBUZ_FORMAT.MP3_320)
+      if (!file.url) {
+        this.sendJSON(res, { error: 'No stream available for this track' }, 404)
+        return
+      }
+      this.sendJSON(res, { url: file.url })
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
   }
 
   private async handleQobuzSearch(url: URL, res: ServerResponse): Promise<void> {

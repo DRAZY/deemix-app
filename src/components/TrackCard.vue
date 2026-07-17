@@ -145,10 +145,13 @@ const contextMenuItems = computed(() => [
       <!-- Show index normally, play button on hover -->
       <template v-else>
         <span class="group-hover:hidden font-mono text-[12px] text-foreground-muted">{{ index || '' }}</span>
+        <!-- Qobuz tracks have no static preview URL — the player resolves a
+             signed stream on demand, so the button shows for them too. -->
         <button
-          v-if="track.preview"
+          v-if="track.preview || track.source === 'qobuz'"
           @click="togglePlay"
-          class="hidden group-hover:block text-foreground-muted hover:text-primary-400"
+          class="hidden group-hover:block text-foreground-muted"
+          :class="track.source === 'qobuz' ? 'hover:text-qobuz-400' : 'hover:text-primary-400'"
         >
           <svg class="w-5 h-5 mx-auto" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
