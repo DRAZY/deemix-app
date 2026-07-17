@@ -536,9 +536,10 @@ export const useDownloadStore = defineStore('downloads', () => {
   async function addAlbumDownload(album: Album, tracks: Track[], refreshTags = false) {
     const toastStore = useToastStore()
 
-    // Qobuz-sourced album → grouped Qobuz download path.
+    // Qobuz-sourced album/playlist → grouped Qobuz download path.
     if ((album as any).source === 'qobuz') {
-      await addQobuzAlbumDownload({ type: 'album', id: String((album as any).qobuzId ?? album.id), data: (album as any).qobuzData || album })
+      const qType = (album as any).qobuzType === 'playlist' ? 'playlist' : 'album'
+      await addQobuzAlbumDownload({ type: qType, id: String((album as any).qobuzId ?? album.id), data: (album as any).qobuzData || album })
       return
     }
 

@@ -288,6 +288,25 @@ function mapQobuzAlbum(a: any) {
     source: 'qobuz', qobuzId: a.id, qobuzData: { title: a.title, artist: a.artist, image: a.image, tracks_count: a.tracks_count },
   }
 }
+function mapQobuzArtist(a: any) {
+  return {
+    id: a.id, name: a.name,
+    picture_small: a.image?.small || a.picture,
+    picture_medium: a.image?.medium || a.image?.small || a.picture,
+    picture_big: a.image?.large || a.image?.medium || a.picture,
+    nb_album: a.albums_count,
+    source: 'qobuz', qobuzId: a.id,
+  }
+}
+function mapQobuzPlaylist(p: any) {
+  const cover = p.images300?.[0] || p.images150?.[0] || p.images?.[0] || p.image_rectangle?.[0]
+  return {
+    id: p.id, title: p.name, nb_tracks: p.tracks_count,
+    picture_medium: cover, picture_small: cover,
+    user: { name: p.owner?.name || '' },
+    source: 'qobuz', qobuzId: p.id,
+  }
+}
 
 async function performQobuzSearch() {
   const port = window.electronAPI ? await window.electronAPI.getServerPort() : serverPort.value
@@ -301,15 +320,15 @@ async function performQobuzSearch() {
   results.value = {
     tracks: (d.tracks?.items || []).map(mapQobuzTrack),
     albums: (d.albums?.items || []).map(mapQobuzAlbum),
-    artists: [],
-    playlists: [],
+    artists: (d.artists?.items || []).map(mapQobuzArtist),
+    playlists: (d.playlists?.items || []).map(mapQobuzPlaylist),
   }
   // Qobuz search is single-page here; disable "load more".
   pagination.value = {
     tracks: { index: 0, hasMore: false, loading: false, total: d.tracks?.total || results.value.tracks.length },
     albums: { index: 0, hasMore: false, loading: false, total: d.albums?.total || results.value.albums.length },
-    artists: { index: 0, hasMore: false, loading: false, total: 0 },
-    playlists: { index: 0, hasMore: false, loading: false, total: 0 },
+    artists: { index: 0, hasMore: false, loading: false, total: d.artists?.total || results.value.artists.length },
+    playlists: { index: 0, hasMore: false, loading: false, total: d.playlists?.total || results.value.playlists.length },
   }
 }
 
@@ -1014,7 +1033,10 @@ const contextMenuItems = computed(() => {
               title: playlist.title,
               cover_medium: playlist.picture_medium,
               artist: { id: 0, name: playlist.creator?.name || (playlist as any).user?.name || 'Unknown' },
-              nb_tracks: playlist.nb_tracks
+              nb_tracks: playlist.nb_tracks,
+              source: (playlist as any).source,
+              qobuzId: (playlist as any).qobuzId,
+              qobuzType: 'playlist'
             }"
             type="playlist"
           />

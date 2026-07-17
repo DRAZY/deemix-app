@@ -16,6 +16,9 @@ export interface Track {
     name?: string
     role?: string
   }>
+  // Non-Deezer source markers (Qobuz) — drive download routing in downloadStore.
+  source?: 'deezer' | 'qobuz'
+  qobuzId?: string | number
 }
 
 export interface Album {
@@ -35,6 +38,11 @@ export interface Album {
   explicit_lyrics?: boolean
   link?: string
   fans?: number
+  // Non-Deezer source markers (Qobuz) — drive download routing in downloadStore.
+  source?: 'deezer' | 'qobuz'
+  qobuzId?: string | number
+  qobuzType?: 'album' | 'playlist'
+  qobuzData?: any
 }
 
 export interface Artist {
