@@ -3078,6 +3078,7 @@ export class DeemixServer extends EventEmitter {
   private async handleQobuzSearch(url: URL, res: ServerResponse): Promise<void> {
     const query = url.searchParams.get('q')
     const limit = Number(url.searchParams.get('limit') || '25')
+    const offset = Number(url.searchParams.get('offset') || '0')
     if (!query) {
       this.sendJSON(res, { error: 'q parameter required' }, 400)
       return
@@ -3087,7 +3088,7 @@ export class DeemixServer extends EventEmitter {
       return
     }
     try {
-      const results = await qobuzAuth.search(query, limit)
+      const results = await qobuzAuth.search(query, limit, offset)
       this.sendJSON(res, results)
     } catch (error: any) {
       this.sendJSON(res, { error: error.message }, 500)

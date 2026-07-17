@@ -323,12 +323,13 @@ async function performQobuzSearch() {
     artists: (d.artists?.items || []).map(mapQobuzArtist),
     playlists: (d.playlists?.items || []).map(mapQobuzPlaylist),
   }
-  // Qobuz search is single-page here; disable "load more".
+  // Enable "load more" when more results exist than the first page returned.
+  const pg = (loaded: number, total: number) => ({ index: loaded, hasMore: loaded < total && loaded > 0, loading: false, total })
   pagination.value = {
-    tracks: { index: 0, hasMore: false, loading: false, total: d.tracks?.total || results.value.tracks.length },
-    albums: { index: 0, hasMore: false, loading: false, total: d.albums?.total || results.value.albums.length },
-    artists: { index: 0, hasMore: false, loading: false, total: d.artists?.total || results.value.artists.length },
-    playlists: { index: 0, hasMore: false, loading: false, total: d.playlists?.total || results.value.playlists.length },
+    tracks: pg(results.value.tracks.length, d.tracks?.total || results.value.tracks.length),
+    albums: pg(results.value.albums.length, d.albums?.total || results.value.albums.length),
+    artists: pg(results.value.artists.length, d.artists?.total || results.value.artists.length),
+    playlists: pg(results.value.playlists.length, d.playlists?.total || results.value.playlists.length),
   }
 }
 
@@ -429,6 +430,26 @@ async function loadMore(type: 'track' | 'album' | 'artist' | 'playlist') {
   if (!pagination.value[typeKey].hasMore || pagination.value[typeKey].loading) return
 
   pagination.value[typeKey].loading = true
+
+  // Qobuz: fetch the next page at this type's current offset and append.
+  if (searchSource.value === 'qobuz') {
+    try {
+      const offset = results.value[typeKey].length
+      const port = window.electronAPI ? await window.electronAPI.getServerPort() : serverPort.value
+      const resp = await fetch(`http://127.0.0.1:${port}/api/qobuz/search?q=${encodeURIComponent(searchQuery.value)}&limit=${RESULTS_PER_PAGE}&offset=${offset}`)
+      const d = await resp.json()
+      const mapper = type === 'track' ? mapQobuzTrack : type === 'album' ? mapQobuzAlbum : type === 'artist' ? mapQobuzArtist : mapQobuzPlaylist
+      const bucket = type === 'track' ? d.tracks : type === 'album' ? d.albums : type === 'artist' ? d.artists : d.playlists
+      const items = (bucket?.items || []).map(mapper)
+      results.value[typeKey] = [...results.value[typeKey], ...items]
+      const total = bucket?.total ?? pagination.value[typeKey].total
+      pagination.value[typeKey] = { index: results.value[typeKey].length, hasMore: results.value[typeKey].length < total && items.length > 0, loading: false, total }
+    } catch (error) {
+      console.error(`Failed to load more Qobuz ${type}s:`, error)
+      pagination.value[typeKey].loading = false
+    }
+    return
+  }
 
   try {
     const result = await deezerAPI.searchWithPagination(

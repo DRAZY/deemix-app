@@ -58,6 +58,13 @@ async function downloadAlbum() {
   isDownloading.value = true
 
   try {
+    // Qobuz-sourced album/playlist: skip the Deezer track fetch (its id isn't a
+    // Deezer id) and route straight to the Qobuz download path, which fetches
+    // the tracklist server-side.
+    if ((props.album as any).source === 'qobuz') {
+      await downloadStore.addAlbumDownload(props.album, [])
+      return
+    }
     if (props.type === 'playlist') {
       const tracks = await deezerAPI.getPlaylistTracks(props.album.id)
       if (tracks && tracks.length > 0) {

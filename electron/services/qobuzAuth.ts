@@ -257,9 +257,9 @@ class QobuzAuth {
     throw new Error(`Qobuz: no app_secret candidate produced a valid signature (${lastMessage})`)
   }
 
-  async search(query: string, limit = 10): Promise<any> {
+  async search(query: string, limit = 10, offset = 0): Promise<any> {
     const { appId } = await this.fetchAppCredentials()
-    return this.apiGet(`catalog/search?query=${encodeURIComponent(query)}&limit=${limit}&app_id=${appId}`, true)
+    return this.apiGet(`catalog/search?query=${encodeURIComponent(query)}&limit=${limit}&offset=${offset}&app_id=${appId}`, true)
   }
 
   /**
