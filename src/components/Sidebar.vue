@@ -25,6 +25,9 @@ const navItems = computed(() => {
     { path: '/', icon: 'home', label: t('nav.home') },
     { path: '/search', icon: 'search', label: t('nav.search'), hidden: !showSearchButton.value },
     { path: '/charts', icon: 'chart', label: t('nav.charts') },
+    // Channel Q — visible only when a Qobuz account is connected. Brand name,
+    // not translated (matches the QOBUZ badges elsewhere).
+    { path: '/qobuz', icon: 'qobuz', label: 'Qobuz', hidden: !settingsStore.isQobuzConnected },
     { path: '/downloads', icon: 'download', label: t('nav.downloads'), badge: activeDownloadsCount },
     { path: '/favorites', icon: 'heart', label: t('nav.favorites') },
     { path: '/analyzer', icon: 'link', label: t('nav.linkAnalyzer') },
@@ -145,6 +148,12 @@ function handleAuthClick() {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
+
+            <!-- Channel Q icon — block Q in the fixed Qobuz brand cyan -->
+            <span
+              v-else-if="item.icon === 'qobuz'"
+              class="w-5 h-5 flex-shrink-0 flex items-center justify-center border border-qobuz-500/60 font-mono text-[11px] font-bold leading-none text-qobuz-500"
+            >Q</span>
 
             <!-- Download icon -->
             <svg v-else-if="item.icon === 'download'" class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

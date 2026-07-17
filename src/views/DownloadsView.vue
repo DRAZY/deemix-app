@@ -640,6 +640,12 @@ function copyAllErrorDetails() {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
               <p class="text-[13px] font-semibold truncate">{{ item.title }}</p>
+              <!-- Channel Q source chip — this unit's signal came from Qobuz -->
+              <span
+                v-if="item.source === 'qobuz'"
+                v-tooltip="'Qobuz'"
+                class="flex-shrink-0 px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-[0.08em] border border-qobuz-500/50 text-qobuz-400 bg-qobuz-500/10"
+              >Q</span>
               <!-- Quality tag - shows actual downloaded format (not just requested) -->
               <span
                 v-if="showQualityTag && getDisplayFormat(item)"
@@ -1098,7 +1104,13 @@ function copyAllErrorDetails() {
           </div>
           <!-- Info -->
           <div class="flex-1 min-w-0">
-            <p class="truncate font-medium">{{ entry.title }}</p>
+            <p class="truncate font-medium">
+              {{ entry.title }}
+              <span
+                v-if="entry.source === 'qobuz'"
+                class="ml-1 px-1 py-px font-mono text-[9px] font-bold tracking-[0.08em] border border-qobuz-500/50 text-qobuz-400 bg-qobuz-500/10 align-middle"
+              >Q</span>
+            </p>
             <p class="text-xs text-foreground-muted truncate">
               {{ entry.artist || 'Unknown Artist' }}
               <span v-if="entry.actualFormat"> · {{ entry.actualFormat }}</span>

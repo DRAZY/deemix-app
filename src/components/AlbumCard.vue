@@ -138,8 +138,8 @@ const contextMenuItems = computed(() => [
         :alt="album.title"
         loading="lazy"
         decoding="async"
-        class="w-full h-full object-cover bg-background-tertiary border border-white/[0.08]
-               group-hover:border-primary-500/60 transition-colors duration-200"
+        class="w-full h-full object-cover bg-background-tertiary border border-white/[0.08] transition-colors duration-200"
+        :class="(album as any).source === 'qobuz' ? 'group-hover:border-qobuz-500/70' : 'group-hover:border-primary-500/60'"
         @error="handleImageError"
       />
       <!-- Fallback placeholder when no image or image fails to load -->
@@ -154,12 +154,18 @@ const contextMenuItems = computed(() => [
             d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
         </svg>
       </div>
+      <!-- Channel Q source badge — always visible on Qobuz-sourced items -->
+      <span
+        v-if="(album as any).source === 'qobuz'"
+        class="absolute top-1 left-1 px-1 py-px font-mono text-[8px] font-bold tracking-[0.1em] bg-qobuz-500 text-background-main select-none"
+      >Q</span>
       <!-- Download overlay -->
       <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity
                   flex items-center justify-center">
-        <div class="flex items-center gap-2 px-4 py-2 bg-primary-500 text-background-main
+        <div class="flex items-center gap-2 px-4 py-2 text-background-main
                     font-mono text-[11px] font-bold tracking-[0.12em]
-                    transform scale-95 group-hover:scale-100 transition-transform shadow-[0_0_18px_rgba(0,0,0,0.4)]">
+                    transform scale-95 group-hover:scale-100 transition-transform shadow-[0_0_18px_rgba(0,0,0,0.4)]"
+             :class="(album as any).source === 'qobuz' ? 'bg-qobuz-500' : 'bg-primary-500'">
           <!-- Download icon -->
           <template v-if="!isDownloading">GET&nbsp;↓</template>
           <!-- Loading spinner -->

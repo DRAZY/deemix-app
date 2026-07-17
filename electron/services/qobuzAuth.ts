@@ -262,6 +262,21 @@ class QobuzAuth {
     return this.apiGet(`catalog/search?query=${encodeURIComponent(query)}&limit=${limit}&offset=${offset}&app_id=${appId}`, true)
   }
 
+  /** Featured albums for the Discover tab. Known types: new-releases-full,
+   *  press-awards, editor-picks, most-streamed, best-sellers, ideal-discography.
+   *  Requires user auth (all Qobuz endpoints do post-April 2026). */
+  async getFeaturedAlbums(type: string, limit = 20, offset = 0): Promise<any> {
+    const { appId } = await this.fetchAppCredentials()
+    return this.apiGet(`album/getFeatured?type=${encodeURIComponent(type)}&limit=${limit}&offset=${offset}&app_id=${appId}`, true)
+  }
+
+  /** Featured (editorial) playlists for the Discover tab. Known types:
+   *  editor-picks, last-created. */
+  async getFeaturedPlaylists(type: string, limit = 20, offset = 0): Promise<any> {
+    const { appId } = await this.fetchAppCredentials()
+    return this.apiGet(`playlist/getFeatured?type=${encodeURIComponent(type)}&limit=${limit}&offset=${offset}&app_id=${appId}`, true)
+  }
+
   /**
    * Parse a Qobuz URL into a {type, id}. Handles the web-player/open forms
    * (open.qobuz.com/track/ID, play.qobuz.com/album/ID) and the store form

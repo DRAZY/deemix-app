@@ -94,6 +94,15 @@ const close = () => window.electronAPI?.close()
       {{ authStore.isLoggedIn ? 'LINK ESTABLISHED' : 'LINK DOWN' }}
     </div>
 
+    <!-- Channel Q link status — shown only when a Qobuz account is connected -->
+    <div
+      v-if="settingsStore.isQobuzConnected"
+      class="hidden sm:flex items-center gap-2 h-full px-4 border-r border-white/[0.06] font-mono text-[10.5px] tracking-[0.08em] text-foreground-muted"
+    >
+      <span class="w-[7px] h-[7px] rounded-[1px] status-led bg-qobuz-500 shadow-[0_0_8px] shadow-qobuz-500/70"></span>
+      Q:LINKED
+    </div>
+
     <!-- Region -->
     <div v-if="region" class="hidden md:flex items-center h-full px-4 border-r border-white/[0.06] font-mono text-[10.5px] tracking-[0.08em] text-foreground-muted">
       REGION · {{ region }}

@@ -873,6 +873,9 @@ export class DeemixServer extends EventEmitter {
       case '/api/qobuz/playlist':
         await this.handleQobuzPlaylist(url, res)
         break
+      case '/api/qobuz/discover':
+        await this.handleQobuzDiscover(res)
+        break
       case '/api/qobuz/download':
         await this.handleQobuzDownload(req, res)
         break
@@ -3117,6 +3120,47 @@ export class DeemixServer extends EventEmitter {
     } catch (error: any) {
       this.sendJSON(res, { error: error.message }, 500)
     }
+  }
+
+  // Discover-tab cache — Qobuz's editorial feeds change daily; 30 min keeps tab
+  // revisits instant without hammering their API.
+  private qobuzDiscoverCache: { data: any; timestamp: number } | null = null
+  private readonly QOBUZ_DISCOVER_CACHE_TTL = 30 * 60 * 1000
+
+  /** Aggregated Qobuz editorial feeds for the Discover tab. Each row fetches
+   *  independently — a failed or renamed feed type degrades to an empty row,
+   *  never a broken page. */
+  private async handleQobuzDiscover(res: ServerResponse): Promise<void> {
+    if (!qobuzAuth.isLoggedIn()) {
+      this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
+      return
+    }
+    if (this.qobuzDiscoverCache &&
+        Date.now() - this.qobuzDiscoverCache.timestamp < this.QOBUZ_DISCOVER_CACHE_TTL) {
+      this.sendJSON(res, this.qobuzDiscoverCache.data)
+      return
+    }
+    const safe = (p: Promise<any>, label: string): Promise<any> =>
+      p.catch((e: any) => {
+        console.log(`[Server] Qobuz discover row '${label}' failed:`, e.message)
+        return null
+      })
+    const [newReleases, pressAwards, editorPicks, mostStreamed, playlists] = await Promise.all([
+      safe(qobuzAuth.getFeaturedAlbums('new-releases-full', 20), 'new-releases-full'),
+      safe(qobuzAuth.getFeaturedAlbums('press-awards', 20), 'press-awards'),
+      safe(qobuzAuth.getFeaturedAlbums('editor-picks', 20), 'editor-picks'),
+      safe(qobuzAuth.getFeaturedAlbums('most-streamed', 20), 'most-streamed'),
+      safe(qobuzAuth.getFeaturedPlaylists('editor-picks', 20), 'playlists-editor-picks'),
+    ])
+    const data = {
+      newReleases: newReleases?.albums?.items || [],
+      pressAwards: pressAwards?.albums?.items || [],
+      editorPicks: editorPicks?.albums?.items || [],
+      mostStreamed: mostStreamed?.albums?.items || [],
+      playlists: playlists?.playlists?.items || [],
+    }
+    this.qobuzDiscoverCache = { data, timestamp: Date.now() }
+    this.sendJSON(res, data)
   }
 
   private async handleQobuzSearch(url: URL, res: ServerResponse): Promise<void> {

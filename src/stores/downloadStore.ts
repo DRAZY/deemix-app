@@ -321,6 +321,7 @@ export const useDownloadStore = defineStore('downloads', () => {
       title: item.title,
       artist: item.artist,
       type: item.type,
+      source: item.source,
       quality: item.quality,
       actualFormat: item.actualFormat,
       substituted: item.substituted,
@@ -474,6 +475,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     const item: DownloadItem = {
       id: tempId,
       track,
+      source: (track as any).source === 'qobuz' ? 'qobuz' : 'deezer',
       title: track.title,
       artist: extractArtistName(track.artist),
       cover: extractCoverUrl(track.album || {}, 'cover_medium', 'cover_big', 'cover_small', 'cover') || (typeof track.cover === 'string' ? track.cover : undefined),
@@ -575,6 +577,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     const item: DownloadItem = {
       id: albumId,
       album,
+      source: 'deezer',
       title: album.title,
       artist: extractArtistName(album.artist),
       cover: extractCoverUrl(album, 'cover_medium', 'cover_big', 'cover_small', 'cover_xl', 'cover'),
@@ -656,6 +659,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     const item: DownloadItem = {
       id: groupId,
       album: { id: qobuz.id, title: d.title, artist: { name: d.artist?.name } } as any,
+      source: 'qobuz',
       title: d.title || 'Qobuz Album',
       artist: d.artist?.name || (qobuz.type === 'playlist' ? (d.owner?.name || 'Playlist') : 'Unknown Artist'),
       cover: d.image?.large || d.image?.small || d.images?.[0] || '',
@@ -731,6 +735,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     const item: DownloadItem = {
       id: playlistId,
       playlist,
+      source: 'deezer',
       title: playlist.title,
       artist: extractArtistName(playlist.creator),
       cover: extractCoverUrl(playlist, 'picture_medium', 'picture_big', 'picture_small', 'picture_xl', 'picture'),

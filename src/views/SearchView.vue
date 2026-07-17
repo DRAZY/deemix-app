@@ -705,13 +705,25 @@ const contextMenuItems = computed(() => {
     <div class="sticky top-0 z-10 bg-background-main pt-2 pb-4">
       <form @submit.prevent="handleSearch" class="mb-4">
           <div class="relative">
-            <div class="flex items-stretch h-14 border border-white/[0.08] bg-background-secondary/70 focus-within:border-primary-500/50 transition-colors">
-              <span class="flex items-center px-3.5 font-mono text-[11px] font-bold tracking-[0.1em] bg-primary-500 text-background-main select-none">QUERY</span>
+            <!-- Channel Q mode: while the source is Qobuz the whole command bar
+                 shifts to the fixed brand cyan so the active service is
+                 unmistakable at any scroll position. -->
+            <div
+              class="flex items-stretch h-14 border bg-background-secondary/70 transition-colors"
+              :class="searchSource === 'qobuz'
+                ? 'border-qobuz-500/40 focus-within:border-qobuz-500/70'
+                : 'border-white/[0.08] focus-within:border-primary-500/50'"
+            >
+              <span
+                class="flex items-center px-3.5 font-mono text-[11px] font-bold tracking-[0.1em] text-background-main select-none"
+                :class="searchSource === 'qobuz' ? 'bg-qobuz-500' : 'bg-primary-500'"
+              >{{ searchSource === 'qobuz' ? 'QUERY::QOBUZ' : 'QUERY' }}</span>
               <input
                 v-model="searchQuery"
                 type="text"
                 :placeholder="t('search.placeholder')"
-                class="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[14px] px-4 text-foreground placeholder:text-foreground-muted/60 caret-primary-500"
+                class="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[14px] px-4 text-foreground placeholder:text-foreground-muted/60"
+                :class="searchSource === 'qobuz' ? 'caret-qobuz-500' : 'caret-primary-500'"
                 @paste="handlePaste"
                 @focus="handleSearchFocus"
                 @blur="handleSearchBlur"
@@ -733,7 +745,7 @@ const contextMenuItems = computed(() => {
                 :disabled="!qobuzConnected"
                 :title="qobuzConnected ? '' : 'Connect your Qobuz account in Settings'"
                 class="font-mono text-[10px] tracking-[0.12em] uppercase px-2.5 py-1 border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                :class="searchSource === 'qobuz' ? 'border-primary-500/60 text-primary-400 bg-primary-500/10' : 'border-white/[0.1] text-foreground-muted hover:text-foreground'"
+                :class="searchSource === 'qobuz' ? 'border-qobuz-500/60 text-qobuz-400 bg-qobuz-500/10' : 'border-white/[0.1] text-foreground-muted hover:text-foreground'"
               >Qobuz <span class="text-[8px] align-top">HI-RES</span></button>
             </div>
             <div class="mt-2 font-mono text-[10px] tracking-[0.06em] uppercase text-foreground-muted/80">{{ t('search.searchHint') }}</div>
@@ -894,7 +906,7 @@ const contextMenuItems = computed(() => {
       <!-- Tracks -->
       <section v-if="results.tracks.length > 0 && (activeTab === 'all' || activeTab === 'track')">
         <div class="flex items-center gap-3 mb-3">
-          <h2 class="font-display text-[14px] uppercase tracking-[0.06em]">{{ t('search.tracks') }}<span v-if="searchSource === 'qobuz'" class="ml-2 font-mono text-[9px] px-1.5 py-0.5 border border-primary-500/40 text-primary-400 tracking-[0.12em] align-middle">QOBUZ</span></h2>
+          <h2 class="font-display text-[14px] uppercase tracking-[0.06em]">{{ t('search.tracks') }}<span v-if="searchSource === 'qobuz'" class="ml-2 font-mono text-[9px] px-1.5 py-0.5 border border-qobuz-500/40 text-qobuz-400 tracking-[0.12em] align-middle">QOBUZ</span></h2>
           <span v-if="pagination.tracks.total" class="font-mono text-[10px] text-foreground-muted">
             {{ results.tracks.length.toLocaleString() }} / {{ pagination.tracks.total.toLocaleString() }}
           </span>
@@ -947,7 +959,7 @@ const contextMenuItems = computed(() => {
       <!-- Albums -->
       <section v-if="results.albums.length > 0 && (activeTab === 'all' || activeTab === 'album')">
         <div class="flex items-center gap-3 mb-3">
-          <h2 class="font-display text-[14px] uppercase tracking-[0.06em]">{{ t('search.albums') }}<span v-if="searchSource === 'qobuz'" class="ml-2 font-mono text-[9px] px-1.5 py-0.5 border border-primary-500/40 text-primary-400 tracking-[0.12em] align-middle">QOBUZ</span></h2>
+          <h2 class="font-display text-[14px] uppercase tracking-[0.06em]">{{ t('search.albums') }}<span v-if="searchSource === 'qobuz'" class="ml-2 font-mono text-[9px] px-1.5 py-0.5 border border-qobuz-500/40 text-qobuz-400 tracking-[0.12em] align-middle">QOBUZ</span></h2>
           <span v-if="pagination.albums.total" class="font-mono text-[10px] text-foreground-muted">
             {{ results.albums.length.toLocaleString() }} / {{ pagination.albums.total.toLocaleString() }}
           </span>
