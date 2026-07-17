@@ -366,7 +366,67 @@ class QobuzAuth {
 
   async getArtist(artistId: string | number, limit = 100): Promise<any> {
     const { appId } = await this.fetchAppCredentials()
-    return this.apiGet(`artist/get?artist_id=${artistId}&extra=albums&limit=${limit}&app_id=${appId}`, true)
+    const artist = await this.apiGet(`artist/get?artist_id=${artistId}&extra=albums&limit=${limit}&app_id=${appId}`, true)
+
+    // artist/get's albums extra carries NO release_type (verified live: all 100
+    // of a 1537-release catalog come back untyped), so the discography tabs
+    // can't classify from it. Qobuz's own web player uses artist/getReleasesList
+    // with a release_type filter — query it PER TYPE so the classification
+    // comes from the request itself and can't depend on a field the payload
+    // may omit. Any failure falls back to the untyped albums list.
+    try {
+      const typed = await this.getTypedReleases(artistId, appId)
+      if (typed.length > 0) {
+        // Where an item also exists in the untyped albums extra, prefer that
+        // richer known-shape object (covers, dates) and stamp the type onto it
+        // — getReleasesList items only need to supply id/title/type minimum.
+        const richById = new Map<string, any>(
+          ((artist.albums?.items || []) as any[]).map((i: any) => [String(i.id), i])
+        )
+        const items = typed.map(t => {
+          const rich = richById.get(String(t.id))
+          return rich ? { ...rich, release_type: t.release_type } : t
+        })
+        artist.albums = { ...(artist.albums || {}), items, total: artist.albums?.total ?? items.length }
+        console.log(`[QobuzAuth] Typed releases: ${items.length} across buckets`)
+      }
+    } catch (e: any) {
+      console.log('[QobuzAuth] getReleasesList unavailable, using untyped albums:', e.message)
+    }
+    return artist
+  }
+
+  /** Fetch an artist's releases per release-type bucket and stamp each item
+   *  with the app's record_type. epSingle splits by track count (≤3 → single)
+   *  — safe because the bucket itself guarantees ep-or-single. */
+  private async getTypedReleases(artistId: string | number, appId: string): Promise<any[]> {
+    const buckets: Array<{ qobuzType: string; stamp: (item: any) => string }> = [
+      { qobuzType: 'album', stamp: () => 'album' },
+      { qobuzType: 'epSingle', stamp: (i) => (i?.tracks_count || 0) <= 3 ? 'single' : 'ep' },
+      { qobuzType: 'live', stamp: () => 'album' },
+      { qobuzType: 'compilation', stamp: () => 'compilation' },
+    ]
+    const results = await Promise.all(buckets.map(b =>
+      this.apiGet(`artist/getReleasesList?artist_id=${artistId}&release_type=${b.qobuzType}&limit=100&sort=release_date&app_id=${appId}`, true)
+        .then(r => ({ b, items: (r?.items || r?.albums?.items || []) as any[] }))
+        .catch((e: any) => {
+          console.log(`[QobuzAuth] getReleasesList ${b.qobuzType} failed:`, e.message)
+          return { b, items: [] as any[] }
+        })
+    ))
+    const merged: any[] = []
+    const seen = new Set<string>()
+    for (const { b, items } of results) {
+      for (const item of items) {
+        if (!item?.id || !item?.title || seen.has(String(item.id))) continue
+        seen.add(String(item.id))
+        merged.push({ ...item, release_type: b.stamp(item) })
+      }
+    }
+    // Newest first across all buckets (the artist page re-sorts, but keep the
+    // fallback ordering sane too).
+    merged.sort((a, b) => String(b.release_date_original || b.released_at || '').localeCompare(String(a.release_date_original || a.released_at || '')))
+    return merged
   }
 
   async getTrack(trackId: string | number): Promise<any> {
