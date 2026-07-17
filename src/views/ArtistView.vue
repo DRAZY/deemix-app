@@ -12,6 +12,7 @@ import ErrorState from '../components/ErrorState.vue'
 import ContextMenu from '../components/ContextMenu.vue'
 import { useContextMenu } from '../composables/useContextMenu'
 import type { Artist, Track, Album } from '../types'
+import { qobuzRecordType } from '../utils/qobuzMap'
 
 const { t } = useI18n()
 
@@ -174,7 +175,7 @@ async function loadArtist(artistId: string) {
         nb_album: a.albums_count,
       } as any
       albums.value = (a.albums?.items || []).map((al: any) => ({
-        id: al.id, title: al.title, record_type: 'album',
+        id: al.id, title: al.title, record_type: qobuzRecordType(al),
         cover_small: al.image?.small, cover_medium: al.image?.large, cover_big: al.image?.large,
         artist: { id: a.id, name: a.name },
         nb_tracks: al.tracks_count,

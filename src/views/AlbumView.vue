@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { qobuzRecordType } from '../utils/qobuzMap'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { deezerAPI } from '../services/deezerAPI'
@@ -68,7 +69,7 @@ async function loadAlbum() {
       if (!resp.ok) throw new Error('Qobuz album load failed')
       const a = await resp.json()
       album.value = {
-        id: a.id, title: a.title, record_type: 'album',
+        id: a.id, title: a.title, record_type: qobuzRecordType(a),
         cover_small: a.image?.small, cover_medium: a.image?.large, cover_big: a.image?.large,
         artist: { id: a.artist?.id, name: a.artist?.name || '' } as any,
         nb_tracks: a.tracks_count,

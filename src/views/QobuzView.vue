@@ -10,6 +10,7 @@ import { useI18n } from 'vue-i18n'
 import AlbumCard from '../components/AlbumCard.vue'
 import ErrorState from '../components/ErrorState.vue'
 import type { Album } from '../types'
+import { qobuzRecordType } from '../utils/qobuzMap'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -28,7 +29,7 @@ const playlists = ref<Album[]>([])
 // contract as the search results, so cards badge/drill/download identically).
 function mapAlbum(a: any): Album {
   return {
-    id: a.id, title: a.title, nb_tracks: a.tracks_count,
+    id: a.id, title: a.title, nb_tracks: a.tracks_count, record_type: qobuzRecordType(a),
     artist: { id: a.artist?.id, name: a.artist?.name || '' },
     cover_small: a.image?.small, cover_medium: a.image?.large, cover_big: a.image?.large,
     release_date: a.release_date_original || a.released_at,
