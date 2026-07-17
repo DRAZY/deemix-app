@@ -1196,7 +1196,9 @@ export class DeezerAuth extends EventEmitter {
   // site's "New releases for you" — is only reachable via the private gw-light-api's
   // home page, so it must be read server-side. This works for guests: no ARL needed.
 
-  private newReleasesCache: { data: any[]; timestamp: number } | null = null
+  // Keyed to the gw api_token: the feed is personalized when logged in, so any
+  // session change (login/logout resets apiToken) self-invalidates the cache.
+  private newReleasesCache: { data: any[]; timestamp: number; token: string } | null = null
   private readonly NEW_RELEASES_CACHE_TTL = 60 * 60 * 1000 // 1 hour
 
   // Ensure we have a usable gw-light session (api_token + cookies). When the user
@@ -1237,14 +1239,21 @@ export class DeezerAuth extends EventEmitter {
   }
 
   /**
-   * Genuine, date-sorted new album releases from Deezer's private home feed.
-   * Reads the "freshest releases" module off the gw home page (identified by
-   * newest release dates, not its localized title), always keeps that curated
-   * section, and widens the list with the module's full grid — date-filtered to
-   * the last 90 days so the module's back-catalog padding is dropped. Cached 1h.
+   * Genuine, date-sorted new album releases from Deezer's private home feed —
+   * the same data behind the site's "New releases for you" module.
+   *
+   * Strategy: read every album section off the gw home page (when the user is
+   * logged in via ARL this includes their personalized new-releases module; as a
+   * guest it's the generic "freshest releases" one), keep the sections whose
+   * newest item falls inside the recency window (drops evergreen modules like
+   * "Live EPs"), then widen each kept section with its full /channels/module
+   * page. Everything is uniformly filtered to the last 90 days — the module
+   * pages pad themselves with same-artist back-catalog — deduped by album id,
+   * and sorted newest first. Locale-proof: no title matching. Cached 1h.
    */
   async getNewReleases(limit: number = 100): Promise<any[]> {
     if (this.newReleasesCache &&
+        this.newReleasesCache.token === this.apiToken &&
         Date.now() - this.newReleasesCache.timestamp < this.NEW_RELEASES_CACHE_TTL) {
       return this.newReleasesCache.data.slice(0, limit)
     }
@@ -1265,61 +1274,57 @@ export class DeezerAuth extends EventEmitter {
       throw new Error('No album sections on Deezer home feed')
     }
 
-    // Pick the album section whose items carry the newest release dates. That is
-    // the fresh-releases module regardless of its (localized) heading — matching
-    // by title would break across the app's 21 locales.
-    const fresh = sections
-      .map(s => ({
-        s,
-        newest: (s.items || []).map((i: any) => this.gwAlbumDate(i.data)).sort().reverse()[0] || ''
-      }))
-      .sort((a, b) => b.newest.localeCompare(a.newest))[0].s
+    const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
-    // The curated section itself is always clean/recent — keep every item.
+    // Keep every album section that actually carries recent releases.
+    const freshSections = sections.filter(s => {
+      const newest = (s.items || []).map((i: any) => this.gwAlbumDate(i.data)).sort().reverse()[0] || ''
+      return newest >= cutoff
+    })
+    console.log(`[DeezerAuth] New releases: ${sections.length} album sections on home, ${freshSections.length} recent`)
+
     const byId = new Map<string, any>()
-    for (const it of (fresh.items || [])) {
-      const d = it.data
-      if (d?.ALB_ID) byId.set(String(d.ALB_ID), d)
-    }
-    const sectionIds = new Set(byId.keys())
-
-    // Widen with the module's full grid for the See-All page, but date-filter the
-    // additions: the module page pads the list with same-artist back-catalog.
-    const slug = String(fresh.target || '').replace(/^\//, '')
-    if (slug && limit > byId.size) {
-      const cutoff = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-      try {
-        const mod = await this.rawApiCall('page.get', {
-          PAGE: slug,
-          VERSION: '2.5',
-          SUPPORT: { 'grid': ['album'], 'horizontal-grid': ['album'] },
-          LANG: 'en',
-          OPTIONS: []
-        })
-        const modItems = (mod?.results?.sections || [])[0]?.items || []
-        for (const it of modItems) {
-          const d = it.data
-          if (d?.ALB_ID && !byId.has(String(d.ALB_ID)) && this.gwAlbumDate(d) >= cutoff) {
-            byId.set(String(d.ALB_ID), d)
-          }
-        }
-      } catch (error: any) {
-        console.log('[DeezerAuth] New-releases module fetch failed, using section only:', error.message)
+    const addIfFresh = (d: any) => {
+      if (d?.ALB_ID && !byId.has(String(d.ALB_ID)) && this.gwAlbumDate(d) >= cutoff) {
+        byId.set(String(d.ALB_ID), d)
       }
     }
 
-    // Newest first — but keep the curated section ahead of the widened tail so the
-    // Home preview always shows the hand-picked freshest releases.
-    const albums = Array.from(byId.values())
-      .sort((a, b) => {
-        const sa = sectionIds.has(String(a.ALB_ID)) ? 1 : 0
-        const sb = sectionIds.has(String(b.ALB_ID)) ? 1 : 0
-        if (sa !== sb) return sb - sa
-        return this.gwAlbumDate(b).localeCompare(this.gwAlbumDate(a))
-      })
-      .map(d => this.mapGwAlbum(d))
+    for (const s of freshSections) {
+      for (const it of (s.items || [])) addIfFresh(it.data)
+    }
 
-    this.newReleasesCache = { data: albums, timestamp: Date.now() }
+    // Widen each fresh section with its full module page (the home row is only a
+    // ~11-item preview; the module holds the complete list, e.g. all ~24-30 of
+    // "New releases for you").
+    const slugs = freshSections
+      .map(s => String(s.target || '').replace(/^\//, ''))
+      .filter(Boolean)
+    const moduleResults = await Promise.all(slugs.map(slug =>
+      this.rawApiCall('page.get', {
+        PAGE: slug,
+        VERSION: '2.5',
+        SUPPORT: { 'grid': ['album'], 'horizontal-grid': ['album'] },
+        LANG: 'en',
+        OPTIONS: []
+      }).catch((error: any) => {
+        console.log(`[DeezerAuth] New-releases module ${slug} fetch failed:`, error.message)
+        return null
+      })
+    ))
+    for (const mod of moduleResults) {
+      for (const s of (mod?.results?.sections || [])) {
+        for (const it of (s.items || [])) addIfFresh(it.data)
+      }
+    }
+
+    // Pure newest-first ordering — the user is here for release dates.
+    const albums = Array.from(byId.values())
+      .sort((a, b) => this.gwAlbumDate(b).localeCompare(this.gwAlbumDate(a)))
+      .map(d => this.mapGwAlbum(d))
+    console.log(`[DeezerAuth] New releases: ${albums.length} albums within 90 days`)
+
+    this.newReleasesCache = { data: albums, timestamp: Date.now(), token: this.apiToken }
     return albums.slice(0, limit)
   }
 

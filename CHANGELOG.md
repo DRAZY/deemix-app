@@ -10,7 +10,7 @@ Entries from v1.7.5 onward use a compact format — short bullets, one line each
 
 ### Fixed
 
-- **New Releases section restored on the Home tab — with genuinely new, dated releases.** Deezer retired its public `/editorial/{genre}/releases` endpoint (it now returns an empty list for every genre), which silently collapsed the Home "New Releases" section and its See-All page. New Releases now reads Deezer's real date-stamped "freshest releases" feed from its home API — the same list the Deezer site shows — so the section is genuine recent album releases (newest first), not old catalog. The See-All page widens it with more of the same feed, filtered to the last 90 days. Works without signing in.
+- **New Releases section restored on the Home tab — with genuinely new, dated releases.** Deezer retired its public `/editorial/{genre}/releases` endpoint (it now returns an empty list for every genre), which silently collapsed the Home "New Releases" section and its See-All page. New Releases now reads Deezer's real date-stamped new-release modules from its home feed — including your personalized "New releases for you" list when you're signed in — merging each module's full grid, filtered to the last 90 days and sorted newest first. The Home tab shows the 30 most recent; See-All shows the whole window. Works without signing in too (generic freshest-releases feed).
 
 ## [2.0.1] — 2026-07-15
 
