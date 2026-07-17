@@ -36,12 +36,19 @@ export function qualityToFormatId(quality: '128' | '320' | 'flac'): QobuzFormatI
  * for the caller to record. Throws on any resolution/download failure so the
  * queue can mark the item errored (no silent partial files — a failed stream
  * removes the partial).
+ *
+ * Format honesty: Qobuz negotiates down server-side (e.g. a FLAC request on a
+ * lossy-only account/track returns format 5 MP3). When that happens with
+ * `bitrateFallback` disabled we throw — matching the Deezer path's behavior —
+ * and with it enabled we correct the file extension so MP3 bytes never land in
+ * a `.flac` file. The returned formatId is always the real delivered format.
  */
 export async function downloadQobuzTrack(
   trackId: string | number,
   quality: '128' | '320' | 'flac',
   outputPath: string,
-  onProgress?: (bytes: number, total: number) => void
+  onProgress?: (bytes: number, total: number) => void,
+  bitrateFallback: boolean = true
 ): Promise<QobuzDownloadResult> {
   if (!qobuzAuth.isLoggedIn()) throw new Error('Qobuz: not connected — link your account in Settings')
 
@@ -49,6 +56,18 @@ export async function downloadQobuzTrack(
   const file = await qobuzAuth.getFileUrl(trackId, formatId)
   if (file.restricted || !file.url) {
     throw new Error(`Qobuz: track ${trackId} is not available at the requested quality on this account`)
+  }
+
+  // FLAC requested but Qobuz delivered lossy — honor the Bitrate Fallback setting.
+  const deliveredLossy = file.formatId === QOBUZ_FORMAT.MP3_320
+  if (quality === 'flac' && deliveredLossy) {
+    if (!bitrateFallback) {
+      throw new Error('Preferred bitrate (FLAC) not available for this track on your Qobuz plan. Enable Bitrate Fallback in settings to download in a lower quality.')
+    }
+    // Keep the file honest: swap the templated .flac extension for .mp3.
+    if (outputPath.toLowerCase().endsWith('.flac')) {
+      outputPath = outputPath.slice(0, -5) + '.mp3'
+    }
   }
 
   const res = await fetch(file.url)

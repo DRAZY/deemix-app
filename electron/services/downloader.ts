@@ -876,13 +876,36 @@ export class Downloader extends EventEmitter {
       this.emit('progress', progress)
 
       const q = options.quality === 'FLAC' ? 'flac' : options.quality === 'MP3_128' ? '128' : '320'
-      const ext = q === 'flac' ? 'flac' : 'mp3'
+      const shim = this.qobuzMetaToTrackInfo(meta)
+
+      // Duplicate skip by ISRC — same discipline as the Deezer path: runs before
+      // any network fetch so skips stay instant.
+      if (options.skipDuplicateTracks && shim.ISRC) {
+        await libraryIndex.ensureLoaded()
+        const existingPath = libraryIndex.findExisting(shim.ISRC)
+        if (existingPath) {
+          console.log(`[Downloader] Skipping Qobuz duplicate (ISRC ${shim.ISRC} already in library): ${existingPath}`)
+          progress.status = 'completed'
+          progress.progress = 100
+          progress.skippedAsDuplicate = true
+          this.emit('progress', progress)
+          this.emit('complete', { ...progress, path: existingPath })
+          return
+        }
+      }
 
       // Build the path from the user's folder-structure + track-naming templates
-      // (reuses the Deezer path builder via the Qobuz→trackInfo shim), then ensure
-      // the directory exists.
-      const shim = this.qobuzMetaToTrackInfo(meta)
-      const outputPath = this.buildOutputPath(shim, options, options.quality)
+      // (reuses the Deezer path builder via the Qobuz→trackInfo shim), then honor
+      // the overwrite mode ('no' → skip when the file already exists).
+      const initialOutputPath = this.buildOutputPath(shim, options, options.quality)
+      const outputPath = this.reserveOutputPath(initialOutputPath, options.trackId, options.overwriteMode)
+      if (outputPath === null) {
+        progress.status = 'completed'
+        progress.progress = 100
+        this.emit('progress', progress)
+        this.emit('complete', { ...progress, path: initialOutputPath })
+        return
+      }
       fs.mkdirSync(path.dirname(outputPath), { recursive: true })
 
       const result = await downloadQobuzTrack(options.trackId, q as '128' | '320' | 'flac', outputPath, (recv, total) => {
@@ -890,26 +913,43 @@ export class Downloader extends EventEmitter {
         progress.total = total
         progress.progress = total ? Math.floor((recv / total) * 100) : 0
         this.emit('progress', progress)
-      })
+      }, options.bitrateFallback !== false)
+
+      // The delivered format is authoritative — a FLAC request on a lossy-only
+      // plan legitimately comes back MP3 (with the extension already corrected).
+      const gotFlac = result.path.toLowerCase().endsWith('.flac')
+      progress.actualFormat = gotFlac ? 'FLAC' : 'MP3_320'
 
       // Qobuz files arrive untagged — tag them from the API metadata by reusing
       // the Deezer tagger via a Deezer-shaped shim + a pre-fetched cover buffer.
       progress.status = 'tagging'
       this.emit('progress', progress)
-      try {
+      let cover: Buffer | undefined
+      if (options.embedArtwork || options.saveArtwork) {
         const coverUrl = meta?.album?.image?.large || meta?.album?.image?.small
-        let cover: Buffer | undefined
         if (coverUrl) {
           try {
             const cr = await fetch(coverUrl)
             if (cr.ok) cover = Buffer.from(await cr.arrayBuffer())
           } catch { /* cover optional */ }
         }
-        const tagOptions = { ...options, embedArtwork: true, prefetchedCover: cover }
-        if (ext === 'flac') await this.tagFlacFile(result.path, shim, tagOptions)
+      }
+      try {
+        const tagOptions = { ...options, prefetchedCover: options.embedArtwork ? cover : undefined }
+        if (gotFlac) await this.tagFlacFile(result.path, shim, tagOptions)
         else await this.tagFile(result.path, shim, tagOptions)
       } catch (tagErr: any) {
         console.error(`[Downloader] Qobuz tagging error (file kept):`, tagErr.message)
+      }
+
+      // Separate cover file (cover.jpg) — honors the same albumCovers settings as
+      // the Deezer path (saveCovers toggle, name template, never overwrites).
+      if (options.saveArtwork && cover) {
+        try {
+          this.saveArtworkBuffer(cover, path.dirname(result.path), options)
+        } catch (artErr: any) {
+          console.error('[Downloader] Qobuz artwork save error (non-fatal):', artErr.message)
+        }
       }
 
       progress.status = 'completed'
@@ -3643,6 +3683,29 @@ export class Downloader extends EventEmitter {
         resolve([])
       })
     })
+  }
+
+  /** Save a pre-fetched cover buffer as the folder's cover file (Qobuz path —
+   *  no Deezer CDN hash to fetch from). Honors the same albumCovers settings as
+   *  saveArtwork(): saveCovers toggle, cover name template, never overwrites an
+   *  existing non-empty cover. */
+  private saveArtworkBuffer(cover: Buffer, outputDir: string, options: DownloadOptions): void {
+    const albumCoverSettings = options.metadataSettings?.albumCovers || {
+      saveCovers: true,
+      coverNameTemplate: 'cover'
+    }
+    if (!albumCoverSettings.saveCovers) return
+
+    const coverName = albumCoverSettings.coverNameTemplate || 'cover'
+    const artworkPath = path.join(outputDir, `${coverName}.jpg`)
+
+    if (fs.existsSync(artworkPath)) {
+      const stats = fs.statSync(artworkPath)
+      if (stats.size > 0) return
+      fs.unlinkSync(artworkPath)
+    }
+    fs.writeFileSync(artworkPath, cover)
+    console.log(`[Downloader] Saved Qobuz artwork: ${artworkPath} (${cover.length} bytes)`)
   }
 
   private async saveArtwork(albumPicture: string, outputDir: string, options: DownloadOptions): Promise<void> {

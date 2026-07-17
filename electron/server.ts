@@ -3162,7 +3162,7 @@ export class DeemixServer extends EventEmitter {
       // Transfer Rack with live progress (Qobuz items route to the no-decrypt
       // path via the service discriminator). Returns the queue id immediately.
       const downloadId = await downloader.download(
-        this.buildQobuzDownloadOptions(trackId, body.partOfAlbum === true, body.album)
+        this.buildQobuzDownloadOptions(trackId, { partOfAlbum: body.partOfAlbum === true, album: body.album })
       )
       this.sendJSON(res, { success: true, downloadId })
     } catch (error: any) {
@@ -3170,23 +3170,43 @@ export class DeemixServer extends EventEmitter {
     }
   }
 
-  /** Shared Qobuz download options — the same folder/template/metadata settings
-   *  the Deezer path uses, so Qobuz files follow the user's structure + tags. */
-  private buildQobuzDownloadOptions(trackId: string | number, partOfAlbum: boolean, album?: { title?: string; artist?: string }): any {
-    const qualityMap: Record<string, 'MP3_128' | 'MP3_320' | 'FLAC'> = { '128': 'MP3_128', '320': 'MP3_320', 'flac': 'FLAC' }
+  /** Shared Qobuz download options — mirrors the Deezer download options field-for-
+   *  field (same quality, folder/template, artwork, tagging, duplicate/overwrite
+   *  settings) so Qobuz downloads follow the app's settings exactly. Deezer-only
+   *  concepts (isrcFallback alternate-release lookup, lyrics — Qobuz's API exposes
+   *  none) are intentionally absent. */
+  private buildQobuzDownloadOptions(
+    trackId: string | number,
+    ctx: {
+      partOfAlbum?: boolean
+      album?: { title?: string; artist?: string }
+      playlistName?: string
+      playlistPosition?: number
+    } = {}
+  ): any {
+    const isFromPlaylist = !!ctx.playlistName
     return {
       service: 'qobuz',
       trackId,
       outputPath: this.settings.downloadPath,
-      quality: qualityMap[this.settings.quality] || 'MP3_320',
+      // settings.quality is already server-format ('MP3_128'|'MP3_320'|'FLAC') —
+      // pass it through. (A renderer-format map here once made every Qobuz
+      // download silently fall back to MP3_320.)
+      quality: validateQuality(this.settings.quality),
+      bitrateFallback: this.settings.bitrateFallback,
       createFolders: true,
       artistFolder: this.settings.createArtistFolder,
       albumFolder: this.settings.createAlbumFolder,
+      saveArtwork: this.settings.saveArtwork,
       embedArtwork: this.settings.embedArtwork,
-      // Part of an album → NOT-single, so the album folder + album track template
-      // apply (tracks nest in "Artist - Album/").
-      isSingle: !partOfAlbum,
-      albumContext: album ? { albumTitle: album.title, albumArtist: album.artist } : undefined,
+      // Part of an album or playlist → NOT-single, so the album/playlist folder
+      // and matching track template apply.
+      isSingle: !ctx.partOfAlbum && !isFromPlaylist,
+      isFromPlaylist: isFromPlaylist || undefined,
+      playlistName: ctx.playlistName || undefined,
+      playlistPosition: ctx.playlistPosition,
+      savePlaylistAsCompilation: isFromPlaylist ? this.settings.savePlaylistAsCompilation : undefined,
+      albumContext: ctx.album ? { albumTitle: ctx.album.title, albumArtist: ctx.album.artist } : undefined,
       folderSettings: {
         createPlaylistFolder: this.settings.createPlaylistFolder,
         createArtistFolder: this.settings.createArtistFolder,
@@ -3206,13 +3226,21 @@ export class DeemixServer extends EventEmitter {
       metadataSettings: {
         tags: this.settings.tags,
         albumCovers: this.settings.albumCovers,
+        useNullSeparator: this.settings.useNullSeparator,
+        saveID3v1: this.settings.saveID3v1,
+        saveOnlyMainArtist: this.settings.saveOnlyMainArtist,
         artistSeparator: this.settings.artistSeparator,
         dateFormatFlac: this.settings.dateFormatFlac,
         titleCasing: this.settings.titleCasing,
         artistCasing: this.settings.artistCasing,
         removeAlbumVersion: this.settings.removeAlbumVersion,
         featuredArtistsHandling: this.settings.featuredArtistsHandling,
+        keepVariousArtists: this.settings.keepVariousArtists,
+        removeArtistCombinations: this.settings.removeArtistCombinations,
       },
+      skipDuplicateTracks: this.settings.skipDuplicateTracks,
+      createErrorLog: this.settings.createErrorLog,
+      overwriteMode: this.settings.overwriteFiles,
     }
   }
 
@@ -3238,11 +3266,23 @@ export class DeemixServer extends EventEmitter {
       const data = albumId ? await qobuzAuth.getAlbum(albumId) : await qobuzAuth.getPlaylist(playlistId)
       const tracks = data?.tracks?.items || []
       const album = albumId ? { title: data?.title, artist: data?.artist?.name } : undefined
+      // Playlist downloads carry playlist context so the playlist folder,
+      // playlist track template, and compilation tagging settings apply —
+      // matching the Deezer playlist path (previously they were treated as
+      // album tracks and scattered across per-album folders).
+      const playlistName = playlistId ? (data?.name || data?.title || 'Playlist') : undefined
 
       const ids: string[] = []
+      let position = 0
       for (const t of tracks) {
         if (!t?.id) continue
-        const id = await downloader.download(this.buildQobuzDownloadOptions(t.id, true, album))
+        position++
+        const id = await downloader.download(this.buildQobuzDownloadOptions(t.id, {
+          partOfAlbum: !!albumId,
+          album,
+          playlistName,
+          playlistPosition: playlistName ? position : undefined,
+        }))
         ids.push(id)
       }
       this.sendJSON(res, { ids, count: ids.length })
