@@ -163,6 +163,21 @@ async function analyzeQobuzLink(url: string) {
 
 // Collect the track ids a Qobuz analyze result implies (single track, or all
 // tracks of an album/playlist).
+// Route to the source-aware detail view for an analyzed Qobuz link. Tracks
+// route to their album (no track detail page exists — same rule as Deezer).
+const qobuzDetailRoute = computed(() => {
+  const q = qobuzResult.value
+  if (!q) return null
+  if (q.type === 'track') {
+    const albumId = q.data?.album?.id
+    return albumId ? { path: `/album/${albumId}`, query: { source: 'qobuz' } } : null
+  }
+  if (q.type === 'album' || q.type === 'playlist' || q.type === 'artist') {
+    return { path: `/${q.type}/${q.id}`, query: { source: 'qobuz' } }
+  }
+  return null
+})
+
 function qobuzTrackIds(q: any): (string | number)[] {
   if (!q) return []
   if (q.type === 'track') return [q.id]
@@ -980,7 +995,11 @@ async function pasteLink() {
             <span class="font-mono text-[10px] tracking-[0.12em] uppercase text-primary-400 border border-primary-500/40 px-1.5 py-0.5">{{ qobuzResult.type }}</span>
             <span class="font-mono text-[10px] tracking-[0.12em] uppercase text-foreground-muted">Qobuz</span>
           </div>
-          <h3 class="text-lg font-semibold truncate">{{ qobuzResult.data?.title }}</h3>
+          <h3
+            class="text-lg font-semibold truncate"
+            :class="{ 'hover:text-qobuz-400 cursor-pointer transition-colors': qobuzDetailRoute }"
+            @click="qobuzDetailRoute && router.push(qobuzDetailRoute)"
+          >{{ qobuzResult.data?.title }}</h3>
           <p class="text-foreground-muted truncate">
             {{ qobuzResult.data?.performer?.name || qobuzResult.data?.artist?.name }}
           </p>

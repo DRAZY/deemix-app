@@ -48,6 +48,10 @@ const getFilterCount = (filter: DiscographyFilter): number => {
   return albums.value.filter(a => a.record_type === filter).length
 }
 
+// Qobuz artist pages must propagate the source on every album link — a Qobuz
+// album id sent to the Deezer loader is a guaranteed "Failed to load".
+const sourceQuery = computed(() => route.query.source === 'qobuz' ? { source: 'qobuz' } : undefined)
+
 const filterTabs = computed(() => [
   { key: 'all' as DiscographyFilter, label: t('artistView.all'), count: getFilterCount('all') },
   { key: 'album' as DiscographyFilter, label: t('artistView.albums'), count: getFilterCount('album') },
@@ -473,7 +477,7 @@ const contextMenuItems = computed(() => {
             <!-- Album title with badges -->
             <div class="flex items-center gap-2 flex-wrap">
               <router-link
-                :to="`/album/${latestRelease.id}`"
+                :to="{ path: `/album/${latestRelease.id}`, query: sourceQuery }"
                 class="text-lg font-bold hover:text-primary-400 transition-colors"
               >
                 {{ latestRelease.title }}
@@ -494,7 +498,7 @@ const contextMenuItems = computed(() => {
             </p>
             <!-- Action buttons -->
             <div class="flex gap-2 mt-3">
-              <router-link :to="`/album/${latestRelease.id}`" class="btn btn-secondary text-sm">
+              <router-link :to="{ path: `/album/${latestRelease.id}`, query: sourceQuery }" class="btn btn-secondary text-sm">
                 {{ t('artistView.viewAlbum') }}
               </router-link>
               <button @click="downloadAlbum(latestRelease)" class="btn btn-primary text-sm">
@@ -596,7 +600,7 @@ const contextMenuItems = computed(() => {
             <router-link
               v-for="album in sortedAlbums"
               :key="album.id"
-              :to="`/album/${album.id}`"
+              :to="{ path: `/album/${album.id}`, query: sourceQuery }"
               class="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-3 items-center hover:bg-white/5 transition-colors group"
             >
               <!-- Cover -->

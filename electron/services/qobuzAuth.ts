@@ -32,6 +32,9 @@
  * with a real browser-minted token.
  */
 import crypto from 'crypto'
+import fs from 'fs'
+import path from 'path'
+import { app } from 'electron'
 
 const QOBUZ_API_BASE = 'https://www.qobuz.com/api.json/0.2'
 const QOBUZ_LOGIN_PAGE = 'https://play.qobuz.com/login'
@@ -95,8 +98,41 @@ class QobuzAuth {
    * appSecret is present in-bundle (older bundles only carried the obfuscated
    * per-timezone seed split — kept as fallback below).
    */
+  // In-flight scrape memoized so concurrent cold-start callers (search, discover,
+  // detail views firing together at boot) share one bundle download instead of
+  // each triggering their own.
+  private credsInFlight: Promise<QobuzAppCredentials> | null = null
+  private readonly CREDS_CACHE_TTL = 24 * 60 * 60 * 1000 // 24h
+
+  // app_id/secret candidates are public client credentials scraped from Qobuz's
+  // own public web bundle — not user secrets — so a plain JSON cache is fine.
+  private credsCachePath(): string {
+    return path.join(app.getPath('userData'), 'qobuz-app-creds.json')
+  }
+
   async fetchAppCredentials(force = false): Promise<QobuzAppCredentials> {
     if (this.appCreds && !force) return this.appCreds
+    if (this.credsInFlight && !force) return this.credsInFlight
+    this.credsInFlight = this.fetchAppCredentialsInternal(force)
+      .finally(() => { this.credsInFlight = null })
+    return this.credsInFlight
+  }
+
+  private async fetchAppCredentialsInternal(force: boolean): Promise<QobuzAppCredentials> {
+    // Disk cache (24h TTL): skips the multi-second login-page + bundle.js scrape
+    // on every app boot — the single biggest Qobuz cold-start delay.
+    if (!force) {
+      try {
+        const raw = JSON.parse(fs.readFileSync(this.credsCachePath(), 'utf8'))
+        if (raw?.appId && Array.isArray(raw.secretCandidates) && raw.secretCandidates.length > 0 &&
+            Date.now() - (raw.timestamp || 0) < this.CREDS_CACHE_TTL) {
+          this.secretCandidates = raw.secretCandidates
+          this.appCreds = { appId: raw.appId, appSecret: raw.secretCandidates[0] }
+          console.log('[QobuzAuth] App credentials loaded from disk cache')
+          return this.appCreds
+        }
+      } catch { /* missing/invalid cache — fall through to scrape */ }
+    }
 
     const loginHtml = await this.httpText(QOBUZ_LOGIN_PAGE)
     const bundlePath = loginHtml.match(/\/resources\/[0-9.]+-[a-z0-9]+\/bundle\.js/)?.[0]
@@ -115,6 +151,17 @@ class QobuzAuth {
     // appSecret here is the first candidate as a placeholder; the real one is
     // resolved by trial in getFileUrl (see resolveSecret).
     this.appCreds = { appId, appSecret: this.secretCandidates[0] }
+
+    try {
+      fs.writeFileSync(this.credsCachePath(), JSON.stringify({
+        appId,
+        secretCandidates: this.secretCandidates,
+        timestamp: Date.now()
+      }))
+    } catch (e: any) {
+      console.log('[QobuzAuth] Could not persist creds cache:', e.message)
+    }
+
     return this.appCreds
   }
 
@@ -211,9 +258,25 @@ class QobuzAuth {
 
   /** Resolve a signed, direct download URL for a track at a requested format. */
   async getFileUrl(trackId: string | number, formatId: QobuzFormatId): Promise<QobuzFileUrl> {
-    const { appId } = await this.fetchAppCredentials()
+    let { appId } = await this.fetchAppCredentials()
     if (!this.session) throw new Error('Qobuz: not logged in')
 
+    // Two passes: if every cached candidate fails to sign (Qobuz rotated its
+    // bundle since the creds were cached), force a fresh scrape and try once
+    // more before giving up.
+    for (let pass = 0; pass < 2; pass++) {
+      const result = await this.tryFileUrlCandidates(trackId, formatId, appId)
+      if (result) return result
+      if (pass === 0) {
+        console.log('[QobuzAuth] All cached secret candidates failed — refreshing app credentials')
+        ;({ appId } = await this.fetchAppCredentials(true))
+      }
+    }
+    throw new Error('Qobuz: no app_secret candidate produced a valid signature (after credential refresh)')
+  }
+
+  /** One trial pass over the current secret candidates; null if all fail to sign. */
+  private async tryFileUrlCandidates(trackId: string | number, formatId: QobuzFormatId, appId: string): Promise<QobuzFileUrl | null> {
     // Try candidate secrets in order; cache the first that signs valid (moves it
     // to the front so subsequent calls hit it immediately). A signature failure
     // is the only reason to advance — any other response (incl. a restrictions
@@ -254,7 +317,8 @@ class QobuzAuth {
         samplingRate: json.sampling_rate,
       }
     }
-    throw new Error(`Qobuz: no app_secret candidate produced a valid signature (${lastMessage})`)
+    console.log(`[QobuzAuth] Candidate pass failed: ${lastMessage}`)
+    return null
   }
 
   async search(query: string, limit = 10, offset = 0): Promise<any> {
@@ -322,12 +386,30 @@ class QobuzAuth {
 
   // --- transport helpers ---
 
+  // All Qobuz calls get a hard timeout (a stalled connection must fail fast and
+  // visibly, not hang a view forever) and one retry on network-level failures
+  // (timeouts, DNS/socket errors). HTTP error statuses are NOT retried — those
+  // are real answers. GETs only, so the retry is safe.
+  private async fetchWithRetry(url: string, init: RequestInit, timeoutMs: number, attempts = 2): Promise<Response> {
+    let lastError: any
+    for (let i = 0; i < attempts; i++) {
+      try {
+        return await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) })
+      } catch (e: any) {
+        lastError = e
+        console.log(`[QobuzAuth] Network failure (attempt ${i + 1}/${attempts}):`, e.message)
+        if (i < attempts - 1) await new Promise(r => setTimeout(r, 800))
+      }
+    }
+    throw new Error(`Qobuz: network failure after ${attempts} attempts (${lastError?.name === 'TimeoutError' ? 'timed out' : lastError?.message})`)
+  }
+
   private async apiGet(pathAndQuery: string, auth = false): Promise<any> {
     const headers: Record<string, string> = {}
     if (this.appCreds) headers['X-App-Id'] = this.appCreds.appId
     if (auth && this.session) headers['X-User-Auth-Token'] = this.session.userAuthToken
 
-    const res = await fetch(`${QOBUZ_API_BASE}/${pathAndQuery}`, { headers })
+    const res = await this.fetchWithRetry(`${QOBUZ_API_BASE}/${pathAndQuery}`, { headers }, 15000)
     if (!res.ok) {
       throw new Error(`Qobuz API ${pathAndQuery.split('?')[0]} failed: HTTP ${res.status}`)
     }
@@ -341,7 +423,7 @@ class QobuzAuth {
     if (this.appCreds) headers['X-App-Id'] = this.appCreds.appId
     if (auth && this.session) headers['X-User-Auth-Token'] = this.session.userAuthToken
 
-    const res = await fetch(`${QOBUZ_API_BASE}/${pathAndQuery}`, { headers })
+    const res = await this.fetchWithRetry(`${QOBUZ_API_BASE}/${pathAndQuery}`, { headers }, 15000)
     try {
       return await res.json()
     } catch {
@@ -350,7 +432,8 @@ class QobuzAuth {
   }
 
   private async httpText(url: string): Promise<string> {
-    const res = await fetch(url)
+    // Bundle.js is large — allow a longer window than API calls.
+    const res = await this.fetchWithRetry(url, {}, 30000)
     if (!res.ok) throw new Error(`Qobuz: fetch ${url} failed: HTTP ${res.status}`)
     return res.text()
   }
