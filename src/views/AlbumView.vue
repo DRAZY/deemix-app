@@ -59,6 +59,39 @@ async function loadAlbum() {
   const albumId = route.params.id as string
   isLoading.value = true
   hasError.value = false
+
+  // Qobuz album: load from the Qobuz backend (its id isn't a Deezer id).
+  if (route.query.source === 'qobuz') {
+    try {
+      const port = window.electronAPI ? await window.electronAPI.getServerPort() : (downloadStore.serverPort || 6595)
+      const resp = await fetch(`http://127.0.0.1:${port}/api/qobuz/album?id=${albumId}`)
+      if (!resp.ok) throw new Error('Qobuz album load failed')
+      const a = await resp.json()
+      album.value = {
+        id: a.id, title: a.title, record_type: 'album',
+        cover_small: a.image?.small, cover_medium: a.image?.large, cover_big: a.image?.large,
+        artist: { name: a.artist?.name || '' } as any,
+        nb_tracks: a.tracks_count,
+        release_date: a.release_date_original || a.released_at,
+        source: 'qobuz', qobuzId: a.id,
+        qobuzData: { title: a.title, artist: a.artist, image: a.image, tracks_count: a.tracks_count },
+      } as any
+      tracks.value = (a.tracks?.items || []).map((t: any) => ({
+        id: t.id, title: t.title, duration: t.duration,
+        artist: { name: t.performer?.name || a.artist?.name || '' },
+        album: { title: a.title, cover_small: a.image?.small, cover_medium: a.image?.large },
+        track_position: t.track_number, disk_number: t.media_number,
+        source: 'qobuz', qobuzId: t.id,
+      })) as any
+    } catch (error) {
+      console.error('Failed to load Qobuz album:', error)
+      hasError.value = true
+    } finally {
+      isLoading.value = false
+    }
+    return
+  }
+
   try {
     const [albumData, tracksData] = await Promise.all([
       deezerAPI.getAlbum(albumId),

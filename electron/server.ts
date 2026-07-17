@@ -867,6 +867,12 @@ export class DeemixServer extends EventEmitter {
       case '/api/qobuz/artist':
         await this.handleQobuzArtist(url, res)
         break
+      case '/api/qobuz/album':
+        await this.handleQobuzAlbum(url, res)
+        break
+      case '/api/qobuz/playlist':
+        await this.handleQobuzPlaylist(url, res)
+        break
       case '/api/qobuz/download':
         await this.handleQobuzDownload(req, res)
         break
@@ -3084,6 +3090,28 @@ export class DeemixServer extends EventEmitter {
     if (!qobuzAuth.isLoggedIn()) { this.sendJSON(res, { error: 'Qobuz not connected' }, 401); return }
     try {
       this.sendJSON(res, await qobuzAuth.getArtist(id))
+    } catch (error: any) {
+      this.sendJSON(res, { error: error.message }, 500)
+    }
+  }
+
+  private async handleQobuzAlbum(url: URL, res: ServerResponse): Promise<void> {
+    const id = url.searchParams.get('id')
+    if (!id) { this.sendJSON(res, { error: 'id required' }, 400); return }
+    if (!qobuzAuth.isLoggedIn()) { this.sendJSON(res, { error: 'Qobuz not connected' }, 401); return }
+    try {
+      this.sendJSON(res, await qobuzAuth.getAlbum(id))
+    } catch (error: any) {
+      this.sendJSON(res, { error: error.message }, 500)
+    }
+  }
+
+  private async handleQobuzPlaylist(url: URL, res: ServerResponse): Promise<void> {
+    const id = url.searchParams.get('id')
+    if (!id) { this.sendJSON(res, { error: 'id required' }, 400); return }
+    if (!qobuzAuth.isLoggedIn()) { this.sendJSON(res, { error: 'Qobuz not connected' }, 401); return }
+    try {
+      this.sendJSON(res, await qobuzAuth.getPlaylist(id))
     } catch (error: any) {
       this.sendJSON(res, { error: error.message }, 500)
     }

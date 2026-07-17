@@ -38,6 +38,37 @@ const loadingPercentage = computed(() => {
 
 onMounted(async () => {
   const playlistId = route.params.id as string
+
+  // Qobuz playlist: load from the Qobuz backend (its id isn't a Deezer id).
+  if (route.query.source === 'qobuz') {
+    try {
+      const port = window.electronAPI ? await window.electronAPI.getServerPort() : (downloadStore.serverPort || 6595)
+      const resp = await fetch(`http://127.0.0.1:${port}/api/qobuz/playlist?id=${playlistId}`)
+      if (!resp.ok) throw new Error('Qobuz playlist load failed')
+      const p = await resp.json()
+      const cover = p.images300?.[0] || p.images?.[0] || p.image_rectangle?.[0]
+      playlist.value = {
+        id: p.id, title: p.name,
+        creator: { name: p.owner?.name || '' } as any,
+        picture_medium: cover, picture_big: cover,
+        nb_tracks: p.tracks_count,
+        source: 'qobuz', qobuzId: p.id, qobuzType: 'playlist',
+      } as any
+      tracks.value = (p.tracks?.items || []).map((t: any) => ({
+        id: t.id, title: t.title, duration: t.duration,
+        artist: { name: t.performer?.name || '' },
+        album: { title: t.album?.title, cover_small: t.album?.image?.small, cover_medium: t.album?.image?.large },
+        source: 'qobuz', qobuzId: t.id,
+      })) as any
+    } catch (error) {
+      console.error('Failed to load Qobuz playlist:', error)
+    } finally {
+      isLoading.value = false
+      isLoadingTracks.value = false
+    }
+    return
+  }
+
   try {
     // First, get the playlist metadata
     const playlistData = await deezerAPI.getPlaylist(playlistId)

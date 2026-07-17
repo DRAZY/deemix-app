@@ -76,6 +76,10 @@ export interface Playlist {
   public?: boolean
   link?: string
   tracks?: { data: Track[] }
+  // Non-Deezer source markers (Qobuz) — drive download routing.
+  source?: 'deezer' | 'qobuz'
+  qobuzId?: string | number
+  qobuzType?: 'album' | 'playlist'
 }
 
 export type DownloadStatus = 'pending' | 'downloading' | 'completed' | 'error' | 'paused'

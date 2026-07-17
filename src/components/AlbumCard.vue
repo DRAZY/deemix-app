@@ -46,10 +46,12 @@ watch(() => props.album.id, () => {
 
 function navigate(event: Event) {
   event.stopPropagation()
+  // Qobuz items load from the Qobuz backend (their id isn't a Deezer id).
+  const query = (props.album as any).source === 'qobuz' ? { source: 'qobuz' } : undefined
   if (props.type === 'playlist') {
-    router.push(`/playlist/${props.album.id}`)
+    router.push({ path: `/playlist/${props.album.id}`, query })
   } else {
-    router.push(`/album/${props.album.id}`)
+    router.push({ path: `/album/${props.album.id}`, query })
   }
 }
 

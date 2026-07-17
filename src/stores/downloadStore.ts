@@ -702,6 +702,12 @@ export const useDownloadStore = defineStore('downloads', () => {
   async function addPlaylistDownload(playlist: Playlist, tracks: Track[], refreshTags = false) {
     const toastStore = useToastStore()
 
+    // Qobuz-sourced playlist → grouped Qobuz download path.
+    if ((playlist as any).source === 'qobuz') {
+      await addQobuzAlbumDownload({ type: 'playlist', id: String((playlist as any).qobuzId ?? playlist.id), data: playlist })
+      return
+    }
+
     // Check if already downloaded (completed). Refresh-tags re-processes
     // existing files on purpose, so it bypasses this guard.
     if (!refreshTags && isPlaylistCompleted(playlist.id)) {
