@@ -26,12 +26,14 @@ async function loadContent() {
   try {
     // Load chart data and new releases for all sections
     const [releasesResponse, tracksResponse, albumsResponse, playlistsResponse] = await Promise.all([
-      deezerAPI.getNewReleases(10),
+      // New releases get a deeper cut than the chart rows — the feed is genuinely
+      // dated (newest first) and users want the full recent breadth at a glance.
+      deezerAPI.getNewReleases(30),
       deezerAPI.getChart('tracks'),
       deezerAPI.getChart('albums'),
       deezerAPI.getChart('playlists')
     ])
-    newReleases.value = releasesResponse.slice(0, 10)
+    newReleases.value = releasesResponse.slice(0, 30)
     topTracks.value = tracksResponse.slice(0, 10)
     topAlbums.value = albumsResponse.slice(0, 10)
     popularPlaylists.value = playlistsResponse.slice(0, 10)

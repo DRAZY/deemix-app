@@ -12,6 +12,12 @@ Entries from v1.7.5 onward use a compact format — short bullets, one line each
 
 - **Qobuz integration (hi-res downloads).** Connect your Qobuz account (Settings → Qobuz) via a real Qobuz login window — your session token is stored encrypted. Paste a Qobuz track, album, or playlist link into the Link Analyzer and download it, or it flows through the same Transfer Rack queue as everything else. Qobuz files come down DRM-free, so downloads can reach true hi-res FLAC (up to 24-bit/192 kHz) when your plan and the track allow, and files are tagged (title/artist/album/ISRC + embedded cover art) and organized with your existing folder-structure and track-naming templates. Albums and playlists download as one grouped queue item. A paid Qobuz plan is required (free accounts can't download). Deezer and Spotify behavior is unchanged.
 
+## [2.0.2] — 2026-07-16
+
+### Fixed
+
+- **New Releases section restored on the Home tab — with genuinely new, dated releases.** Deezer retired its public `/editorial/{genre}/releases` endpoint (it now returns an empty list for every genre), which silently collapsed the Home "New Releases" section and its See-All page. New Releases now reads Deezer's real date-stamped new-release modules from its home feed — including your personalized "New releases for you" list when you're signed in — merging each module's full grid, filtered to the last 90 days and sorted newest first. The Home tab shows the 30 most recent; See-All shows the whole window. Works without signing in too (generic freshest-releases feed).
+
 ## [2.0.1] — 2026-07-15
 
 ### Fixed

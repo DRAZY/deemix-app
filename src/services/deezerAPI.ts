@@ -251,9 +251,20 @@ class DeezerAPI {
     return data.data || []
   }
 
-  // New Releases - Get editorial new album releases
-  async getNewReleases(limit: number = 20, genre: number = 0): Promise<Album[]> {
-    const data = await this.fetch<{ data: Album[] }>(`/editorial/${genre}/releases?limit=${limit}`)
+  // New Releases — Deezer retired the public `/editorial/{genre}/releases` endpoint
+  // (it now returns an empty list for every genre), and `/editorial/selection` is an
+  // undated editorial grab-bag that drags in old catalog. The genuine, date-stamped
+  // "freshest releases" feed lives only on Deezer's private gw-light-api (the same
+  // one that powers the site's "New releases for you"), which must be called
+  // server-side with cookies — so this proxies the local server's /api/new-releases,
+  // exactly like getChartFromServer. Works for guests; no login required.
+  async getNewReleases(limit: number = 20): Promise<Album[]> {
+    const serverPort = window.electronAPI ? await window.electronAPI.getServerPort() : 6595
+    const response = await fetch(`http://127.0.0.1:${serverPort}/api/new-releases?limit=${limit}`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch new releases: ${response.status}`)
+    }
+    const data = await response.json()
     return data.data || []
   }
 
