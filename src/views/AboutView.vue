@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '2.0.2',
+    date: '2026-07-16',
+    items: [
+      'Restored the "New Releases" section on the Home tab. Deezer retired the public endpoint that fed it, so the section had quietly disappeared. New Releases now pulls from Deezer\'s live editorial feed — the Home tab shows a cross-genre pick, and the See-All page gathers fresh selections across the main genres for a fuller browse.'
+    ]
+  },
+  {
     version: '2.0.1',
     date: '2026-07-15',
     items: [

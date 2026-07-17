@@ -251,10 +251,43 @@ class DeezerAPI {
     return data.data || []
   }
 
-  // New Releases - Get editorial new album releases
+  // Mainstream Deezer genre IDs used to widen the New Releases pool. The genre-0
+  // ("All") selection only returns ~10 albums, so the See-All page aggregates a
+  // fresh pick from each of these to build a richer browse grid.
+  private readonly NEW_RELEASE_GENRES = [132, 116, 152, 113, 165, 85, 106, 84, 464, 129, 98, 169]
+
+  // New Releases — Deezer retired the public `/editorial/{genre}/releases` endpoint
+  // (it now returns an empty list), so we source fresh/featured albums from the
+  // still-live `/editorial/{genre}/selection` editorial feed instead. Genre 0 gives
+  // Deezer's cross-genre pick (~10). When a larger list is requested (the See-All
+  // page), we aggregate one selection per mainstream genre and de-dupe by album id.
   async getNewReleases(limit: number = 20, genre: number = 0): Promise<Album[]> {
-    const data = await this.fetch<{ data: Album[] }>(`/editorial/${genre}/releases?limit=${limit}`)
-    return data.data || []
+    const base = await this.fetch<{ data: Album[] }>(`/editorial/${genre}/selection`)
+    const primary = base.data || []
+
+    // Small request → the cross-genre selection alone is enough.
+    if (limit <= primary.length || genre !== 0) {
+      return primary.slice(0, limit)
+    }
+
+    // Larger request → widen the pool with per-genre editorial selections.
+    const byId = new Map<string | number, Album>()
+    for (const album of primary) byId.set(album.id, album)
+
+    const genreResults = await Promise.all(
+      this.NEW_RELEASE_GENRES.map(g =>
+        this.fetch<{ data: Album[] }>(`/editorial/${g}/selection`)
+          .then(r => r.data || [])
+          .catch(() => [] as Album[])
+      )
+    )
+    for (const albums of genreResults) {
+      for (const album of albums) {
+        if (!byId.has(album.id)) byId.set(album.id, album)
+      }
+    }
+
+    return Array.from(byId.values()).slice(0, limit)
   }
 
   // Track

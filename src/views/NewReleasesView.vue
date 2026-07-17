@@ -19,7 +19,8 @@ async function loadReleases() {
   isLoading.value = true
   hasError.value = false
   try {
-    // Deezer caps /editorial/0/releases at 100 server-side
+    // Aggregates Deezer's per-genre editorial selections (the /releases endpoint
+    // was retired); asking for 100 widens the cross-genre pool, deduped by album.
     releases.value = await deezerAPI.getNewReleases(100)
   } catch (error) {
     console.error('Failed to load new releases:', error)

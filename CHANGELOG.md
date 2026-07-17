@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries from v1.7.5 onward use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [2.0.2] — 2026-07-16
+
+### Fixed
+
+- **New Releases section restored on the Home tab.** Deezer retired its public `/editorial/{genre}/releases` endpoint — it now returns an empty list for every genre, which silently collapsed the Home "New Releases" section (and the See-All page). New Releases now sources Deezer's still-live `/editorial/{genre}/selection` editorial feed: the Home tab shows the cross-genre pick, and the See-All page aggregates a fresh selection per mainstream genre (deduped) for a fuller browse grid.
+
 ## [2.0.1] — 2026-07-15
 
 ### Fixed
