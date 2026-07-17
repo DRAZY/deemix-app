@@ -3254,6 +3254,8 @@ export class DeemixServer extends EventEmitter {
       album?: { title?: string; artist?: string }
       playlistName?: string
       playlistPosition?: number
+      playlistOwner?: string
+      m3uTrackerId?: string
     } = {}
   ): any {
     const isFromPlaylist = !!ctx.playlistName
@@ -3277,6 +3279,8 @@ export class DeemixServer extends EventEmitter {
       isFromPlaylist: isFromPlaylist || undefined,
       playlistName: ctx.playlistName || undefined,
       playlistPosition: ctx.playlistPosition,
+      playlistOwner: ctx.playlistOwner || undefined,
+      _m3uTrackerId: ctx.m3uTrackerId || undefined,
       savePlaylistAsCompilation: isFromPlaylist ? this.settings.savePlaylistAsCompilation : undefined,
       albumContext: ctx.album ? { albumTitle: ctx.album.title, albumArtist: ctx.album.artist } : undefined,
       folderSettings: {
@@ -3343,17 +3347,28 @@ export class DeemixServer extends EventEmitter {
       // matching the Deezer playlist path (previously they were treated as
       // album tracks and scattered across per-album folders).
       const playlistName = playlistId ? (data?.name || data?.title || 'Playlist') : undefined
+      const playlistOwner = playlistId ? (data?.owner?.name || '') : undefined
+
+      // M3U generation from real on-disk paths — same registration the Deezer
+      // playlist path uses, honoring the createPlaylistFile setting.
+      const validTracks = tracks.filter((t: any) => t?.id)
+      let m3uTrackerId: string | undefined
+      if (playlistName && this.settings.createPlaylistFile) {
+        m3uTrackerId = `qobuzplaylist_${playlistId}_${Date.now()}`
+        downloader.registerPlaylistForM3U(m3uTrackerId, playlistName, this.settings.downloadPath, validTracks.length, this.settings.m3uNameTemplate)
+      }
 
       const ids: string[] = []
       let position = 0
-      for (const t of tracks) {
-        if (!t?.id) continue
+      for (const t of validTracks) {
         position++
         const id = await downloader.download(this.buildQobuzDownloadOptions(t.id, {
           partOfAlbum: !!albumId,
           album,
           playlistName,
           playlistPosition: playlistName ? position : undefined,
+          playlistOwner,
+          m3uTrackerId,
         }))
         ids.push(id)
       }

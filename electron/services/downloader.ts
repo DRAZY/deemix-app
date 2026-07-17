@@ -878,6 +878,20 @@ export class Downloader extends EventEmitter {
       const q = options.quality === 'FLAC' ? 'flac' : options.quality === 'MP3_128' ? '128' : '320'
       const shim = this.qobuzMetaToTrackInfo(meta)
 
+      // M3U bookkeeping for playlist tracks — records the real on-disk path so
+      // the generated playlist file matches disk exactly (Deezer parity).
+      const recordM3U = (absolutePath: string) => {
+        if (options.isFromPlaylist && options.playlistName) {
+          this.recordM3UEntry(options._m3uTrackerId || options.playlistName || '', {
+            position: options.playlistPosition || 0,
+            duration: shim.DURATION || 0,
+            artist: shim.ART_NAME || 'Unknown Artist',
+            title: progress.trackTitle || shim.SNG_TITLE || 'Unknown Track',
+            absolutePath
+          })
+        }
+      }
+
       // Duplicate skip by ISRC — same discipline as the Deezer path: runs before
       // any network fetch so skips stay instant.
       if (options.skipDuplicateTracks && shim.ISRC) {
@@ -888,6 +902,7 @@ export class Downloader extends EventEmitter {
           progress.status = 'completed'
           progress.progress = 100
           progress.skippedAsDuplicate = true
+          recordM3U(existingPath)
           this.emit('progress', progress)
           this.emit('complete', { ...progress, path: existingPath })
           return
@@ -902,11 +917,16 @@ export class Downloader extends EventEmitter {
       if (outputPath === null) {
         progress.status = 'completed'
         progress.progress = 100
+        recordM3U(initialOutputPath)
         this.emit('progress', progress)
         this.emit('complete', { ...progress, path: initialOutputPath })
         return
       }
       fs.mkdirSync(path.dirname(outputPath), { recursive: true })
+
+      // Pace the actual CDN fetch (issue #86) — past the skip checks so existing
+      // files never wait; no-op when pacing is 'off'. Same gate as Deezer.
+      await this.awaitPacingSlot()
 
       // Folder context on the progress object — same fields the Deezer path sets.
       // The renderer derives item.path from these for "open folder" and Delete
@@ -945,12 +965,25 @@ export class Downloader extends EventEmitter {
       this.emit('progress', progress)
       let cover: Buffer | undefined
       if (options.embedArtwork || options.saveArtwork) {
-        const coverUrl = meta?.album?.image?.large || meta?.album?.image?.small
-        if (coverUrl) {
-          try {
-            const cr = await fetch(coverUrl)
-            if (cr.ok) cover = Buffer.from(await cr.arrayBuffer())
-          } catch { /* cover optional */ }
+        const baseUrl = meta?.album?.image?.large || meta?.album?.image?.small
+        if (baseUrl) {
+          // Honor the artwork-size settings: Qobuz's `large` is fixed 600px, but
+          // the CDN serves an original-size `_org` variant — use it when the
+          // configured embedded/local artwork size wants more than 600px.
+          const covers = options.metadataSettings?.albumCovers
+          const wantedSize = Math.max(
+            options.embedArtwork ? (covers?.embeddedArtworkSize || 0) : 0,
+            options.saveArtwork ? (covers?.localArtworkSize || 0) : 0
+          )
+          const candidates = wantedSize > 600 && /_600(\.\w+)$/.test(baseUrl)
+            ? [baseUrl.replace(/_600(\.\w+)$/, '_org$1'), baseUrl]
+            : [baseUrl]
+          for (const coverUrl of candidates) {
+            try {
+              const cr = await fetch(coverUrl)
+              if (cr.ok) { cover = Buffer.from(await cr.arrayBuffer()); break }
+            } catch { /* try next candidate */ }
+          }
         }
       }
       try {
@@ -973,12 +1006,28 @@ export class Downloader extends EventEmitter {
 
       progress.status = 'completed'
       progress.progress = 100
+      recordM3U(result.path)
       this.emit('complete', { ...progress, path: result.path })
     } catch (error: any) {
       console.error(`[Downloader] Qobuz download error for ${downloadId}:`, error.message)
       progress.status = 'error'
       progress.error = error.message
       this.emit('error', progress)
+      // This catch swallows the error (the queue wrapper's error path never
+      // runs for Qobuz), so mirror its bookkeeping here: keep the M3U tracker
+      // counting so the playlist file still generates, and write errors.txt.
+      if (options.isFromPlaylist && options.playlistName) {
+        this.recordM3UFailure(options._m3uTrackerId || options.playlistName || '')
+      }
+      if (options.createErrorLog && progress.albumFolder) {
+        this.writeErrorLog(
+          progress.albumFolder,
+          progress.trackId,
+          progress.trackTitle || 'Unknown Track',
+          progress.trackArtist || 'Unknown Artist',
+          error.message
+        )
+      }
     }
     // NOTE: concurrency (currentDownloads--) and queue re-processing are handled
     // by the processQueue() wrapper's .finally(); do not touch them here.
