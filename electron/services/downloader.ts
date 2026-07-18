@@ -961,12 +961,17 @@ export class Downloader extends EventEmitter {
         progress.playlistFolder = path.join(options.outputPath, playlistFolder)
       }
 
+      // Speed feeds the throughput meters (title bar, sidebar sparkline, rack
+      // aggregation) — same computation and throttled emit as the Deezer path.
+      const dlStartTime = Date.now()
       const result = await downloadQobuzTrack(options.trackId, q as '128' | '320' | 'flac', outputPath, (recv, total) => {
         progress.downloaded = recv
         progress.total = total
         progress.progress = total ? Math.floor((recv / total) * 100) : 0
-        this.emit('progress', progress)
+        progress.speed = recv / ((Date.now() - dlStartTime) / 1000)
+        this.emitProgressThrottled(progress)
       }, options.bitrateFallback !== false)
+      progress.speed = 0
 
       // The delivered format is authoritative — a FLAC request on a lossy-only
       // plan legitimately comes back MP3 (with the extension already corrected).
