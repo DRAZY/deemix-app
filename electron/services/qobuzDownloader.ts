@@ -114,7 +114,18 @@ export async function downloadQobuzTrack(
       if (refreshed.url && !refreshed.restricted) file = refreshed
     }
     try {
-      const res = await fetch(file.url)
+      // Fetch with the web player's client identity. The bare Node fetch agent
+      // is deterministically rejected by Qobuz's hi-res CDN edge (observed:
+      // 200 + content-length, one byte, then connection kill — on every fresh
+      // URL), the same class of check the API layer already spoofs past.
+      const res = await fetch(file.url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Referer': 'https://play.qobuz.com/',
+          'Origin': 'https://play.qobuz.com',
+          'Accept': '*/*',
+        }
+      })
       if (!res.ok || !res.body) {
         throw new Error(`Qobuz: download failed (HTTP ${res.status})`)
       }
@@ -139,8 +150,10 @@ export async function downloadQobuzTrack(
     } catch (err: any) {
       lastStreamError = err
       if (!isNetworkError(err) || attempt === STREAM_ATTEMPTS) {
+        let host = ''
+        try { host = new URL(file.url).host } catch { /* diagnostic only */ }
         const friendly = isNetworkError(err)
-          ? `Qobuz stream interrupted (${err?.message || 'connection lost'}) after ${attempt} attempt${attempt > 1 ? 's' : ''} — network or Qobuz CDN issue; retry the download`
+          ? `Qobuz stream interrupted (${err?.message || 'connection lost'}) after ${attempt} attempt${attempt > 1 ? 's' : ''} — CDN ${host || 'unknown'}; retry the download`
           : (err?.message || String(err))
         throw new Error(friendly)
       }

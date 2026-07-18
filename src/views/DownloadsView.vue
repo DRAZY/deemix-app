@@ -154,6 +154,7 @@ const errorDetails = ref<{
   serverResponse?: string
   suggestion?: string
   timestamp?: string
+  source?: 'deezer' | 'qobuz'
 } | null>(null)
 
 function showErrorDetails(item: DownloadItem) {
@@ -167,17 +168,19 @@ function showErrorDetails(item: DownloadItem) {
     httpStatus: details?.httpStatus,
     serverResponse: details?.serverResponse,
     suggestion: details?.suggestion,
-    timestamp: details?.timestamp
+    timestamp: details?.timestamp,
+    source: item.source
   }
 }
 
-function showFailedTrackError(failed: { title: string; artist?: string; error?: string; id?: string; errorDetails?: any }) {
+function showFailedTrackError(failed: { title: string; artist?: string; error?: string; id?: string; errorDetails?: any }, source?: 'deezer' | 'qobuz') {
   const details = failed.errorDetails
   errorDetails.value = {
     title: failed.title,
     artist: failed.artist || 'Unknown Artist',
     error: details?.message || failed.error || 'Unknown error',
     trackId: failed.id || details?.trackId?.toString(),
+    source,
     errorCode: details?.code,
     httpStatus: details?.httpStatus,
     serverResponse: details?.serverResponse,
@@ -843,7 +846,7 @@ function copyAllErrorDetails() {
             <button
               v-for="failed in item.failedTracks"
               :key="failed.id"
-              @click="showFailedTrackError(failed)"
+              @click="showFailedTrackError(failed, item.source)"
               class="flex items-center gap-2 text-[12px] py-1.5 px-2 w-full text-left border-l-2 border-red-500 bg-red-500/5 hover:bg-red-500/10 transition-colors cursor-pointer group"
             >
               <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1003,7 +1006,13 @@ function copyAllErrorDetails() {
         <!-- Possible Causes (only show if no specific suggestion) -->
         <div v-if="!errorDetails.suggestion" class="text-sm text-foreground-muted mb-4">
           <p class="font-medium mb-2">{{ t('downloads.possibleCauses') }}:</p>
-          <ul class="list-disc list-inside space-y-1 text-xs">
+          <!-- Source-aware: a Qobuz failure must not suggest Deezer causes -->
+          <ul v-if="errorDetails.source === 'qobuz'" class="list-disc list-inside space-y-1 text-xs">
+            <li>Track not available on Qobuz at the requested quality or on your plan</li>
+            <li>Qobuz session expired — reconnect in Settings</li>
+            <li>Network or Qobuz CDN connectivity issues — retry usually recovers</li>
+          </ul>
+          <ul v-else class="list-disc list-inside space-y-1 text-xs">
             <li>{{ t('downloads.causeGeoRestriction') }}</li>
             <li>{{ t('downloads.causeUnavailable') }}</li>
             <li>{{ t('downloads.causeSession') }}</li>
