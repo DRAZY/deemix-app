@@ -1288,10 +1288,21 @@ export const useDownloadStore = defineStore('downloads', () => {
     if (!item) return
 
     if (deleteFiles && item.path && window.electronAPI) {
-      try {
-        await window.electronAPI.deletePath(item.path)
-      } catch (error) {
-        console.error('[DownloadStore] Failed to delete files:', error)
+      // Safety rail: never delete the download root itself. A row whose path
+      // resolved to the root (e.g. from a bad folder derivation) must not be
+      // able to wipe the whole library — remove the row, keep the files.
+      // Trailing-separator-insensitive so it holds on Windows paths too.
+      const settingsStore = useSettingsStore()
+      const norm = (p: string) => p.replace(/[/\\]+$/, '')
+      const root = norm(settingsStore.settings.downloadPath || '')
+      if (root && norm(item.path) === root) {
+        console.warn('[DownloadStore] Refusing to delete the download root folder:', item.path)
+      } else {
+        try {
+          await window.electronAPI.deletePath(item.path)
+        } catch (error) {
+          console.error('[DownloadStore] Failed to delete files:', error)
+        }
       }
     }
 

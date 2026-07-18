@@ -909,6 +909,17 @@ export class Downloader extends EventEmitter {
         }
       }
 
+      // Disc context from the real Qobuz metadata — buildOutputPath only creates
+      // CD subfolders when options carry discNumber + totalDiscs, which the
+      // Qobuz options never did: multi-disc albums flattened into one folder
+      // with colliding track numbers. Same fields the Deezer album path passes.
+      const totalDiscs = shim.DISKS_COUNT || 1
+      options = {
+        ...options,
+        discNumber: shim.DISK_NUMBER || undefined,
+        albumContext: { ...(options.albumContext || {}), totalDiscs }
+      }
+
       // Build the path from the user's folder-structure + track-naming templates
       // (reuses the Deezer path builder via the Qobuz→trackInfo shim), then honor
       // the overwrite mode ('no' → skip when the file already exists).
@@ -934,10 +945,13 @@ export class Downloader extends EventEmitter {
       // their folders.
       const trackDir = path.dirname(outputPath)
       progress.albumFolder = trackDir
-      // Multi-disc albums nest tracks in CD subfolders — the deletable root is one
-      // level up (matches the Deezer path's multi-disc handling).
-      const isMultiDisc = (shim.DISKS_COUNT || 1) > 1 && options.folderSettings?.createCDFolder
-      progress.albumRootFolder = (isMultiDisc && !options.isFromPlaylist) ? path.dirname(trackDir) : trackDir
+      // The deletable/openable root steps above the CD subfolder ONLY when
+      // buildOutputPath actually created one — mirror its exact condition
+      // (createCDFolder && discNumber && totalDiscs > 1, never for playlist
+      // tracks). Guessing from disc count alone once pointed album rows at the
+      // download ROOT when a multi-disc album didn't get a CD folder.
+      const hasCDFolder = options.folderSettings?.createCDFolder && options.discNumber && totalDiscs > 1 && !options.isFromPlaylist
+      progress.albumRootFolder = hasCDFolder ? path.dirname(trackDir) : trackDir
       if (options.isFromPlaylist && options.playlistName && options.folderSettings?.createPlaylistFolder) {
         const playlistFolder = this.sanitizeFilename(
           (options.folderSettings.playlistFolderTemplate || '%playlist%')
