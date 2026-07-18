@@ -73,6 +73,7 @@ export interface QobuzDownloadResult {
   path: string
   formatId: number
   bytes: number
+  steppedDown?: boolean // delivered a lower FLAC tier than requested after killed streams
   bitDepth?: number
   samplingRate?: number
   mimeType?: string
@@ -160,18 +161,24 @@ export async function downloadQobuzTrack(
     /terminated|aborted|ECONNRESET|ETIMEDOUT|EPIPE|socket|network|fetch failed|premature close|stalled|incomplete stream|connection timeout/i.test(e?.message || String(e))
   let lastStreamError: any
   let streamed = false
+  let steppedDown = false
   for (let attempt = 1; attempt <= STREAM_ATTEMPTS && !streamed; attempt++) {
     if (attempt > 1) {
-      // Adaptive tier step-down: if the CDN kills the transfer at this format
-      // tier (observed with true 192 kHz assets on web-player credentials),
-      // retry one FLAC tier lower — 27 → 7 (24/96) → 6 (CD). Still lossless;
-      // a killed hi-res stream should degrade, not fail the track.
+      // Adaptive tier step-down: when the CDN kills a hi-res transfer, retry
+      // one FLAC tier lower — 27 → 7 (24/96) → 6 (CD). Still lossless — but
+      // it IS a quality substitution, so it only happens with Bitrate Fallback
+      // enabled (purchases exempt, as with the MP3 rule). Fallback off →
+      // retry the same tier and, if it keeps dying, fail with clear guidance.
       const stepDown: Record<number, QobuzFormatId> = { 27: QOBUZ_FORMAT.FLAC_HIRES_96, 7: QOBUZ_FORMAT.FLAC_CD }
-      const nextFormat = (stepDown[file.formatId as number] ?? file.formatId) as QobuzFormatId
+      const allowStepDown = bitrateFallback || viaPurchase
+      const nextFormat = (allowStepDown ? (stepDown[file.formatId as number] ?? file.formatId) : file.formatId) as QobuzFormatId
       console.log(`[QobuzDL] Stream attempt ${attempt}/${STREAM_ATTEMPTS} for ${trackId} (fresh URL, format ${file.formatId}→${nextFormat}) after: ${lastStreamError?.message}`)
       await new Promise(r => setTimeout(r, attempt * 1500))
       const refreshed = await qobuzAuth.getFileUrl(trackId, nextFormat, viaPurchase ? 'download' : 'stream')
-      if (refreshed.url && !refreshed.restricted) file = refreshed
+      if (refreshed.url && !refreshed.restricted) {
+        if (refreshed.formatId !== file.formatId) steppedDown = true
+        file = refreshed
+      }
     }
     try {
       try {
@@ -187,9 +194,12 @@ export async function downloadQobuzTrack(
       if (!isNetworkError(err) || attempt === STREAM_ATTEMPTS) {
         let host = ''
         try { host = new URL(file.url).host } catch { /* diagnostic only */ }
-        const friendly = isNetworkError(err)
-          ? `Qobuz stream interrupted (${err?.message || 'connection lost'}) after ${attempt} attempt${attempt > 1 ? 's' : ''} — CDN ${host || 'unknown'}; retry the download`
-          : (err?.message || String(err))
+        const hiResBlocked = !bitrateFallback && !viaPurchase && (file.formatId === QOBUZ_FORMAT.FLAC_HIRES_192 || file.formatId === QOBUZ_FORMAT.FLAC_HIRES_96)
+        const friendly = hiResBlocked && isNetworkError(err)
+          ? `This track's hi-res stream keeps getting cut off by the CDN. Enable Bitrate Fallback in settings to accept the next lossless tier (24-bit/96 kHz or CD FLAC), or retry later.`
+          : isNetworkError(err)
+            ? `Qobuz stream interrupted (${err?.message || 'connection lost'}) after ${attempt} attempt${attempt > 1 ? 's' : ''} — CDN ${host || 'unknown'}; retry the download`
+            : (err?.message || String(err))
         throw new Error(friendly)
       }
     }
@@ -200,6 +210,7 @@ export async function downloadQobuzTrack(
     path: outputPath,
     formatId: file.formatId,
     bytes,
+    steppedDown,
     bitDepth: file.bitDepth,
     samplingRate: file.samplingRate,
     mimeType: file.mimeType,

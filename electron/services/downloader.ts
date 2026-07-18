@@ -978,8 +978,15 @@ export class Downloader extends EventEmitter {
 
       // The delivered format is authoritative — a FLAC request on a lossy-only
       // plan legitimately comes back MP3 (with the extension already corrected).
+      // A tier step-down (killed hi-res stream → lower lossless tier) shows the
+      // delivered tier on the chip (e.g. 'FLAC 24/96') so the substitution is
+      // never silent.
       const gotFlac = result.path.toLowerCase().endsWith('.flac')
-      progress.actualFormat = gotFlac ? 'FLAC' : 'MP3_320'
+      progress.actualFormat = gotFlac
+        ? (result.steppedDown && result.bitDepth && result.samplingRate
+            ? `FLAC ${result.bitDepth}/${result.samplingRate}`
+            : 'FLAC')
+        : 'MP3_320'
 
       // Qobuz files arrive untagged — tag them from the API metadata by reusing
       // the Deezer tagger via a Deezer-shaped shim + a pre-fetched cover buffer.

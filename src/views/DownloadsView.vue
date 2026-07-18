@@ -358,6 +358,8 @@ function isDowngraded(item: { quality?: string; actualFormat?: string }): boolea
 function getQualityColor(format?: string): string {
   if (!format) return 'bg-background-main/60 text-foreground-muted border-white/[0.1]'
   const f = format.toUpperCase()
+  // Stepped-down lossless tiers ('FLAC 24/96') keep the FLAC amber.
+  if (f.startsWith('FLAC ')) return 'bg-amber-500/10 text-amber-400 border-amber-500/30'
   if (f === 'FLAC' || f === 'flac') return 'bg-amber-500/10 text-amber-400 border-amber-500/30'
   if (f === '320' || f === 'MP3_320') return 'bg-green-500/10 text-green-400 border-green-500/30'
   if (f === '128' || f === 'MP3_128') return 'bg-blue-500/10 text-blue-400 border-blue-500/30'
