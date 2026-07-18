@@ -70,6 +70,13 @@ export async function downloadQobuzTrack(
     }
   }
   if (file.restricted || !file.url) {
+    // Purchase-credential restrictions survive every intent/format combination:
+    // Qobuz serves this content class (e.g. purchased mixed-version albums /
+    // [Mix Cut] tracks) only through its own account-page download flow, not
+    // the web-player API. Say so plainly instead of a cryptic quality error.
+    if (file.restrictionCode === 'TrackRestrictedByPurchaseCredentials') {
+      throw new Error('This purchased release can only be downloaded from your Qobuz account page (qobuz.com → My purchases) — Qobuz does not release it through the player API.')
+    }
     const detail = file.restrictionCode ? ` (${file.restrictionCode})` : ''
     throw new Error(`Qobuz: track ${trackId} is not available at the requested quality on this account${detail}`)
   }
