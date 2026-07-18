@@ -498,7 +498,11 @@ class QobuzAuth {
 
     const res = await this.fetchWithRetry(`${QOBUZ_API_BASE}/${pathAndQuery}`, { headers }, 15000)
     if (!res.ok) {
-      throw new Error(`Qobuz API ${pathAndQuery.split('?')[0]} failed: HTTP ${res.status}`)
+      // Carry Qobuz's own error body — a bare status hides exactly the message
+      // that names the offending parameter (learned diagnosing a sudden 400).
+      let detail = ''
+      try { detail = (await res.text()).slice(0, 250) } catch { /* body unreadable */ }
+      throw new Error(`Qobuz API ${pathAndQuery.split('?')[0]} failed: HTTP ${res.status}${detail ? ` — ${detail}` : ''}`)
     }
     return res.json()
   }
