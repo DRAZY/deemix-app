@@ -929,6 +929,9 @@ export class Downloader extends EventEmitter {
         progress.status = 'completed'
         progress.progress = 100
         recordM3U(initialOutputPath)
+        // The file already exists on disk — make sure the index knows it
+        // (mirrors the Deezer locate-existing path).
+        libraryIndex.add(shim.ISRC, initialOutputPath)
         this.emit('progress', progress)
         this.emit('complete', { ...progress, path: initialOutputPath })
         return
@@ -1026,6 +1029,11 @@ export class Downloader extends EventEmitter {
       progress.status = 'completed'
       progress.progress = 100
       recordM3U(result.path)
+      // Record this recording in the library index (by ISRC) so future
+      // downloads — from either service — de-dup against it. Deezer
+      // completions have always done this; Qobuz ones were invisible to the
+      // skip check until a manual library rescan. No-op without an ISRC.
+      libraryIndex.add(shim.ISRC, result.path)
       this.emit('complete', { ...progress, path: result.path })
     } catch (error: any) {
       console.error(`[Downloader] Qobuz download error for ${downloadId}:`, error.message)
