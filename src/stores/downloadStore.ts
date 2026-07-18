@@ -659,7 +659,14 @@ export const useDownloadStore = defineStore('downloads', () => {
 
     const item: DownloadItem = {
       id: groupId,
-      album: { id: qobuz.id, title: d.title, artist: { name: d.artist?.name } } as any,
+      // Full source markers + covers on the embedded album: retry/resume paths
+      // route by these, and the Deezer path once swallowed a marker-less Qobuz
+      // row ('Album not available: no data' + blank art).
+      album: {
+        id: qobuz.id, title: d.title, artist: { name: d.artist?.name },
+        cover_medium: d.image?.large || d.image?.small,
+        source: 'qobuz', qobuzId: qobuz.id, qobuzType: qobuz.type, qobuzData: d,
+      } as any,
       source: 'qobuz',
       title: d.title || 'Qobuz Album',
       artist: d.artist?.name || (qobuz.type === 'playlist' ? (d.owner?.name || 'Playlist') : 'Unknown Artist'),
@@ -1330,9 +1337,19 @@ export const useDownloadStore = defineStore('downloads', () => {
       toastStore.info(`Retrying album "${item.title}"...`)
       // Qobuz albums re-route straight to the Qobuz pipeline (their id isn't a
       // Deezer id; the server refetches the tracklist, existing files skip).
+      // Call addQobuzAlbumDownload directly and reconstruct the Qobuz ref from
+      // whatever the row carries — legacy rows may lack album-level markers,
+      // and routing them through addAlbumDownload's own source check once sent
+      // Qobuz ids to Deezer ('Album not available: no data').
       if ((item.album as any).source === 'qobuz' || item.source === 'qobuz') {
         try {
-          await addAlbumDownload(item.album, [])
+          const alb: any = item.album
+          const qType = alb.qobuzType === 'playlist' ? 'playlist' : 'album'
+          await addQobuzAlbumDownload({
+            type: qType,
+            id: String(alb.qobuzId ?? alb.id),
+            data: alb.qobuzData || { title: item.title, artist: { name: item.artist }, image: { large: item.cover }, tracks_count: item.totalTracks }
+          })
         } catch (e) {
           console.error('[DownloadStore] Failed to retry Qobuz album:', e)
           toastStore.error(`Failed to retry "${item.title}"`)
