@@ -96,28 +96,55 @@ export async function downloadQobuzTrack(
     }
   }
 
-  const res = await fetch(file.url)
-  if (!res.ok || !res.body) {
-    throw new Error(`Qobuz: download failed (HTTP ${res.status})`)
-  }
-
-  const total = Number(res.headers.get('content-length')) || 0
-  let received = 0
-  const body = Readable.fromWeb(res.body as any)
-  if (onProgress) {
-    body.on('data', (chunk: Buffer) => {
-      received += chunk.length
-      onProgress(received, total)
-    })
-  }
-
-  const out = fs.createWriteStream(outputPath)
-  try {
-    await pipeline(body, out)
-  } catch (err) {
-    // Never leave a truncated file behind.
-    try { fs.unlinkSync(outputPath) } catch { /* ignore */ }
-    throw err
+  // Stream with retries. Hi-res files run hundreds of MB and Qobuz's CDN
+  // occasionally aborts a stream ('terminated' — observed dying at byte 1 of a
+  // 280 MB track); one abort must not fail the track. Each attempt re-resolves
+  // a FRESH signed URL (the old one may be expired/poisoned) and cleans up the
+  // partial file. Only network-class failures retry — real HTTP errors don't.
+  const STREAM_ATTEMPTS = 3
+  const isNetworkError = (e: any) =>
+    /terminated|aborted|ECONNRESET|ETIMEDOUT|EPIPE|socket|network|fetch failed|premature close/i.test(e?.message || String(e))
+  let lastStreamError: any
+  let streamed = false
+  for (let attempt = 1; attempt <= STREAM_ATTEMPTS && !streamed; attempt++) {
+    if (attempt > 1) {
+      console.log(`[QobuzDL] Stream attempt ${attempt}/${STREAM_ATTEMPTS} for ${trackId} (fresh URL) after: ${lastStreamError?.message}`)
+      await new Promise(r => setTimeout(r, attempt * 1500))
+      const refreshed = await qobuzAuth.getFileUrl(trackId, file.formatId as QobuzFormatId, viaPurchase ? 'download' : 'stream')
+      if (refreshed.url && !refreshed.restricted) file = refreshed
+    }
+    try {
+      const res = await fetch(file.url)
+      if (!res.ok || !res.body) {
+        throw new Error(`Qobuz: download failed (HTTP ${res.status})`)
+      }
+      const total = Number(res.headers.get('content-length')) || 0
+      let received = 0
+      const body = Readable.fromWeb(res.body as any)
+      if (onProgress) {
+        body.on('data', (chunk: Buffer) => {
+          received += chunk.length
+          onProgress(received, total)
+        })
+      }
+      const out = fs.createWriteStream(outputPath)
+      try {
+        await pipeline(body, out)
+      } catch (err) {
+        // Never leave a truncated file behind.
+        try { fs.unlinkSync(outputPath) } catch { /* ignore */ }
+        throw err
+      }
+      streamed = true
+    } catch (err: any) {
+      lastStreamError = err
+      if (!isNetworkError(err) || attempt === STREAM_ATTEMPTS) {
+        const friendly = isNetworkError(err)
+          ? `Qobuz stream interrupted (${err?.message || 'connection lost'}) after ${attempt} attempt${attempt > 1 ? 's' : ''} — network or Qobuz CDN issue; retry the download`
+          : (err?.message || String(err))
+        throw new Error(friendly)
+      }
+    }
   }
 
   const bytes = fs.statSync(outputPath).size

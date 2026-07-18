@@ -664,13 +664,13 @@ export const useDownloadStore = defineStore('downloads', () => {
       // row ('Album not available: no data' + blank art).
       album: {
         id: qobuz.id, title: d.title, artist: { name: d.artist?.name },
-        cover_medium: d.image?.large || d.image?.small,
+        cover_medium: d.image?.large || d.image?.small || (d as any).cover_medium || (d as any).images300?.[0],
         source: 'qobuz', qobuzId: qobuz.id, qobuzType: qobuz.type, qobuzData: d,
       } as any,
       source: 'qobuz',
       title: d.title || 'Qobuz Album',
       artist: d.artist?.name || (qobuz.type === 'playlist' ? (d.owner?.name || 'Playlist') : 'Unknown Artist'),
-      cover: d.image?.large || d.image?.small || d.images?.[0] || '',
+      cover: d.image?.large || d.image?.small || d.images?.[0] || (d as any).cover_medium || (d as any).cover_big || (d as any).images300?.[0] || '',
       progress: 0,
       status: 'pending',
       type: 'album',
