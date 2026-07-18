@@ -53,9 +53,17 @@ export async function downloadQobuzTrack(
   if (!qobuzAuth.isLoggedIn()) throw new Error('Qobuz: not connected — link your account in Settings')
 
   const formatId = qualityToFormatId(quality)
-  const file = await qobuzAuth.getFileUrl(trackId, formatId)
+  let file = await qobuzAuth.getFileUrl(trackId, formatId)
   if (file.restricted || !file.url) {
-    throw new Error(`Qobuz: track ${trackId} is not available at the requested quality on this account`)
+    // Stream delivery refused — retry with purchase credentials. Purchased
+    // mixed albums ([Mix Cut] tracks) are stream-restricted but deliverable
+    // via intent=download; harmless for non-purchased tracks (fails the same).
+    console.log(`[QobuzDL] Stream intent refused for ${trackId} (${file.restrictionCode || 'no code'}) — trying purchase download`)
+    file = await qobuzAuth.getFileUrl(trackId, formatId, 'download')
+  }
+  if (file.restricted || !file.url) {
+    const detail = file.restrictionCode ? ` (${file.restrictionCode})` : ''
+    throw new Error(`Qobuz: track ${trackId} is not available at the requested quality on this account${detail}`)
   }
 
   // FLAC requested but Qobuz delivered lossy — honor the Bitrate Fallback setting.

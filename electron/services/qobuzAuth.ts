@@ -69,6 +69,7 @@ export interface QobuzFileUrl {
   bitDepth?: number
   samplingRate?: number
   restricted?: boolean // true when the account isn't eligible at the requested quality
+  restrictionCode?: string // Qobuz's restriction code when no url was returned
 }
 
 class QobuzAuth {
@@ -257,7 +258,10 @@ class QobuzAuth {
   }
 
   /** Resolve a signed, direct download URL for a track at a requested format. */
-  async getFileUrl(trackId: string | number, formatId: QobuzFormatId): Promise<QobuzFileUrl> {
+  // intent 'stream' is the normal delivery; 'download' is the purchase-credential
+  // path — required for purchased mixed albums whose [Mix Cut] tracks refuse
+  // stream delivery even though the catalog marks them streamable.
+  async getFileUrl(trackId: string | number, formatId: QobuzFormatId, intent: 'stream' | 'download' = 'stream'): Promise<QobuzFileUrl> {
     let { appId } = await this.fetchAppCredentials()
     if (!this.session) throw new Error('Qobuz: not logged in')
 
@@ -265,7 +269,7 @@ class QobuzAuth {
     // bundle since the creds were cached), force a fresh scrape and try once
     // more before giving up.
     for (let pass = 0; pass < 2; pass++) {
-      const result = await this.tryFileUrlCandidates(trackId, formatId, appId)
+      const result = await this.tryFileUrlCandidates(trackId, formatId, appId, intent)
       if (result) return result
       if (pass === 0) {
         console.log('[QobuzAuth] All cached secret candidates failed — refreshing app credentials')
@@ -276,7 +280,7 @@ class QobuzAuth {
   }
 
   /** One trial pass over the current secret candidates; null if all fail to sign. */
-  private async tryFileUrlCandidates(trackId: string | number, formatId: QobuzFormatId, appId: string): Promise<QobuzFileUrl | null> {
+  private async tryFileUrlCandidates(trackId: string | number, formatId: QobuzFormatId, appId: string, intent: 'stream' | 'download' = 'stream'): Promise<QobuzFileUrl | null> {
     // Try candidate secrets in order; cache the first that signs valid (moves it
     // to the front so subsequent calls hit it immediately). A signature failure
     // is the only reason to advance — any other response (incl. a restrictions
@@ -287,7 +291,7 @@ class QobuzAuth {
       const sig = this.signRequest(
         'track',
         'getFileUrl',
-        { format_id: formatId, intent: 'stream', track_id: trackId },
+        { format_id: formatId, intent, track_id: trackId },
         ts,
         secret
       )
@@ -296,7 +300,7 @@ class QobuzAuth {
         request_sig: sig,
         track_id: String(trackId),
         format_id: String(formatId),
-        intent: 'stream',
+        intent,
         app_id: appId,
       })
       const json = await this.apiGetRaw(`track/getFileUrl?${params.toString()}`, true)
@@ -308,7 +312,9 @@ class QobuzAuth {
       // Secret accepted. Pin it to the front for future calls.
       this.secretCandidates = [secret, ...this.secretCandidates.filter((s) => s !== secret)]
 
-      if (!json?.url) return { url: '', formatId, restricted: true }
+      if (!json?.url) {
+        return { url: '', formatId, restricted: true, restrictionCode: json?.restrictions?.[0]?.code }
+      }
       return {
         url: json.url,
         formatId: json.format_id ?? formatId,
