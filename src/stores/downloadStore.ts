@@ -1374,6 +1374,14 @@ export const useDownloadStore = defineStore('downloads', () => {
         console.error('[DownloadStore] Failed to retry playlist:', e)
         toastStore.error(`Failed to retry "${item.title}"`)
       }
+    } else {
+      // No branch could handle this row (missing track/album/playlist context).
+      // The item was already removed above — NEVER let it silently vanish: put
+      // it back so the user can still see, retry, or delete it deliberately.
+      downloads.value.unshift(item)
+      rebuildLookupMaps()
+      saveDownloads()
+      toastStore.error(`Couldn't retry "${item.title}" — missing download context`)
     }
   }
 

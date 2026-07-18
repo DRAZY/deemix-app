@@ -74,6 +74,10 @@ const { showShortcutsHelp } = useKeyboardShortcuts()
 const handleBeforeUnload = () => {
   // Trigger a synchronous save attempt
   settingsStore.saveSettings()
+  // Flush the debounced downloads save synchronously — rows created within the
+  // last ~1s (e.g. a just-clicked retry) are otherwise lost if the app closes
+  // inside the debounce window, leaving finished files with no queue record.
+  downloadStore.saveDownloadsImmediate()
   // Optionally clear the download queue on close (off by default)
   if (settingsStore.settings.clearQueueOnClose) {
     downloadStore.clearAll()
