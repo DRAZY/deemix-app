@@ -328,8 +328,14 @@ async function downloadAllTracks() {
 }
 
 async function downloadAlbum(album: Album) {
-  // Fetch tracks for this album and download
   try {
+    // Qobuz-sourced albums route straight to the Qobuz pipeline — the server
+    // fetches the tracklist (a Qobuz id against Deezer returns nothing, which
+    // made these buttons silently dead on Qobuz artist pages).
+    if ((album as any).source === 'qobuz') {
+      await downloadStore.addAlbumDownload(album, [])
+      return
+    }
     const tracks = await deezerAPI.getAlbumTracks(album.id)
     await downloadStore.addAlbumDownload(album, tracks)
   } catch (error) {
@@ -347,6 +353,10 @@ async function downloadFilteredAlbums() {
   // pass, so a large discography doesn't burst past Deezer's rate limit and
   // silently drop releases from the queue (issue #84).
   const queueAlbum = async (album: Album): Promise<void> => {
+    if ((album as any).source === 'qobuz') {
+      await downloadStore.addAlbumDownload(album, [])
+      return
+    }
     const tracks = await deezerAPI.getAlbumTracks(album.id)
     await downloadStore.addAlbumDownload(album, tracks)
   }
@@ -642,17 +652,17 @@ const contextMenuItems = computed(() => {
                 {{ album.nb_tracks || '-' }}
               </div>
 
-              <!-- Download Button -->
+              <!-- Download Button — the app's canonical GET ↓ acquisition
+                   control, in the source colorway (chartreuse = Deezer,
+                   cyan = Channel Q / Qobuz). -->
               <button
                 @click.prevent="downloadAlbum(album)"
-                class="w-12 h-8 flex items-center justify-center rounded hover:bg-primary-500/20 text-foreground-muted hover:text-primary-400 transition-colors"
+                class="px-2.5 py-1 font-mono text-[10px] font-bold tracking-[0.12em] border transition-colors whitespace-nowrap"
+                :class="(album as any).source === 'qobuz'
+                  ? 'border-qobuz-500/70 text-qobuz-400 hover:bg-qobuz-500 hover:text-background-main'
+                  : 'border-primary-600/70 text-primary-500 hover:bg-primary-500 hover:text-background-main'"
                 :title="t('artistView.downloadAlbum')"
-              >
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-              </button>
+              >GET&nbsp;↓</button>
             </router-link>
           </div>
 
