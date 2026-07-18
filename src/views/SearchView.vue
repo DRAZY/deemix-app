@@ -107,7 +107,20 @@ async function downloadSelected() {
       .map(albumId => results.value.albums.find(a => a.id === albumId))
       .filter((a): a is NonNullable<typeof a> => !!a)
     const pendingAlbums: typeof selectedAlbumObjs = []
+    const failedAlbums: typeof selectedAlbumObjs = []
     for (const album of selectedAlbumObjs) {
+      // Qobuz-sourced albums skip the Deezer track fetch (their id isn't a
+      // Deezer id) — addAlbumDownload routes them to the Qobuz pipeline, which
+      // fetches the tracklist server-side. Same routing as AlbumCard.
+      if ((album as any).source === 'qobuz') {
+        try {
+          await downloadStore.addAlbumDownload(album, [])
+        } catch (e) {
+          console.warn(`[Search] Selected Qobuz album ${album.id} failed:`, e)
+          failedAlbums.push(album)
+        }
+        continue
+      }
       try {
         const tracks = await deezerAPI.getAlbumTracks(album.id)
         await downloadStore.addAlbumDownload(album, tracks)
@@ -117,7 +130,6 @@ async function downloadSelected() {
       }
       await deezerAPI.pace()
     }
-    const failedAlbums: typeof selectedAlbumObjs = []
     if (pendingAlbums.length > 0) {
       await deezerAPI.cooldown()
       for (const album of pendingAlbums) {
@@ -217,9 +229,11 @@ async function checkQobuzConnected() {
 }
 
 // Switch search source; if there's a query, re-run the search immediately.
+// Persisted so the choice survives navigation (sticky source).
 function setSearchSource(src: 'deezer' | 'qobuz') {
   if (searchSource.value === src) return
   searchSource.value = src
+  localStorage.setItem('searchSource', src)
   if (searchQuery.value.trim()) performSearch()
 }
 
@@ -227,7 +241,15 @@ onMounted(async () => {
   if (window.electronAPI) {
     serverPort.value = await window.electronAPI.getServerPort()
   }
-  checkQobuzConnected()
+  await checkQobuzConnected()
+  // Source selection: an explicit ?source=qobuz (e.g. the Channel Q search bar)
+  // wins; otherwise restore the last-used source so leaving and returning to
+  // search doesn't silently flip you back to Deezer. Qobuz only sticks while
+  // the account is actually connected.
+  const requestedSource = route.query.source === 'qobuz' ? 'qobuz' : localStorage.getItem('searchSource')
+  if (requestedSource === 'qobuz' && qobuzConnected.value) {
+    searchSource.value = 'qobuz'
+  }
   if (route.query.paste) {
     // Global paste routed here — trigger bulk download
     const pasteText = route.query.paste as string

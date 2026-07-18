@@ -3148,12 +3148,14 @@ export class DeemixServer extends EventEmitter {
         console.log(`[Server] Qobuz discover row '${label}' failed:`, e.message)
         return null
       })
-    const [newReleases, pressAwards, editorPicks, mostStreamed, playlists] = await Promise.all([
+    const [newReleases, pressAwards, editorPicks, mostStreamed, playlists, favorites, purchases] = await Promise.all([
       safe(qobuzAuth.getFeaturedAlbums('new-releases-full', 20), 'new-releases-full'),
       safe(qobuzAuth.getFeaturedAlbums('press-awards', 20), 'press-awards'),
       safe(qobuzAuth.getFeaturedAlbums('editor-picks', 20), 'editor-picks'),
       safe(qobuzAuth.getFeaturedAlbums('most-streamed', 20), 'most-streamed'),
       safe(qobuzAuth.getFeaturedPlaylists('editor-picks', 20), 'playlists-editor-picks'),
+      safe(qobuzAuth.getUserFavorites('albums', 20), 'user-favorites'),
+      safe(qobuzAuth.getUserPurchases(50), 'user-purchases'),
     ])
     const data = {
       newReleases: newReleases?.albums?.items || [],
@@ -3161,6 +3163,9 @@ export class DeemixServer extends EventEmitter {
       editorPicks: editorPicks?.albums?.items || [],
       mostStreamed: mostStreamed?.albums?.items || [],
       playlists: playlists?.playlists?.items || [],
+      // Personal rows — favorites the user hearted in Qobuz, and purchased albums.
+      myFavorites: favorites?.albums?.items || [],
+      myPurchases: purchases?.albums?.items || [],
     }
     this.qobuzDiscoverCache = { data, timestamp: Date.now() }
     this.sendJSON(res, data)

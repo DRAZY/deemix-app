@@ -1327,6 +1327,17 @@ export const useDownloadStore = defineStore('downloads', () => {
       await addDownload(item.track)
     } else if (item.type === 'album' && item.album) {
       toastStore.info(`Retrying album "${item.title}"...`)
+      // Qobuz albums re-route straight to the Qobuz pipeline (their id isn't a
+      // Deezer id; the server refetches the tracklist, existing files skip).
+      if ((item.album as any).source === 'qobuz' || item.source === 'qobuz') {
+        try {
+          await addAlbumDownload(item.album, [])
+        } catch (e) {
+          console.error('[DownloadStore] Failed to retry Qobuz album:', e)
+          toastStore.error(`Failed to retry "${item.title}"`)
+        }
+        return
+      }
       // Fetch fresh track list for the album using correct endpoint
       try {
         const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/album?id=${item.album.id}`)

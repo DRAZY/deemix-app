@@ -15,6 +15,14 @@ import { qobuzRecordType } from '../utils/qobuzMap'
 const router = useRouter()
 const { t } = useI18n()
 
+// In-tab search: hands off to the shared SearchView with the Qobuz source
+// pre-selected — full reuse of the search machinery, no parallel search here.
+const searchQuery = ref('')
+function submitSearch() {
+  const q = searchQuery.value.trim()
+  if (q) router.push({ path: '/search', query: { q, source: 'qobuz' } })
+}
+
 const isLoading = ref(true)
 const hasError = ref(false)
 const notConnected = ref(false)
@@ -24,6 +32,8 @@ const editorPicks = ref<Album[]>([])
 const pressAwards = ref<Album[]>([])
 const mostStreamed = ref<Album[]>([])
 const playlists = ref<Album[]>([])
+const myFavorites = ref<Album[]>([])
+const myPurchases = ref<Album[]>([])
 
 // Qobuz album → the app's Album shape, marked as Qobuz-sourced (same mapping
 // contract as the search results, so cards badge/drill/download identically).
@@ -68,9 +78,12 @@ async function loadDiscover() {
     pressAwards.value = (d.pressAwards || []).map(mapAlbum)
     mostStreamed.value = (d.mostStreamed || []).map(mapAlbum)
     playlists.value = (d.playlists || []).map(mapPlaylist)
+    myFavorites.value = (d.myFavorites || []).map(mapAlbum)
+    myPurchases.value = (d.myPurchases || []).map(mapAlbum)
     // All rows empty → treat as an error state so the user isn't shown a void.
     if (!newReleases.value.length && !editorPicks.value.length && !pressAwards.value.length
-        && !mostStreamed.value.length && !playlists.value.length) {
+        && !mostStreamed.value.length && !playlists.value.length
+        && !myFavorites.value.length && !myPurchases.value.length) {
       hasError.value = true
     }
   } catch (error) {
@@ -83,7 +96,11 @@ async function loadDiscover() {
 
 onMounted(loadDiscover)
 
+// Personal rows lead — your purchases and favorites are what make the tab
+// feel like YOUR Qobuz, mirroring the Qobuz player's own ordering.
 const sections = [
+  { key: 'myPurchases', title: 'My Purchases', data: myPurchases },
+  { key: 'myFavorites', title: 'My Favorites', data: myFavorites },
   { key: 'newReleases', title: 'New Releases', data: newReleases },
   { key: 'editorPicks', title: "Editor's Picks", data: editorPicks },
   { key: 'pressAwards', title: 'Press Awards', data: pressAwards },
@@ -98,9 +115,22 @@ const sections = [
       <div class="relative z-10">
         <div class="font-mono text-[10px] tracking-[0.3em] text-qobuz-500 mb-2">// CHANNEL Q · HI-RES</div>
         <h1 class="font-display uppercase text-[36px] leading-[1] tracking-[-0.01em] mb-2">Qobuz</h1>
-        <p class="font-mono text-[11px] tracking-[0.06em] uppercase text-foreground-muted">
+        <p class="font-mono text-[11px] tracking-[0.06em] uppercase text-foreground-muted mb-6">
           Editorial feeds · lossless & hi-res up to 24-bit/192 kHz
         </p>
+
+        <!-- Channel-scoped search — routes to the shared search view in Qobuz mode -->
+        <form @submit.prevent="submitSearch" class="max-w-xl">
+          <div class="flex items-stretch h-12 border border-qobuz-500/40 bg-background-main/60 focus-within:border-qobuz-500/70 transition-colors">
+            <span class="flex items-center px-3 font-mono text-[10.5px] font-bold tracking-[0.1em] bg-qobuz-500 text-background-main select-none">QUERY::QOBUZ</span>
+            <input
+              v-model="searchQuery"
+              type="text"
+              :placeholder="t('search.placeholder')"
+              class="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[13px] px-4 text-foreground placeholder:text-foreground-muted/60 caret-qobuz-500"
+            />
+          </div>
+        </form>
       </div>
       <!-- Ghost glyph in channel cyan -->
       <div class="absolute -right-6 -bottom-16 font-display text-[220px] leading-none text-qobuz-500/[0.05] select-none pointer-events-none" aria-hidden="true">Q</div>

@@ -341,6 +341,18 @@ class QobuzAuth {
     return this.apiGet(`playlist/getFeatured?type=${encodeURIComponent(type)}&limit=${limit}&offset=${offset}&app_id=${appId}`, true)
   }
 
+  /** The user's own Qobuz favorites (hearted in Qobuz itself). type: albums|tracks|artists. */
+  async getUserFavorites(type: 'albums' | 'tracks' | 'artists' = 'albums', limit = 20, offset = 0): Promise<any> {
+    const { appId } = await this.fetchAppCredentials()
+    return this.apiGet(`favorite/getUserFavorites?type=${type}&limit=${limit}&offset=${offset}&app_id=${appId}`, true)
+  }
+
+  /** The user's purchased Qobuz albums/tracks — the core Qobuz download workflow. */
+  async getUserPurchases(limit = 50, offset = 0): Promise<any> {
+    const { appId } = await this.fetchAppCredentials()
+    return this.apiGet(`purchase/getUserPurchases?limit=${limit}&offset=${offset}&app_id=${appId}`, true)
+  }
+
   /**
    * Parse a Qobuz URL into a {type, id}. Handles the web-player/open forms
    * (open.qobuz.com/track/ID, play.qobuz.com/album/ID) and the store form
