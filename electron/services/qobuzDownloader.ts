@@ -162,9 +162,15 @@ export async function downloadQobuzTrack(
   let streamed = false
   for (let attempt = 1; attempt <= STREAM_ATTEMPTS && !streamed; attempt++) {
     if (attempt > 1) {
-      console.log(`[QobuzDL] Stream attempt ${attempt}/${STREAM_ATTEMPTS} for ${trackId} (fresh URL) after: ${lastStreamError?.message}`)
+      // Adaptive tier step-down: if the CDN kills the transfer at this format
+      // tier (observed with true 192 kHz assets on web-player credentials),
+      // retry one FLAC tier lower — 27 → 7 (24/96) → 6 (CD). Still lossless;
+      // a killed hi-res stream should degrade, not fail the track.
+      const stepDown: Record<number, QobuzFormatId> = { 27: QOBUZ_FORMAT.FLAC_HIRES_96, 7: QOBUZ_FORMAT.FLAC_CD }
+      const nextFormat = (stepDown[file.formatId as number] ?? file.formatId) as QobuzFormatId
+      console.log(`[QobuzDL] Stream attempt ${attempt}/${STREAM_ATTEMPTS} for ${trackId} (fresh URL, format ${file.formatId}→${nextFormat}) after: ${lastStreamError?.message}`)
       await new Promise(r => setTimeout(r, attempt * 1500))
-      const refreshed = await qobuzAuth.getFileUrl(trackId, file.formatId as QobuzFormatId, viaPurchase ? 'download' : 'stream')
+      const refreshed = await qobuzAuth.getFileUrl(trackId, nextFormat, viaPurchase ? 'download' : 'stream')
       if (refreshed.url && !refreshed.restricted) file = refreshed
     }
     try {

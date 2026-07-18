@@ -3185,12 +3185,15 @@ export class DeemixServer extends EventEmitter {
       return
     }
     try {
-      const file = await qobuzAuth.getFileUrl(id, QOBUZ_FORMAT.MP3_320)
+      // Optional format override (diagnostic + future use): 5|6|7|27.
+      const fmtParam = Number(url.searchParams.get('format'))
+      const fmt = ([5, 6, 7, 27].includes(fmtParam) ? fmtParam : QOBUZ_FORMAT.MP3_320) as any
+      const file = await qobuzAuth.getFileUrl(id, fmt)
       if (!file.url) {
-        this.sendJSON(res, { error: 'No stream available for this track' }, 404)
+        this.sendJSON(res, { error: 'No stream available for this track', restrictionCode: file.restrictionCode }, 404)
         return
       }
-      this.sendJSON(res, { url: file.url })
+      this.sendJSON(res, { url: file.url, formatId: file.formatId })
     } catch (error: any) {
       this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
     }
