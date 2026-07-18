@@ -360,9 +360,9 @@ async function performQobuzSearch() {
 async function performSearch() {
   if (!searchQuery.value.trim()) return
 
-  // Detect Deezer/Spotify links and redirect to Link Analyzer
+  // Detect Deezer/Spotify/Qobuz links and redirect to Link Analyzer
   const query = searchQuery.value.trim()
-  if (textContainsHostUrl(query, ['deezer.com', 'deezer.page.link', 'spotify.com', 'spotify.link']) || query.startsWith('spotify:')) {
+  if (textContainsHostUrl(query, ['deezer.com', 'deezer.page.link', 'spotify.com', 'spotify.link', 'qobuz.com']) || query.startsWith('spotify:')) {
     router.push({ path: '/analyzer', query: { url: query } })
     return
   }
