@@ -11,9 +11,63 @@
  * verified in isolation; wiring it into the download queue + UI is the next slice.
  */
 import fs from 'fs'
-import { pipeline } from 'stream/promises'
-import { Readable } from 'stream'
+import https from 'https'
 import { qobuzAuth, QOBUZ_FORMAT, type QobuzFormatId } from './qobuzAuth'
+
+// Stream a URL to disk over node https — the SAME transport the Deezer
+// downloader has proven at scale. Electron's bundled undici (global fetch)
+// deterministically dies with 'terminated' at byte 1 on some Qobuz CDN
+// transfers that curl, system-node fetch, and node https all handle fine.
+function httpsStreamToFile(
+  url: string,
+  outputPath: string,
+  onProgress?: (bytes: number, total: number) => void
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://play.qobuz.com/',
+        'Accept': '*/*',
+      },
+      timeout: 30000,
+    }, (res) => {
+      if (res.statusCode !== 200 && res.statusCode !== 206) {
+        res.resume()
+        reject(new Error(`Qobuz: download failed (HTTP ${res.statusCode})`))
+        return
+      }
+      const total = Number(res.headers['content-length']) || 0
+      let received = 0
+      // Stall watchdog — no bytes for 60s aborts the attempt (mirrors Deezer).
+      let stall: NodeJS.Timeout | null = null
+      const resetStall = () => {
+        if (stall) clearTimeout(stall)
+        stall = setTimeout(() => res.destroy(new Error('stream stalled — no data for 60s')), 60000)
+      }
+      resetStall()
+      res.on('data', (chunk: Buffer) => {
+        received += chunk.length
+        if (onProgress) onProgress(received, total)
+        resetStall()
+      })
+      const out = fs.createWriteStream(outputPath)
+      res.pipe(out)
+      out.on('finish', () => {
+        if (stall) clearTimeout(stall)
+        if (total > 0 && received < total) {
+          reject(new Error(`incomplete stream: ${received} of ${total} bytes`))
+        } else {
+          resolve()
+        }
+      })
+      res.on('error', (e) => { if (stall) clearTimeout(stall); reject(e) })
+      out.on('error', (e) => { if (stall) clearTimeout(stall); reject(e) })
+    })
+    req.on('timeout', () => { req.destroy(new Error('connection timeout')) })
+    req.on('error', reject)
+  })
+}
 
 export interface QobuzDownloadResult {
   path: string
@@ -103,7 +157,7 @@ export async function downloadQobuzTrack(
   // partial file. Only network-class failures retry — real HTTP errors don't.
   const STREAM_ATTEMPTS = 3
   const isNetworkError = (e: any) =>
-    /terminated|aborted|ECONNRESET|ETIMEDOUT|EPIPE|socket|network|fetch failed|premature close/i.test(e?.message || String(e))
+    /terminated|aborted|ECONNRESET|ETIMEDOUT|EPIPE|socket|network|fetch failed|premature close|stalled|incomplete stream|connection timeout/i.test(e?.message || String(e))
   let lastStreamError: any
   let streamed = false
   for (let attempt = 1; attempt <= STREAM_ATTEMPTS && !streamed; attempt++) {
@@ -114,33 +168,8 @@ export async function downloadQobuzTrack(
       if (refreshed.url && !refreshed.restricted) file = refreshed
     }
     try {
-      // Fetch with the web player's client identity. The bare Node fetch agent
-      // is deterministically rejected by Qobuz's hi-res CDN edge (observed:
-      // 200 + content-length, one byte, then connection kill — on every fresh
-      // URL), the same class of check the API layer already spoofs past.
-      const res = await fetch(file.url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Referer': 'https://play.qobuz.com/',
-          'Origin': 'https://play.qobuz.com',
-          'Accept': '*/*',
-        }
-      })
-      if (!res.ok || !res.body) {
-        throw new Error(`Qobuz: download failed (HTTP ${res.status})`)
-      }
-      const total = Number(res.headers.get('content-length')) || 0
-      let received = 0
-      const body = Readable.fromWeb(res.body as any)
-      if (onProgress) {
-        body.on('data', (chunk: Buffer) => {
-          received += chunk.length
-          onProgress(received, total)
-        })
-      }
-      const out = fs.createWriteStream(outputPath)
       try {
-        await pipeline(body, out)
+        await httpsStreamToFile(file.url, outputPath, onProgress)
       } catch (err) {
         // Never leave a truncated file behind.
         try { fs.unlinkSync(outputPath) } catch { /* ignore */ }
