@@ -1081,7 +1081,22 @@ export class Downloader extends EventEmitter {
       DISKS_COUNT: album.media_count || 1,
       DURATION: meta?.duration || 0,
       EXPLICIT_LYRICS: meta?.parental_warning ? 1 : 0,
+      EXPLICIT_ALBUM_CONTENT: { EXPLICIT_LYRICS_STATUS: album?.parental_warning ? 1 : 0 },
       PHYSICAL_RELEASE_DATE: date,
+      // Direct genre name from Qobuz metadata — the Deezer genre path resolves
+      // via Deezer album-id lookup / genre-id maps, neither of which exists for
+      // Qobuz. getGenresForTrack and the %genre% folder token read this first.
+      _directGenres: album?.genre?.name ? [album.genre.name] : [],
+      // Contributor shape the tagger's composer/multi-artist paths consume.
+      SNG_CONTRIBUTORS: {
+        main_artist: [meta?.performer?.name || album?.artist?.name].filter(Boolean),
+        mainartist: [meta?.performer?.name || album?.artist?.name].filter(Boolean),
+        composer: meta?.composer?.name ? [meta.composer.name] : [],
+        featartist: [],
+      },
+      ARTISTS: Array.isArray(album?.artists)
+        ? album.artists.map((a: any) => ({ ART_NAME: a?.name })).filter((a: any) => a.ART_NAME)
+        : undefined,
       // No ALB_PICTURE (Deezer hash) — cover comes via options.prefetchedCover.
     }
   }
@@ -1748,7 +1763,7 @@ export class Downloader extends EventEmitter {
     const artistName = trackInfo.ART_NAME || 'Unknown Artist'
     const albumName = trackInfo.ALB_TITLE || 'Unknown Album'
     const year = trackInfo.PHYSICAL_RELEASE_DATE?.split('-')[0] || ''
-    const genre = '' // Would need async lookup
+    const genre = trackInfo._directGenres?.[0] || '' // Deezer: would need async lookup (unchanged); Qobuz supplies directly
     // v1.8.2: %label% template — same dead-field story as %barcode%. trackInfo.LABEL_NAME
     // is empty on private-API fetches, so cascade through the public-API resolver first.
     const label = albumContext?.label || options._resolvedAlbumLabel || trackInfo.LABEL_NAME || ''
@@ -3592,6 +3607,11 @@ export class Downloader extends EventEmitter {
    * ID can mean different things for different content.
    */
   private async getGenresForTrack(trackInfo: any): Promise<string[]> {
+    // Non-Deezer sources (Qobuz) supply the genre name directly — no Deezer
+    // album lookup or genre-id mapping applies to their ids.
+    if (Array.isArray(trackInfo._directGenres) && trackInfo._directGenres.length > 0) {
+      return trackInfo._directGenres
+    }
     console.log(`[Downloader] Getting genres for track: ${trackInfo.SNG_TITLE}`)
     console.log(`[Downloader] Track GENRE_ID: ${trackInfo.GENRE_ID}, ALB_GENRE_ID: ${trackInfo.ALB_GENRE_ID}, ALB_ID: ${trackInfo.ALB_ID}`)
 
