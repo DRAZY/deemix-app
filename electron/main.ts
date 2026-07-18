@@ -678,14 +678,29 @@ ipcMain.handle('shell:deletePath', async (_, path: string) => {
     return { success: false, error: 'Cannot delete this directory' }
   }
 
+  // Never delete the configured download root itself — a queue row whose path
+  // resolves to the root (however it got that way) must not be able to wipe
+  // the whole library. Defense-in-depth with the renderer-side rail.
+  try {
+    const downloadRoot = server ? normalize(resolve(server.getSettings().downloadPath)) : ''
+    if (downloadRoot && normalizedPath === downloadRoot) {
+      console.warn('[Security] Refusing to delete the download root folder:', path)
+      return { success: false, error: 'Cannot delete the download folder itself' }
+    }
+  } catch { /* settings unavailable — other guards still apply */ }
+
   try {
     // Verify path exists before attempting delete
     await stat(path)
-    await rm(path, { recursive: true, force: true })
+    // Recoverable by design: move to the OS trash (macOS Trash / Windows
+    // Recycle Bin / Linux trash) instead of permanent rm. A wrong deletion —
+    // user mistake or app bug — must always be reversible. If the platform
+    // has no trash available, fail closed rather than deleting permanently.
+    await shell.trashItem(normalizedPath)
     return { success: true }
   } catch (error: any) {
-    console.error('[Main] Failed to delete path:', path, error)
-    return { success: false, error: error.message }
+    console.error('[Main] Failed to move path to trash:', path, error)
+    return { success: false, error: `Could not move to trash: ${error.message}` }
   }
 })
 
