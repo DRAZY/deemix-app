@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { Track, Album, Playlist, DownloadItem, DownloadStatus, FailedTrack, SubstitutedTrack, DownloadHistoryEntry } from '../types'
 import { useSettingsStore } from './settingsStore'
 import { useToastStore } from './toastStore'
+import { useAuthStore } from './authStore'
 
 export const useDownloadStore = defineStore('downloads', () => {
   // Use regular ref for proper reactivity
@@ -1588,11 +1589,19 @@ export const useDownloadStore = defineStore('downloads', () => {
     // Sequential: retryDownload re-adds through add* paths; serialising avoids a
     // burst of list-build requests, and the global concurrency gate + pacing
     // (#97, applied at boot) still bound the actual downloads regardless.
+    const authStore = useAuthStore()
+    const settingsStore2 = useSettingsStore()
     for (const id of ids) {
       // Only resume items still in the interrupted error state (user may have
       // already retried or removed one before auth finished).
       const item = downloads.value.find(d => d.id === id)
-      if (item && item.status === 'error') {
+      if (!item || item.status !== 'error') continue
+      // Per-row service eligibility: resume a row only when ITS service has a
+      // session — a Qobuz row must not be blocked by missing Deezer auth, and
+      // vice versa. Ineligible rows stay one-click-retryable.
+      const isQobuzRow = item.source === 'qobuz' || (item.track as any)?.source === 'qobuz' || (item.album as any)?.source === 'qobuz'
+      const eligible = isQobuzRow ? settingsStore2.isQobuzConnected : authStore.isLoggedIn
+      if (eligible) {
         await retryDownload(id)
       }
     }
