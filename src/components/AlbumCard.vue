@@ -159,6 +159,14 @@ const contextMenuItems = computed(() => [
         v-if="(album as any).source === 'qobuz'"
         class="absolute top-1 left-1 px-1 py-px font-mono text-[8px] font-bold tracking-[0.1em] bg-qobuz-500 text-background-main select-none"
       >Q</span>
+      <!-- Qobuz per-album quality ceiling — hi-res in channel cyan, CD muted -->
+      <span
+        v-if="(album as any).qobuzQuality"
+        class="absolute bottom-1 left-1 px-1 py-px font-mono text-[8px] font-bold tracking-[0.05em] select-none"
+        :class="(album as any).qobuzQuality.hires
+          ? 'bg-qobuz-500 text-background-main'
+          : 'bg-black/70 text-foreground-muted border border-white/[0.15]'"
+      >{{ (album as any).qobuzQuality.bitDepth }}/{{ (album as any).qobuzQuality.samplingRate }}</span>
       <!-- Download overlay -->
       <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity
                   flex items-center justify-center">

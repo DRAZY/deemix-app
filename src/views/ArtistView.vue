@@ -177,6 +177,9 @@ async function loadArtist(artistId: string) {
       albums.value = (a.albums?.items || []).map((al: any) => ({
         id: al.id, title: al.title, record_type: qobuzRecordType(al),
         cover_small: al.image?.small, cover_medium: al.image?.large, cover_big: al.image?.large,
+        qobuzQuality: (al.maximum_bit_depth && al.maximum_sampling_rate)
+          ? { hires: !!al.hires, bitDepth: al.maximum_bit_depth, samplingRate: al.maximum_sampling_rate }
+          : undefined,
         artist: { id: a.id, name: a.name },
         nb_tracks: al.tracks_count,
         release_date: al.release_date_original || al.released_at,

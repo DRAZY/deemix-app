@@ -307,6 +307,9 @@ function mapQobuzTrack(t: any) {
 function mapQobuzAlbum(a: any) {
   return {
     id: a.id, title: a.title, nb_tracks: a.tracks_count, record_type: qobuzRecordType(a),
+    qobuzQuality: (a.maximum_bit_depth && a.maximum_sampling_rate)
+      ? { hires: !!a.hires, bitDepth: a.maximum_bit_depth, samplingRate: a.maximum_sampling_rate }
+      : undefined,
     artist: { id: a.artist?.id, name: a.artist?.name || '' },
     cover_small: a.image?.small, cover_medium: a.image?.large, cover_big: a.image?.large,
     source: 'qobuz', qobuzId: a.id, qobuzData: { title: a.title, artist: a.artist, image: a.image, tracks_count: a.tracks_count },
