@@ -3156,20 +3156,30 @@ export class DeemixServer extends EventEmitter {
       this.sendJSON(res, cached.data)
       return
     }
-    const safe = (p: Promise<any>, label: string): Promise<any> =>
-      p.catch((e: any) => {
+    // Sequential with small gaps (politeness: a 7-wide parallel burst repeated
+    // across genre clicks looks like abuse to Qobuz's gateway), and each row's
+    // failure is RECORDED in the response (_rowErrors) — observable fault
+    // tolerance instead of silent empty rows.
+    const rowErrors: Record<string, string> = {}
+    const safe = async (fn: () => Promise<any>, label: string): Promise<any> => {
+      try {
+        const r = await fn()
+        await new Promise(res => setTimeout(res, 200))
+        return r
+      } catch (e: any) {
         console.log(`[Server] Qobuz discover row '${label}' failed:`, e.message)
+        rowErrors[label] = e.message
+        await new Promise(res => setTimeout(res, 200))
         return null
-      })
-    const [newReleases, pressAwards, editorPicks, mostStreamed, playlists, favorites, purchases] = await Promise.all([
-      safe(qobuzAuth.getFeaturedAlbums('new-releases-full', 20, 0, genreId), 'new-releases-full'),
-      safe(qobuzAuth.getFeaturedAlbums('press-awards', 20, 0, genreId), 'press-awards'),
-      safe(qobuzAuth.getFeaturedAlbums('editor-picks', 20, 0, genreId), 'editor-picks'),
-      safe(qobuzAuth.getFeaturedAlbums('most-streamed', 20, 0, genreId), 'most-streamed'),
-      safe(qobuzAuth.getFeaturedPlaylists('editor-picks', 20, 0, genreId), 'playlists-editor-picks'),
-      genreId ? Promise.resolve(null) : safe(qobuzAuth.getUserFavorites('albums', 20), 'user-favorites'),
-      genreId ? Promise.resolve(null) : safe(qobuzAuth.getUserPurchases(50), 'user-purchases'),
-    ])
+      }
+    }
+    const newReleases = await safe(() => qobuzAuth.getFeaturedAlbums('new-releases-full', 20, 0, genreId), 'new-releases-full')
+    const pressAwards = await safe(() => qobuzAuth.getFeaturedAlbums('press-awards', 20, 0, genreId), 'press-awards')
+    const editorPicks = await safe(() => qobuzAuth.getFeaturedAlbums('editor-picks', 20, 0, genreId), 'editor-picks')
+    const mostStreamed = await safe(() => qobuzAuth.getFeaturedAlbums('most-streamed', 20, 0, genreId), 'most-streamed')
+    const playlists = await safe(() => qobuzAuth.getFeaturedPlaylists('editor-picks', 20, 0, genreId), 'playlists-editor-picks')
+    const favorites = genreId ? null : await safe(() => qobuzAuth.getUserFavorites('albums', 20), 'user-favorites')
+    const purchases = genreId ? null : await safe(() => qobuzAuth.getUserPurchases(50), 'user-purchases')
     const data = {
       newReleases: newReleases?.albums?.items || [],
       pressAwards: pressAwards?.albums?.items || [],
@@ -3179,8 +3189,13 @@ export class DeemixServer extends EventEmitter {
       // Personal rows — favorites the user hearted in Qobuz, and purchased albums.
       myFavorites: favorites?.albums?.items || [],
       myPurchases: purchases?.albums?.items || [],
+      _rowErrors: Object.keys(rowErrors).length ? rowErrors : undefined,
     }
-    this.qobuzDiscoverCache.set(cacheKey, { data, timestamp: Date.now() })
+    // Don't cache a fully-failed result — a transient outage would otherwise
+    // pin empty rows for 30 minutes.
+    const anyContent = data.newReleases.length || data.editorPicks.length || data.pressAwards.length
+      || data.mostStreamed.length || data.playlists.length || data.myFavorites.length || data.myPurchases.length
+    if (anyContent) this.qobuzDiscoverCache.set(cacheKey, { data, timestamp: Date.now() })
     this.sendJSON(res, data)
   }
 
