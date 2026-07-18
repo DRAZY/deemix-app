@@ -982,8 +982,11 @@ export class Downloader extends EventEmitter {
       // delivered tier on the chip (e.g. 'FLAC 24/96') so the substitution is
       // never silent.
       const gotFlac = result.path.toLowerCase().endsWith('.flac')
+      // Qobuz is the hi-res service — the delivered tier IS the product, so
+      // every Qobuz FLAC chip shows it (e.g. 'FLAC 24/192', 'FLAC 16/44.1'),
+      // not just step-downs. Delivery facts come straight from getFileUrl.
       progress.actualFormat = gotFlac
-        ? (result.steppedDown && result.bitDepth && result.samplingRate
+        ? (result.bitDepth && result.samplingRate
             ? `FLAC ${result.bitDepth}/${result.samplingRate}`
             : 'FLAC')
         : 'MP3_320'
