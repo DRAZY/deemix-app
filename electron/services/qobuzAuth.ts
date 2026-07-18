@@ -334,17 +334,26 @@ class QobuzAuth {
 
   /** Featured albums for the Discover tab. Known types: new-releases-full,
    *  press-awards, editor-picks, most-streamed, best-sellers, ideal-discography.
-   *  Requires user auth (all Qobuz endpoints do post-April 2026). */
-  async getFeaturedAlbums(type: string, limit = 20, offset = 0): Promise<any> {
+   *  Requires user auth (all Qobuz endpoints do post-April 2026). Optional
+   *  genreId filters the feed (genre_ids param — Qobuz's own Discover filter). */
+  async getFeaturedAlbums(type: string, limit = 20, offset = 0, genreId?: number): Promise<any> {
     const { appId } = await this.fetchAppCredentials()
-    return this.apiGet(`album/getFeatured?type=${encodeURIComponent(type)}&limit=${limit}&offset=${offset}&app_id=${appId}`, true)
+    const genre = genreId ? `&genre_ids=${genreId}` : ''
+    return this.apiGet(`album/getFeatured?type=${encodeURIComponent(type)}&limit=${limit}&offset=${offset}${genre}&app_id=${appId}`, true)
   }
 
   /** Featured (editorial) playlists for the Discover tab. Known types:
    *  editor-picks, last-created. */
-  async getFeaturedPlaylists(type: string, limit = 20, offset = 0): Promise<any> {
+  async getFeaturedPlaylists(type: string, limit = 20, offset = 0, genreId?: number): Promise<any> {
     const { appId } = await this.fetchAppCredentials()
-    return this.apiGet(`playlist/getFeatured?type=${encodeURIComponent(type)}&limit=${limit}&offset=${offset}&app_id=${appId}`, true)
+    const genre = genreId ? `&genre_ids=${genreId}` : ''
+    return this.apiGet(`playlist/getFeatured?type=${encodeURIComponent(type)}&limit=${limit}&offset=${offset}${genre}&app_id=${appId}`, true)
+  }
+
+  /** Qobuz's genre list (top-level genres) for the Discover genre chips. */
+  async getGenres(): Promise<any> {
+    const { appId } = await this.fetchAppCredentials()
+    return this.apiGet(`genre/list?app_id=${appId}`, true)
   }
 
   /** The user's own Qobuz favorites (hearted in Qobuz itself). type: albums|tracks|artists. */

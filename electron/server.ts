@@ -874,7 +874,16 @@ export class DeemixServer extends EventEmitter {
         await this.handleQobuzPlaylist(url, res)
         break
       case '/api/qobuz/discover':
-        await this.handleQobuzDiscover(res)
+        await this.handleQobuzDiscover(url, res)
+        break
+      case '/api/qobuz/genres':
+        await this.handleQobuzGenres(res)
+        break
+      case '/api/deezer/genres':
+        await this.handleDeezerGenres(res)
+        break
+      case '/api/deezer/genre-browse':
+        await this.handleDeezerGenreBrowse(url, res)
         break
       case '/api/qobuz/preview':
         await this.handleQobuzPreview(url, res)
@@ -3125,22 +3134,26 @@ export class DeemixServer extends EventEmitter {
     }
   }
 
-  // Discover-tab cache — Qobuz's editorial feeds change daily; 30 min keeps tab
-  // revisits instant without hammering their API.
-  private qobuzDiscoverCache: { data: any; timestamp: number } | null = null
+  // Discover-tab cache (keyed per genre filter) — Qobuz's editorial feeds
+  // change daily; 30 min keeps tab revisits instant without hammering their API.
+  private qobuzDiscoverCache = new Map<string, { data: any; timestamp: number }>()
   private readonly QOBUZ_DISCOVER_CACHE_TTL = 30 * 60 * 1000
 
-  /** Aggregated Qobuz editorial feeds for the Discover tab. Each row fetches
-   *  independently — a failed or renamed feed type degrades to an empty row,
-   *  never a broken page. */
-  private async handleQobuzDiscover(res: ServerResponse): Promise<void> {
+  /** Aggregated Qobuz editorial feeds for the Discover tab, optionally genre-
+   *  filtered (?genre=<id> — Qobuz's own genre_ids Discover filter). Each row
+   *  fetches independently — a failed feed degrades to an empty row, never a
+   *  broken page. Personal rows (favorites/purchases) can't be genre-filtered
+   *  server-side, so they only appear on the unfiltered view. */
+  private async handleQobuzDiscover(url: URL, res: ServerResponse): Promise<void> {
     if (!qobuzAuth.isLoggedIn()) {
       this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
       return
     }
-    if (this.qobuzDiscoverCache &&
-        Date.now() - this.qobuzDiscoverCache.timestamp < this.QOBUZ_DISCOVER_CACHE_TTL) {
-      this.sendJSON(res, this.qobuzDiscoverCache.data)
+    const genreId = Number(url.searchParams.get('genre')) || undefined
+    const cacheKey = String(genreId || 'all')
+    const cached = this.qobuzDiscoverCache.get(cacheKey)
+    if (cached && Date.now() - cached.timestamp < this.QOBUZ_DISCOVER_CACHE_TTL) {
+      this.sendJSON(res, cached.data)
       return
     }
     const safe = (p: Promise<any>, label: string): Promise<any> =>
@@ -3149,13 +3162,13 @@ export class DeemixServer extends EventEmitter {
         return null
       })
     const [newReleases, pressAwards, editorPicks, mostStreamed, playlists, favorites, purchases] = await Promise.all([
-      safe(qobuzAuth.getFeaturedAlbums('new-releases-full', 20), 'new-releases-full'),
-      safe(qobuzAuth.getFeaturedAlbums('press-awards', 20), 'press-awards'),
-      safe(qobuzAuth.getFeaturedAlbums('editor-picks', 20), 'editor-picks'),
-      safe(qobuzAuth.getFeaturedAlbums('most-streamed', 20), 'most-streamed'),
-      safe(qobuzAuth.getFeaturedPlaylists('editor-picks', 20), 'playlists-editor-picks'),
-      safe(qobuzAuth.getUserFavorites('albums', 20), 'user-favorites'),
-      safe(qobuzAuth.getUserPurchases(50), 'user-purchases'),
+      safe(qobuzAuth.getFeaturedAlbums('new-releases-full', 20, 0, genreId), 'new-releases-full'),
+      safe(qobuzAuth.getFeaturedAlbums('press-awards', 20, 0, genreId), 'press-awards'),
+      safe(qobuzAuth.getFeaturedAlbums('editor-picks', 20, 0, genreId), 'editor-picks'),
+      safe(qobuzAuth.getFeaturedAlbums('most-streamed', 20, 0, genreId), 'most-streamed'),
+      safe(qobuzAuth.getFeaturedPlaylists('editor-picks', 20, 0, genreId), 'playlists-editor-picks'),
+      genreId ? Promise.resolve(null) : safe(qobuzAuth.getUserFavorites('albums', 20), 'user-favorites'),
+      genreId ? Promise.resolve(null) : safe(qobuzAuth.getUserPurchases(50), 'user-purchases'),
     ])
     const data = {
       newReleases: newReleases?.albums?.items || [],
@@ -3167,7 +3180,74 @@ export class DeemixServer extends EventEmitter {
       myFavorites: favorites?.albums?.items || [],
       myPurchases: purchases?.albums?.items || [],
     }
-    this.qobuzDiscoverCache = { data, timestamp: Date.now() }
+    this.qobuzDiscoverCache.set(cacheKey, { data, timestamp: Date.now() })
+    this.sendJSON(res, data)
+  }
+
+  // Genre lists + Deezer genre browse — cached; genres barely ever change.
+  private qobuzGenresCache: { data: any; timestamp: number } | null = null
+  private deezerGenreBrowseCache = new Map<string, { data: any; timestamp: number }>()
+
+  private async handleQobuzGenres(res: ServerResponse): Promise<void> {
+    if (!qobuzAuth.isLoggedIn()) {
+      this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
+      return
+    }
+    if (this.qobuzGenresCache && Date.now() - this.qobuzGenresCache.timestamp < 24 * 60 * 60 * 1000) {
+      this.sendJSON(res, this.qobuzGenresCache.data)
+      return
+    }
+    try {
+      const g = await qobuzAuth.getGenres()
+      const items = (g?.genres?.items || g?.items || []).map((x: any) => ({ id: x.id, name: x.name }))
+      const data = { genres: items }
+      this.qobuzGenresCache = { data, timestamp: Date.now() }
+      this.sendJSON(res, data)
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  private async handleDeezerGenres(res: ServerResponse): Promise<void> {
+    try {
+      const g = await this.deezerPublicAPI('/genre')
+      // Drop the 'All' pseudo-genre (id 0) — the UI models 'All' itself.
+      const genres = (g?.data || []).filter((x: any) => x.id !== 0).map((x: any) => ({ id: x.id, name: x.name }))
+      this.sendJSON(res, { genres })
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  /** Deezer per-genre browse: editorial picks + genre charts. Built only from
+   *  the endpoints verified working (the per-genre artists endpoint is broken
+   *  upstream — ignores the filter — and is deliberately excluded, #106). */
+  private async handleDeezerGenreBrowse(url: URL, res: ServerResponse): Promise<void> {
+    const id = url.searchParams.get('id')
+    if (!id || !/^\d+$/.test(id)) {
+      this.sendJSON(res, { error: 'Valid genre id required' }, 400)
+      return
+    }
+    const cached = this.deezerGenreBrowseCache.get(id)
+    if (cached && Date.now() - cached.timestamp < 30 * 60 * 1000) {
+      this.sendJSON(res, cached.data)
+      return
+    }
+    const safe = (p: Promise<any>, label: string): Promise<any> =>
+      p.catch((e: any) => {
+        console.log(`[Server] Deezer genre row '${label}' failed:`, e.message)
+        return null
+      })
+    const [selection, charts] = await Promise.all([
+      safe(this.deezerPublicAPI(`/editorial/${id}/selection`), 'selection'),
+      safe(this.deezerPublicAPI(`/editorial/${id}/charts`), 'charts'),
+    ])
+    const data = {
+      picks: selection?.data || [],
+      chartTracks: charts?.tracks?.data || [],
+      chartAlbums: charts?.albums?.data || [],
+    }
+    this.deezerGenreBrowseCache.set(id, { data, timestamp: Date.now() })
     this.sendJSON(res, data)
   }
 

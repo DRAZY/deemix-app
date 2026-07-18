@@ -27,6 +27,24 @@ const isLoading = ref(true)
 const hasError = ref(false)
 const notConnected = ref(false)
 
+// Genre filter (issue #106) — Qobuz's own genre_ids Discover filter.
+const genres = ref<Array<{ id: number; name: string }>>([])
+const activeGenre = ref<number | 0>(0) // 0 = All
+
+async function loadGenres() {
+  try {
+    const port = window.electronAPI ? await window.electronAPI.getServerPort() : 6595
+    const r = await fetch(`http://127.0.0.1:${port}/api/qobuz/genres`)
+    if (r.ok) genres.value = (await r.json()).genres || []
+  } catch { /* chips simply don't render */ }
+}
+
+function setGenre(id: number) {
+  if (activeGenre.value === id) return
+  activeGenre.value = id
+  loadDiscover()
+}
+
 const newReleases = ref<Album[]>([])
 const editorPicks = ref<Album[]>([])
 const pressAwards = ref<Album[]>([])
@@ -69,7 +87,8 @@ async function loadDiscover() {
   notConnected.value = false
   try {
     const port = window.electronAPI ? await window.electronAPI.getServerPort() : 6595
-    const resp = await fetch(`http://127.0.0.1:${port}/api/qobuz/discover`)
+    const genreParam = activeGenre.value ? `?genre=${activeGenre.value}` : ''
+    const resp = await fetch(`http://127.0.0.1:${port}/api/qobuz/discover${genreParam}`)
     if (resp.status === 401) {
       notConnected.value = true
       return
@@ -97,7 +116,7 @@ async function loadDiscover() {
   }
 }
 
-onMounted(loadDiscover)
+onMounted(() => { loadGenres(); loadDiscover() })
 
 // Personal rows lead — your purchases and favorites are what make the tab
 // feel like YOUR Qobuz, mirroring the Qobuz player's own ordering.
@@ -137,6 +156,22 @@ const sections = [
       </div>
       <!-- Ghost glyph in channel cyan -->
       <div class="absolute -right-6 -bottom-16 font-display text-[220px] leading-none text-qobuz-500/[0.05] select-none pointer-events-none" aria-hidden="true">Q</div>
+    </div>
+
+    <!-- Genre chips — Qobuz's own Discover genre filter (#106) -->
+    <div v-if="!notConnected && genres.length > 0" class="flex gap-2 overflow-x-auto pb-1 -mb-2">
+      <button
+        @click="setGenre(0)"
+        class="flex-shrink-0 font-mono text-[10px] tracking-[0.12em] uppercase px-2.5 py-1 border transition-colors"
+        :class="activeGenre === 0 ? 'border-qobuz-500/60 text-qobuz-400 bg-qobuz-500/10' : 'border-white/[0.1] text-foreground-muted hover:text-foreground'"
+      >All</button>
+      <button
+        v-for="g in genres"
+        :key="g.id"
+        @click="setGenre(g.id)"
+        class="flex-shrink-0 font-mono text-[10px] tracking-[0.12em] uppercase px-2.5 py-1 border transition-colors whitespace-nowrap"
+        :class="activeGenre === g.id ? 'border-qobuz-500/60 text-qobuz-400 bg-qobuz-500/10' : 'border-white/[0.1] text-foreground-muted hover:text-foreground'"
+      >{{ g.name }}</button>
     </div>
 
     <!-- Not connected -->

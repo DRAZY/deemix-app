@@ -25,6 +25,9 @@ const navItems = computed(() => {
     { path: '/', icon: 'home', label: t('nav.home') },
     { path: '/search', icon: 'search', label: t('nav.search'), hidden: !showSearchButton.value },
     { path: '/charts', icon: 'chart', label: t('nav.charts') },
+    // Genre browse (#106) — literal label like the Qobuz channel; i18n keys in
+    // the pre-release localization pass.
+    { path: '/genres', icon: 'genres', label: 'Genres' },
     // Channel Q — visible only when a Qobuz account is connected. Brand name,
     // not translated (matches the QOBUZ badges elsewhere).
     { path: '/qobuz', icon: 'qobuz', label: 'Qobuz', hidden: !settingsStore.isQobuzConnected },
@@ -147,6 +150,12 @@ function handleAuthClick() {
             <svg v-else-if="item.icon === 'chart'" class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+
+            <!-- Genres icon — category grid (tag glyph belongs to Retag) -->
+            <svg v-else-if="item.icon === 'genres'" class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
             </svg>
 
             <!-- Channel Q icon — block Q in the fixed Qobuz brand cyan -->

@@ -79,6 +79,11 @@ const router = createRouter({
       component: () => import('./views/QobuzView.vue')
     },
     {
+      path: '/genres',
+      name: 'genres',
+      component: () => import('./views/GenresView.vue')
+    },
+    {
       // Catch-all: redirect unknown routes to home
       path: '/:pathMatch(.*)*',
       redirect: '/'
