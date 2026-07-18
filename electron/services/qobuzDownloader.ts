@@ -54,22 +54,33 @@ export async function downloadQobuzTrack(
 
   const formatId = qualityToFormatId(quality)
   let file = await qobuzAuth.getFileUrl(trackId, formatId)
+  let viaPurchase = false
   if (file.restricted || !file.url) {
-    // Stream delivery refused — retry with purchase credentials. Purchased
-    // mixed albums ([Mix Cut] tracks) are stream-restricted but deliverable
-    // via intent=download; harmless for non-purchased tracks (fails the same).
+    // Stream delivery refused — retry with purchase credentials, cascading down
+    // the format ladder: purchased content is released only at the format the
+    // user OWNS (e.g. an MP3-320 purchase refuses a hi-res request outright).
+    // Harmless for non-purchased tracks: every intent/format refuses the same.
     console.log(`[QobuzDL] Stream intent refused for ${trackId} (${file.restrictionCode || 'no code'}) — trying purchase download`)
-    file = await qobuzAuth.getFileUrl(trackId, formatId, 'download')
+    // Format ids are quality-ordered (27 > 7 > 6 > 5): try the requested tier
+    // and everything below it.
+    const ladder: QobuzFormatId[] = [QOBUZ_FORMAT.FLAC_HIRES_192, QOBUZ_FORMAT.FLAC_HIRES_96, QOBUZ_FORMAT.FLAC_CD, QOBUZ_FORMAT.MP3_320]
+    for (const fid of ladder.filter(f => f <= formatId)) {
+      file = await qobuzAuth.getFileUrl(trackId, fid, 'download')
+      if (file.url && !file.restricted) { viaPurchase = true; break }
+    }
   }
   if (file.restricted || !file.url) {
     const detail = file.restrictionCode ? ` (${file.restrictionCode})` : ''
     throw new Error(`Qobuz: track ${trackId} is not available at the requested quality on this account${detail}`)
   }
 
-  // FLAC requested but Qobuz delivered lossy — honor the Bitrate Fallback setting.
+  // FLAC requested but Qobuz delivered lossy — honor the Bitrate Fallback
+  // setting for streamed content. Purchased content is exempt: the owned
+  // format is the best obtainable anywhere, so it downloads with the
+  // "Lower bitrate" badge instead of erroring forever.
   const deliveredLossy = file.formatId === QOBUZ_FORMAT.MP3_320
   if (quality === 'flac' && deliveredLossy) {
-    if (!bitrateFallback) {
+    if (!bitrateFallback && !viaPurchase) {
       throw new Error('Preferred bitrate (FLAC) not available for this track on your Qobuz plan. Enable Bitrate Fallback in settings to download in a lower quality.')
     }
     // Keep the file honest: swap the templated .flac extension for .mp3.
