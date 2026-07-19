@@ -3159,30 +3159,34 @@ export class DeemixServer extends EventEmitter {
       this.sendJSON(res, cached.data)
       return
     }
-    // Sequential with small gaps (politeness: a 7-wide parallel burst repeated
-    // across genre clicks looks like abuse to Qobuz's gateway), and each row's
+    // Small parallel waves (3-wide): full-sequential pacing made every fresh
+    // load take 2-3s (measured); a bounded wave keeps loads ~0.7s without the
+    // 7-wide burst that may have looked abusive to the gateway. Every row's
     // failure is RECORDED in the response (_rowErrors) — observable fault
     // tolerance instead of silent empty rows.
     const rowErrors: Record<string, string> = {}
     const safe = async (fn: () => Promise<any>, label: string): Promise<any> => {
       try {
-        const r = await fn()
-        await new Promise(res => setTimeout(res, 200))
-        return r
+        return await fn()
       } catch (e: any) {
         console.log(`[Server] Qobuz discover row '${label}' failed:`, e.message)
         rowErrors[label] = e.message
-        await new Promise(res => setTimeout(res, 200))
         return null
       }
     }
-    const newReleases = await safe(() => qobuzAuth.getFeaturedAlbums('new-releases-full', 20, 0, genreId), 'new-releases-full')
-    const pressAwards = await safe(() => qobuzAuth.getFeaturedAlbums('press-awards', 20, 0, genreId), 'press-awards')
-    const editorPicks = await safe(() => qobuzAuth.getFeaturedAlbums('editor-picks', 20, 0, genreId), 'editor-picks')
-    const mostStreamed = await safe(() => qobuzAuth.getFeaturedAlbums('most-streamed', 20, 0, genreId), 'most-streamed')
-    const playlists = await safe(() => qobuzAuth.getFeaturedPlaylists('editor-picks', 20, 0, genreId), 'playlists-editor-picks')
-    const favorites = genreId ? null : await safe(() => qobuzAuth.getUserFavorites('albums', 20), 'user-favorites')
-    const purchases = genreId ? null : await safe(() => qobuzAuth.getUserPurchases(50), 'user-purchases')
+    const [newReleases, pressAwards, editorPicks] = await Promise.all([
+      safe(() => qobuzAuth.getFeaturedAlbums('new-releases-full', 20, 0, genreId), 'new-releases-full'),
+      safe(() => qobuzAuth.getFeaturedAlbums('press-awards', 20, 0, genreId), 'press-awards'),
+      safe(() => qobuzAuth.getFeaturedAlbums('editor-picks', 20, 0, genreId), 'editor-picks'),
+    ])
+    const [mostStreamed, playlists] = await Promise.all([
+      safe(() => qobuzAuth.getFeaturedAlbums('most-streamed', 20, 0, genreId), 'most-streamed'),
+      safe(() => qobuzAuth.getFeaturedPlaylists('editor-picks', 20, 0, genreId), 'playlists-editor-picks'),
+    ])
+    const [favorites, purchases] = genreId ? [null, null] : await Promise.all([
+      safe(() => qobuzAuth.getUserFavorites('albums', 20), 'user-favorites'),
+      safe(() => qobuzAuth.getUserPurchases(50), 'user-purchases'),
+    ])
     const data = {
       newReleases: newReleases?.albums?.items || [],
       pressAwards: pressAwards?.albums?.items || [],
