@@ -738,7 +738,11 @@ export const useSettingsStore = defineStore('settings', () => {
       arl: '',
       spotifyClientId: '',
       spotifyClientSecret: '',
-      spotifyUsername: ''
+      spotifyUsername: '',
+      // Qobuz credentials live ONLY in safeStorage (saveCredentials) — never
+      // in the plain settings blob, localStorage mirror, or exports.
+      qobuzToken: '',
+      qobuzUserId: ''
     }))
 
     console.log('[Settings] Saving settings...', {
@@ -796,7 +800,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function exportSettings(): string {
     // Export settings without sensitive credentials
-    const exported = { ...settings.value, arl: '', spotifyClientId: '', spotifyClientSecret: '', spotifyUsername: '' }
+    const exported = { ...settings.value, arl: '', spotifyClientId: '', spotifyClientSecret: '', spotifyUsername: '', qobuzToken: '', qobuzUserId: '' }
     return JSON.stringify(exported, null, 2)
   }
 
@@ -809,11 +813,17 @@ export const useSettingsStore = defineStore('settings', () => {
       const currentSpotifyId = settings.value.spotifyClientId
       const currentSpotifySecret = settings.value.spotifyClientSecret
       const currentSpotifyUser = settings.value.spotifyUsername
+      const currentQobuzToken = settings.value.qobuzToken
+      const currentQobuzUserId = settings.value.qobuzUserId
       settings.value = deepMerge(defaultSettings, imported)
       settings.value.arl = currentArl
       settings.value.spotifyClientId = currentSpotifyId
       settings.value.spotifyClientSecret = currentSpotifySecret
       settings.value.spotifyUsername = currentSpotifyUser
+      // Qobuz credentials are never importable — preserve the live session
+      // (an imported file could otherwise blank or inject a token).
+      settings.value.qobuzToken = currentQobuzToken
+      settings.value.qobuzUserId = currentQobuzUserId
       saveSettings()
       return true
     } catch {
@@ -822,7 +832,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   function exportConfiguration(profiles?: any[]): string {
-    const settingsData = { ...settings.value, arl: '', spotifyClientId: '', spotifyClientSecret: '', spotifyUsername: '' }
+    const settingsData = { ...settings.value, arl: '', spotifyClientId: '', spotifyClientSecret: '', spotifyUsername: '', qobuzToken: '', qobuzUserId: '' }
     return JSON.stringify({
       type: 'deemix-configuration',
       version: 1,
@@ -841,11 +851,15 @@ export const useSettingsStore = defineStore('settings', () => {
       const currentSpotifyId = settings.value.spotifyClientId
       const currentSpotifySecret = settings.value.spotifyClientSecret
       const currentSpotifyUser = settings.value.spotifyUsername
+      const currentQobuzToken = settings.value.qobuzToken
+      const currentQobuzUserId = settings.value.qobuzUserId
       settings.value = deepMerge(defaultSettings, data.settings)
       settings.value.arl = currentArl
       settings.value.spotifyClientId = currentSpotifyId
       settings.value.spotifyClientSecret = currentSpotifySecret
       settings.value.spotifyUsername = currentSpotifyUser
+      settings.value.qobuzToken = currentQobuzToken
+      settings.value.qobuzUserId = currentQobuzUserId
       saveSettings()
 
       // Return profiles for the caller to import via profileStore
