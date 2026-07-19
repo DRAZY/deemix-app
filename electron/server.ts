@@ -879,6 +879,9 @@ export class DeemixServer extends EventEmitter {
       case '/api/qobuz/genres':
         await this.handleQobuzGenres(res)
         break
+      case '/api/qobuz/featured':
+        await this.handleQobuzFeatured(url, res)
+        break
       case '/api/deezer/genres':
         await this.handleDeezerGenres(res)
         break
@@ -3189,6 +3192,16 @@ export class DeemixServer extends EventEmitter {
       // Personal rows — favorites the user hearted in Qobuz, and purchased albums.
       myFavorites: favorites?.albums?.items || [],
       myPurchases: purchases?.albums?.items || [],
+      // Feed totals — the UI shows LOAD MORE while items < total.
+      totals: {
+        newReleases: newReleases?.albums?.total ?? 0,
+        pressAwards: pressAwards?.albums?.total ?? 0,
+        editorPicks: editorPicks?.albums?.total ?? 0,
+        mostStreamed: mostStreamed?.albums?.total ?? 0,
+        playlists: playlists?.playlists?.total ?? 0,
+        myFavorites: favorites?.albums?.total ?? 0,
+        myPurchases: purchases?.albums?.total ?? 0,
+      },
       _rowErrors: Object.keys(rowErrors).length ? rowErrors : undefined,
     }
     // Don't cache a fully-failed result — a transient outage would otherwise
@@ -3218,6 +3231,35 @@ export class DeemixServer extends EventEmitter {
       const data = { genres: items }
       this.qobuzGenresCache = { data, timestamp: Date.now() }
       this.sendJSON(res, data)
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  /** Single-feed pagination for the Discover rows' LOAD MORE (#106 follow-up).
+   *  type: new-releases-full|press-awards|editor-picks|most-streamed|playlists */
+  private async handleQobuzFeatured(url: URL, res: ServerResponse): Promise<void> {
+    if (!qobuzAuth.isLoggedIn()) {
+      this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
+      return
+    }
+    const type = url.searchParams.get('type') || ''
+    const allowed = ['new-releases-full', 'press-awards', 'editor-picks', 'most-streamed', 'playlists']
+    if (!allowed.includes(type)) {
+      this.sendJSON(res, { error: 'Invalid feed type' }, 400)
+      return
+    }
+    const offset = Math.max(0, Number(url.searchParams.get('offset')) || 0)
+    const limit = Math.min(50, Math.max(1, Number(url.searchParams.get('limit')) || 20))
+    const genreId = Number(url.searchParams.get('genre')) || undefined
+    try {
+      if (type === 'playlists') {
+        const r = await qobuzAuth.getFeaturedPlaylists('editor-picks', limit, offset, genreId)
+        this.sendJSON(res, { items: r?.playlists?.items || [], total: r?.playlists?.total ?? 0 })
+      } else {
+        const r = await qobuzAuth.getFeaturedAlbums(type, limit, offset, genreId)
+        this.sendJSON(res, { items: r?.albums?.items || [], total: r?.albums?.total ?? 0 })
+      }
     } catch (error: any) {
       this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
     }
