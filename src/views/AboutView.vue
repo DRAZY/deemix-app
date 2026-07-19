@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '2.0.3',
+    date: '2026-07-18',
+    items: [
+      'Fixed Track Total and Disc Total tags not being written on Deezer downloads (#107). With those options enabled, files were still tagged with just the track/disc number (like "5" instead of "5/12"). Deezer\'s track metadata doesn\'t include the album\'s totals, so the tagger had nothing to write — the totals now come from the album itself and apply to the Track Total / Disc Total tags and the %tracktotal% / %disctotal% filename tokens, on both MP3 and FLAC.'
+    ]
+  },
+  {
     version: '2.0.2',
     date: '2026-07-16',
     items: [

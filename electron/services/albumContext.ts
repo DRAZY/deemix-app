@@ -13,6 +13,7 @@ export interface AlbumContext {
   albumArtist: string
   artistPicture?: string
   totalDiscs?: number
+  totalTracks?: number
   explicitLyrics?: boolean
   isCompilation?: boolean
   recordType?: string
@@ -30,6 +31,9 @@ export function buildAlbumContext(
 ): AlbumContext {
   // Total discs — drives CD folder creation for multi-disc albums.
   const totalDiscs = Math.max(...tracksData.map((t: any) => t.disk_number || 1), 1)
+  // Total tracks — feeds the Track Total tag / %tracktotal% (#107). Prefer the
+  // authoritative album count; fall back to the tracklist length.
+  const totalTracks = Number(albumInfo.nb_tracks) || tracksData.length || undefined
   // Explicit status from actual track data. Album-level explicit_content_lyrics
   // is unreliable (code 4 = "partial"); flag the album explicit if ANY track is
   // code 1.
@@ -42,6 +46,7 @@ export function buildAlbumContext(
     albumArtist: albumInfo.artist?.name || 'Unknown Artist',
     artistPicture: albumInfo.artist?.picture_xl || albumInfo.artist?.picture_big || albumInfo.artist?.picture_medium || undefined,
     totalDiscs,
+    totalTracks,
     explicitLyrics: hasExplicitTracks,
     isCompilation: albumInfo.record_type === 'compile',
     // Full record_type (album/single/ep/compile) for the RELEASETYPE tag (#82)
