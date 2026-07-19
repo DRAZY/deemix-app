@@ -35,6 +35,14 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '2.1.2',
+    date: '2026-07-19',
+    items: [
+      'Security hardening pass — every open CodeQL finding resolved. The Spotify client secret can no longer be written to disk unencrypted under any circumstances (encrypted storage or in-memory only), server error responses are guaranteed stack-trace-free, and the share-link resolver and Deezer proxy pin their destinations even tighter.',
+      'Quality-of-life from the late 2.1.1 builds, now formally in the notes: full-title tooltips on truncated names, instant descriptors on every download action icon, the IN LIBRARY chip on duplicate-skipped downloads, and the restored open-folder button on skipped albums.'
+    ]
+  },
+  {
     version: '2.1.1',
     date: '2026-07-19',
     items: [

@@ -6,7 +6,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [2.1.2] — 2026-07-19
+
+### Security
+
+- **Spotify client secret is never stored in cleartext.** The legacy localStorage fallback could persist the secret unencrypted when OS-level safeStorage was unavailable; it is now stored safeStorage-encrypted only, or kept in-memory for the session.
+- **Server error responses never leak stack traces.** All error-status payloads pass through a central scrub that strips stack fields and collapses raw error objects to message-only.
+- **Outbound request guards hardened.** The share-link redirect resolver now also rejects non-default ports, and the Deezer API proxy pins the full origin (scheme + host + port), not just the hostname.
+- **Log-forgery hygiene.** User-supplied ids are passed to loggers as arguments instead of being interpolated into format strings.
+- All eight open CodeQL alerts resolved; triage log at `docs/SECURITY_TRIAGE.md`.
+
 ## [2.1.1] — 2026-07-19
+
+### Added
+
+- **In Library chip.** Downloads whose tracks all skipped as library duplicates show an emerald IN LIBRARY chip (queue + history) explaining nothing was re-downloaded — disambiguating the bare FLAC badge from rows with a real delivered tier.
+- **Hover tooltips across the Downloads views.** Truncated album/track titles reveal their full name on hover; every action icon (open folder, retry, retry-failed, download next, delete, remove) carries an instant styled descriptor.
 
 ### Fixed
 
@@ -15,6 +30,7 @@ Entries use a compact format — short bullets, one line each. Full per-version 
 - **Large Qobuz playlists and albums now download in full (#100).** Qobuz pages track listings at 50 per request, and only the first page was ever fetched — a 273-track playlist queued just 50 tracks. Track pages are now followed until the full listing is held, for both playlists and albums.
 - **Qobuz no longer falsely reports "session expired" on Windows and other setups (#100).** Qobuz answers an invalid request *signature* with the same HTTP 401 as a dead session token, so a wrong/stale app secret during download-URL signing killed the whole session state — Settings said connected while everything else demanded a reconnect, forever. Signature failures are now treated as app-credential problems (never session problems); genuine token expiry is still detected on ordinary authenticated calls and via an explicit token-error check.
 - **Qobuz artist pages no longer render broken for imageless duplicate catalog entities** (rolled into the final 2.1.0 build): missing artist images self-heal from an exact-name sibling entity, an initial-letter tile stands in when Qobuz truly has no image, and the empty "fans" label is hidden.
+- **Open-folder icon restored on duplicate-skipped downloads.** Completions that skipped every track (already in library) never recorded a file path on the queue row, hiding the open-folder button and the delivered-tier badge.
 
 ## [2.1.0] — 2026-07-18
 

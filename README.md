@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-2.1.1-C8F135" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.1.2-C8F135" />
   <img alt="Electron" src="https://img.shields.io/badge/Electron-39-47848F?logo=electron&logoColor=white" />
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
@@ -370,6 +370,7 @@ Build output is written to the `release/` directory.
 - **[Architecture](docs/ARCHITECTURE.md)** — How the renderer, preload bridge, and main process fit together, with a diagram and walkthroughs of common data flows
 - **[Troubleshooting](docs/TROUBLESHOOTING.md)** — Solutions for login issues, download failures, M3U glitches, Spotify integration, Qobuz connection issues, and more
 - **[Qobuz Integration Notes](docs/QOBUZ_INTEGRATION.md)** — Build log and API notes behind the v2.1.0 Qobuz integration
+- **[Security Triage Log](docs/SECURITY_TRIAGE.md)** — Disposition record for every CodeQL alert: what was found, what was fixed, and why
 
 ---
 
@@ -427,6 +428,7 @@ deemix-remastered/
 ├── docs/                       # Documentation
 │   ├── ARCHITECTURE.md             # Renderer / preload / main-process walkthrough
 │   ├── QOBUZ_INTEGRATION.md        # Qobuz integration build log & API notes (v2.1.0)
+│   ├── SECURITY_TRIAGE.md          # CodeQL alert disposition log
 │   ├── TROUBLESHOOTING.md          # Common issues & fixes
 │   ├── redesign/                   # Signal Deck design mockups (2.0 provenance)
 │   └── screenshots/                # README screenshots

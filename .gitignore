@@ -39,3 +39,4 @@ MEMORY/
 
 # Interceptor capture intermediates (screenshot tooling)
 interceptor-screenshot-*
+release-shipped*/
