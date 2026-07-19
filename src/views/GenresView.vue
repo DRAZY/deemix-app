@@ -1,11 +1,12 @@
 <script setup lang="ts">
 // Genre Browse — dual-service.
-// QOBUZ (primary): the full genre tree (top-level + subgenres via parent_id)
-// with a genre-scoped, feed-tabbed, continuously-paginated catalog grid —
-// the "browse the whole genre" surface (#106 follow-up).
-// DEEZER: editorial picks + charts (fixed snapshots — the only shape Deezer's
-// public API offers) plus a paginated New Releases section
-// (/editorial/{id}/releases, the one per-genre catalog endpoint that pages).
+// QOBUZ (primary): the primary genres, each with a feed-tabbed, continuously
+// paginated catalog grid — the "browse the whole genre" surface (#106
+// follow-up). Subgenre chips were tried and removed: Qobuz's feeds barely
+// change when scoped to a subgenre, so the extra chip row wasn't earning its
+// space (the parent_id API support remains server-side if ever wanted).
+// DEEZER: editorial picks + charts; Top Tracks / Top Albums page toward
+// Deezer's hard 100-per-chart cap (/editorial/{id}/releases is dead upstream).
 // The per-genre artists endpoint is broken upstream and deliberately excluded.
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -50,9 +51,7 @@ const QOBUZ_FEEDS = [
 ] as const
 
 const qGenres = ref<Genre[]>([])
-const qSubgenres = ref<Genre[]>([])
-const qActiveGenre = ref<Genre | null>(null)      // top-level selection
-const qActiveScope = ref<Genre | null>(null)      // genre actually filtering the grid (top-level or subgenre)
+const qActiveGenre = ref<Genre | null>(null)
 const qActiveFeed = ref<string>('new-releases-full')
 const qItems = ref<Album[]>([])
 const qTotal = ref(0)
@@ -84,18 +83,6 @@ async function loadQobuzGenres() {
 
 async function selectQobuzGenre(g: Genre) {
   qActiveGenre.value = g
-  qActiveScope.value = g
-  qSubgenres.value = []
-  // Subgenres load in parallel with the first grid page — chips appear when ready.
-  fetch(`http://127.0.0.1:${await serverPort()}/api/qobuz/genres?parent=${g.id}`)
-    .then(r => (r.ok ? r.json() : { genres: [] }))
-    .then(d => { if (qActiveGenre.value?.id === g.id) qSubgenres.value = d.genres || [] })
-    .catch(() => { /* subgenre chips are an enhancement — grid works without them */ })
-  await resetQobuzGrid()
-}
-
-async function selectQobuzScope(g: Genre) {
-  qActiveScope.value = g
   await resetQobuzGrid()
 }
 
@@ -112,12 +99,12 @@ async function resetQobuzGrid() {
 }
 
 async function loadQobuzPage(initial = false) {
-  if (qLoadingMore.value || !qActiveScope.value) return
+  if (qLoadingMore.value || !qActiveGenre.value) return
   qLoadingMore.value = true
   if (initial) { isLoading.value = true; hasError.value = false }
   try {
     const r = await fetch(
-      `http://127.0.0.1:${await serverPort()}/api/qobuz/featured?type=${qActiveFeed.value}&genre=${qActiveScope.value.id}&offset=${qItems.value.length}&limit=50`
+      `http://127.0.0.1:${await serverPort()}/api/qobuz/featured?type=${qActiveFeed.value}&genre=${qActiveGenre.value.id}&offset=${qItems.value.length}&limit=50`
     )
     if (!r.ok) throw new Error(`feed: ${r.status}`)
     const d = await r.json()
@@ -250,7 +237,7 @@ onMounted(loadGenres)
         </div>
         <h1 class="font-display uppercase text-[36px] leading-[1] tracking-[-0.01em] mb-2">Genres</h1>
         <p class="font-mono text-[11px] tracking-[0.06em] uppercase text-foreground-muted">
-          {{ source === 'qobuz' ? 'The full Qobuz catalog by genre — every genre, every subgenre, paginated to the end' : 'Deezer editorial picks, charts & paginated new releases by genre' }}
+          {{ source === 'qobuz' ? 'The full Qobuz catalog by genre — paginated to the end of every genre' : 'Deezer editorial picks, charts & paginated new releases by genre' }}
         </p>
       </div>
       <div class="absolute -right-6 -bottom-16 font-display text-[220px] leading-none text-white/[0.03] select-none pointer-events-none" aria-hidden="true">▮</div>
@@ -273,7 +260,7 @@ onMounted(loadGenres)
     <!-- ==================== QOBUZ MODE ==================== -->
     <template v-if="source === 'qobuz'">
       <!-- Top-level genre chips -->
-      <div v-if="qGenres.length > 0" class="flex gap-2 overflow-x-auto pb-1 -mb-4">
+      <div v-if="qGenres.length > 0" class="flex gap-2 overflow-x-auto pb-1 -mb-2">
         <button
           v-for="g in qGenres"
           :key="g.id"
@@ -283,25 +270,8 @@ onMounted(loadGenres)
         >{{ g.name }}</button>
       </div>
 
-      <!-- Subgenre chips — the rest of the genre tree -->
-      <div v-if="qSubgenres.length > 0" class="flex gap-2 overflow-x-auto pb-1 -mb-2 pl-2 border-l-2 border-qobuz-500/30">
-        <button
-          v-if="qActiveGenre"
-          @click="selectQobuzScope(qActiveGenre)"
-          class="flex-shrink-0 font-mono text-[9.5px] tracking-[0.1em] uppercase px-2 py-0.5 border transition-colors whitespace-nowrap"
-          :class="qActiveScope?.id === qActiveGenre.id ? 'border-qobuz-500/60 text-qobuz-400 bg-qobuz-500/10' : 'border-white/[0.08] text-foreground-muted hover:text-foreground'"
-        >All {{ qActiveGenre.name }}</button>
-        <button
-          v-for="sg in qSubgenres"
-          :key="sg.id"
-          @click="selectQobuzScope(sg)"
-          class="flex-shrink-0 font-mono text-[9.5px] tracking-[0.1em] uppercase px-2 py-0.5 border transition-colors whitespace-nowrap"
-          :class="qActiveScope?.id === sg.id ? 'border-qobuz-500/60 text-qobuz-400 bg-qobuz-500/10' : 'border-white/[0.08] text-foreground-muted hover:text-foreground'"
-        >{{ sg.name }}</button>
-      </div>
-
       <!-- Feed tabs + counter -->
-      <div v-if="qActiveScope" class="flex items-center gap-3 flex-wrap">
+      <div v-if="qActiveGenre" class="flex items-center gap-3 flex-wrap">
         <div class="flex gap-1">
           <button
             v-for="f in QOBUZ_FEEDS"

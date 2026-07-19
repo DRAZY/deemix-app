@@ -10,7 +10,7 @@ Entries use a compact format — short bullets, one line each. Full per-version 
 
 ### Added
 
-- **Full genre browsing.** The Genres tab is now dual-service. Qobuz (primary): every genre and subgenre in Qobuz's tree, with a feed-tabbed (New Releases / Most Streamed / Press Awards / Editor's Picks), continuously paginated catalog grid that goes to the end of the genre. Deezer: editorial picks plus Top Tracks / Top Albums now paginate toward Deezer's 100-per-chart API cap (the public API's per-genre limit; its editorial releases endpoint is dead upstream).
+- **Full genre browsing.** The Genres tab is now dual-service. Qobuz (primary): every primary genre, with a feed-tabbed (New Releases / Most Streamed / Press Awards / Editor's Picks), continuously paginated catalog grid that goes to the end of the genre. Deezer: editorial picks plus Top Tracks / Top Albums now paginate toward Deezer's 100-per-chart API cap (the public API's per-genre limit; its editorial releases endpoint is dead upstream).
 
 ### Security
 
