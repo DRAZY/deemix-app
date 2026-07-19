@@ -162,6 +162,24 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
 ## Screenshots
 
 <p align="center">
+  <img src="docs/screenshots/home-new-releases.png" alt="Home - New Releases" width="800" />
+  <br />
+  <em>Home — The Signal Deck console: dated new releases and charts under the live status-strip title bar, with the Transfer Rack on the right</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/downloads-statistics.png" alt="Downloads & Statistics Dashboard" width="800" />
+  <br />
+  <em>Downloads — Status edge-lights, mono telemetry, and per-album completion, with the statistics dashboard one click away</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/favorites-artists.png" alt="Favorites - Favorite Artists" width="800" />
+  <br />
+  <em>Favorites — Your Deezer favorites imported in one click; pin any artist or playlist to sync, download anything with GET ↓</em>
+</p>
+
+<p align="center">
   <img src="docs/screenshots/qobuz-channel-q.png" alt="Channel Q - Qobuz Discover" width="800" />
   <br />
   <em>Channel Q (v2.1.0) — The Qobuz discover tab: your Purchases and Favorites with quality badges (16/44.1, 24/44.1…), editorial feeds, and genre filter chips</em>
@@ -186,39 +204,21 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/settings-qobuz.png" alt="Settings - Qobuz Connect" width="800" />
-  <br />
-  <em>Settings → Qobuz (v2.1.0) — One-click account connect via a real Qobuz login window; your session is stored encrypted, never in files</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/home-new-releases.png" alt="Home - New Releases" width="800" />
-  <br />
-  <em>Home — The Signal Deck console: new releases and charts under the live status-strip title bar, with the Transfer Rack on the right</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/downloads-statistics.png" alt="Downloads & Statistics Dashboard" width="800" />
-  <br />
-  <em>Downloads — Status edge-lights, mono telemetry, and per-album completion, with the statistics dashboard one click away</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/favorites-tracks.png" alt="Favorites - Favorite Tracks" width="800" />
-  <br />
-  <em>Favorites — Your Deezer favorites as console rows with GET ↓ buttons, sortable and filterable per tab</em>
-</p>
-
-<p align="center">
   <img src="docs/screenshots/link-analyzer.png" alt="Link Analyzer - LINK command bar" width="800" />
   <br />
-  <em>Link Analyzer — Paste any Deezer, Spotify, or Qobuz URL into the LINK command bar for details and direct downloads</em>
+  <em>Link Analyzer — Paste any Deezer, Spotify, or Qobuz URL into the LINK command bar for full metadata and one-click downloads</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/playlist-sync-artists.png" alt="Playlist Sync - Synced Artists" width="800" />
   <br />
   <em>Playlist &amp; Artist Sync — Pin playlists and artists to sync on a schedule; per-artist status badges, filters, and live progress</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/settings-qobuz.png" alt="Settings - Qobuz Connect" width="800" />
+  <br />
+  <em>Settings → Qobuz (v2.1.0) — One-click account connect via a real Qobuz login window; your session is stored encrypted, never in files</em>
 </p>
 
 <p align="center">
