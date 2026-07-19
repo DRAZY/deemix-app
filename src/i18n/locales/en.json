@@ -177,7 +177,9 @@
     "retryFailedTip": "Retry {n} failed track | Retry {n} failed tracks",
     "downloadNextTip": "Download next (move to front of queue)",
     "deleteTip": "Delete download",
-    "cancelRemoveTip": "Cancel and remove from queue"
+    "cancelRemoveTip": "Cancel and remove from queue",
+    "inLibrary": "In Library",
+    "inLibraryTip": "Already in your library — nothing was downloaded; your existing files were kept."
   },
   "charts": {
     "title": "Charts",

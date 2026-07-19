@@ -348,6 +348,7 @@ export const useDownloadStore = defineStore('downloads', () => {
       actualFormat: item.actualFormat,
       substituted: item.substituted,
       substitutedTracks: item.substitutedTracks,
+      skippedAsDuplicate: item.skippedAsDuplicate,
       path: item.path,
       status: item.status === 'completed' ? 'completed' : 'error',
       error: item.error,
@@ -1114,6 +1115,11 @@ export const useDownloadStore = defineStore('downloads', () => {
       item.actualFormat = serverItem.actualFormat
       changed = true
     }
+    // Library-duplicate skip — nothing downloaded; drives the IN LIBRARY chip.
+    if (serverItem.skippedAsDuplicate && !item.skippedAsDuplicate) {
+      item.skippedAsDuplicate = true
+      changed = true
+    }
     // Capture substitution flag (exact track unavailable; alternate release downloaded)
     if (serverItem.substituted && !item.substituted) {
       item.substituted = true
@@ -1139,6 +1145,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     let playlistFolderPath: string | null = null
     let actualFormat: string | null = null
     let anySubstituted = false
+    let skippedCount = 0
     let speedSum = 0
     const substitutedTracks: SubstitutedTrack[] = []
 
@@ -1165,6 +1172,11 @@ export const useDownloadStore = defineStore('downloads', () => {
         // Capture actual format from first track that has it
         if (!actualFormat && serverItem.actualFormat) {
           actualFormat = serverItem.actualFormat
+        }
+        // Count library-duplicate skips — when EVERY track skipped, nothing was
+        // downloaded and the row gets the IN LIBRARY chip instead of a tier.
+        if (serverItem.skippedAsDuplicate) {
+          skippedCount++
         }
         // Flag the whole album/playlist row if any track was an alternate release,
         // and remember WHICH track so the badge can list them (drill-down).
@@ -1246,6 +1258,14 @@ export const useDownloadStore = defineStore('downloads', () => {
     // Update actual format (may differ from requested due to fallback)
     if (actualFormat && item.actualFormat !== actualFormat) {
       item.actualFormat = actualFormat
+      changed = true
+    }
+
+    // Full-skip disclosure: every track was already in the library, so no
+    // delivered tier exists — an honest bare-FLAC badge plus the IN LIBRARY chip.
+    const allSkipped = trackIds.length > 0 && skippedCount === trackIds.length
+    if (allSkipped && !item.skippedAsDuplicate) {
+      item.skippedAsDuplicate = true
       changed = true
     }
 

@@ -659,6 +659,15 @@ function copyAllErrorDetails() {
               >
                 {{ getQualityLabel(getDisplayFormat(item)) }}
               </span>
+              <!-- In-library badge: every track skipped as a library duplicate —
+                   nothing was downloaded, so no delivered tier exists to show -->
+              <span
+                v-if="item.skippedAsDuplicate"
+                v-tooltip="t('downloads.inLibraryTip')"
+                class="flex-shrink-0 px-1.5 py-0.5 font-mono text-[10px] tracking-[0.08em] uppercase border bg-emerald-500/10 text-emerald-400 border-emerald-500/30 cursor-help"
+              >
+                {{ t('downloads.inLibrary') }}
+              </span>
               <!-- Downgrade badge: delivered a lower bitrate than requested -->
               <span
                 v-if="isDowngraded(item)"
@@ -1126,6 +1135,11 @@ function copyAllErrorDetails() {
               {{ entry.artist || 'Unknown Artist' }}
               <span v-if="entry.actualFormat"> · {{ entry.actualFormat }}</span>
               <span v-if="entry.type !== 'track'"> · {{ entry.totalTracks }} tracks<span v-if="entry.failedTracks"> ({{ entry.failedTracks }} failed)</span></span>
+              <span
+                v-if="entry.skippedAsDuplicate"
+                v-tooltip="t('downloads.inLibraryTip')"
+                class="ml-1.5 px-1.5 py-0.5 font-mono text-[10px] tracking-[0.08em] uppercase border bg-emerald-500/10 text-emerald-400 border-emerald-500/30 cursor-help"
+              >{{ t('downloads.inLibrary') }}</span>
               <span
                 v-if="isDowngraded(entry)"
                 v-tooltip="t('downloads.downgradedTip', { requested: getQualityLabel(entry.quality), actual: getQualityLabel(entry.actualFormat) })"

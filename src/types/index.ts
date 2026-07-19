@@ -134,6 +134,7 @@ export interface DownloadItem {
   quality?: '128' | '320' | 'flac'  // Quality at time of download (requested)
   actualFormat?: string             // Actual downloaded format (may differ due to fallback)
   substituted?: boolean             // Exact track was unavailable; an alternate release (possibly a different master) was downloaded
+  skippedAsDuplicate?: boolean      // Every track completed by skipping (already in library) — nothing was downloaded, so no delivered tier exists; drives the IN LIBRARY chip
   substitutedTracks?: SubstitutedTrack[]  // Which tracks were substituted — drives the badge drill-down list
   // For album/playlist downloads
   totalTracks?: number
@@ -170,6 +171,7 @@ export interface DownloadHistoryEntry {
   actualFormat?: string
   substituted?: boolean
   substitutedTracks?: SubstitutedTrack[]
+  skippedAsDuplicate?: boolean
   path?: string
   status: 'completed' | 'error'
   error?: string
