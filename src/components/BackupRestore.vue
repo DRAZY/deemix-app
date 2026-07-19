@@ -3,7 +3,7 @@
 // Defaults to "everything ticked" except Credentials, which is opt-in on both
 // sides because including ARL/Spotify in a shareable file is a footgun.
 
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBackupStore, type SegmentCounts, type SelectedSegments, type BackupFile, type ApplyResult } from '../stores/backupStore'
 import { useSyncStore } from '../stores/syncStore'
@@ -210,14 +210,21 @@ function formatExportDate(iso: string): string {
 
 // Amber if the backup was created by a newer app version than what's running —
 // we still allow the restore but warn the user that unknown segments will drop.
+// The running version comes from the main process (a hardcoded constant here
+// went stale and flagged same-generation backups as "newer").
+const currentAppVersion = ref('')
+onMounted(async () => {
+  if (window.electronAPI?.getVersion) {
+    try { currentAppVersion.value = await window.electronAPI.getVersion() } catch { /* warning simply stays off */ }
+  }
+})
 const appVersionWarning = computed(() => {
-  if (!restoreFile.value) return false
-  const current = '1.10.3'
+  if (!restoreFile.value || !currentAppVersion.value) return false
   // Naive string compare is fine for "newer than" — semver-major bumps would
   // produce a sortable string here too.
   return restoreFile.value.appVersion !== 'unknown'
     && restoreFile.value.appVersion !== 'legacy (deemix-configuration)'
-    && restoreFile.value.appVersion > current
+    && restoreFile.value.appVersion > currentAppVersion.value
 })
 
 function pickRestoreFile() {
