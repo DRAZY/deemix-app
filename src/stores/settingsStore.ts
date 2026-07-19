@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch, computed } from 'vue'
 import { setLocale } from '../i18n'
+import { useToastStore } from './toastStore'
 
 export type ColorTheme = 'signal' | 'violet' | 'spotify' | 'rose' | 'ocean' | 'sunset' | 'mint' | 'dracula' | 'nord'
 
@@ -679,6 +680,19 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const isQobuzConnected = computed(() => !!settings.value.qobuzUserId && !!settings.value.qobuzToken)
 
+  // Flipped by the backend's qobuz-auth:expired event — credentials still exist
+  // in settings but Qobuz rejected the token, so the link is down until the
+  // user reconnects. Drives Q:OFFLINE in the title bar + a one-time toast.
+  const qobuzSessionExpired = ref(false)
+  const isQobuzLinked = computed(() => isQobuzConnected.value && !qobuzSessionExpired.value)
+  if (typeof window !== 'undefined' && window.electronAPI?.onQobuzAuthExpired) {
+    window.electronAPI.onQobuzAuthExpired((data) => {
+      console.warn('[Settings] Qobuz session expired:', data?.reason)
+      qobuzSessionExpired.value = true
+      useToastStore().warning(data?.reason || 'Qobuz session expired — reconnect your Qobuz account in Settings')
+    })
+  }
+
   /**
    * Open the Qobuz login window (real OAuth login), capture the browser-minted
    * token, persist it encrypted, and push it to the backend session. Returns
@@ -705,10 +719,12 @@ export const useSettingsStore = defineStore('settings', () => {
     } catch (e) {
       console.error('[Settings] Failed to push Qobuz session to backend:', e)
     }
+    qobuzSessionExpired.value = false
     return { success: true }
   }
 
   async function disconnectQobuz() {
+    qobuzSessionExpired.value = false
     settings.value.qobuzUserId = ''
     settings.value.qobuzToken = ''
     if (window.electronAPI?.storage) {
@@ -917,6 +933,8 @@ export const useSettingsStore = defineStore('settings', () => {
     setArl,
     setSpotifyCredentials,
     isQobuzConnected,
+    isQobuzLinked,
+    qobuzSessionExpired,
     connectQobuz,
     disconnectQobuz,
     exportSettings,

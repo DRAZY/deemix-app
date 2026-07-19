@@ -34,6 +34,7 @@
 import crypto from 'crypto'
 import fs from 'fs'
 import path from 'path'
+import { EventEmitter } from 'events'
 import { app } from 'electron'
 
 const QOBUZ_API_BASE = 'https://www.qobuz.com/api.json/0.2'
@@ -72,7 +73,7 @@ export interface QobuzFileUrl {
   restrictionCode?: string // Qobuz's restriction code when no url was returned
 }
 
-class QobuzAuth {
+class QobuzAuth extends EventEmitter {
   private appCreds: QobuzAppCredentials | null = null
   // The bundle carries several candidate app_secrets (per-timezone obfuscated
   // splits + literals); only ONE signs valid, and it is NOT the production
@@ -104,6 +105,9 @@ class QobuzAuth {
       console.log('[QobuzAuth] Session token rejected (401) — marking session expired')
       this.session.isValid = false
       this.authExpired = true
+      // One proactive event per expiry (the isValid guard makes this fire once):
+      // forwarded server → main → renderer for the toast + Q:OFFLINE indicator.
+      this.emit('auth-expired', { reason: 'Qobuz session expired — reconnect your Qobuz account in Settings' })
     }
   }
 

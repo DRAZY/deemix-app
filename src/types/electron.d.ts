@@ -48,6 +48,7 @@ declare global {
       getServerPort: () => Promise<number>
       onMaximizeChange: (callback: (isMaximized: boolean) => void) => void
       onAuthExpired: (callback: (data: { reason: string }) => void) => void
+      onQobuzAuthExpired: (callback: (data: { reason: string }) => void) => void
       onSessionHealth: (callback: (data: {
         isHealthy: boolean
         sessionAge: number | null

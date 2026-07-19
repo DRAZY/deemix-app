@@ -12,6 +12,8 @@ Entries use a compact format — short bullets, one line each. Full per-version 
 
 - **Full genre browsing.** The Genres tab is now dual-service. Qobuz (primary): every primary genre, with a feed-tabbed (New Releases / Most Streamed / Press Awards / Editor's Picks), continuously paginated catalog grid that goes to the end of the genre. Deezer: editorial picks plus Top Tracks / Top Albums now paginate toward Deezer's 100-per-chart API cap (the public API's per-genre limit; its editorial releases endpoint is dead upstream).
 
+- **Permanent Qobuz link indicator + expiry toast.** The title-bar Q readout no longer disappears when disconnected — it shows Q:LINKED (lit cyan LED) or Q:OFFLINE (dark LED) at all times, with a tooltip. When Qobuz rejects the session token, a toast now announces it immediately ("reconnect your Qobuz account in Settings") and the indicator drops to Q:OFFLINE — previously the user only found out when a download failed.
+
 ### Security
 
 - **Spotify client secret is never stored in cleartext.** The legacy localStorage fallback could persist the secret unencrypted when OS-level safeStorage was unavailable; it is now stored safeStorage-encrypted only, or kept in-memory for the session.

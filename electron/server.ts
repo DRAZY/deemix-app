@@ -559,6 +559,13 @@ export class DeemixServer extends EventEmitter {
       this.emit('auth-expired', data)
     })
 
+    // Forward Qobuz session expiry — separate channel from Deezer's so the
+    // renderer never confuses which service died.
+    qobuzAuth.on('auth-expired', (data) => {
+      console.log('[Server] Qobuz auth expired event received:', data.reason)
+      this.emit('qobuz-auth-expired', data)
+    })
+
     // Forward session health updates for keep-alive monitoring
     deezerAuth.on('session-health', (data) => {
       this.emit('session-health', data)

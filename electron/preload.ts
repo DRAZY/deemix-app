@@ -32,6 +32,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onAuthExpired: (callback: (data: { reason: string }) => void) => {
     ipcRenderer.on('auth:expired', (_, data) => callback(data))
   },
+  onQobuzAuthExpired: (callback: (data: { reason: string }) => void) => {
+    ipcRenderer.on('qobuz-auth:expired', (_, data) => callback(data))
+  },
 
   // Session health updates (keep-alive monitoring)
   onSessionHealth: (callback: (data: {
@@ -154,6 +157,7 @@ declare global {
       getServerPort: () => Promise<number>
       onMaximizeChange: (callback: (isMaximized: boolean) => void) => void
       onAuthExpired: (callback: (data: { reason: string }) => void) => void
+      onQobuzAuthExpired: (callback: (data: { reason: string }) => void) => void
       onSessionHealth: (callback: (data: {
         isHealthy: boolean
         sessionAge: number | null

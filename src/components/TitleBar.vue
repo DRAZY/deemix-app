@@ -94,13 +94,21 @@ const close = () => window.electronAPI?.close()
       {{ authStore.isLoggedIn ? 'LINK ESTABLISHED' : 'LINK DOWN' }}
     </div>
 
-    <!-- Channel Q link status — shown only when a Qobuz account is connected -->
+    <!-- Channel Q link status — permanent readout so a missing/dead Qobuz
+         link is as visible as a live one: lit cyan LED when linked, dark LED
+         + Q:OFFLINE when disconnected or the session expired -->
     <div
-      v-if="settingsStore.isQobuzConnected"
-      class="hidden sm:flex items-center gap-2 h-full px-4 border-r border-white/[0.06] font-mono text-[10.5px] tracking-[0.08em] text-foreground-muted"
+      class="hidden sm:flex items-center gap-2 h-full px-4 border-r border-white/[0.06] font-mono text-[10.5px] tracking-[0.08em]"
+      :class="settingsStore.isQobuzLinked ? 'text-foreground-muted' : 'text-foreground-muted/50'"
+      v-tooltip="settingsStore.isQobuzLinked ? 'Qobuz connected' : 'Qobuz not connected — connect in Settings'"
     >
-      <span class="w-[7px] h-[7px] rounded-[1px] status-led bg-qobuz-500 shadow-[0_0_8px] shadow-qobuz-500/70"></span>
-      Q:LINKED
+      <span
+        class="w-[7px] h-[7px] rounded-[1px] status-led"
+        :class="settingsStore.isQobuzLinked
+          ? 'bg-qobuz-500 shadow-[0_0_8px] shadow-qobuz-500/70'
+          : 'bg-white/[0.12]'"
+      ></span>
+      {{ settingsStore.isQobuzLinked ? 'Q:LINKED' : 'Q:OFFLINE' }}
     </div>
 
     <!-- Region -->

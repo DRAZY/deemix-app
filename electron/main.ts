@@ -316,6 +316,13 @@ async function initServer() {
       }
     })
 
+    server.on('qobuz-auth-expired', (data: { reason: string }) => {
+      console.log('[Main] Qobuz auth expired, notifying renderer:', data.reason)
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('qobuz-auth:expired', data)
+      }
+    })
+
     // Forward session health updates to renderer for keep-alive monitoring
     server.on('session-health', (data: any) => {
       if (mainWindow && !mainWindow.isDestroyed()) {
