@@ -260,8 +260,31 @@ export const useDownloadStore = defineStore('downloads', () => {
     if (window.electronAPI) {
       serverPort.value = await window.electronAPI.getServerPort()
     }
-    // Load any persisted downloads from localStorage
-    const saved = localStorage.getItem('downloads')
+    // Queue + history state-of-record is a real userData file (via IPC) — the
+    // same pattern credentials use, because renderer localStorage under
+    // file:// has proven lossy across app updates (users lost their entire
+    // Transfer Rack and history on every version roll). localStorage remains
+    // as the dev/browser fallback and as the migration source for installs
+    // predating the file.
+    let saved: string | null = null
+    try {
+      const diskState = await window.electronAPI?.storage?.loadDownloadsState?.()
+      if (diskState) {
+        saved = JSON.stringify(diskState.downloads || [])
+        downloadHistory.value = Array.isArray(diskState.downloadHistory) ? diskState.downloadHistory : []
+      }
+    } catch (e) {
+      console.error('[DownloadStore] Disk state load failed, falling back to localStorage:', e)
+    }
+    if (saved === null) {
+      // First run on this build (or non-Electron context): migrate whatever
+      // localStorage still holds, then persist it to disk below.
+      saved = localStorage.getItem('downloads')
+      const savedHistory = localStorage.getItem('downloadHistory')
+      if (savedHistory) {
+        try { downloadHistory.value = JSON.parse(savedHistory) } catch { /* keep empty */ }
+      }
+    }
     if (saved) {
       try {
         downloads.value = JSON.parse(saved)
@@ -301,11 +324,9 @@ export const useDownloadStore = defineStore('downloads', () => {
         console.error('Failed to load downloads:', e)
       }
     }
-    // Load download history
-    const savedHistory = localStorage.getItem('downloadHistory')
-    if (savedHistory) {
-      try { downloadHistory.value = JSON.parse(savedHistory) } catch { }
-    }
+    // Ensure the on-disk copy exists/reflects whatever we just loaded — this is
+    // what completes the one-time localStorage → file migration.
+    persistStateToDisk()
     // Sync settings to server
     await syncSettingsToServer()
     // Fetch initial queue status (pause state)
@@ -340,11 +361,13 @@ export const useDownloadStore = defineStore('downloads', () => {
       downloadHistory.value = downloadHistory.value.slice(0, 500)
     }
     localStorage.setItem('downloadHistory', JSON.stringify(downloadHistory.value))
+    persistStateToDisk()
   }
 
   function clearHistory() {
     downloadHistory.value = []
     localStorage.removeItem('downloadHistory')
+    persistStateToDisk()
   }
 
   async function syncSettingsToServer() {
@@ -1556,6 +1579,22 @@ export const useDownloadStore = defineStore('downloads', () => {
   }
 
   // Debounced save with requestIdleCallback for better performance
+  // Debounced write of the full queue+history state to the userData file (the
+  // update-proof state-of-record). localStorage writes stay alongside as the
+  // dev/browser fallback.
+  let diskPersistTimer: ReturnType<typeof setTimeout> | null = null
+  function persistStateToDisk() {
+    if (!window.electronAPI?.storage?.saveDownloadsState) return
+    if (diskPersistTimer) clearTimeout(diskPersistTimer)
+    diskPersistTimer = setTimeout(() => {
+      diskPersistTimer = null
+      window.electronAPI!.storage.saveDownloadsState({
+        downloads: JSON.parse(JSON.stringify(downloads.value)),
+        downloadHistory: JSON.parse(JSON.stringify(downloadHistory.value))
+      }).catch((e: any) => console.error('[DownloadStore] Disk persist failed:', e))
+    }, 800)
+  }
+
   function saveDownloads() {
     if (saveDebounceTimer) {
       clearTimeout(saveDebounceTimer)
@@ -1575,6 +1614,7 @@ export const useDownloadStore = defineStore('downloads', () => {
         localStorage.setItem('downloads', JSON.stringify(downloads.value))
       }
     }, 1000) // Increased debounce to 1 second
+    persistStateToDisk()
   }
 
   function saveDownloadsImmediate() {
@@ -1585,6 +1625,7 @@ export const useDownloadStore = defineStore('downloads', () => {
       cancelIdleCallback(idleCallbackId)
     }
     localStorage.setItem('downloads', JSON.stringify(downloads.value))
+    persistStateToDisk()
   }
 
   /**

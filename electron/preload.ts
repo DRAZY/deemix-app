@@ -101,6 +101,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveCredentials: (credentials: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string; qobuzUserId?: string; qobuzToken?: string }) =>
       ipcRenderer.invoke('storage:saveCredentials', credentials),
     loadCredentials: () => ipcRenderer.invoke('storage:loadCredentials'),
+    loadDownloadsState: () => ipcRenderer.invoke('storage:loadDownloadsState'),
+    saveDownloadsState: (state: { downloads: unknown[]; downloadHistory: unknown[] }) =>
+      ipcRenderer.invoke('storage:saveDownloadsState', state),
     saveSettings: (settings: object) => ipcRenderer.invoke('storage:saveSettings', settings),
     loadSettings: () => ipcRenderer.invoke('storage:loadSettings'),
     saveProfiles: (data: object) => ipcRenderer.invoke('storage:saveProfiles', data),
@@ -182,6 +185,8 @@ declare global {
       storage: {
         saveCredentials: (credentials: StorageCredentials) => Promise<StorageResult>
         loadCredentials: () => Promise<CredentialsLoadResult>
+        loadDownloadsState: () => Promise<{ downloads: unknown[]; downloadHistory: unknown[] } | null>
+        saveDownloadsState: (state: { downloads: unknown[]; downloadHistory: unknown[] }) => Promise<StorageResult>
         saveSettings: (settings: object) => Promise<StorageResult>
         loadSettings: () => Promise<SettingsLoadResult>
         saveProfiles: (data: object) => Promise<StorageResult>

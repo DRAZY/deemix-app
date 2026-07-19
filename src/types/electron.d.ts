@@ -82,6 +82,8 @@ declare global {
       storage: {
         saveCredentials: (credentials: ElectronStorageCredentials) => Promise<ElectronStorageResult>
         loadCredentials: () => Promise<ElectronCredentialsLoadResult>
+        loadDownloadsState: () => Promise<{ downloads: any[]; downloadHistory: any[] } | null>
+        saveDownloadsState: (state: { downloads: any[]; downloadHistory: any[] }) => Promise<ElectronStorageResult>
         saveSettings: (settings: object) => Promise<ElectronStorageResult>
         loadSettings: () => Promise<ElectronSettingsLoadResult>
         saveProfiles: (data: object) => Promise<ElectronStorageResult>

@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, shell, dialog, Menu, session, safeStorage } from 'electron'
 import { join, normalize, resolve } from 'path'
-import { rm, stat, readFile, writeFile, mkdir } from 'fs/promises'
+import { rm, stat, readFile, writeFile, mkdir, rename } from 'fs/promises'
 import { existsSync } from 'fs'
 import { DeemixServer } from './server'
 import { playlistSync } from './services/playlistSync'
@@ -42,6 +42,14 @@ function getSettingsPath(): string {
 
 function getProfilesPath(): string {
   return join(app.getPath('userData'), 'profiles.json')
+}
+
+// Download queue + history state-of-record. Lives as a real userData file
+// (like credentials.json / library-index.json) because renderer localStorage
+// has proven lossy across app updates on macOS — users lost their entire
+// Transfer Rack and download history on every version roll.
+function getDownloadsStatePath(): string {
+  return join(app.getPath('userData'), 'downloads-state.json')
 }
 
 async function loadWindowState(): Promise<WindowState> {
@@ -1099,6 +1107,42 @@ ipcMain.handle('storage:saveCredentials', async (_, credentials: { arl?: string;
   } catch (error: any) {
     console.error('[Main] Failed to save credentials:', error)
     return { success: false, error: error.message }
+  }
+})
+
+// --- Download queue + history persistence (update-proof state-of-record) ---
+
+ipcMain.handle('storage:loadDownloadsState', async () => {
+  try {
+    const raw = await readFile(getDownloadsStatePath(), 'utf-8')
+    const data = JSON.parse(raw)
+    if (data && typeof data === 'object') {
+      return {
+        downloads: Array.isArray(data.downloads) ? data.downloads : [],
+        downloadHistory: Array.isArray(data.downloadHistory) ? data.downloadHistory : []
+      }
+    }
+  } catch { /* absent or unreadable — renderer falls back to localStorage/migration */ }
+  return null
+})
+
+ipcMain.handle('storage:saveDownloadsState', async (_, state: { downloads: unknown[]; downloadHistory: unknown[] }) => {
+  try {
+    if (!state || typeof state !== 'object') return { success: false }
+    const payload = JSON.stringify({
+      downloads: Array.isArray(state.downloads) ? state.downloads : [],
+      downloadHistory: Array.isArray(state.downloadHistory) ? state.downloadHistory : []
+    })
+    // Atomic write (tmp + rename) so a crash mid-write can never corrupt the
+    // only copy of the user's queue and history.
+    const target = getDownloadsStatePath()
+    const tmp = `${target}.tmp`
+    await writeFile(tmp, payload, 'utf-8')
+    await rename(tmp, target)
+    return { success: true }
+  } catch (e: any) {
+    console.error('[Main] Failed to save downloads state:', e.message)
+    return { success: false }
   }
 })
 
