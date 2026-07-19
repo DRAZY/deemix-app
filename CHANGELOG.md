@@ -12,6 +12,8 @@ Entries use a compact format — short bullets, one line each. Full per-version 
 
 - **Full genre browsing.** The Genres tab is now dual-service. Qobuz (primary): every primary genre, with a feed-tabbed (New Releases / Most Streamed / Press Awards / Editor's Picks), continuously paginated catalog grid that goes to the end of the genre. Deezer: editorial picks plus Top Tracks / Top Albums now paginate toward Deezer's 100-per-chart API cap (the public API's per-genre limit; its editorial releases endpoint is dead upstream).
 
+- **Qobuz album covers are fetched once per album, not once per track.** The Qobuz path was missing the artwork cache the Deezer path has always had — every track re-downloaded the album cover (at >600px settings, the multi-megabyte original scan), a major share of per-track overhead on large album/playlist runs.
+
 - **Permanent Qobuz link indicator + expiry toast.** The title-bar Q readout no longer disappears when disconnected — it shows Q:LINKED (lit cyan LED) or Q:OFFLINE (dark LED) at all times, with a tooltip. When Qobuz rejects the session token, a toast now announces it immediately ("reconnect your Qobuz account in Settings") and the indicator drops to Q:OFFLINE — previously the user only found out when a download failed.
 
 ### Security

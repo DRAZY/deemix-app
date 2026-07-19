@@ -1023,12 +1023,11 @@ export class Downloader extends EventEmitter {
           const candidates = wantedSize > 600 && /_600(\.\w+)$/.test(baseUrl)
             ? [baseUrl.replace(/_600(\.\w+)$/, '_org$1'), baseUrl]
             : [baseUrl]
-          for (const coverUrl of candidates) {
-            try {
-              const cr = await fetch(coverUrl)
-              if (cr.ok) { cover = Buffer.from(await cr.arrayBuffer()); break }
-            } catch { /* try next candidate */ }
-          }
+          // Cached per album (same promise-based cache as the Deezer path):
+          // without this every TRACK re-downloaded the album's cover — at
+          // >600px settings that's the multi-MB _org scan once per track, a
+          // major share of Qobuz's per-track overhead on album/playlist runs.
+          cover = await this.getCachedQobuzArtwork(candidates)
         }
       }
       try {
@@ -4173,6 +4172,35 @@ export class Downloader extends EventEmitter {
 
       makeRequest(url, 0)
     })
+  }
+
+  /** Qobuz counterpart of getCachedArtwork: one fetch per album cover, shared
+   *  by every track of the album/playlist run. Keyed by the first candidate URL
+   *  (candidates only differ in _org/_600 variant of the same image). Returns
+   *  undefined when no candidate succeeds — tagging proceeds coverless, same
+   *  as the old per-track behavior. */
+  private async getCachedQobuzArtwork(candidates: string[]): Promise<Buffer | undefined> {
+    if (candidates.length === 0) return undefined
+    const cacheKey = `qobuz_${candidates[0]}`
+    let artworkPromise = this.artworkCache.get(cacheKey)
+    if (!artworkPromise) {
+      artworkPromise = (async () => {
+        for (const coverUrl of candidates) {
+          try {
+            const cr = await fetch(coverUrl)
+            if (cr.ok) return Buffer.from(await cr.arrayBuffer())
+          } catch { /* try next candidate */ }
+        }
+        throw new Error('No cover candidate succeeded')
+      })()
+      this.artworkCache.set(cacheKey, artworkPromise)
+      artworkPromise.then(() => {
+        setTimeout(() => { this.artworkCache.delete(cacheKey) }, 60000)
+      }).catch(() => {
+        this.artworkCache.delete(cacheKey)
+      })
+    }
+    return artworkPromise.catch(() => undefined)
   }
 
   /**
