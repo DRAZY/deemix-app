@@ -162,13 +162,13 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
 ## Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/home-new-releases.png" alt="Home - New Releases" width="800" />
+  <img src="docs/screenshots/home.png" alt="Home - New Releases" width="800" />
   <br />
   <em>Home — The Signal Deck console: dated new releases under the live status-strip title bar, with the Transfer Rack stacking finished hi-res albums on the right</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/search-qobuz.png" alt="Search - Acquisition Console" width="800" />
+  <img src="docs/screenshots/search.png" alt="Search - Acquisition Console" width="800" />
   <br />
   <em>Search — The acquisition console with the Deezer/Qobuz source toggle (v2.1.0): pull the signal down from either catalog</em>
 </p>
@@ -180,13 +180,13 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/genres-deezer.png" alt="Genres - Deezer Browse" width="800" />
+  <img src="docs/screenshots/genres.png" alt="Genres - Deezer Browse" width="800" />
   <br />
   <em>Genres (v2.1.0) — Deezer editorial picks and charts by genre, from Pop to Traditional Mexicano</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/qobuz-channel-q.png" alt="Channel Q - Qobuz Discover" width="800" />
+  <img src="docs/screenshots/channel-q.png" alt="Channel Q - Qobuz Discover" width="800" />
   <br />
   <em>Channel Q (v2.1.0) — The Qobuz tab: your Purchases and Favorites with quality badges (16/44.1, 24/44.1…), editorial feeds, and genre filter chips</em>
 </p>
@@ -204,7 +204,7 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/settings-profiles.png" alt="Settings - Profiles & Appearance" width="800" />
+  <img src="docs/screenshots/settings.png" alt="Settings - Profiles & Appearance" width="800" />
   <br />
   <em>Settings — Quick presets, custom profiles, export/import, and 9 color themes across dark, light, and system modes</em>
 </p>
