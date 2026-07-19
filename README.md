@@ -470,7 +470,7 @@ This project is licensed under the [GPL-3.0 License](LICENSE).
 
 ## Disclaimer
 
-This application is not affiliated with or endorsed by Deezer or Spotify. Use responsibly and in accordance with your local laws regarding music downloading. Please respect copyright laws and the terms of service of music streaming platforms.
+This application is not affiliated with or endorsed by Deezer, Qobuz, or Spotify. Use responsibly and in accordance with your local laws regarding music downloading. Please respect copyright laws and the terms of service of music streaming platforms. Qobuz features require your own active Qobuz subscription.
 
 ---
 
