@@ -36,3 +36,6 @@ Plans/
 MEMORY/
 
 .build-logs/
+
+# Interceptor capture intermediates (screenshot tooling)
+interceptor-screenshot-*
