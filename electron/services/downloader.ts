@@ -141,6 +141,7 @@ export interface DownloadOptions {
     albumArtist: string
     artistPicture?: string   // Artist picture URL for saving artist image
     totalDiscs?: number      // Total number of discs in the album
+    totalTracks?: number     // Total tracks in the album — Track Total tag (#107)
     explicitLyrics?: boolean // Album-level explicit flag for consistent folder naming
     isCompilation?: boolean  // Whether album is a compilation (Deezer record_type "compile")
     recordType?: string      // Deezer record_type (album/single/ep/compile) — drives the RELEASETYPE tag (#82)
@@ -1351,6 +1352,34 @@ export class Downloader extends EventEmitter {
         options._resolvedAlbumIsCompilation = undefined
         options._resolvedAlbumUpc = undefined
         options._resolvedAlbumLabel = undefined
+      }
+    }
+
+    // Album-level totals (#107): Deezer's private song.getData carries
+    // TRACK_NUMBER/DISK_NUMBER but NOT the album TRACKS_COUNT/DISKS_COUNT
+    // (verified), so the Track Total / Disc Total tags and %tracktotal% /
+    // %disctotal% templates never had a value. Source them here — from the album
+    // context on album/playlist downloads, or a cached album.getData lookup for
+    // standalone tracks (NUMBER_TRACK/NUMBER_DISK are authoritative) — and inject
+    // onto the (already-cloned) trackInfo so every downstream tagger + template
+    // sees them.
+    if (trackInfo.TRACKS_COUNT == null && options.albumContext?.totalTracks) {
+      trackInfo.TRACKS_COUNT = options.albumContext.totalTracks
+    }
+    if (trackInfo.DISKS_COUNT == null && options.albumContext?.totalDiscs) {
+      trackInfo.DISKS_COUNT = options.albumContext.totalDiscs
+    }
+    if ((trackInfo.TRACKS_COUNT == null || trackInfo.DISKS_COUNT == null) && trackInfo.ALB_ID) {
+      try {
+        const albumMeta = await deezerAuth.getAlbumInfo(trackInfo.ALB_ID)
+        if (trackInfo.TRACKS_COUNT == null && albumMeta?.NUMBER_TRACK) {
+          trackInfo.TRACKS_COUNT = Number(albumMeta.NUMBER_TRACK)
+        }
+        if (trackInfo.DISKS_COUNT == null && albumMeta?.NUMBER_DISK) {
+          trackInfo.DISKS_COUNT = Number(albumMeta.NUMBER_DISK)
+        }
+      } catch (e: any) {
+        console.log('[Downloader] Album totals lookup failed (tags will omit them):', e.message)
       }
     }
 

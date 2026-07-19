@@ -35,6 +35,22 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '2.1.0',
+    date: '2026-07-18',
+    items: [
+      'Qobuz is here — true hi-res downloads. Connect your Qobuz account in Settings (a real Qobuz login window; your session is stored encrypted and never written to files), then search Qobuz, paste Qobuz links into the Link Analyzer, or browse the new Channel Q tab: your Purchases and Favorites up top, Qobuz\'s editorial feeds below (New Releases, Editor\'s Picks, Press Awards, Most Streamed), with genre filters, 30-second previews, LOAD MORE / SEE ALL catalog pages, and release-type tabs on artist pages. Downloads are DRM-free FLAC up to 24-bit/192 kHz when your plan and the track allow, fully tagged and organized by your existing folder and naming templates — with complete settings parity with Deezer. A paid Qobuz plan is required.',
+      'Quality you can verify: album cards show each release\'s quality ceiling (24/192, CD), and every download reports the tier actually delivered. If a hi-res stream keeps getting cut off, the app steps down one lossless tier only when Bitrate Fallback is on — never silently.',
+      'Safety and hygiene: "Delete Files" now moves to the system Trash (never permanent), the download root can never be deleted, downloads cancel instantly mid-stream, and a Genres view lands for Deezer too (#106).'
+    ]
+  },
+  {
+    version: '2.0.3',
+    date: '2026-07-18',
+    items: [
+      'Fixed Track Total and Disc Total tags not being written on Deezer downloads (#107). With those options enabled, files were still tagged with just the track/disc number (like "5" instead of "5/12"). Deezer\'s track metadata doesn\'t include the album\'s totals, so the tagger had nothing to write — the totals now come from the album itself and apply to the Track Total / Disc Total tags and the %tracktotal% / %disctotal% filename tokens, on both MP3 and FLAC.'
+    ]
+  },
+  {
     version: '2.0.2',
     date: '2026-07-16',
     items: [
