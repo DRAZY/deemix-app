@@ -732,7 +732,7 @@ function copyAllErrorDetails() {
                 v-if="item.error"
                 @click="showErrorDetails(item)"
                 class="text-xs text-red-400 truncate max-w-full text-left hover:text-red-300 hover:underline cursor-pointer flex items-center gap-1"
-                :title="t('downloads.clickForDetails')"
+                v-tooltip="t('downloads.clickForDetails')"
               >
                 <svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -750,7 +750,7 @@ function copyAllErrorDetails() {
               @click="toggleExpanded(item.id)"
               class="hover:bg-white/10 transition-colors text-yellow-400"
               :class="isSlim ? 'p-1' : 'p-2'"
-              title="Show failed tracks"
+              v-tooltip="expandedItems.has(item.id) ? t('downloads.hideFailedTracks') : t('downloads.showFailedTracks')"
             >
               <svg :class="isSlim ? 'w-4 h-4' : 'w-5 h-5'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -775,7 +775,7 @@ function copyAllErrorDetails() {
               @click="downloadStore.retryDownload(item.id)"
               class="hover:bg-primary-500/20 transition-colors text-primary-400"
               :class="isSlim ? 'p-1' : 'p-2'"
-              :title="t('downloads.retry')"
+              v-tooltip="t('downloads.retryTip')"
             >
               <svg :class="isSlim ? 'w-4 h-4' : 'w-5 h-5'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -788,7 +788,7 @@ function copyAllErrorDetails() {
               @click="downloadStore.retryFailedTracks(item.id)"
               class="hover:bg-yellow-500/20 transition-colors text-yellow-400 flex items-center gap-1"
               :class="isSlim ? 'p-1 text-xs' : 'p-2 text-xs'"
-              :title="`Retry ${item.failedTracks.length} failed track${item.failedTracks.length > 1 ? 's' : ''}`"
+              v-tooltip="t('downloads.retryFailedTip', item.failedTracks.length)"
             >
               <svg :class="isSlim ? 'w-3 h-3' : 'w-4 h-4'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -802,7 +802,7 @@ function copyAllErrorDetails() {
               @click="moveToFront(item)"
               class="hover:bg-primary-500/20 transition-colors text-primary-400"
               :class="isSlim ? 'p-1' : 'p-2'"
-              title="Download next"
+              v-tooltip="t('downloads.downloadNextTip')"
             >
               <svg :class="isSlim ? 'w-4 h-4' : 'w-5 h-5'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
@@ -814,7 +814,7 @@ function copyAllErrorDetails() {
               @click="confirmDelete(item)"
               class="hover:bg-red-500/20 transition-colors text-red-400"
               :class="isSlim ? 'p-1' : 'p-2'"
-              title="Delete"
+              v-tooltip="t('downloads.deleteTip')"
             >
               <svg :class="isSlim ? 'w-4 h-4' : 'w-5 h-5'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -827,7 +827,7 @@ function copyAllErrorDetails() {
               @click="downloadStore.cancelDownload(item.id)"
               class="hover:bg-white/10 transition-colors"
               :class="isSlim ? 'p-1' : 'p-2'"
-              title="Remove"
+              v-tooltip="t('downloads.cancelRemoveTip')"
             >
               <svg :class="isSlim ? 'w-4 h-4' : 'w-5 h-5'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

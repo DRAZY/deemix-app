@@ -170,7 +170,14 @@
     "causeNetwork": "Network or server connectivity issues",
     "speed": "Speed",
     "substitutedListTitle": "Alternate versions",
-    "substitutedListTip": "Click to see which tracks came from an alternate release"
+    "substitutedListTip": "Click to see which tracks came from an alternate release",
+    "showFailedTracks": "Show failed tracks",
+    "hideFailedTracks": "Hide failed tracks",
+    "retryTip": "Retry download",
+    "retryFailedTip": "Retry {n} failed track | Retry {n} failed tracks",
+    "downloadNextTip": "Download next (move to front of queue)",
+    "deleteTip": "Delete download",
+    "cancelRemoveTip": "Cancel and remove from queue"
   },
   "charts": {
     "title": "Charts",
