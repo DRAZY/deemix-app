@@ -168,10 +168,27 @@ async function loadArtist(artistId: string) {
       const resp = await fetch(`http://127.0.0.1:${port}/api/qobuz/artist?id=${artistId}`)
       if (!resp.ok) throw new Error('Qobuz artist load failed')
       const a = await resp.json()
+      // Qobuz has duplicate artist entities (e.g. one per catalog ingestion),
+      // and the twin reached from album/track links often has image: null.
+      // Self-heal: look the name up in artist search and borrow the image
+      // from an exact-name sibling that has one. No match → the template's
+      // initial-letter placeholder renders instead of a broken <img>.
+      let image = a.image
+      if (!image?.medium && a.name) {
+        try {
+          const sr = await fetch(`http://127.0.0.1:${port}/api/qobuz/search?q=${encodeURIComponent(a.name)}&limit=10`)
+          if (sr.ok) {
+            const sd = await sr.json()
+            const sib = (sd.artists?.items || []).find((s: any) =>
+              s.image?.medium && s.name?.toLowerCase() === a.name.toLowerCase())
+            if (sib) image = sib.image
+          }
+        } catch { /* placeholder covers it */ }
+      }
       artist.value = {
         id: a.id, name: a.name,
-        picture_medium: a.image?.medium || a.image?.small || a.picture || '',
-        picture_big: a.image?.large || a.picture || '',
+        picture_medium: image?.medium || image?.small || a.picture || '',
+        picture_big: image?.large || image?.medium || a.picture || '',
         nb_album: a.albums_count,
       } as any
       albums.value = (a.albums?.items || []).map((al: any) => ({
@@ -436,15 +453,24 @@ const contextMenuItems = computed(() => {
       <!-- Artist Header -->
       <div class="flex items-end gap-6" @contextmenu="openMenu">
         <img
+          v-if="artist.picture_xl || artist.picture_big || artist.picture_medium"
           :src="artist.picture_xl || artist.picture_big || artist.picture_medium"
           :alt="artist.name"
           class="w-48 h-48 rounded-full object-cover shadow-2xl"
         />
+        <!-- No artwork on this catalog entity: initial-letter tile instead of a
+             broken <img> leaking clipped alt text through the circular crop. -->
+        <div
+          v-else
+          class="w-48 h-48 rounded-full shadow-2xl bg-background-tertiary border border-white/[0.08] flex items-center justify-center"
+        >
+          <span class="font-display uppercase text-[64px] text-foreground-muted/60">{{ (artist.name || '?').charAt(0) }}</span>
+        </div>
         <div class="flex-1">
           <p class="font-mono text-[10px] tracking-[0.3em] uppercase text-primary-500 mb-2">{{ t('common.artist') }}</p>
           <h1 class="font-display uppercase text-[34px] leading-[1.02] tracking-[-0.01em] mb-4">{{ artist.name }}</h1>
-          <p class="text-foreground-muted mb-4">
-            {{ artist.nb_fan?.toLocaleString() }} {{ t('common.fans') }}
+          <p v-if="artist.nb_fan" class="text-foreground-muted mb-4">
+            {{ artist.nb_fan.toLocaleString() }} {{ t('common.fans') }}
           </p>
           <div class="flex gap-3">
             <button
