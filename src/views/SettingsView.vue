@@ -1908,7 +1908,7 @@ async function reindexLibrary() {
         </p>
 
         <div v-if="settingsStore.isQobuzConnected" class="flex items-center gap-3">
-          <span class="font-mono text-[10.5px] tracking-[0.12em] uppercase text-green-400 border-l-2 border-green-400 pl-2">{{ t('settings.qobuz.connected') }} · user {{ settingsStore.settings.qobuzUserId }}</span>
+          <span class="font-mono text-[10.5px] tracking-[0.12em] uppercase text-green-400 border-l-2 border-green-400 pl-2">{{ t('settings.qobuz.connected') }}</span>
           <button
             @click="disconnectQobuz"
             class="ml-auto px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-white/[0.1] text-foreground-muted hover:text-red-400 hover:border-red-400/50 transition-colors"

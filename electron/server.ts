@@ -244,7 +244,11 @@ const SAFE_ERROR_PATTERNS = [
   'Redirect to disallowed', 'Unsupported', 'already', 'Maximum',
   'No Deezer match', 'Download failed', 'Conversion failed',
   'No tracks found', 'Album not available', 'data is not iterable',
-  'Cannot read properties', 'Track not available', 'rights'
+  'Cannot read properties', 'Track not available', 'rights',
+  // qobuzAuth crafts all its user-facing errors with a 'Qobuz' prefix
+  // (e.g. 'Qobuz session expired — reconnect…') — pass them through intact
+  // so the sanitizer only swallows raw system/network errors.
+  'Qobuz'
 ]
 
 function sanitizeErrorMessage(error: any, fallback: string = 'Internal server error'): string {
@@ -270,6 +274,14 @@ function validateNumericId(id: any): number | null {
     return null
   }
   return num
+}
+
+// Qobuz ids are NOT numeric — album ids are alphanumeric slugs (e.g.
+// 'aaflw06d21nuc'), track/artist/playlist ids are digits. Accept word chars +
+// hyphens only, rejecting anything that could smuggle into a query string.
+function validateQobuzId(id: any): string | null {
+  const s = String(id ?? '').trim()
+  return /^[\w-]{1,64}$/.test(s) ? s : null
 }
 
 function validateQuality(quality: any): 'MP3_128' | 'MP3_320' | 'FLAC' {
@@ -3072,7 +3084,7 @@ export class DeemixServer extends EventEmitter {
       const session = await qobuzAuth.loginWithToken(userId, token)
       this.sendJSON(res, { success: true, userId: session.userId, plan: session.credentialLabel })
     } catch (error: any) {
-      this.sendJSON(res, { success: false, error: error.message }, 401)
+      this.sendJSON(res, { success: false, error: sanitizeErrorMessage(error, 'Qobuz login failed') }, 401)
     }
   }
 
@@ -3103,40 +3115,40 @@ export class DeemixServer extends EventEmitter {
       const result = await qobuzAuth.analyzeUrl(link)
       this.sendJSON(res, result)
     } catch (error: any) {
-      this.sendJSON(res, { error: error.message }, 400)
+      this.sendJSON(res, { error: sanitizeErrorMessage(error, 'Failed to analyze Qobuz link') }, 400)
     }
   }
 
   private async handleQobuzArtist(url: URL, res: ServerResponse): Promise<void> {
-    const id = url.searchParams.get('id')
-    if (!id) { this.sendJSON(res, { error: 'id required' }, 400); return }
+    const id = validateQobuzId(url.searchParams.get('id'))
+    if (!id) { this.sendJSON(res, { error: 'Valid id required' }, 400); return }
     if (!qobuzAuth.isLoggedIn()) { this.sendJSON(res, { error: 'Qobuz not connected' }, 401); return }
     try {
       this.sendJSON(res, await qobuzAuth.getArtist(id))
     } catch (error: any) {
-      this.sendJSON(res, { error: error.message }, 500)
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
     }
   }
 
   private async handleQobuzAlbum(url: URL, res: ServerResponse): Promise<void> {
-    const id = url.searchParams.get('id')
-    if (!id) { this.sendJSON(res, { error: 'id required' }, 400); return }
+    const id = validateQobuzId(url.searchParams.get('id'))
+    if (!id) { this.sendJSON(res, { error: 'Valid id required' }, 400); return }
     if (!qobuzAuth.isLoggedIn()) { this.sendJSON(res, { error: 'Qobuz not connected' }, 401); return }
     try {
       this.sendJSON(res, await qobuzAuth.getAlbum(id))
     } catch (error: any) {
-      this.sendJSON(res, { error: error.message }, 500)
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
     }
   }
 
   private async handleQobuzPlaylist(url: URL, res: ServerResponse): Promise<void> {
-    const id = url.searchParams.get('id')
-    if (!id) { this.sendJSON(res, { error: 'id required' }, 400); return }
+    const id = validateQobuzId(url.searchParams.get('id'))
+    if (!id) { this.sendJSON(res, { error: 'Valid id required' }, 400); return }
     if (!qobuzAuth.isLoggedIn()) { this.sendJSON(res, { error: 'Qobuz not connected' }, 401); return }
     try {
       this.sendJSON(res, await qobuzAuth.getPlaylist(id))
     } catch (error: any) {
-      this.sendJSON(res, { error: error.message }, 500)
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
     }
   }
 
@@ -3319,9 +3331,9 @@ export class DeemixServer extends EventEmitter {
    *  static 30s preview clips like Deezer — the renderer requests a signed
    *  MP3 stream URL on demand and caps playback client-side. */
   private async handleQobuzPreview(url: URL, res: ServerResponse): Promise<void> {
-    const id = url.searchParams.get('id')
+    const id = validateQobuzId(url.searchParams.get('id'))
     if (!id) {
-      this.sendJSON(res, { error: 'id required' }, 400)
+      this.sendJSON(res, { error: 'Valid id required' }, 400)
       return
     }
     if (!qobuzAuth.isLoggedIn()) {
@@ -3359,7 +3371,7 @@ export class DeemixServer extends EventEmitter {
       const results = await qobuzAuth.search(query, limit, offset)
       this.sendJSON(res, results)
     } catch (error: any) {
-      this.sendJSON(res, { error: error.message }, 500)
+      this.sendJSON(res, { error: sanitizeErrorMessage(error, 'Qobuz search failed') }, 500)
     }
   }
 
@@ -3369,9 +3381,9 @@ export class DeemixServer extends EventEmitter {
   private async handleQobuzDownload(req: IncomingMessage, res: ServerResponse): Promise<void> {
     try {
       const body = await this.parseBody(req)
-      const trackId = body.trackId
+      const trackId = validateQobuzId(body.trackId)
       if (!trackId) {
-        this.sendJSON(res, { success: false, error: 'trackId required' }, 400)
+        this.sendJSON(res, { success: false, error: 'Valid trackId required' }, 400)
         return
       }
       if (!qobuzAuth.isLoggedIn()) {
@@ -3390,7 +3402,7 @@ export class DeemixServer extends EventEmitter {
       )
       this.sendJSON(res, { success: true, downloadId })
     } catch (error: any) {
-      this.sendJSON(res, { success: false, error: error.message }, 500)
+      this.sendJSON(res, { success: false, error: sanitizeErrorMessage(error, 'Qobuz download failed') }, 500)
     }
   }
 
@@ -3477,10 +3489,10 @@ export class DeemixServer extends EventEmitter {
   private async handleQobuzDownloadAlbum(req: IncomingMessage, res: ServerResponse): Promise<void> {
     try {
       const body = await this.parseBody(req)
-      const albumId = body.albumId
-      const playlistId = body.playlistId
+      const albumId = body.albumId != null ? validateQobuzId(body.albumId) : null
+      const playlistId = body.playlistId != null ? validateQobuzId(body.playlistId) : null
       if (!albumId && !playlistId) {
-        this.sendJSON(res, { success: false, error: 'albumId or playlistId required' }, 400)
+        this.sendJSON(res, { success: false, error: 'Valid albumId or playlistId required' }, 400)
         return
       }
       if (!qobuzAuth.isLoggedIn()) {
@@ -3526,7 +3538,7 @@ export class DeemixServer extends EventEmitter {
       }
       this.sendJSON(res, { ids, count: ids.length })
     } catch (error: any) {
-      this.sendJSON(res, { success: false, error: error.message }, 500)
+      this.sendJSON(res, { success: false, error: sanitizeErrorMessage(error, 'Qobuz album download failed') }, 500)
     }
   }
 
