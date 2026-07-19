@@ -164,67 +164,49 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
 <p align="center">
   <img src="docs/screenshots/home-new-releases.png" alt="Home - New Releases" width="800" />
   <br />
-  <em>Home — The Signal Deck console: dated new releases and charts under the live status-strip title bar, with the Transfer Rack on the right</em>
+  <em>Home — The Signal Deck console: dated new releases under the live status-strip title bar, with the Transfer Rack stacking finished hi-res albums on the right</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/downloads-statistics.png" alt="Downloads & Statistics Dashboard" width="800" />
+  <img src="docs/screenshots/search-qobuz.png" alt="Search - Acquisition Console" width="800" />
   <br />
-  <em>Downloads — Status edge-lights, mono telemetry, and per-album completion, with the statistics dashboard one click away</em>
+  <em>Search — The acquisition console with the Deezer/Qobuz source toggle (v2.1.0): pull the signal down from either catalog</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/favorites-artists.png" alt="Favorites - Favorite Artists" width="800" />
+  <img src="docs/screenshots/charts.png" alt="Charts - Top 100 Worldwide" width="800" />
   <br />
-  <em>Favorites — Your Deezer favorites imported in one click; pin any artist or playlist to sync, download anything with GET ↓</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/qobuz-channel-q.png" alt="Channel Q - Qobuz Discover" width="800" />
-  <br />
-  <em>Channel Q (v2.1.0) — The Qobuz discover tab: your Purchases and Favorites with quality badges (16/44.1, 24/44.1…), editorial feeds, and genre filter chips</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/artist-qobuz.png" alt="Qobuz Artist Page" width="800" />
-  <br />
-  <em>Qobuz artist pages (v2.1.0) — Full discographies with release-type tabs (Albums / EPs / Singles / Compilations), latest-release spotlight, and GET ↓ buttons</em>
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/search-qobuz.png" alt="Search - Qobuz Source" width="800" />
-  <br />
-  <em>Search (v2.1.0) — The Deezer/Qobuz source toggle: search Qobuz's catalog natively, with full pagination across tracks, albums, artists, and playlists</em>
+  <em>Charts — Global and country-specific Top 100s for tracks, albums, artists, and playlists, with GET ↓ on every row</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/genres-deezer.png" alt="Genres - Deezer Browse" width="800" />
   <br />
-  <em>Genres (v2.1.0) — Deezer editorial picks and charts by genre, from Pop to Salsa</em>
+  <em>Genres (v2.1.0) — Deezer editorial picks and charts by genre, from Pop to Traditional Mexicano</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/link-analyzer.png" alt="Link Analyzer - LINK command bar" width="800" />
+  <img src="docs/screenshots/qobuz-channel-q.png" alt="Channel Q - Qobuz Discover" width="800" />
   <br />
-  <em>Link Analyzer — Paste any Deezer, Spotify, or Qobuz URL into the LINK command bar for full metadata and one-click downloads</em>
+  <em>Channel Q (v2.1.0) — The Qobuz tab: your Purchases and Favorites with quality badges (16/44.1, 24/44.1…), editorial feeds, and genre filter chips</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/playlist-sync-artists.png" alt="Playlist Sync - Synced Artists" width="800" />
+  <img src="docs/screenshots/downloads.png" alt="Downloads - Completed Hi-Res Albums" width="800" />
   <br />
-  <em>Playlist &amp; Artist Sync — Pin playlists and artists to sync on a schedule; per-artist status badges, filters, and live progress</em>
+  <em>Downloads — Per-album completion with delivered-quality chips (FLAC 16/44.1, 24/44.1, 24/48…), status edge-lights, and the statistics dashboard one click away</em>
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/settings-qobuz.png" alt="Settings - Qobuz Connect" width="800" />
+  <img src="docs/screenshots/favorites.png" alt="Favorites - Favorite Albums" width="800" />
   <br />
-  <em>Settings → Qobuz (v2.1.0) — One-click account connect via a real Qobuz login window; your session is stored encrypted, never in files</em>
+  <em>Favorites — Your imported Deezer favorites, tabbed by tracks, albums, artists, and playlists</em>
 </p>
 
 <p align="center">
   <img src="docs/screenshots/settings-profiles.png" alt="Settings - Profiles & Appearance" width="800" />
   <br />
-  <em>Settings — Quick presets, custom profiles, export/import, and 9 color themes including the Signal default</em>
+  <em>Settings — Quick presets, custom profiles, export/import, and 9 color themes across dark, light, and system modes</em>
 </p>
 
 ---
