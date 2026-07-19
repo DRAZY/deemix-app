@@ -179,6 +179,9 @@ function isRedirectSafe(targetUrl: string): boolean {
     const parsed = new URL(targetUrl)
     // Only allow http/https
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false
+    // Default ports only — an allowlisted host can't be used to poke at
+    // arbitrary services on non-standard ports.
+    if (parsed.port && parsed.port !== '80' && parsed.port !== '443') return false
     const hostname = parsed.hostname.toLowerCase()
     // Block private/internal IPs
     if (hostname === 'localhost' || hostname.startsWith('127.') ||
@@ -2923,7 +2926,9 @@ export class DeemixServer extends EventEmitter {
       // Build from a fixed base and assert the host so a crafted `endpoint`
       // (e.g. starting with `@` or `//`) can't re-point the request off Deezer.
       const target = new URL(endpoint, 'https://api.deezer.com')
-      if (target.hostname !== 'api.deezer.com') {
+      // Full-origin pin, not just hostname: a crafted endpoint can't switch
+      // scheme (protocol-relative //host) or smuggle a non-default port.
+      if (target.protocol !== 'https:' || target.hostname !== 'api.deezer.com' || target.port !== '') {
         reject(new Error('Invalid Deezer API endpoint'))
         return
       }
@@ -2990,6 +2995,17 @@ export class DeemixServer extends EventEmitter {
   }
 
   private sendJSON(res: ServerResponse, data: any, status = 200): void {
+    // Single chokepoint for responses: error payloads never carry stack traces
+    // to the client (CodeQL #16). Handlers already send message-only errors;
+    // this guarantees it for every current and future handler, including any
+    // Error object serialized wholesale or nested `stack` fields.
+    if (status >= 400 && data && typeof data === 'object') {
+      if (data instanceof Error) {
+        data = { error: data.message }
+      } else {
+        data = JSON.parse(JSON.stringify(data, (key, value) => (key === 'stack' ? undefined : value)))
+      }
+    }
     res.writeHead(status, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify(data))
   }
@@ -4077,7 +4093,9 @@ export class DeemixServer extends EventEmitter {
 
       // Run sync in background, return immediately
       playlistSync.syncPlaylist(id).catch(err =>
-        console.error(`[Server] Sync failed for ${id}:`, err)
+        // Request-supplied id passed as an argument, not interpolated into the
+        // format string (CodeQL #19: tainted format string / log forgery).
+        console.error('[Server] Sync failed for playlist:', id, err)
       )
 
       this.sendJSON(res, { success: true, message: 'Sync started' })
@@ -4304,7 +4322,8 @@ export class DeemixServer extends EventEmitter {
         return
       }
       artistSync.syncArtist(id).catch(err =>
-        console.error(`[Server] Artist sync failed for ${id}:`, err)
+        // Request-supplied id passed as an argument, not interpolated (CodeQL #20).
+        console.error('[Server] Artist sync failed for artist:', id, err)
       )
       this.sendJSON(res, { success: true, message: 'Artist sync started' })
     } catch (error: any) {

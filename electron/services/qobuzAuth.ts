@@ -236,6 +236,11 @@ class QobuzAuth {
       .map((k) => `${k}${params[k]}`)
       .join('')
     const raw = `${objectName}${methodName}${serialized}${timestamp}${appSecret}`
+    // MD5 is mandated by Qobuz's API contract — their gateway validates exactly
+    // this digest. It is a request-authentication token for THEIR service, not a
+    // confidentiality or password-storage mechanism of ours; a stronger hash
+    // would simply be rejected. (CodeQL js/weak-cryptographic-algorithm #23 —
+    // dismissed as protocol-mandated.)
     return crypto.createHash('md5').update(raw).digest('hex')
   }
 

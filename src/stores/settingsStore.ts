@@ -644,6 +644,10 @@ export const useSettingsStore = defineStore('settings', () => {
         return
       }
 
+      // The client secret is only ever persisted through safeStorage encryption.
+      // Without safeStorage there is no safe place for it in localStorage — it
+      // stays in-memory for the session and must be re-entered next launch
+      // (CodeQL #21: cleartext storage of sensitive data).
       const data: any = {}
       if (window.electronAPI?.safeStorage) {
         if (clientId) {
@@ -656,7 +660,9 @@ export const useSettingsStore = defineStore('settings', () => {
         }
       } else {
         if (clientId) data.clientId = { data: clientId, encrypted: false }
-        if (clientSecret) data.clientSecret = { data: clientSecret, encrypted: false }
+        if (clientSecret) {
+          console.warn('[Settings] safeStorage unavailable — Spotify client secret kept in-memory only (not persisted)')
+        }
       }
       localStorage.setItem(LEGACY_SPOTIFY_STORAGE_KEY, JSON.stringify(data))
     } catch (e) {
