@@ -59,7 +59,7 @@
 - **Alternate-Version Drill-Down** -- The "Alternate version" badge is clickable with a count and lists exactly which tracks were fulfilled from an ISRC-matched alternate release, in the Transfer Rack and in history (v2.0.0+)
 - **Download Statistics** -- View total downloads, tracks, top artists, format breakdown, and weekly activity
 - **Delete Files** -- Remove downloaded files directly from the app; deletes the entire playlist or album folder
-- **Download History** -- Persistent log of all completed and failed downloads (last 500 entries)
+- **Download History** -- Persistent log of all completed and failed downloads (last 500 entries); stored in the app's data folder so it survives app updates (v2.1.1+)
 - **Smart Fallbacks** -- Automatic bitrate and format fallback when preferred quality is unavailable
 - **Concurrent Downloads** -- Configurable from 2 to 50 simultaneous downloads (default: 5)
 - **Natural Download Pacing** -- Optional Off/Balanced/Cautious setting that adds small random delays between downloads so a large batch doesn't hit Deezer as one burst, reducing the chance of an "unusual activity" account flag (off by default; full speed unless enabled)
@@ -368,7 +368,8 @@ Build output is written to the `release/` directory.
 ## Documentation
 
 - **[Architecture](docs/ARCHITECTURE.md)** — How the renderer, preload bridge, and main process fit together, with a diagram and walkthroughs of common data flows
-- **[Troubleshooting](docs/TROUBLESHOOTING.md)** — Solutions for login issues, download failures, M3U glitches, Spotify integration, and more
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** — Solutions for login issues, download failures, M3U glitches, Spotify integration, Qobuz connection issues, and more
+- **[Qobuz Integration Notes](docs/QOBUZ_INTEGRATION.md)** — Build log and API notes behind the v2.1.0 Qobuz integration
 
 ---
 
@@ -390,6 +391,9 @@ deemix-remastered/
 │   ├── i18n/locales/           # Translation files (21 languages)
 │   ├── services/               # API services
 │   │   └── deezerAPI.ts            # Deezer API wrapper with caching
+│   ├── utils/                  # Shared helpers
+│   │   ├── qobuzMap.ts             # Qobuz → app-shape mapping (record types)
+│   │   └── urlHost.ts              # URL/host detection for link routing
 │   ├── stores/                 # Pinia state stores
 │   │   ├── authStore.ts            # Authentication & session
 │   │   ├── backupStore.ts          # Backup & Restore (#72)
@@ -402,13 +406,18 @@ deemix-remastered/
 │   │   ├── artistSyncStore.ts      # Artist sync state (bulk + restore)
 │   │   └── toastStore.ts           # Notification system
 │   ├── types/                  # TypeScript type definitions
-│   └── views/                  # Page components (14 pages)
+│   └── views/                  # Page components (17 pages, incl. Channel Q / Qobuz feed / Genres)
 ├── electron/                   # Electron main process
 │   ├── main.ts                 # Window management & IPC
 │   ├── preload.ts              # Context bridge
 │   ├── server.ts               # Backend server
 │   └── services/               # Backend services
 │       ├── deezerAuth.ts           # Deezer authentication
+│       ├── deezerPublicApi.ts      # Public Deezer API proxy helpers
+│       ├── qobuzAuth.ts            # Qobuz session, API client & URL signing (v2.1.0)
+│       ├── qobuzDownloader.ts      # Qobuz native download engine (v2.1.0)
+│       ├── libraryIndex.ts         # ISRC library index (duplicate skip)
+│       ├── albumContext.ts         # Album-level context for track downloads
 │       ├── downloader.ts           # Download engine (writes tags on download)
 │       ├── retagger.ts             # Retag engine — metadata-only rewrite of existing files (#77)
 │       ├── playlistSync.ts         # Playlist sync engine
@@ -417,6 +426,7 @@ deemix-remastered/
 │       └── spotifyConverter.ts     # Spotify-to-Deezer conversion
 ├── docs/                       # Documentation
 │   ├── ARCHITECTURE.md             # Renderer / preload / main-process walkthrough
+│   ├── QOBUZ_INTEGRATION.md        # Qobuz integration build log & API notes (v2.1.0)
 │   ├── TROUBLESHOOTING.md          # Common issues & fixes
 │   ├── redesign/                   # Signal Deck design mockups (2.0 provenance)
 │   └── screenshots/                # README screenshots

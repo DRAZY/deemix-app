@@ -1,8 +1,9 @@
-# Qobuz Integration — Working Notes
+# Qobuz Integration — Build Log & API Notes
 
-> Branch: `feature/qobuz-integration` · Do not merge to main until RC-tested.
-> Full feasibility analysis lives in the scoping report (scratchpad); this file
-> is the living build log.
+> **Status: SHIPPED in v2.1.0** (2026-07-18) — hi-res downloads, Channel Q discover
+> tab, native search, quality transparency, and full settings parity. This file is
+> the preserved build log and Qobuz API reference from the integration work; it is
+> historical, not a task list.
 
 ## Decision: native, not conversion
 

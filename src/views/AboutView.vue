@@ -38,6 +38,7 @@ const whatsNew: ReleaseNotes[] = [
     version: '2.1.1',
     date: '2026-07-19',
     items: [
+      'Your download queue and history now survive app updates. They used to live in browser-style storage that macOS updates could wipe — the Transfer Rack and history vanished on every version roll. Both now persist to a real file in the app\'s data folder, alongside your credentials and library index, and existing state migrates automatically.',
       'Large Qobuz playlists and albums now download in full. Qobuz serves track listings 50 at a time and only the first page was fetched — a 273-track playlist queued just 50 tracks. All pages are now followed, so the queue matches the playlist.',
       'Fixed Qobuz getting stuck reporting "session expired" (especially on Windows) even right after a successful reconnect. A wrong app signature and a dead session look identical on the wire, and one was mistaken for the other — signature issues no longer kill your session, and real expiry is still detected.'
     ]

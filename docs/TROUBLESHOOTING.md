@@ -81,6 +81,23 @@ Deezer's public API enforces a per-IP rate limit. When the app builds the downlo
 
 ---
 
+## Qobuz Integration
+
+**"Connect your Qobuz account in Settings first" even though Settings shows connected**
+Update to v2.1.1+ — earlier builds could misread an app-level signing problem as a dead session and lock into a false "expired" state that reconnecting never cleared. If it ever recurs on 2.1.1+, fully quit the app (not just the window) and relaunch, then reconnect once.
+
+**Downloads fail with "not available at the requested quality"**
+Not every track exists at every tier on every plan. With **Bitrate Fallback off**, tracks unavailable at your requested quality error by design instead of silently downgrading. Turn Bitrate Fallback on (Settings → Downloads) to accept the best available tier — such tracks get a "Lower bitrate" badge so nothing is silent.
+
+**A playlist only downloaded 50 tracks**
+Fixed in v2.1.1 — Qobuz pages track listings 50 at a time and earlier builds only fetched the first page. Re-run the playlist after updating; already-downloaded tracks are skipped.
+
+**"This purchased release can only be downloaded from your Qobuz account page"**
+Some purchased content (e.g. mixed-version albums) is only released by Qobuz through their own site (qobuz.com → My purchases), not the player API the app uses. That's a Qobuz-side restriction.
+
+**Free account connects but can't download**
+Qobuz requires a paid plan for downloads — that's enforced on their side.
+
 ## Spotify Integration
 
 ### "Spotify credentials not configured"

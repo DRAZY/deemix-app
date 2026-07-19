@@ -10,6 +10,8 @@ Entries use a compact format — short bullets, one line each. Full per-version 
 
 ### Fixed
 
+- **Download queue and history now survive app updates.** Both lived only in renderer localStorage, which proved lossy across macOS version rolls — the Transfer Rack and full download history vanished on every update. They now persist to a real file in the app's data folder (`downloads-state.json`, written atomically), with existing localStorage state migrated automatically on first launch.
+
 - **Large Qobuz playlists and albums now download in full (#100).** Qobuz pages track listings at 50 per request, and only the first page was ever fetched — a 273-track playlist queued just 50 tracks. Track pages are now followed until the full listing is held, for both playlists and albums.
 - **Qobuz no longer falsely reports "session expired" on Windows and other setups (#100).** Qobuz answers an invalid request *signature* with the same HTTP 401 as a dead session token, so a wrong/stale app secret during download-URL signing killed the whole session state — Settings said connected while everything else demanded a reconnect, forever. Signature failures are now treated as app-credential problems (never session problems); genuine token expiry is still detected on ordinary authenticated calls and via an explicit token-error check.
 - **Qobuz artist pages no longer render broken for imageless duplicate catalog entities** (rolled into the final 2.1.0 build): missing artist images self-heal from an exact-name sibling entity, an initial-letter tile stands in when Qobuz truly has no image, and the empty "fans" label is hidden.
