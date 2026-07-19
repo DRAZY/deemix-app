@@ -12,10 +12,10 @@ checked against this log before any code churn.
 | 20 | js/tainted-format-string | warning/high | `electron/server.ts` (artist sync) | **Fixed.** Request-supplied id moved out of the format string into a console argument. |
 | 19 | js/tainted-format-string | warning/high | `electron/server.ts` (playlist sync) | **Fixed.** Same pattern. |
 | 18 | js/tainted-format-string | warning/high | `src/views/SearchView.vue` (bulk link download) | **Fixed.** Pasted-link type/id moved into console arguments. |
-| 16 | js/stack-trace-exposure | warning/medium | `electron/server.ts` `sendJSON` | **Fixed centrally.** `sendJSON` now scrubs `stack` fields (and collapses raw `Error` objects to message-only) from every error-status payload — a chokepoint guarantee covering all current and future handlers. Server binds to 127.0.0.1 only, so exposure was already local-only. |
-| 15 | js/request-forgery | error/critical | `electron/server.ts` (Deezer API proxy) | **Mitigated + hardened → dismiss.** Endpoint is resolved against `https://api.deezer.com` and the full origin is pinned: protocol must be `https:`, hostname must equal `api.deezer.com`, port must be default. CodeQL cannot recognize the custom sanitizer; dismissed with this justification. |
-| 14 | js/request-forgery | error/critical | `electron/server.ts` (redirect resolver) | **Mitigated + hardened → dismiss.** `isRedirectSafe()` runs on the initial URL and every redirect hop: http/https only, default ports only (added this pass), private/link-local/localhost ranges blocked, and a host allowlist (`.deezer.com`, `.spotify.com`, `.dzcdn.net`, exact `deezer.page.link`) with correct suffix-vs-exact matching. Dismissed with this justification. |
-| 23 | js/weak-cryptographic-algorithm | warning/high | `electron/services/qobuzAuth.ts` (request signing) | **Won't fix → dismiss.** MD5 is mandated by Qobuz's API contract — their gateway validates `md5(object+method+params+timestamp+secret)`. It authenticates requests to their service and protects no data of ours; any other algorithm is rejected by Qobuz. Documented at the call site. |
+| 16 | js/stack-trace-exposure | warning/medium | `electron/server.ts` `sendJSON` | **Hardened → dismissed (won't fix).** `sendJSON` now scrubs `stack` fields (and collapses raw `Error` objects to message-only) from every error-status payload — a chokepoint guarantee covering all current and future handlers. The rule still flags exception-derived *messages*, which are intentional UX; server binds to 127.0.0.1 only. |
+| 15 | js/request-forgery | error/critical | `electron/server.ts` (Deezer API proxy) | **Mitigated + hardened → dismissed (false positive).** Endpoint is resolved against `https://api.deezer.com` and the full origin is pinned: protocol must be `https:`, hostname must equal `api.deezer.com`, port must be default. CodeQL cannot recognize the custom sanitizer; dismissed with this justification. |
+| 14 | js/request-forgery | error/critical | `electron/server.ts` (redirect resolver) | **Mitigated + hardened → dismissed (false positive).** `isRedirectSafe()` runs on the initial URL and every redirect hop: http/https only, default ports only (added this pass), private/link-local/localhost ranges blocked, and a host allowlist (`.deezer.com`, `.spotify.com`, `.dzcdn.net`, exact `deezer.page.link`) with correct suffix-vs-exact matching. Dismissed with this justification. |
+| 23 | js/weak-cryptographic-algorithm | warning/high | `electron/services/qobuzAuth.ts` (request signing) | **Dismissed (won't fix).** MD5 is mandated by Qobuz's API contract — their gateway validates `md5(object+method+params+timestamp+secret)`. It authenticates requests to their service and protects no data of ours; any other algorithm is rejected by Qobuz. Documented at the call site. |
 
 ### Standing posture
 
@@ -25,3 +25,11 @@ checked against this log before any code churn.
   never in settings exports or backups.
 - Any new outbound-fetch endpoint must pin its origin (scheme + host + port)
   or route through `isRedirectSafe()`.
+
+### Outcome (2026-07-19, post-merge of PR #111)
+
+- Auto-closed as fixed by main's scan: **#18, #19, #20, #21**
+- Dismissed with justification: **#14, #15** (false positive — custom sanitizers),
+  **#16** (won't fix — messages intentional, stacks scrubbed), **#23** (won't fix —
+  protocol-mandated MD5)
+- Open alerts remaining: **0**
