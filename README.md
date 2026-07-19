@@ -1,15 +1,11 @@
 <p align="center">
-  <img src="docs/banner.png" alt="Deemix Remastered — Signal Deck" width="800" />
+  <img src="docs/banner.png" alt="Deemix Remastered" width="800" />
 </p>
 
 <p align="center">
-  A modern, cross-platform desktop music downloader built entirely from scratch with Electron, Vue 3, and TypeScript.
-  <br />
-  No code from the original Deemix project - just the same spirit, reimagined with a modern stack.
-</p>
-
-<p align="center">
-  <strong>2.0 — "Signal Deck":</strong> a complete industrial-console redesign — acid chartreuse on blue-black, display type, hard edges, live telemetry everywhere — plus a new DM/RM identity. Every feature below carried over intact.
+  <strong>Deemix Remastered is exactly what it sounds like: the classic downloader, remastered.</strong>
+  <br /><br />
+  Built from scratch with zero original code — just the spirit of Deemix, re-engineered into something faster, sharper, and far more capable. True hi-res FLAC from Qobuz, the full Deezer catalog, Spotify conversion, pro-grade tagging, and a live-telemetry interface (the "Signal Deck") that makes downloading music feel like operating studio hardware.
 </p>
 
 <p align="center">
