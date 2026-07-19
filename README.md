@@ -162,6 +162,36 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
 ## Screenshots
 
 <p align="center">
+  <img src="docs/screenshots/qobuz-channel-q.png" alt="Channel Q - Qobuz Discover" width="800" />
+  <br />
+  <em>Channel Q (v2.1.0) — The Qobuz discover tab: your Purchases and Favorites with quality badges (16/44.1, 24/44.1…), editorial feeds, and genre filter chips</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/artist-qobuz.png" alt="Qobuz Artist Page" width="800" />
+  <br />
+  <em>Qobuz artist pages (v2.1.0) — Full discographies with release-type tabs (Albums / EPs / Singles / Compilations), latest-release spotlight, and GET ↓ buttons</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/search-qobuz.png" alt="Search - Qobuz Source" width="800" />
+  <br />
+  <em>Search (v2.1.0) — The Deezer/Qobuz source toggle: search Qobuz's catalog natively, with full pagination across tracks, albums, artists, and playlists</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/genres-deezer.png" alt="Genres - Deezer Browse" width="800" />
+  <br />
+  <em>Genres (v2.1.0) — Deezer editorial picks and charts by genre, from Pop to Salsa</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/settings-qobuz.png" alt="Settings - Qobuz Connect" width="800" />
+  <br />
+  <em>Settings → Qobuz (v2.1.0) — One-click account connect via a real Qobuz login window; your session is stored encrypted, never in files</em>
+</p>
+
+<p align="center">
   <img src="docs/screenshots/home-new-releases.png" alt="Home - New Releases" width="800" />
   <br />
   <em>Home — The Signal Deck console: new releases and charts under the live status-strip title bar, with the Transfer Rack on the right</em>
