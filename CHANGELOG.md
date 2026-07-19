@@ -8,6 +8,10 @@ Entries use a compact format — short bullets, one line each. Full per-version 
 
 ## [2.1.2] — 2026-07-19
 
+### Added
+
+- **Full genre browsing.** The Genres tab is now dual-service. Qobuz (primary): every genre and subgenre in Qobuz's tree, with a feed-tabbed (New Releases / Most Streamed / Press Awards / Editor's Picks), continuously paginated catalog grid that goes to the end of the genre. Deezer: editorial picks plus Top Tracks / Top Albums now paginate toward Deezer's 100-per-chart API cap (the public API's per-genre limit; its editorial releases endpoint is dead upstream).
+
 ### Security
 
 - **Spotify client secret is never stored in cleartext.** The legacy localStorage fallback could persist the secret unencrypted when OS-level safeStorage was unavailable; it is now stored safeStorage-encrypted only, or kept in-memory for the session.

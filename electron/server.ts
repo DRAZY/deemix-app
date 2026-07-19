@@ -892,7 +892,7 @@ export class DeemixServer extends EventEmitter {
         await this.handleQobuzDiscover(url, res)
         break
       case '/api/qobuz/genres':
-        await this.handleQobuzGenres(res)
+        await this.handleQobuzGenres(url, res)
         break
       case '/api/qobuz/featured':
         await this.handleQobuzFeatured(url, res)
@@ -902,6 +902,9 @@ export class DeemixServer extends EventEmitter {
         break
       case '/api/deezer/genre-browse':
         await this.handleDeezerGenreBrowse(url, res)
+        break
+      case '/api/deezer/genre-chart':
+        await this.handleDeezerGenreChart(url, res)
         break
       case '/api/qobuz/preview':
         await this.handleQobuzPreview(url, res)
@@ -3248,23 +3251,28 @@ export class DeemixServer extends EventEmitter {
   }
 
   // Genre lists + Deezer genre browse — cached; genres barely ever change.
-  private qobuzGenresCache: { data: any; timestamp: number } | null = null
+  // Keyed by parent id ('root' for the top level) so the full genre tree —
+  // subgenres included — is browsable and cached per level.
+  private qobuzGenresCache = new Map<string, { data: any; timestamp: number }>()
   private deezerGenreBrowseCache = new Map<string, { data: any; timestamp: number }>()
 
-  private async handleQobuzGenres(res: ServerResponse): Promise<void> {
+  private async handleQobuzGenres(url: URL, res: ServerResponse): Promise<void> {
     if (!qobuzAuth.isLoggedIn()) {
       this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
       return
     }
-    if (this.qobuzGenresCache && Date.now() - this.qobuzGenresCache.timestamp < 24 * 60 * 60 * 1000) {
-      this.sendJSON(res, this.qobuzGenresCache.data)
+    const parentId = Number(url.searchParams.get('parent')) || undefined
+    const cacheKey = parentId ? String(parentId) : 'root'
+    const cached = this.qobuzGenresCache.get(cacheKey)
+    if (cached && Date.now() - cached.timestamp < 24 * 60 * 60 * 1000) {
+      this.sendJSON(res, cached.data)
       return
     }
     try {
-      const g = await qobuzAuth.getGenres()
+      const g = await qobuzAuth.getGenres(parentId)
       const items = (g?.genres?.items || g?.items || []).map((x: any) => ({ id: x.id, name: x.name }))
       const data = { genres: items }
-      this.qobuzGenresCache = { data, timestamp: Date.now() }
+      this.qobuzGenresCache.set(cacheKey, { data, timestamp: Date.now() })
       this.sendJSON(res, data)
     } catch (error: any) {
       this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
@@ -3341,6 +3349,27 @@ export class DeemixServer extends EventEmitter {
     }
     this.deezerGenreBrowseCache.set(id, { data, timestamp: Date.now() })
     this.sendJSON(res, data)
+  }
+
+  /** Paginated per-genre chart — the only per-genre catalog surface Deezer's
+   *  public API exposes with real pagination (/chart/{id}/{albums|tracks},
+   *  hard-capped at 100 by Deezer; /editorial/{id}/releases is dead upstream —
+   *  verified returning {data:[],total:0} for every genre, 2026-07-19). */
+  private async handleDeezerGenreChart(url: URL, res: ServerResponse): Promise<void> {
+    const id = url.searchParams.get('id')
+    const kind = url.searchParams.get('kind')
+    if (!id || !/^\d+$/.test(id) || (kind !== 'albums' && kind !== 'tracks')) {
+      this.sendJSON(res, { error: 'Valid genre id and kind (albums|tracks) required' }, 400)
+      return
+    }
+    const index = Math.max(0, Number(url.searchParams.get('index')) || 0)
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit')) || 50))
+    try {
+      const r = await this.deezerPublicAPI(`/chart/${id}/${kind}?index=${index}&limit=${limit}`)
+      this.sendJSON(res, { items: r?.data || [], total: r?.total ?? (r?.data?.length || 0) })
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error, 'Failed to load genre chart') }, 500)
+    }
   }
 
   /** Resolve a playable stream URL for a Qobuz track preview. Qobuz has no

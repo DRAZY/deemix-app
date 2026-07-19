@@ -383,9 +383,12 @@ class QobuzAuth {
   }
 
   /** Qobuz's genre list (top-level genres) for the Discover genre chips. */
-  async getGenres(): Promise<any> {
+  /** Genre catalog. Top-level list by default; pass a parentId for that
+   *  genre's subgenres (Qobuz nests e.g. Pop/Rock → Rock → Prog Rock). */
+  async getGenres(parentId?: number): Promise<any> {
     const { appId } = await this.fetchAppCredentials()
-    return this.apiGet(`genre/list?app_id=${appId}`, true)
+    const parent = parentId ? `&parent_id=${parentId}` : ''
+    return this.apiGet(`genre/list?app_id=${appId}${parent}`, true)
   }
 
   /** The user's own Qobuz favorites (hearted in Qobuz itself). type: albums|tracks|artists. */
