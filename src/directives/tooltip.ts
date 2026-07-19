@@ -20,10 +20,18 @@ let activeEl: HTMLElement | null = null
 
 interface TooltipState {
   text: string
+  overflowOnly: boolean
   onEnter: () => void
   onLeave: () => void
   onFocus: () => void
   onBlur: () => void
+}
+
+// True when the element's content is actually clipped (text-ellipsis /
+// overflow-hidden kicked in). Checked at show time so window resizes and
+// panel-width changes are always reflected.
+function isClipped(el: HTMLElement): boolean {
+  return el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 1
 }
 
 const stateMap = new WeakMap<HTMLElement, TooltipState>()
@@ -39,7 +47,9 @@ function ensureTipEl(): HTMLDivElement {
     tipEl.style.zIndex = '9999'
     tipEl.style.pointerEvents = 'none'
     tipEl.style.maxWidth = '320px'
-    tipEl.style.whiteSpace = 'nowrap'
+    // Wrap long labels (full album/track titles) instead of clipping at maxWidth.
+    tipEl.style.whiteSpace = 'normal'
+    tipEl.style.wordBreak = 'break-word'
     tipEl.setAttribute('role', 'tooltip')
     document.body.appendChild(tipEl)
   }
@@ -78,6 +88,8 @@ function hideTip() {
 function showTipFor(el: HTMLElement) {
   const state = stateMap.get(el)
   if (!state || !state.text) return
+  // v-tooltip.overflow — only reveal when the label is actually truncated.
+  if (state.overflowOnly && !isClipped(el)) return
   const tip = ensureTipEl()
   tip.textContent = state.text
   tip.style.visibility = 'hidden'
@@ -92,7 +104,7 @@ function scheduleShow(el: HTMLElement) {
   showTimer = setTimeout(() => showTipFor(el), SHOW_DELAY_MS)
 }
 
-function attach(el: HTMLElement, text: string) {
+function attach(el: HTMLElement, text: string, overflowOnly = false) {
   const onEnter = () => scheduleShow(el)
   const onLeave = () => { if (activeEl === el || showTimer) hideTip() }
   const onFocus = () => showTipFor(el)
@@ -105,7 +117,7 @@ function attach(el: HTMLElement, text: string) {
   el.addEventListener('blur', onBlur)
 
   el.setAttribute('aria-label', text)
-  stateMap.set(el, { text, onEnter, onLeave, onFocus, onBlur })
+  stateMap.set(el, { text, overflowOnly, onEnter, onLeave, onFocus, onBlur })
 }
 
 function detach(el: HTMLElement) {
@@ -128,13 +140,13 @@ function normalize(value: unknown): string {
 export const tooltip: Directive<HTMLElement, unknown> = {
   mounted(el, binding: DirectiveBinding) {
     const text = normalize(binding.value)
-    if (text) attach(el, text)
+    if (text) attach(el, text, !!binding.modifiers.overflow)
   },
   updated(el, binding: DirectiveBinding) {
     const text = normalize(binding.value)
     const state = stateMap.get(el)
     if (!state && text) {
-      attach(el, text)
+      attach(el, text, !!binding.modifiers.overflow)
     } else if (state && text !== state.text) {
       // Reactive label changed (e.g. enable/disable toggling "Disable"↔"Enable").
       state.text = text

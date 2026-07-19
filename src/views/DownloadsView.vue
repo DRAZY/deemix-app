@@ -644,7 +644,7 @@ function copyAllErrorDetails() {
           <!-- Track/Album/Playlist info -->
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
-              <p class="text-[13px] font-semibold truncate">{{ item.title }}</p>
+              <p class="text-[13px] font-semibold truncate" v-tooltip.overflow="item.title">{{ item.title }}</p>
               <!-- Channel Q source chip — this unit's signal came from Qobuz -->
               <span
                 v-if="item.source === 'qobuz'"
@@ -1115,7 +1115,7 @@ function copyAllErrorDetails() {
           </div>
           <!-- Info -->
           <div class="flex-1 min-w-0">
-            <p class="truncate font-medium">
+            <p class="truncate font-medium" v-tooltip.overflow="entry.title">
               {{ entry.title }}
               <span
                 v-if="entry.source === 'qobuz'"

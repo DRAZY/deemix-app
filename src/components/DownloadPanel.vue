@@ -267,7 +267,7 @@ async function openItemFolder(item: DownloadItem) {
           @click="handleItemClick(item)"
         >
           <div class="flex justify-between items-baseline gap-2.5">
-            <span class="text-[12px] font-semibold text-foreground whitespace-nowrap overflow-hidden text-ellipsis" :title="item.title">
+            <span class="text-[12px] font-semibold text-foreground whitespace-nowrap overflow-hidden text-ellipsis" v-tooltip.overflow="item.title">
               <span
                 v-if="item.source === 'qobuz'"
                 class="mr-1 px-1 py-px font-mono text-[8.5px] font-bold tracking-[0.08em] border border-qobuz-500/50 text-qobuz-400 bg-qobuz-500/10 align-middle"
