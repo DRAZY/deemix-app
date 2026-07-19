@@ -653,7 +653,8 @@ async function handlePaste(e: ClipboardEvent) {
         }
       }
     } catch (err) {
-      console.error(`[Search] Bulk download failed for ${link.type}/${link.id}:`, err)
+      // Pasted-link values passed as arguments, not interpolated (CodeQL #18).
+      console.error('[Search] Bulk download failed for link:', link.type, link.id, err)
       failed++
     }
     // Pace between pasted links so a big batch doesn't burst Deezer's API (#84).
