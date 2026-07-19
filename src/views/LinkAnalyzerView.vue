@@ -196,12 +196,17 @@ async function downloadQobuz() {
       const n = qobuzTrackIds(q).length
       toastStore.success(`Queued "${q.data?.title || 'Qobuz ' + q.type}" (${n} tracks)`)
     } else {
-      // Single track.
-      await fetch(`http://localhost:${serverPort.value}/api/qobuz/download`, {
+      // Single track. A non-OK response must NOT toast success — surface the
+      // server's actual error instead.
+      const resp = await fetch(`http://localhost:${serverPort.value}/api/qobuz/download`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ trackId: q.id }),
       })
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({} as any))
+        throw new Error(err.error || `server returned HTTP ${resp.status}`)
+      }
       toastStore.success('Queued Qobuz track for download')
     }
   } catch (e: any) {

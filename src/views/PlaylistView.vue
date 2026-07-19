@@ -7,6 +7,7 @@ import { useFavoritesStore } from '../stores/favoritesStore'
 import { useDownloadStore } from '../stores/downloadStore'
 import TrackCard from '../components/TrackCard.vue'
 import BackButton from '../components/BackButton.vue'
+import ErrorState from '../components/ErrorState.vue'
 import ContextMenu from '../components/ContextMenu.vue'
 import { useContextMenu } from '../composables/useContextMenu'
 import type { Playlist, Track } from '../types'
@@ -20,6 +21,7 @@ const downloadStore = useDownloadStore()
 const playlist = ref<Playlist | null>(null)
 const tracks = ref<Track[]>([])
 const isLoading = ref(true)
+const hasError = ref(false)
 const loadingProgress = ref(0)
 const loadingTotal = ref(0)
 const isLoadingTracks = ref(false)
@@ -36,8 +38,12 @@ const loadingPercentage = computed(() => {
   return Math.round((loadingProgress.value / loadingTotal.value) * 100)
 })
 
-onMounted(async () => {
+// Extracted from onMounted so the ErrorState retry button can re-run it —
+// a failed load previously logged to console and left a permanently blank page.
+async function loadPlaylist() {
   const playlistId = route.params.id as string
+  isLoading.value = true
+  hasError.value = false
 
   // Qobuz playlist: load from the Qobuz backend (its id isn't a Deezer id).
   if (route.query.source === 'qobuz') {
@@ -62,6 +68,7 @@ onMounted(async () => {
       })) as any
     } catch (error) {
       console.error('Failed to load Qobuz playlist:', error)
+      hasError.value = true
     } finally {
       isLoading.value = false
       isLoadingTracks.value = false
@@ -98,11 +105,14 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error('Failed to load playlist:', error)
+    hasError.value = true
   } finally {
     isLoading.value = false
     isLoadingTracks.value = false
   }
-})
+}
+
+onMounted(loadPlaylist)
 
 const isFavorite = () => playlist.value && favoritesStore.isFavorite(playlist.value.id, 'playlist')
 
@@ -181,6 +191,14 @@ const contextMenuItems = computed(() => {
     <div v-if="isLoading && !playlist" class="flex items-center justify-center py-20">
       <div class="animate-spin w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full"></div>
     </div>
+
+    <!-- Error State -->
+    <ErrorState
+      v-else-if="hasError && !playlist"
+      :title="t('errors.loadingFailed')"
+      :message="t('errors.tryAgainLater')"
+      @retry="loadPlaylist"
+    />
 
     <template v-else-if="playlist">
       <!-- Playlist Header -->

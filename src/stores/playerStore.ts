@@ -33,22 +33,27 @@ export const usePlayerStore = defineStore('player', () => {
 
     // Qobuz tracks carry no static preview URL — resolve a signed stream URL
     // from the local server on demand (playback is capped to preview length).
-    if (!track.preview && (track as any).source === 'qobuz') {
+    // Resolved fresh on EVERY play and never cached onto the track: the URLs
+    // are short-lived signed links, and a replay through a stale one dies with
+    // a silent media error.
+    let previewUrl = track.preview
+    if ((track as any).source === 'qobuz') {
+      previewUrl = undefined
       try {
         const port = window.electronAPI ? await window.electronAPI.getServerPort() : 6595
         const qobuzId = (track as any).qobuzId ?? track.id
         const r = await fetch(`http://127.0.0.1:${port}/api/qobuz/preview?id=${qobuzId}`)
         if (r.ok) {
           const d = await r.json()
-          if (d.url) track.preview = d.url
+          if (d.url) previewUrl = d.url
         }
       } catch { /* no preview available — play() falls through silently */ }
     }
 
     // Start new track if it has a preview
-    if (track.preview) {
+    if (previewUrl) {
       currentTrack.value = track
-      audio.value = new Audio(track.preview)
+      audio.value = new Audio(previewUrl)
 
       // Apply preview volume setting
       audio.value.volume = settingsStore.settings.previewVolume / 100

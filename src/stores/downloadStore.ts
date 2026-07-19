@@ -651,9 +651,26 @@ export const useDownloadStore = defineStore('downloads', () => {
    * `qobuz` is the analyze result: { type, id, data }.
    */
   async function addQobuzAlbumDownload(qobuz: { type: string; id: string; data: any }) {
+    const toastStore = useToastStore()
+    const d = qobuz.data || {}
+
+    // Same double-queue guards as the Deezer album path. The numeric
+    // isAlbumInQueue/isAlbumCompleted maps can't index Qobuz's alphanumeric
+    // ids, so match the rows directly. Retries are unaffected — retryDownload
+    // removes the failed row before re-adding.
+    const rowMatches = (dl: DownloadItem) =>
+      dl.type === 'album' && dl.source === 'qobuz' && String((dl.album as any)?.id) === qobuz.id
+    if (downloads.value.some(dl => rowMatches(dl) && (dl.status === 'pending' || dl.status === 'downloading'))) {
+      toastStore.info(`"${d.title || 'This album'}" is already downloading`)
+      return
+    }
+    if (downloads.value.some(dl => rowMatches(dl) && dl.status === 'completed')) {
+      toastStore.info(`"${d.title || 'This album'}" was already downloaded`)
+      return
+    }
+
     await syncSettingsToServer()
     const settingsStore = useSettingsStore()
-    const d = qobuz.data || {}
     const groupId = `qobuzalbum_${qobuz.id}_${Date.now()}`
     const trackTotal = d.tracks?.items?.length || d.tracks_count || 0
 

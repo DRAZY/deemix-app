@@ -282,6 +282,12 @@ watch(() => route.query.q, (newQuery) => {
   }
 })
 
+// Monotonic search sequence — every new search bumps it, and every async
+// result-write checks it still owns the latest sequence before touching state.
+// Without this, a slow earlier response (e.g. a Qobuz search racing a quick
+// source-switch back to Deezer) landed LAST and overwrote the fresh results.
+let searchSeq = 0
+
 function resetPagination() {
   pagination.value = {
     tracks: { index: 0, hasMore: true, loading: false, total: 0 },
@@ -335,7 +341,7 @@ function mapQobuzPlaylist(p: any) {
   }
 }
 
-async function performQobuzSearch() {
+async function performQobuzSearch(seq: number) {
   const port = window.electronAPI ? await window.electronAPI.getServerPort() : serverPort.value
   serverPort.value = port
   const resp = await fetch(`http://127.0.0.1:${port}/api/qobuz/search?q=${encodeURIComponent(searchQuery.value)}&limit=${RESULTS_PER_PAGE}`)
@@ -344,6 +350,7 @@ async function performQobuzSearch() {
     throw new Error(e.error === 'Qobuz not connected' ? 'Connect your Qobuz account in Settings first.' : (e.error || 'Qobuz search failed'))
   }
   const d = await resp.json()
+  if (seq !== searchSeq) return // a newer search superseded this one
   results.value = {
     tracks: (d.tracks?.items || []).map(mapQobuzTrack),
     albums: (d.albums?.items || []).map(mapQobuzAlbum),
@@ -370,6 +377,8 @@ async function performSearch() {
     return
   }
 
+  const seq = ++searchSeq
+
   // Qobuz source → search Qobuz's catalog instead of Deezer.
   if (searchSource.value === 'qobuz') {
     isLoading.value = true
@@ -379,12 +388,14 @@ async function performSearch() {
     addToHistory(searchQuery.value)
     router.replace({ query: { q: searchQuery.value, type: activeTab.value } })
     try {
-      await performQobuzSearch()
+      await performQobuzSearch(seq)
     } catch (e: any) {
-      hasError.value = true
-      toastStore.error(e.message || 'Qobuz search failed')
+      if (seq === searchSeq) {
+        hasError.value = true
+        toastStore.error(e.message || 'Qobuz search failed')
+      }
     } finally {
-      isLoading.value = false
+      if (seq === searchSeq) isLoading.value = false
     }
     return
   }
@@ -405,6 +416,7 @@ async function performSearch() {
         deezerAPI.searchWithPagination(searchQuery.value, 'artist', 20),
         deezerAPI.searchWithPagination(searchQuery.value, 'playlist', 20)
       ])
+      if (seq !== searchSeq) return // a newer search superseded this one
 
       results.value = {
         tracks: tracksResult.data,
@@ -422,6 +434,7 @@ async function performSearch() {
     } else {
       // Load more results for specific type
       const result = await deezerAPI.searchWithPagination(searchQuery.value, activeTab.value, RESULTS_PER_PAGE)
+      if (seq !== searchSeq) return // a newer search superseded this one
 
       results.value = {
         tracks: activeTab.value === 'track' ? result.data : [],
@@ -443,13 +456,14 @@ async function performSearch() {
     }
   } catch (error) {
     console.error('Search failed:', error)
-    hasError.value = true
+    if (seq === searchSeq) hasError.value = true
   } finally {
-    isLoading.value = false
+    if (seq === searchSeq) isLoading.value = false
   }
 }
 
 async function loadMore(type: 'track' | 'album' | 'artist' | 'playlist') {
+  const seq = searchSeq // owned by the search whose results we're extending
   const typeKey = type === 'track' ? 'tracks' :
                   type === 'album' ? 'albums' :
                   type === 'artist' ? 'artists' : 'playlists'
@@ -465,6 +479,7 @@ async function loadMore(type: 'track' | 'album' | 'artist' | 'playlist') {
       const port = window.electronAPI ? await window.electronAPI.getServerPort() : serverPort.value
       const resp = await fetch(`http://127.0.0.1:${port}/api/qobuz/search?q=${encodeURIComponent(searchQuery.value)}&limit=${RESULTS_PER_PAGE}&offset=${offset}`)
       const d = await resp.json()
+      if (seq !== searchSeq) return // a newer search reset the result set
       const mapper = type === 'track' ? mapQobuzTrack : type === 'album' ? mapQobuzAlbum : type === 'artist' ? mapQobuzArtist : mapQobuzPlaylist
       const bucket = type === 'track' ? d.tracks : type === 'album' ? d.albums : type === 'artist' ? d.artists : d.playlists
       const items = (bucket?.items || []).map(mapper)
@@ -485,6 +500,7 @@ async function loadMore(type: 'track' | 'album' | 'artist' | 'playlist') {
       RESULTS_PER_PAGE,
       pagination.value[typeKey].index
     )
+    if (seq !== searchSeq) return // a newer search reset the result set
 
     // Append new results
     results.value[typeKey] = [...results.value[typeKey], ...result.data]

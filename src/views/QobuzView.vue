@@ -73,10 +73,15 @@ async function loadMoreRow(key: string) {
   const feedType = FEED_TYPE[key]
   if (!rowRef || !feedType || loadingMore.value[key]) return
   loadingMore.value = { ...loadingMore.value, [key]: true }
+  // Bind this page to the genre it was requested for — if the user switches
+  // genres while the page is in flight, the stale items must not be appended
+  // onto the new genre's freshly loaded row.
+  const genreAtRequest = activeGenre.value
   try {
     const port = window.electronAPI ? await window.electronAPI.getServerPort() : 6595
-    const genreParam = activeGenre.value ? `&genre=${activeGenre.value}` : ''
+    const genreParam = genreAtRequest ? `&genre=${genreAtRequest}` : ''
     const r = await fetch(`http://127.0.0.1:${port}/api/qobuz/featured?type=${feedType}&offset=${rowRef.value.length}&limit=20${genreParam}`)
+    if (activeGenre.value !== genreAtRequest) return
     if (r.ok) {
       const d = await r.json()
       const mapper = key === 'playlists' ? mapPlaylist : mapAlbum
@@ -124,7 +129,13 @@ function mapPlaylist(p: any): Album {
   } as any
 }
 
+// Monotonic load sequence — rapid genre-chip clicks fire overlapping discover
+// fetches, and without this the SLOWEST response (often a cold uncached genre)
+// landed last and overwrote the rows for the genre actually selected.
+let discoverSeq = 0
+
 async function loadDiscover() {
+  const seq = ++discoverSeq
   isLoading.value = true
   hasError.value = false
   notConnected.value = false
@@ -132,12 +143,14 @@ async function loadDiscover() {
     const port = window.electronAPI ? await window.electronAPI.getServerPort() : 6595
     const genreParam = activeGenre.value ? `?genre=${activeGenre.value}` : ''
     const resp = await fetch(`http://127.0.0.1:${port}/api/qobuz/discover${genreParam}`)
+    if (seq !== discoverSeq) return // a newer genre selection superseded this load
     if (resp.status === 401) {
       notConnected.value = true
       return
     }
     if (!resp.ok) throw new Error(`Discover load failed: ${resp.status}`)
     const d = await resp.json()
+    if (seq !== discoverSeq) return
     newReleases.value = (d.newReleases || []).map(mapAlbum)
     editorPicks.value = (d.editorPicks || []).map(mapAlbum)
     pressAwards.value = (d.pressAwards || []).map(mapAlbum)
@@ -154,9 +167,9 @@ async function loadDiscover() {
     }
   } catch (error) {
     console.error('Failed to load Qobuz discover:', error)
-    hasError.value = true
+    if (seq === discoverSeq) hasError.value = true
   } finally {
-    isLoading.value = false
+    if (seq === discoverSeq) isLoading.value = false
   }
 }
 
