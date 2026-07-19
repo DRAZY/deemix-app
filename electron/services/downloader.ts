@@ -191,6 +191,9 @@ export interface DownloadProgress {
   trackTitle?: string
   trackArtist?: string
   albumTitle?: string
+  path?: string  // Final file path — set on every completion INCLUDING skips, so queue
+                 // polling (/api/queue) sees it; the renderer derives the folder for
+                 // "Open folder" and delete-files from this when albumFolder is absent
   albumFolder?: string  // Folder path for error log file (may include CD subfolder)
   albumRootFolder?: string  // Root album folder path (excludes CD subfolders) - used for deletion
   playlistFolder?: string  // Playlist root folder path - used for deletion of entire playlist
@@ -911,7 +914,8 @@ export class Downloader extends EventEmitter {
           progress.skippedAsDuplicate = true
           recordM3U(existingPath)
           this.emit('progress', progress)
-          this.emit('complete', { ...progress, path: existingPath })
+          progress.path = existingPath
+          this.emit('complete', { ...progress })
           return
         }
       }
@@ -940,7 +944,8 @@ export class Downloader extends EventEmitter {
         // (mirrors the Deezer locate-existing path).
         libraryIndex.add(shim.ISRC, initialOutputPath)
         this.emit('progress', progress)
-        this.emit('complete', { ...progress, path: initialOutputPath })
+        progress.path = initialOutputPath
+        this.emit('complete', { ...progress })
         return
       }
       reservedPathForCleanup = outputPath
@@ -1052,7 +1057,8 @@ export class Downloader extends EventEmitter {
       // completions have always done this; Qobuz ones were invisible to the
       // skip check until a manual library rescan. No-op without an ISRC.
       libraryIndex.add(shim.ISRC, result.path)
-      this.emit('complete', { ...progress, path: result.path })
+      progress.path = result.path
+      this.emit('complete', { ...progress })
     } catch (error: any) {
       console.error(`[Downloader] Qobuz download error for ${downloadId}:`, error.message)
       progress.status = 'error'
@@ -1423,7 +1429,8 @@ export class Downloader extends EventEmitter {
           })
         }
         this.emit('progress', progress)
-        this.emit('complete', { ...progress, path: existingPath })
+        progress.path = existingPath
+        this.emit('complete', { ...progress })
         return
       }
     }
@@ -1455,7 +1462,8 @@ export class Downloader extends EventEmitter {
       // Sync engines (playlistSync/artistSync) resolve their per-track Promise
       // on this event; without it, skipped tracks hang their worker for the
       // full 5-minute timeout and the sync pool stalls (#67).
-      this.emit('complete', { ...progress, path: initialOutputPath })
+      progress.path = initialOutputPath
+      this.emit('complete', { ...progress })
       return
     }
     console.log(`[Downloader] Reserved output path: ${outputPath}`)
@@ -1631,7 +1639,8 @@ export class Downloader extends EventEmitter {
       // de-dup against it when the user has that option on. No-op without an ISRC.
       libraryIndex.add(trackInfo.ISRC, decryptedPath)
 
-      this.emit('complete', { ...progress, path: decryptedPath })
+      progress.path = decryptedPath
+      this.emit('complete', { ...progress })
     } finally {
       // Always release the reserved path when done (success or failure)
       this.releaseOutputPath(outputPath)
@@ -1663,7 +1672,8 @@ export class Downloader extends EventEmitter {
         progress.status = 'completed'
         progress.progress = 100
         this.emit('progress', progress)
-        this.emit('complete', { ...progress, path: filePath, retagSkipped: true })
+        progress.path = filePath
+        this.emit('complete', { ...progress, retagSkipped: true })
         return
       }
 
@@ -1773,7 +1783,8 @@ export class Downloader extends EventEmitter {
       // Note: no M3U regeneration on refresh — we're only touching tag blocks,
       // not changing files or paths, so the existing playlist file is left alone.
       this.emit('progress', progress)
-      this.emit('complete', { ...progress, path: filePath })
+      progress.path = filePath
+      this.emit('complete', { ...progress })
     } catch (error: any) {
       console.error('[Downloader] Refresh-tags failed:', error)
       progress.status = 'error'
