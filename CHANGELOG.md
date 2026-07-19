@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [2.1.1] — 2026-07-19
+
+### Fixed
+
+- **Large Qobuz playlists and albums now download in full (#100).** Qobuz pages track listings at 50 per request, and only the first page was ever fetched — a 273-track playlist queued just 50 tracks. Track pages are now followed until the full listing is held, for both playlists and albums.
+- **Qobuz no longer falsely reports "session expired" on Windows and other setups (#100).** Qobuz answers an invalid request *signature* with the same HTTP 401 as a dead session token, so a wrong/stale app secret during download-URL signing killed the whole session state — Settings said connected while everything else demanded a reconnect, forever. Signature failures are now treated as app-credential problems (never session problems); genuine token expiry is still detected on ordinary authenticated calls and via an explicit token-error check.
+- **Qobuz artist pages no longer render broken for imageless duplicate catalog entities** (rolled into the final 2.1.0 build): missing artist images self-heal from an exact-name sibling entity, an initial-letter tile stands in when Qobuz truly has no image, and the empty "fans" label is hidden.
+
 ## [2.1.0] — 2026-07-18
 
 ### Added

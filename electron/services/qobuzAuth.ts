@@ -330,6 +330,12 @@ class QobuzAuth {
         lastMessage = json.message
         continue // wrong secret — try the next candidate
       }
+      // A non-signature auth failure here IS the token dying — flag it so the
+      // reconnect UX takes over (apiGetRaw itself no longer flips this).
+      if (json?.status === 'error' && /user.*token|token.*(invalid|expired)/i.test(json?.message ?? '')) {
+        this.handleAuthExpired()
+        throw new Error('Qobuz session expired — reconnect your Qobuz account in Settings')
+      }
       // Secret accepted. Pin it to the front for future calls.
       this.secretCandidates = [secret, ...this.secretCandidates.filter((s) => s !== secret)]
 
@@ -484,12 +490,39 @@ class QobuzAuth {
 
   async getAlbum(albumId: string | number): Promise<any> {
     const { appId } = await this.fetchAppCredentials()
-    return this.apiGet(`album/get?album_id=${albumId}&app_id=${appId}`, true)
+    const album = await this.apiGet(`album/get?album_id=${albumId}&app_id=${appId}`, true)
+    await this.fetchAllTracks(album, `album/get?album_id=${albumId}&app_id=${appId}`)
+    return album
   }
 
   async getPlaylist(playlistId: string | number): Promise<any> {
     const { appId } = await this.fetchAppCredentials()
-    return this.apiGet(`playlist/get?playlist_id=${playlistId}&extra=tracks&app_id=${appId}`, true)
+    const playlist = await this.apiGet(`playlist/get?playlist_id=${playlistId}&extra=tracks&app_id=${appId}`, true)
+    await this.fetchAllTracks(playlist, `playlist/get?playlist_id=${playlistId}&extra=tracks&app_id=${appId}`)
+    return playlist
+  }
+
+  /** Qobuz pages `tracks` at 50 per request — a 273-track playlist silently
+   *  came back with 50 items and only those were ever queued (#100). Follow
+   *  tracks.total across offset pages until the container holds everything.
+   *  2000-track runaway cap; a mid-pagination failure keeps what we have
+   *  rather than failing the whole load. */
+  private async fetchAllTracks(container: any, basePath: string): Promise<void> {
+    const tracks = container?.tracks
+    if (!tracks || !Array.isArray(tracks.items)) return
+    const total = Math.min(Number(tracks.total) || tracks.items.length, 2000)
+    const pageSize = 50
+    while (tracks.items.length < total) {
+      try {
+        const page = await this.apiGet(`${basePath}&limit=${pageSize}&offset=${tracks.items.length}`, true)
+        const items = page?.tracks?.items
+        if (!Array.isArray(items) || items.length === 0) break // upstream stopped early — keep what we have
+        tracks.items.push(...items)
+      } catch (e: any) {
+        console.log(`[QobuzAuth] Track pagination stopped at ${tracks.items.length}/${total}:`, e.message)
+        break
+      }
+    }
   }
 
   // --- transport helpers ---
@@ -535,16 +568,21 @@ class QobuzAuth {
   }
 
   /** Like apiGet but returns the parsed body regardless of HTTP status, so the
-   *  caller can inspect error payloads (used by getFileUrl's secret trial). */
+   *  caller can inspect error payloads (used by getFileUrl's secret trial).
+   *
+   *  Deliberately does NOT flip the session-expired flag on 401: Qobuz answers
+   *  an invalid request SIGNATURE with HTTP 401 too, so during the secret-
+   *  candidate trial every wrong candidate looked like token expiry and killed
+   *  the whole session ("connected in Settings but 'Qobuz expired' everywhere",
+   *  #100). Signature problems are app-credential problems, never session
+   *  problems — real token expiry is still caught by apiGet on the ordinary
+   *  authenticated endpoints, and by the explicit body check in the trial loop. */
   private async apiGetRaw(pathAndQuery: string, auth = false): Promise<any> {
     const headers: Record<string, string> = {}
     if (this.appCreds) headers['X-App-Id'] = this.appCreds.appId
     if (auth && this.session) headers['X-User-Auth-Token'] = this.session.userAuthToken
 
     const res = await this.fetchWithRetry(`${QOBUZ_API_BASE}/${pathAndQuery}`, { headers }, 15000)
-    if (res.status === 401 && auth && this.session) {
-      this.handleAuthExpired()
-    }
     try {
       return await res.json()
     } catch {

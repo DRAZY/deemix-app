@@ -35,6 +35,14 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '2.1.1',
+    date: '2026-07-19',
+    items: [
+      'Large Qobuz playlists and albums now download in full. Qobuz serves track listings 50 at a time and only the first page was fetched — a 273-track playlist queued just 50 tracks. All pages are now followed, so the queue matches the playlist.',
+      'Fixed Qobuz getting stuck reporting "session expired" (especially on Windows) even right after a successful reconnect. A wrong app signature and a dead session look identical on the wire, and one was mistaken for the other — signature issues no longer kill your session, and real expiry is still detected.'
+    ]
+  },
+  {
     version: '2.1.0',
     date: '2026-07-18',
     items: [
