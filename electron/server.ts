@@ -3080,6 +3080,9 @@ export class DeemixServer extends EventEmitter {
     const s = qobuzAuth.getSession()
     this.sendJSON(res, {
       connected: qobuzAuth.isLoggedIn(),
+      // True when a working session died to a 401 (token expiry) — lets the UI
+      // say 'session expired, reconnect' instead of 'not connected'.
+      expired: qobuzAuth.isAuthExpired(),
       userId: s?.userId,
       plan: s?.credentialLabel,
     })

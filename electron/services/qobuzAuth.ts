@@ -86,6 +86,27 @@ class QobuzAuth {
     return this.session?.isValid === true
   }
 
+  /** True when a previously-working session was invalidated by a 401 —
+   *  distinguishes 'token expired, reconnect' from 'never connected'. */
+  private authExpired = false
+
+  isAuthExpired(): boolean {
+    return this.authExpired
+  }
+
+  /** Qobuz tokens expire after days. On the first authenticated 401, mark the
+   *  session invalid so isLoggedIn() flips false and every existing
+   *  not-connected surface (Qobuz tab connect CTA, download errors, status
+   *  endpoint) activates — instead of raw HTTP 401s behind a lit Q:LINKED LED.
+   *  Mirrors deezerAuth.handleAuthExpired. */
+  private handleAuthExpired(): void {
+    if (this.session?.isValid) {
+      console.log('[QobuzAuth] Session token rejected (401) — marking session expired')
+      this.session.isValid = false
+      this.authExpired = true
+    }
+  }
+
   getSession(): QobuzSession | null {
     return this.session
   }
@@ -498,6 +519,12 @@ class QobuzAuth {
 
     const res = await this.fetchWithRetry(`${QOBUZ_API_BASE}/${pathAndQuery}`, { headers }, 15000)
     if (!res.ok) {
+      // Token death: a 401 on an authenticated call means the session token
+      // expired (they last days) — invalidate so the reconnect UX takes over.
+      if (res.status === 401 && auth && this.session) {
+        this.handleAuthExpired()
+        throw new Error('Qobuz session expired — reconnect your Qobuz account in Settings')
+      }
       // Carry Qobuz's own error body — a bare status hides exactly the message
       // that names the offending parameter (learned diagnosing a sudden 400).
       let detail = ''
@@ -515,6 +542,9 @@ class QobuzAuth {
     if (auth && this.session) headers['X-User-Auth-Token'] = this.session.userAuthToken
 
     const res = await this.fetchWithRetry(`${QOBUZ_API_BASE}/${pathAndQuery}`, { headers }, 15000)
+    if (res.status === 401 && auth && this.session) {
+      this.handleAuthExpired()
+    }
     try {
       return await res.json()
     } catch {
