@@ -37,7 +37,9 @@ watch(() => props.artist.id, () => {
 })
 
 function navigate() {
-  router.push(`/artist/${props.artist.id}`)
+  // Qobuz artists load from the Qobuz backend (their id isn't a Deezer id).
+  const query = (props.artist as any).source === 'qobuz' ? { source: 'qobuz' } : undefined
+  router.push({ path: `/artist/${props.artist.id}`, query })
 }
 
 // Context menu

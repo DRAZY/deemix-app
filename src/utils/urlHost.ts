@@ -37,3 +37,8 @@ export function isDeezerUrl(url: string): boolean {
 export function isSpotifyUrl(url: string): boolean {
   return url.startsWith('spotify:') || urlHasHost(url, ['spotify.com', 'spotify.link'])
 }
+
+/** A Qobuz URL (qobuz.com and subdomains: open./play./www.). */
+export function isQobuzUrl(url: string): boolean {
+  return urlHasHost(url, ['qobuz.com'])
+}

@@ -546,7 +546,7 @@
       "present": "in file",
       "notPresent": "not in file",
       "credentialsWarning": "Off by default",
-      "credentialsExportConfirm": "This backup will include your Deezer ARL and Spotify credentials in plain text. Only continue if you'll store the file somewhere private. Continue?",
+      "credentialsExportConfirm": "This backup will include your Deezer ARL and Spotify credentials in plain text. Only continue if you'll store the file somewhere private. Note: your Qobuz sign-in is never written to backup files — reconnect Qobuz in Settings after restoring on another machine. Continue?",
       "credentialsRestoreConfirm": "Restoring login info will REPLACE your current Deezer ARL and Spotify credentials. Continue?",
       "segment": {
         "settings": "App preferences",
@@ -560,6 +560,18 @@
       "selectNone": "Select none",
       "expandProfiles": "Show profiles list",
       "subsetCount": "{n} of {total}"
+    },
+    "qobuz": {
+      "title": "Qobuz",
+      "description": "Connect your Qobuz account to download hi-res FLAC (up to 24-bit/192 kHz). A paid Qobuz plan is required; free accounts can't download.",
+      "connect": "Connect Qobuz Account",
+      "connecting": "Opening login…",
+      "connected": "Connected",
+      "connectedTo": "Connected to Qobuz",
+      "disconnect": "Disconnect",
+      "couldNotConnect": "Could not connect",
+      "loginNotCompleted": "Login was not completed",
+      "help": "A Qobuz login window opens; sign in normally. Your session token is stored encrypted and refreshes when you reconnect."
     }
   },
   "login": {

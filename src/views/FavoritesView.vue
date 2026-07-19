@@ -406,6 +406,14 @@ async function downloadAllFavorites() {
       // albums silently (issue #84).
       const pending: typeof favoritesStore.favoriteAlbums = []
       for (const album of favoritesStore.favoriteAlbums) {
+        // Qobuz-sourced favorites route straight to the Qobuz pipeline — the
+        // Deezer track fetch below can't resolve a Qobuz id and would silently
+        // drop them from download-all.
+        if ((album as any).source === 'qobuz') {
+          await downloadStore.addAlbumDownload(album, [])
+          queued++
+          continue
+        }
         try {
           const tracks = await deezerAPI.getAlbumTracks(album.id)
           if (tracks?.length > 0) {
@@ -444,6 +452,11 @@ async function downloadAllFavorites() {
     } else if (activeTab.value === 'playlists') {
       let skipped = 0
       for (const playlist of favoritesStore.favoritePlaylists) {
+        if ((playlist as any).source === 'qobuz') {
+          await downloadStore.addPlaylistDownload(playlist as any, [])
+          queued++
+          continue
+        }
         try {
           const tracks = await deezerAPI.getPlaylistTracks(playlist.id)
           if (tracks?.length > 0) {

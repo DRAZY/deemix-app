@@ -10,6 +10,7 @@ import { urlHasHost } from './utils/urlHost'
 import { downloader, DownloadProgress } from './services/downloader'
 import { spotifyAPI } from './services/spotifyAPI'
 import { spotifyConverter } from './services/spotifyConverter'
+import { qobuzAuth, QOBUZ_FORMAT } from './services/qobuzAuth'
 import { playlistSync } from './services/playlistSync'
 import { artistSync, type FirstSyncMode, type ArtistSyncFilters } from './services/artistSync'
 import { scanFolder, retagFile, retagFileInFolder, type RetagFields } from './services/retagger'
@@ -243,7 +244,11 @@ const SAFE_ERROR_PATTERNS = [
   'Redirect to disallowed', 'Unsupported', 'already', 'Maximum',
   'No Deezer match', 'Download failed', 'Conversion failed',
   'No tracks found', 'Album not available', 'data is not iterable',
-  'Cannot read properties', 'Track not available', 'rights'
+  'Cannot read properties', 'Track not available', 'rights',
+  // qobuzAuth crafts all its user-facing errors with a 'Qobuz' prefix
+  // (e.g. 'Qobuz session expired — reconnect…') — pass them through intact
+  // so the sanitizer only swallows raw system/network errors.
+  'Qobuz'
 ]
 
 function sanitizeErrorMessage(error: any, fallback: string = 'Internal server error'): string {
@@ -269,6 +274,14 @@ function validateNumericId(id: any): number | null {
     return null
   }
   return num
+}
+
+// Qobuz ids are NOT numeric — album ids are alphanumeric slugs (e.g.
+// 'aaflw06d21nuc'), track/artist/playlist ids are digits. Accept word chars +
+// hyphens only, rejecting anything that could smuggle into a query string.
+function validateQobuzId(id: any): string | null {
+  const s = String(id ?? '').trim()
+  return /^[\w-]{1,64}$/.test(s) ? s : null
 }
 
 function validateQuality(quality: any): 'MP3_128' | 'MP3_320' | 'FLAC' {
@@ -848,6 +861,53 @@ export class DeemixServer extends EventEmitter {
 
       case '/info-spotify':
         this.handleInfoSpotify(res)
+        break
+
+      // --- Qobuz (WIP) ---
+      case '/api/qobuz/session':
+        await this.handleQobuzSession(req, res)
+        break
+      case '/api/qobuz/status':
+        this.handleQobuzStatus(res)
+        break
+      case '/api/qobuz/search':
+        await this.handleQobuzSearch(url, res)
+        break
+      case '/api/qobuz/analyze':
+        await this.handleQobuzAnalyze(req, res)
+        break
+      case '/api/qobuz/artist':
+        await this.handleQobuzArtist(url, res)
+        break
+      case '/api/qobuz/album':
+        await this.handleQobuzAlbum(url, res)
+        break
+      case '/api/qobuz/playlist':
+        await this.handleQobuzPlaylist(url, res)
+        break
+      case '/api/qobuz/discover':
+        await this.handleQobuzDiscover(url, res)
+        break
+      case '/api/qobuz/genres':
+        await this.handleQobuzGenres(res)
+        break
+      case '/api/qobuz/featured':
+        await this.handleQobuzFeatured(url, res)
+        break
+      case '/api/deezer/genres':
+        await this.handleDeezerGenres(res)
+        break
+      case '/api/deezer/genre-browse':
+        await this.handleDeezerGenreBrowse(url, res)
+        break
+      case '/api/qobuz/preview':
+        await this.handleQobuzPreview(url, res)
+        break
+      case '/api/qobuz/download':
+        await this.handleQobuzDownload(req, res)
+        break
+      case '/api/qobuz/download-album':
+        await this.handleQobuzDownloadAlbum(req, res)
         break
 
       // Playlist Sync routes
@@ -3006,6 +3066,480 @@ export class DeemixServer extends EventEmitter {
       configured: spotifyAPI.hasCredentials(),
       message: spotifyAPI.hasCredentials() ? 'Spotify is configured' : 'Spotify credentials not set'
     })
+  }
+
+  // --- Qobuz (WIP) ---
+
+  /** Push a browser-captured token into the backend session (called by the
+   *  renderer right after Connect so Qobuz is usable without an app restart). */
+  private async handleQobuzSession(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const userId = Number(body.userId)
+      const token = String(body.token || '')
+      if (!userId || !token) {
+        this.sendJSON(res, { success: false, error: 'userId and token required' }, 400)
+        return
+      }
+      const session = await qobuzAuth.loginWithToken(userId, token)
+      this.sendJSON(res, { success: true, userId: session.userId, plan: session.credentialLabel })
+    } catch (error: any) {
+      this.sendJSON(res, { success: false, error: sanitizeErrorMessage(error, 'Qobuz login failed') }, 401)
+    }
+  }
+
+  private handleQobuzStatus(res: ServerResponse): void {
+    const s = qobuzAuth.getSession()
+    this.sendJSON(res, {
+      connected: qobuzAuth.isLoggedIn(),
+      // True when a working session died to a 401 (token expiry) — lets the UI
+      // say 'session expired, reconnect' instead of 'not connected'.
+      expired: qobuzAuth.isAuthExpired(),
+      userId: s?.userId,
+      plan: s?.credentialLabel,
+    })
+  }
+
+  private async handleQobuzAnalyze(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const link = String(body.url || '')
+      if (!link) {
+        this.sendJSON(res, { error: 'url required' }, 400)
+        return
+      }
+      if (!qobuzAuth.isLoggedIn()) {
+        this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
+        return
+      }
+      const result = await qobuzAuth.analyzeUrl(link)
+      this.sendJSON(res, result)
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error, 'Failed to analyze Qobuz link') }, 400)
+    }
+  }
+
+  private async handleQobuzArtist(url: URL, res: ServerResponse): Promise<void> {
+    const id = validateQobuzId(url.searchParams.get('id'))
+    if (!id) { this.sendJSON(res, { error: 'Valid id required' }, 400); return }
+    if (!qobuzAuth.isLoggedIn()) { this.sendJSON(res, { error: 'Qobuz not connected' }, 401); return }
+    try {
+      this.sendJSON(res, await qobuzAuth.getArtist(id))
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  private async handleQobuzAlbum(url: URL, res: ServerResponse): Promise<void> {
+    const id = validateQobuzId(url.searchParams.get('id'))
+    if (!id) { this.sendJSON(res, { error: 'Valid id required' }, 400); return }
+    if (!qobuzAuth.isLoggedIn()) { this.sendJSON(res, { error: 'Qobuz not connected' }, 401); return }
+    try {
+      this.sendJSON(res, await qobuzAuth.getAlbum(id))
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  private async handleQobuzPlaylist(url: URL, res: ServerResponse): Promise<void> {
+    const id = validateQobuzId(url.searchParams.get('id'))
+    if (!id) { this.sendJSON(res, { error: 'Valid id required' }, 400); return }
+    if (!qobuzAuth.isLoggedIn()) { this.sendJSON(res, { error: 'Qobuz not connected' }, 401); return }
+    try {
+      this.sendJSON(res, await qobuzAuth.getPlaylist(id))
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  // Discover-tab cache (keyed per genre filter) — Qobuz's editorial feeds
+  // change daily; 30 min keeps tab revisits instant without hammering their API.
+  private qobuzDiscoverCache = new Map<string, { data: any; timestamp: number }>()
+  private readonly QOBUZ_DISCOVER_CACHE_TTL = 30 * 60 * 1000
+
+  /** Aggregated Qobuz editorial feeds for the Discover tab, optionally genre-
+   *  filtered (?genre=<id> — Qobuz's own genre_ids Discover filter). Each row
+   *  fetches independently — a failed feed degrades to an empty row, never a
+   *  broken page. Personal rows (favorites/purchases) can't be genre-filtered
+   *  server-side, so they only appear on the unfiltered view. */
+  private async handleQobuzDiscover(url: URL, res: ServerResponse): Promise<void> {
+    if (!qobuzAuth.isLoggedIn()) {
+      this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
+      return
+    }
+    const genreId = Number(url.searchParams.get('genre')) || undefined
+    const cacheKey = String(genreId || 'all')
+    const cached = this.qobuzDiscoverCache.get(cacheKey)
+    if (cached && Date.now() - cached.timestamp < this.QOBUZ_DISCOVER_CACHE_TTL) {
+      this.sendJSON(res, cached.data)
+      return
+    }
+    // Small parallel waves (3-wide): full-sequential pacing made every fresh
+    // load take 2-3s (measured); a bounded wave keeps loads ~0.7s without the
+    // 7-wide burst that may have looked abusive to the gateway. Every row's
+    // failure is RECORDED in the response (_rowErrors) — observable fault
+    // tolerance instead of silent empty rows.
+    const rowErrors: Record<string, string> = {}
+    const safe = async (fn: () => Promise<any>, label: string): Promise<any> => {
+      try {
+        return await fn()
+      } catch (e: any) {
+        console.log(`[Server] Qobuz discover row '${label}' failed:`, e.message)
+        rowErrors[label] = e.message
+        return null
+      }
+    }
+    const [newReleases, pressAwards, editorPicks] = await Promise.all([
+      safe(() => qobuzAuth.getFeaturedAlbums('new-releases-full', 20, 0, genreId), 'new-releases-full'),
+      safe(() => qobuzAuth.getFeaturedAlbums('press-awards', 20, 0, genreId), 'press-awards'),
+      safe(() => qobuzAuth.getFeaturedAlbums('editor-picks', 20, 0, genreId), 'editor-picks'),
+    ])
+    const [mostStreamed, playlists] = await Promise.all([
+      safe(() => qobuzAuth.getFeaturedAlbums('most-streamed', 20, 0, genreId), 'most-streamed'),
+      safe(() => qobuzAuth.getFeaturedPlaylists('editor-picks', 20, 0, genreId), 'playlists-editor-picks'),
+    ])
+    const [favorites, purchases] = genreId ? [null, null] : await Promise.all([
+      safe(() => qobuzAuth.getUserFavorites('albums', 20), 'user-favorites'),
+      safe(() => qobuzAuth.getUserPurchases(50), 'user-purchases'),
+    ])
+    const data = {
+      newReleases: newReleases?.albums?.items || [],
+      pressAwards: pressAwards?.albums?.items || [],
+      editorPicks: editorPicks?.albums?.items || [],
+      mostStreamed: mostStreamed?.albums?.items || [],
+      playlists: playlists?.playlists?.items || [],
+      // Personal rows — favorites the user hearted in Qobuz, and purchased albums.
+      myFavorites: favorites?.albums?.items || [],
+      myPurchases: purchases?.albums?.items || [],
+      // Feed totals — the UI shows LOAD MORE while items < total.
+      totals: {
+        newReleases: newReleases?.albums?.total ?? 0,
+        pressAwards: pressAwards?.albums?.total ?? 0,
+        editorPicks: editorPicks?.albums?.total ?? 0,
+        mostStreamed: mostStreamed?.albums?.total ?? 0,
+        playlists: playlists?.playlists?.total ?? 0,
+        myFavorites: favorites?.albums?.total ?? 0,
+        myPurchases: purchases?.albums?.total ?? 0,
+      },
+      _rowErrors: Object.keys(rowErrors).length ? rowErrors : undefined,
+    }
+    // Don't cache a fully-failed result — a transient outage would otherwise
+    // pin empty rows for 30 minutes.
+    const anyContent = data.newReleases.length || data.editorPicks.length || data.pressAwards.length
+      || data.mostStreamed.length || data.playlists.length || data.myFavorites.length || data.myPurchases.length
+    if (anyContent) this.qobuzDiscoverCache.set(cacheKey, { data, timestamp: Date.now() })
+    this.sendJSON(res, data)
+  }
+
+  // Genre lists + Deezer genre browse — cached; genres barely ever change.
+  private qobuzGenresCache: { data: any; timestamp: number } | null = null
+  private deezerGenreBrowseCache = new Map<string, { data: any; timestamp: number }>()
+
+  private async handleQobuzGenres(res: ServerResponse): Promise<void> {
+    if (!qobuzAuth.isLoggedIn()) {
+      this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
+      return
+    }
+    if (this.qobuzGenresCache && Date.now() - this.qobuzGenresCache.timestamp < 24 * 60 * 60 * 1000) {
+      this.sendJSON(res, this.qobuzGenresCache.data)
+      return
+    }
+    try {
+      const g = await qobuzAuth.getGenres()
+      const items = (g?.genres?.items || g?.items || []).map((x: any) => ({ id: x.id, name: x.name }))
+      const data = { genres: items }
+      this.qobuzGenresCache = { data, timestamp: Date.now() }
+      this.sendJSON(res, data)
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  /** Single-feed pagination for the Discover rows' LOAD MORE (#106 follow-up).
+   *  type: new-releases-full|press-awards|editor-picks|most-streamed|playlists */
+  private async handleQobuzFeatured(url: URL, res: ServerResponse): Promise<void> {
+    if (!qobuzAuth.isLoggedIn()) {
+      this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
+      return
+    }
+    const type = url.searchParams.get('type') || ''
+    const allowed = ['new-releases-full', 'press-awards', 'editor-picks', 'most-streamed', 'playlists']
+    if (!allowed.includes(type)) {
+      this.sendJSON(res, { error: 'Invalid feed type' }, 400)
+      return
+    }
+    const offset = Math.max(0, Number(url.searchParams.get('offset')) || 0)
+    const limit = Math.min(50, Math.max(1, Number(url.searchParams.get('limit')) || 20))
+    const genreId = Number(url.searchParams.get('genre')) || undefined
+    try {
+      if (type === 'playlists') {
+        const r = await qobuzAuth.getFeaturedPlaylists('editor-picks', limit, offset, genreId)
+        this.sendJSON(res, { items: r?.playlists?.items || [], total: r?.playlists?.total ?? 0 })
+      } else {
+        const r = await qobuzAuth.getFeaturedAlbums(type, limit, offset, genreId)
+        this.sendJSON(res, { items: r?.albums?.items || [], total: r?.albums?.total ?? 0 })
+      }
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  private async handleDeezerGenres(res: ServerResponse): Promise<void> {
+    try {
+      const g = await this.deezerPublicAPI('/genre')
+      // Drop the 'All' pseudo-genre (id 0) — the UI models 'All' itself.
+      const genres = (g?.data || []).filter((x: any) => x.id !== 0).map((x: any) => ({ id: x.id, name: x.name }))
+      this.sendJSON(res, { genres })
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  /** Deezer per-genre browse: editorial picks + genre charts. Built only from
+   *  the endpoints verified working (the per-genre artists endpoint is broken
+   *  upstream — ignores the filter — and is deliberately excluded, #106). */
+  private async handleDeezerGenreBrowse(url: URL, res: ServerResponse): Promise<void> {
+    const id = url.searchParams.get('id')
+    if (!id || !/^\d+$/.test(id)) {
+      this.sendJSON(res, { error: 'Valid genre id required' }, 400)
+      return
+    }
+    const cached = this.deezerGenreBrowseCache.get(id)
+    if (cached && Date.now() - cached.timestamp < 30 * 60 * 1000) {
+      this.sendJSON(res, cached.data)
+      return
+    }
+    const safe = (p: Promise<any>, label: string): Promise<any> =>
+      p.catch((e: any) => {
+        console.log(`[Server] Deezer genre row '${label}' failed:`, e.message)
+        return null
+      })
+    const [selection, charts] = await Promise.all([
+      safe(this.deezerPublicAPI(`/editorial/${id}/selection`), 'selection'),
+      safe(this.deezerPublicAPI(`/editorial/${id}/charts`), 'charts'),
+    ])
+    const data = {
+      picks: selection?.data || [],
+      chartTracks: charts?.tracks?.data || [],
+      chartAlbums: charts?.albums?.data || [],
+    }
+    this.deezerGenreBrowseCache.set(id, { data, timestamp: Date.now() })
+    this.sendJSON(res, data)
+  }
+
+  /** Resolve a playable stream URL for a Qobuz track preview. Qobuz has no
+   *  static 30s preview clips like Deezer — the renderer requests a signed
+   *  MP3 stream URL on demand and caps playback client-side. */
+  private async handleQobuzPreview(url: URL, res: ServerResponse): Promise<void> {
+    const id = validateQobuzId(url.searchParams.get('id'))
+    if (!id) {
+      this.sendJSON(res, { error: 'Valid id required' }, 400)
+      return
+    }
+    if (!qobuzAuth.isLoggedIn()) {
+      this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
+      return
+    }
+    try {
+      // Optional format override (diagnostic + future use): 5|6|7|27.
+      const fmtParam = Number(url.searchParams.get('format'))
+      const fmt = ([5, 6, 7, 27].includes(fmtParam) ? fmtParam : QOBUZ_FORMAT.MP3_320) as any
+      const file = await qobuzAuth.getFileUrl(id, fmt)
+      if (!file.url) {
+        this.sendJSON(res, { error: 'No stream available for this track', restrictionCode: file.restrictionCode }, 404)
+        return
+      }
+      this.sendJSON(res, { url: file.url, formatId: file.formatId })
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  private async handleQobuzSearch(url: URL, res: ServerResponse): Promise<void> {
+    const query = url.searchParams.get('q')
+    const limit = Number(url.searchParams.get('limit') || '25')
+    const offset = Number(url.searchParams.get('offset') || '0')
+    if (!query) {
+      this.sendJSON(res, { error: 'q parameter required' }, 400)
+      return
+    }
+    if (!qobuzAuth.isLoggedIn()) {
+      this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
+      return
+    }
+    try {
+      const results = await qobuzAuth.search(query, limit, offset)
+      this.sendJSON(res, results)
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error, 'Qobuz search failed') }, 500)
+    }
+  }
+
+  /** Download a single Qobuz track to the library folder (no-decrypt path).
+   *  Full queue/UI + folder-template integration is the next slice; this writes
+   *  a sanitized "Artist - Title.flac" so the mechanic is usable and testable. */
+  private async handleQobuzDownload(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const trackId = validateQobuzId(body.trackId)
+      if (!trackId) {
+        this.sendJSON(res, { success: false, error: 'Valid trackId required' }, 400)
+        return
+      }
+      if (!qobuzAuth.isLoggedIn()) {
+        this.sendJSON(res, { success: false, error: 'Qobuz not connected' }, 401)
+        return
+      }
+      if (!validateDownloadPath(this.settings.downloadPath)) {
+        this.sendJSON(res, { success: false, error: 'Invalid download path' }, 400)
+        return
+      }
+      // Enqueue through the shared download queue so the item appears in the
+      // Transfer Rack with live progress (Qobuz items route to the no-decrypt
+      // path via the service discriminator). Returns the queue id immediately.
+      const downloadId = await downloader.download(
+        this.buildQobuzDownloadOptions(trackId, { partOfAlbum: body.partOfAlbum === true, album: body.album })
+      )
+      this.sendJSON(res, { success: true, downloadId })
+    } catch (error: any) {
+      this.sendJSON(res, { success: false, error: sanitizeErrorMessage(error, 'Qobuz download failed') }, 500)
+    }
+  }
+
+  /** Shared Qobuz download options — mirrors the Deezer download options field-for-
+   *  field (same quality, folder/template, artwork, tagging, duplicate/overwrite
+   *  settings) so Qobuz downloads follow the app's settings exactly. Deezer-only
+   *  concepts (isrcFallback alternate-release lookup, lyrics — Qobuz's API exposes
+   *  none) are intentionally absent. */
+  private buildQobuzDownloadOptions(
+    trackId: string | number,
+    ctx: {
+      partOfAlbum?: boolean
+      album?: { title?: string; artist?: string }
+      playlistName?: string
+      playlistPosition?: number
+      playlistOwner?: string
+      m3uTrackerId?: string
+    } = {}
+  ): any {
+    const isFromPlaylist = !!ctx.playlistName
+    return {
+      service: 'qobuz',
+      trackId,
+      outputPath: this.settings.downloadPath,
+      // settings.quality is already server-format ('MP3_128'|'MP3_320'|'FLAC') —
+      // pass it through. (A renderer-format map here once made every Qobuz
+      // download silently fall back to MP3_320.)
+      quality: validateQuality(this.settings.quality),
+      bitrateFallback: this.settings.bitrateFallback,
+      createFolders: true,
+      artistFolder: this.settings.createArtistFolder,
+      albumFolder: this.settings.createAlbumFolder,
+      saveArtwork: this.settings.saveArtwork,
+      embedArtwork: this.settings.embedArtwork,
+      // Part of an album or playlist → NOT-single, so the album/playlist folder
+      // and matching track template apply.
+      isSingle: !ctx.partOfAlbum && !isFromPlaylist,
+      isFromPlaylist: isFromPlaylist || undefined,
+      playlistName: ctx.playlistName || undefined,
+      playlistPosition: ctx.playlistPosition,
+      playlistOwner: ctx.playlistOwner || undefined,
+      _m3uTrackerId: ctx.m3uTrackerId || undefined,
+      savePlaylistAsCompilation: isFromPlaylist ? this.settings.savePlaylistAsCompilation : undefined,
+      albumContext: ctx.album ? { albumTitle: ctx.album.title, albumArtist: ctx.album.artist } : undefined,
+      folderSettings: {
+        createPlaylistFolder: this.settings.createPlaylistFolder,
+        createArtistFolder: this.settings.createArtistFolder,
+        createAlbumFolder: this.settings.createAlbumFolder,
+        createCDFolder: this.settings.createCDFolder,
+        createPlaylistStructure: this.settings.createPlaylistStructure,
+        createSinglesStructure: this.settings.createSinglesStructure,
+        playlistFolderTemplate: this.settings.playlistFolderTemplate,
+        albumFolderTemplate: this.settings.albumFolderTemplate,
+        artistFolderTemplate: this.settings.artistFolderTemplate,
+      },
+      trackTemplates: {
+        trackNameTemplate: this.settings.trackNameTemplate,
+        albumTrackTemplate: this.settings.albumTrackTemplate,
+        playlistTrackTemplate: this.settings.playlistTrackTemplate,
+      },
+      metadataSettings: {
+        tags: this.settings.tags,
+        albumCovers: this.settings.albumCovers,
+        useNullSeparator: this.settings.useNullSeparator,
+        saveID3v1: this.settings.saveID3v1,
+        saveOnlyMainArtist: this.settings.saveOnlyMainArtist,
+        artistSeparator: this.settings.artistSeparator,
+        dateFormatFlac: this.settings.dateFormatFlac,
+        titleCasing: this.settings.titleCasing,
+        artistCasing: this.settings.artistCasing,
+        removeAlbumVersion: this.settings.removeAlbumVersion,
+        featuredArtistsHandling: this.settings.featuredArtistsHandling,
+        keepVariousArtists: this.settings.keepVariousArtists,
+        removeArtistCombinations: this.settings.removeArtistCombinations,
+      },
+      skipDuplicateTracks: this.settings.skipDuplicateTracks,
+      createErrorLog: this.settings.createErrorLog,
+      overwriteMode: this.settings.overwriteFiles,
+    }
+  }
+
+  /** Enqueue every track of a Qobuz album/playlist and return their queue ids,
+   *  so the store can group them under one Transfer Rack row (like Deezer). */
+  private async handleQobuzDownloadAlbum(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    try {
+      const body = await this.parseBody(req)
+      const albumId = body.albumId != null ? validateQobuzId(body.albumId) : null
+      const playlistId = body.playlistId != null ? validateQobuzId(body.playlistId) : null
+      if (!albumId && !playlistId) {
+        this.sendJSON(res, { success: false, error: 'Valid albumId or playlistId required' }, 400)
+        return
+      }
+      if (!qobuzAuth.isLoggedIn()) {
+        this.sendJSON(res, { success: false, error: 'Qobuz not connected' }, 401)
+        return
+      }
+      if (!validateDownloadPath(this.settings.downloadPath)) {
+        this.sendJSON(res, { success: false, error: 'Invalid download path' }, 400)
+        return
+      }
+      const data = albumId ? await qobuzAuth.getAlbum(albumId) : await qobuzAuth.getPlaylist(playlistId)
+      const tracks = data?.tracks?.items || []
+      const album = albumId ? { title: data?.title, artist: data?.artist?.name } : undefined
+      // Playlist downloads carry playlist context so the playlist folder,
+      // playlist track template, and compilation tagging settings apply —
+      // matching the Deezer playlist path (previously they were treated as
+      // album tracks and scattered across per-album folders).
+      const playlistName = playlistId ? (data?.name || data?.title || 'Playlist') : undefined
+      const playlistOwner = playlistId ? (data?.owner?.name || '') : undefined
+
+      // M3U generation from real on-disk paths — same registration the Deezer
+      // playlist path uses, honoring the createPlaylistFile setting.
+      const validTracks = tracks.filter((t: any) => t?.id)
+      let m3uTrackerId: string | undefined
+      if (playlistName && this.settings.createPlaylistFile) {
+        m3uTrackerId = `qobuzplaylist_${playlistId}_${Date.now()}`
+        downloader.registerPlaylistForM3U(m3uTrackerId, playlistName, this.settings.downloadPath, validTracks.length, this.settings.m3uNameTemplate)
+      }
+
+      const ids: string[] = []
+      let position = 0
+      for (const t of validTracks) {
+        position++
+        const id = await downloader.download(this.buildQobuzDownloadOptions(t.id, {
+          partOfAlbum: !!albumId,
+          album,
+          playlistName,
+          playlistPosition: playlistName ? position : undefined,
+          playlistOwner,
+          m3uTrackerId,
+        }))
+        ids.push(id)
+      }
+      this.sendJSON(res, { ids, count: ids.length })
+    } catch (error: any) {
+      this.sendJSON(res, { success: false, error: sanitizeErrorMessage(error, 'Qobuz album download failed') }, 500)
+    }
   }
 
   private async handleStaticFile(path: string, res: ServerResponse): Promise<void> {

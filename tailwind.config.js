@@ -28,6 +28,14 @@ export default {
         foreground: {
           DEFAULT: 'rgb(var(--fg-default) / <alpha-value>)',
           muted: 'rgb(var(--fg-muted) / <alpha-value>)',
+        },
+        // Channel Q — the Qobuz accent. Fixed brand cyan (the DM/RM logo's
+        // cursor block), deliberately NOT theme-adaptive: Qobuz-sourced UI is
+        // marked in this color on every theme, like the brand mark itself.
+        qobuz: {
+          400: '#7BD3E2',
+          500: '#59C2D6',
+          600: '#3FA9BE',
         }
       },
       fontFamily: {

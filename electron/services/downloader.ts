@@ -7,6 +7,8 @@ import { Blowfish } from 'egoroof-blowfish'
 import { deezerAuth } from './deezerAuth'
 import { applyMergeFromMeta, replayGainString, type ResolvedMeta, type RetagFields } from './retagger'
 import { libraryIndex } from './libraryIndex'
+import { qobuzAuth } from './qobuzAuth'
+import { downloadQobuzTrack } from './qobuzDownloader'
 
 export interface FolderSettings {
   createPlaylistFolder: boolean
@@ -95,6 +97,8 @@ export interface MetadataSettings {
 export interface DownloadOptions {
   trackId: string | number
   outputPath: string
+  service?: 'deezer' | 'qobuz'  // download backend; defaults to deezer
+  prefetchedCover?: Buffer      // pre-fetched cover art (e.g. Qobuz URL), used instead of the Deezer-hash CDN fetch
   quality: 'MP3_128' | 'MP3_320' | 'FLAC'
   bitrateFallback?: boolean  // Whether to fallback to lower bitrates if preferred unavailable
   isrcFallback?: boolean     // Whether to resolve an unavailable track to an ISRC-matched alternate release (may be a different master)
@@ -850,6 +854,274 @@ export class Downloader extends EventEmitter {
     }
   }
 
+  /**
+   * Qobuz download path — flows through the same queue/events as Deezer so it
+   * shows in the Transfer Rack with live progress, but skips the entire Deezer
+   * metadata/URL/decrypt pipeline: getFileUrl returns a plain file we stream to
+   * disk (see qobuzDownloader.ts). Naming is a sanitized "Artist - Title" for now
+   * (folder-template parity is a later slice).
+   */
+  private async processQobuzDownload(
+    downloadId: string,
+    options: DownloadOptions,
+    progress: DownloadProgress
+  ): Promise<void> {
+    progress.status = 'downloading'
+    this.emit('start', progress)
+    // Same lifecycle guarantees as the Deezer path: the reservation is always
+    // released and the abort controller is registered so pause/cancel can kill
+    // the in-flight stream instead of letting it run to completion.
+    let reservedPathForCleanup: string | null = null
+    const abortController = new AbortController()
+    this.downloadAborts.set(downloadId, abortController)
+    try {
+      const meta = await qobuzAuth.getTrack(options.trackId)
+      const artist = meta?.performer?.name || meta?.album?.artist?.name || 'Unknown Artist'
+      const title = meta?.title || `track-${options.trackId}`
+      progress.trackTitle = title
+      progress.trackArtist = artist
+      this.emit('progress', progress)
+
+      const q = options.quality === 'FLAC' ? 'flac' : options.quality === 'MP3_128' ? '128' : '320'
+      const shim = this.qobuzMetaToTrackInfo(meta)
+
+      // M3U bookkeeping for playlist tracks — records the real on-disk path so
+      // the generated playlist file matches disk exactly (Deezer parity).
+      const recordM3U = (absolutePath: string) => {
+        if (options.isFromPlaylist && options.playlistName) {
+          this.recordM3UEntry(options._m3uTrackerId || options.playlistName || '', {
+            position: options.playlistPosition || 0,
+            duration: shim.DURATION || 0,
+            artist: shim.ART_NAME || 'Unknown Artist',
+            title: progress.trackTitle || shim.SNG_TITLE || 'Unknown Track',
+            absolutePath
+          })
+        }
+      }
+
+      // Duplicate skip by ISRC — same discipline as the Deezer path: runs before
+      // any network fetch so skips stay instant.
+      if (options.skipDuplicateTracks && shim.ISRC) {
+        await libraryIndex.ensureLoaded()
+        const existingPath = libraryIndex.findExisting(shim.ISRC)
+        if (existingPath) {
+          console.log(`[Downloader] Skipping Qobuz duplicate (ISRC ${shim.ISRC} already in library): ${existingPath}`)
+          progress.status = 'completed'
+          progress.progress = 100
+          progress.skippedAsDuplicate = true
+          recordM3U(existingPath)
+          this.emit('progress', progress)
+          this.emit('complete', { ...progress, path: existingPath })
+          return
+        }
+      }
+
+      // Disc context from the real Qobuz metadata — buildOutputPath only creates
+      // CD subfolders when options carry discNumber + totalDiscs, which the
+      // Qobuz options never did: multi-disc albums flattened into one folder
+      // with colliding track numbers. Same fields the Deezer album path passes.
+      const totalDiscs = shim.DISKS_COUNT || 1
+      options = {
+        ...options,
+        discNumber: shim.DISK_NUMBER || undefined,
+        albumContext: { ...(options.albumContext || {}), totalDiscs }
+      }
+
+      // Build the path from the user's folder-structure + track-naming templates
+      // (reuses the Deezer path builder via the Qobuz→trackInfo shim), then honor
+      // the overwrite mode ('no' → skip when the file already exists).
+      const initialOutputPath = this.buildOutputPath(shim, options, options.quality)
+      const outputPath = this.reserveOutputPath(initialOutputPath, options.trackId, options.overwriteMode)
+      if (outputPath === null) {
+        progress.status = 'completed'
+        progress.progress = 100
+        recordM3U(initialOutputPath)
+        // The file already exists on disk — make sure the index knows it
+        // (mirrors the Deezer locate-existing path).
+        libraryIndex.add(shim.ISRC, initialOutputPath)
+        this.emit('progress', progress)
+        this.emit('complete', { ...progress, path: initialOutputPath })
+        return
+      }
+      reservedPathForCleanup = outputPath
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true })
+
+      // Pace the actual CDN fetch (issue #86) — past the skip checks so existing
+      // files never wait; no-op when pacing is 'off'. Same gate as Deezer.
+      await this.awaitPacingSlot()
+
+      // Folder context on the progress object — same fields the Deezer path sets.
+      // The renderer derives item.path from these for "open folder" and Delete
+      // Files on album/playlist rows; without them Qobuz rows couldn't delete
+      // their folders.
+      const trackDir = path.dirname(outputPath)
+      progress.albumFolder = trackDir
+      // The deletable/openable root steps above the CD subfolder ONLY when
+      // buildOutputPath actually created one — mirror its exact condition
+      // (createCDFolder && discNumber && totalDiscs > 1, never for playlist
+      // tracks). Guessing from disc count alone once pointed album rows at the
+      // download ROOT when a multi-disc album didn't get a CD folder.
+      const hasCDFolder = options.folderSettings?.createCDFolder && options.discNumber && totalDiscs > 1 && !options.isFromPlaylist
+      progress.albumRootFolder = hasCDFolder ? path.dirname(trackDir) : trackDir
+      if (options.isFromPlaylist && options.playlistName && options.folderSettings?.createPlaylistFolder) {
+        const playlistFolder = this.sanitizeFilename(
+          (options.folderSettings.playlistFolderTemplate || '%playlist%')
+            .replace(/%playlist%/gi, options.playlistName)
+            .replace(/%owner%/gi, options.playlistOwner || '')
+        )
+        progress.playlistFolder = path.join(options.outputPath, playlistFolder)
+      }
+
+      // Speed feeds the throughput meters (title bar, sidebar sparkline, rack
+      // aggregation) — same computation and throttled emit as the Deezer path.
+      const dlStartTime = Date.now()
+      const result = await downloadQobuzTrack(options.trackId, q as '128' | '320' | 'flac', outputPath, (recv, total) => {
+        progress.downloaded = recv
+        progress.total = total
+        progress.progress = total ? Math.floor((recv / total) * 100) : 0
+        progress.speed = recv / ((Date.now() - dlStartTime) / 1000)
+        this.emitProgressThrottled(progress)
+      }, options.bitrateFallback !== false, abortController.signal)
+      progress.speed = 0
+
+      // The delivered format is authoritative — a FLAC request on a lossy-only
+      // plan legitimately comes back MP3 (with the extension already corrected).
+      // A tier step-down (killed hi-res stream → lower lossless tier) shows the
+      // delivered tier on the chip (e.g. 'FLAC 24/96') so the substitution is
+      // never silent.
+      const gotFlac = result.path.toLowerCase().endsWith('.flac')
+      // Qobuz is the hi-res service — the delivered tier IS the product, so
+      // every Qobuz FLAC chip shows it (e.g. 'FLAC 24/192', 'FLAC 16/44.1'),
+      // not just step-downs. Delivery facts come straight from getFileUrl.
+      progress.actualFormat = gotFlac
+        ? (result.bitDepth && result.samplingRate
+            ? `FLAC ${result.bitDepth}/${result.samplingRate}`
+            : 'FLAC')
+        : 'MP3_320'
+
+      // Qobuz files arrive untagged — tag them from the API metadata by reusing
+      // the Deezer tagger via a Deezer-shaped shim + a pre-fetched cover buffer.
+      progress.status = 'tagging'
+      this.emit('progress', progress)
+      let cover: Buffer | undefined
+      if (options.embedArtwork || options.saveArtwork) {
+        const baseUrl = meta?.album?.image?.large || meta?.album?.image?.small
+        if (baseUrl) {
+          // Honor the artwork-size settings: Qobuz's `large` is fixed 600px, but
+          // the CDN serves an original-size `_org` variant — use it when the
+          // configured embedded/local artwork size wants more than 600px.
+          const covers = options.metadataSettings?.albumCovers
+          const wantedSize = Math.max(
+            options.embedArtwork ? (covers?.embeddedArtworkSize || 0) : 0,
+            options.saveArtwork ? (covers?.localArtworkSize || 0) : 0
+          )
+          const candidates = wantedSize > 600 && /_600(\.\w+)$/.test(baseUrl)
+            ? [baseUrl.replace(/_600(\.\w+)$/, '_org$1'), baseUrl]
+            : [baseUrl]
+          for (const coverUrl of candidates) {
+            try {
+              const cr = await fetch(coverUrl)
+              if (cr.ok) { cover = Buffer.from(await cr.arrayBuffer()); break }
+            } catch { /* try next candidate */ }
+          }
+        }
+      }
+      try {
+        const tagOptions = { ...options, prefetchedCover: options.embedArtwork ? cover : undefined }
+        if (gotFlac) await this.tagFlacFile(result.path, shim, tagOptions)
+        else await this.tagFile(result.path, shim, tagOptions)
+      } catch (tagErr: any) {
+        console.error(`[Downloader] Qobuz tagging error (file kept):`, tagErr.message)
+      }
+
+      // Separate cover file (cover.jpg) — honors the same albumCovers settings as
+      // the Deezer path (saveCovers toggle, name template, never overwrites).
+      if (options.saveArtwork && cover) {
+        try {
+          this.saveArtworkBuffer(cover, path.dirname(result.path), options)
+        } catch (artErr: any) {
+          console.error('[Downloader] Qobuz artwork save error (non-fatal):', artErr.message)
+        }
+      }
+
+      progress.status = 'completed'
+      progress.progress = 100
+      recordM3U(result.path)
+      // Record this recording in the library index (by ISRC) so future
+      // downloads — from either service — de-dup against it. Deezer
+      // completions have always done this; Qobuz ones were invisible to the
+      // skip check until a manual library rescan. No-op without an ISRC.
+      libraryIndex.add(shim.ISRC, result.path)
+      this.emit('complete', { ...progress, path: result.path })
+    } catch (error: any) {
+      console.error(`[Downloader] Qobuz download error for ${downloadId}:`, error.message)
+      progress.status = 'error'
+      progress.error = error.message
+      this.emit('error', progress)
+      // This catch swallows the error (the queue wrapper's error path never
+      // runs for Qobuz), so mirror its bookkeeping here: keep the M3U tracker
+      // counting so the playlist file still generates, and write errors.txt.
+      if (options.isFromPlaylist && options.playlistName) {
+        this.recordM3UFailure(options._m3uTrackerId || options.playlistName || '')
+      }
+      if (options.createErrorLog && progress.albumFolder) {
+        this.writeErrorLog(
+          progress.albumFolder,
+          progress.trackId,
+          progress.trackTitle || 'Unknown Track',
+          progress.trackArtist || 'Unknown Artist',
+          error.message
+        )
+      }
+    } finally {
+      this.downloadAborts.delete(downloadId)
+      if (reservedPathForCleanup) this.releaseOutputPath(reservedPathForCleanup)
+    }
+    // NOTE: concurrency (currentDownloads--) and queue re-processing are handled
+    // by the processQueue() wrapper's .finally(); do not touch them here.
+  }
+
+  /** Map Qobuz track metadata into the Deezer-shaped trackInfo the tagger reads. */
+  private qobuzMetaToTrackInfo(meta: any): any {
+    const album = meta?.album || {}
+    const date = album.release_date_original || album.released_at || ''
+    return {
+      SNG_ID: meta?.id,
+      SNG_TITLE: meta?.title || '',
+      VERSION: meta?.version || '',
+      ART_NAME: meta?.performer?.name || album?.artist?.name || 'Unknown Artist',
+      ALB_TITLE: album.title || '',
+      ALB_ART_NAME: album?.artist?.name || '',
+      ALB_UPC: album.upc || '',
+      LABEL_NAME: album?.label?.name || '',
+      COPYRIGHT: meta?.copyright || '',
+      ISRC: meta?.isrc || '',
+      TRACK_NUMBER: meta?.track_number || undefined,
+      TRACKS_COUNT: album.tracks_count || undefined,
+      DISK_NUMBER: meta?.media_number || 1,
+      DISKS_COUNT: album.media_count || 1,
+      DURATION: meta?.duration || 0,
+      EXPLICIT_LYRICS: meta?.parental_warning ? 1 : 0,
+      EXPLICIT_ALBUM_CONTENT: { EXPLICIT_LYRICS_STATUS: album?.parental_warning ? 1 : 0 },
+      PHYSICAL_RELEASE_DATE: date,
+      // Direct genre name from Qobuz metadata — the Deezer genre path resolves
+      // via Deezer album-id lookup / genre-id maps, neither of which exists for
+      // Qobuz. getGenresForTrack and the %genre% folder token read this first.
+      _directGenres: album?.genre?.name ? [album.genre.name] : [],
+      // Contributor shape the tagger's composer/multi-artist paths consume.
+      SNG_CONTRIBUTORS: {
+        main_artist: [meta?.performer?.name || album?.artist?.name].filter(Boolean),
+        mainartist: [meta?.performer?.name || album?.artist?.name].filter(Boolean),
+        composer: meta?.composer?.name ? [meta.composer.name] : [],
+        featartist: [],
+      },
+      ARTISTS: Array.isArray(album?.artists)
+        ? album.artists.map((a: any) => ({ ART_NAME: a?.name })).filter((a: any) => a.ART_NAME)
+        : undefined,
+      // No ALB_PICTURE (Deezer hash) — cover comes via options.prefetchedCover.
+    }
+  }
+
   private async processDownload(downloadId: string, options: DownloadOptions): Promise<void> {
     console.log(`[Downloader] processDownload starting for ${downloadId}, track: ${options.trackId}`)
     console.log(`[Downloader] Requested quality: ${options.quality}`)
@@ -858,6 +1130,11 @@ export class Downloader extends EventEmitter {
     if (!progress) {
       console.error(`[Downloader] No progress found for ${downloadId}`)
       return
+    }
+
+    // Qobuz downloads use a completely separate, decryption-free path.
+    if (options.service === 'qobuz') {
+      return this.processQobuzDownload(downloadId, options, progress)
     }
 
     progress.status = 'downloading'
@@ -1535,7 +1812,7 @@ export class Downloader extends EventEmitter {
     const artistName = trackInfo.ART_NAME || 'Unknown Artist'
     const albumName = trackInfo.ALB_TITLE || 'Unknown Album'
     const year = trackInfo.PHYSICAL_RELEASE_DATE?.split('-')[0] || ''
-    const genre = '' // Would need async lookup
+    const genre = trackInfo._directGenres?.[0] || '' // Deezer: would need async lookup (unchanged); Qobuz supplies directly
     // v1.8.2: %label% template — same dead-field story as %barcode%. trackInfo.LABEL_NAME
     // is empty on private-API fetches, so cascade through the public-API resolver first.
     const label = albumContext?.label || options._resolvedAlbumLabel || trackInfo.LABEL_NAME || ''
@@ -2545,15 +2822,16 @@ export class Downloader extends EventEmitter {
       }
 
       // Embed artwork if requested
-      if (tagSettings.cover && options.embedArtwork && trackInfo.ALB_PICTURE) {
+      if (tagSettings.cover && options.embedArtwork && (trackInfo.ALB_PICTURE || options.prefetchedCover)) {
         try {
           const artworkSize = albumCoverSettings.embeddedArtworkSize || 800
           // Use quality 90 to match original deemix (was 80)
           const quality = albumCoverSettings.jpegImageQuality || 90
 
-          // Use cached artwork to avoid re-downloading for each track in album
-          console.log(`[Downloader] Getting embedded artwork (cached): ${trackInfo.ALB_PICTURE}`)
-          const artworkBuffer = await this.getCachedArtwork(trackInfo.ALB_PICTURE, artworkSize, quality)
+          // Prefer a pre-fetched cover (e.g. Qobuz, whose art is a full URL not a
+          // Deezer hash); otherwise fetch from Deezer's CDN via the hash.
+          const artworkBuffer = options.prefetchedCover
+            || await this.getCachedArtwork(trackInfo.ALB_PICTURE, artworkSize, quality)
 
           tags.image = {
             mime: 'image/jpeg',
@@ -2982,14 +3260,15 @@ export class Downloader extends EventEmitter {
 
       // Download cover image if needed (using cache)
       let pictureData: Buffer | null = null
-      if (tagSettings.cover && options.embedArtwork && trackInfo.ALB_PICTURE) {
+      if (tagSettings.cover && options.embedArtwork && (trackInfo.ALB_PICTURE || options.prefetchedCover)) {
         try {
           const artworkSize = albumCoverSettings.embeddedArtworkSize || 800
           const quality = albumCoverSettings.jpegImageQuality || 90
 
-          console.log(`[Downloader] Getting FLAC cover (cached): ${trackInfo.ALB_PICTURE}`)
-          pictureData = await this.getCachedArtwork(trackInfo.ALB_PICTURE, artworkSize, quality)
-          console.log(`[Downloader] FLAC cover from cache: ${pictureData.length} bytes`)
+          // Prefer a pre-fetched cover (Qobuz) over the Deezer-hash CDN fetch.
+          pictureData = options.prefetchedCover
+            || await this.getCachedArtwork(trackInfo.ALB_PICTURE, artworkSize, quality)
+          console.log(`[Downloader] FLAC cover: ${pictureData.length} bytes`)
         } catch (e) {
           console.error('[Downloader] Failed to get cover for FLAC:', e)
         }
@@ -3377,6 +3656,11 @@ export class Downloader extends EventEmitter {
    * ID can mean different things for different content.
    */
   private async getGenresForTrack(trackInfo: any): Promise<string[]> {
+    // Non-Deezer sources (Qobuz) supply the genre name directly — no Deezer
+    // album lookup or genre-id mapping applies to their ids.
+    if (Array.isArray(trackInfo._directGenres) && trackInfo._directGenres.length > 0) {
+      return trackInfo._directGenres
+    }
     console.log(`[Downloader] Getting genres for track: ${trackInfo.SNG_TITLE}`)
     console.log(`[Downloader] Track GENRE_ID: ${trackInfo.GENRE_ID}, ALB_GENRE_ID: ${trackInfo.ALB_GENRE_ID}, ALB_ID: ${trackInfo.ALB_ID}`)
 
@@ -3563,6 +3847,29 @@ export class Downloader extends EventEmitter {
         resolve([])
       })
     })
+  }
+
+  /** Save a pre-fetched cover buffer as the folder's cover file (Qobuz path —
+   *  no Deezer CDN hash to fetch from). Honors the same albumCovers settings as
+   *  saveArtwork(): saveCovers toggle, cover name template, never overwrites an
+   *  existing non-empty cover. */
+  private saveArtworkBuffer(cover: Buffer, outputDir: string, options: DownloadOptions): void {
+    const albumCoverSettings = options.metadataSettings?.albumCovers || {
+      saveCovers: true,
+      coverNameTemplate: 'cover'
+    }
+    if (!albumCoverSettings.saveCovers) return
+
+    const coverName = albumCoverSettings.coverNameTemplate || 'cover'
+    const artworkPath = path.join(outputDir, `${coverName}.jpg`)
+
+    if (fs.existsSync(artworkPath)) {
+      const stats = fs.statSync(artworkPath)
+      if (stats.size > 0) return
+      fs.unlinkSync(artworkPath)
+    }
+    fs.writeFileSync(artworkPath, cover)
+    console.log(`[Downloader] Saved Qobuz artwork: ${artworkPath} (${cover.length} bytes)`)
   }
 
   private async saveArtwork(albumPicture: string, outputDir: string, options: DownloadOptions): Promise<void> {

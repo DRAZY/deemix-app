@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { setLocale } from '../i18n'
 
 export type ColorTheme = 'signal' | 'violet' | 'spotify' | 'rose' | 'ocean' | 'sunset' | 'mint' | 'dracula' | 'nord'
@@ -130,6 +130,9 @@ export interface Settings {
   spotifyClientId: string
   spotifyClientSecret: string
   spotifyUsername: string
+  // Qobuz integration (browser-minted token; see qobuzAuth.ts)
+  qobuzUserId: string
+  qobuzToken: string
 }
 
 export const defaultSettings: Settings = {
@@ -237,7 +240,10 @@ export const defaultSettings: Settings = {
   // Spotify integration
   spotifyClientId: '',
   spotifyClientSecret: '',
-  spotifyUsername: ''
+  spotifyUsername: '',
+  // Qobuz integration
+  qobuzUserId: '',
+  qobuzToken: ''
 }
 
 function applyColorTheme(theme: ColorTheme) {
@@ -540,6 +546,12 @@ export const useSettingsStore = defineStore('settings', () => {
           if (result.credentials.spotifyUsername) {
             settings.value.spotifyUsername = result.credentials.spotifyUsername
           }
+          if (result.credentials.qobuzUserId) {
+            settings.value.qobuzUserId = result.credentials.qobuzUserId
+          }
+          if (result.credentials.qobuzToken) {
+            settings.value.qobuzToken = result.credentials.qobuzToken
+          }
           return // Successfully loaded from userData
         }
       } catch (e) {
@@ -659,6 +671,45 @@ export const useSettingsStore = defineStore('settings', () => {
     await saveSecureSpotifyCredentials(clientId, clientSecret, username)
   }
 
+  const isQobuzConnected = computed(() => !!settings.value.qobuzUserId && !!settings.value.qobuzToken)
+
+  /**
+   * Open the Qobuz login window (real OAuth login), capture the browser-minted
+   * token, persist it encrypted, and push it to the backend session. Returns
+   * true on success. See qobuzAuth.ts for why token auth is required.
+   */
+  async function connectQobuz(): Promise<{ success: boolean; error?: string }> {
+    if (!window.electronAPI?.qobuzLogin) return { success: false, error: 'Not available in browser' }
+    const res = await window.electronAPI.qobuzLogin.openLoginWindow()
+    if (!res.success || !res.userId || !res.token) {
+      return { success: false, error: res.error || 'Login was not completed' }
+    }
+    settings.value.qobuzUserId = res.userId
+    settings.value.qobuzToken = res.token
+    await window.electronAPI.storage.saveCredentials({ qobuzUserId: res.userId, qobuzToken: res.token })
+
+    // Push into the backend session so Qobuz is usable immediately (no restart).
+    try {
+      const port = window.electronAPI ? await window.electronAPI.getServerPort() : 6595
+      await fetch(`http://127.0.0.1:${port}/api/qobuz/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: res.userId, token: res.token }),
+      })
+    } catch (e) {
+      console.error('[Settings] Failed to push Qobuz session to backend:', e)
+    }
+    return { success: true }
+  }
+
+  async function disconnectQobuz() {
+    settings.value.qobuzUserId = ''
+    settings.value.qobuzToken = ''
+    if (window.electronAPI?.storage) {
+      await window.electronAPI.storage.saveCredentials({ qobuzUserId: '', qobuzToken: '' })
+    }
+  }
+
   function setColorTheme(theme: ColorTheme) {
     settings.value.colorTheme = theme
     applyColorTheme(theme)
@@ -687,7 +738,11 @@ export const useSettingsStore = defineStore('settings', () => {
       arl: '',
       spotifyClientId: '',
       spotifyClientSecret: '',
-      spotifyUsername: ''
+      spotifyUsername: '',
+      // Qobuz credentials live ONLY in safeStorage (saveCredentials) — never
+      // in the plain settings blob, localStorage mirror, or exports.
+      qobuzToken: '',
+      qobuzUserId: ''
     }))
 
     console.log('[Settings] Saving settings...', {
@@ -745,7 +800,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   function exportSettings(): string {
     // Export settings without sensitive credentials
-    const exported = { ...settings.value, arl: '', spotifyClientId: '', spotifyClientSecret: '', spotifyUsername: '' }
+    const exported = { ...settings.value, arl: '', spotifyClientId: '', spotifyClientSecret: '', spotifyUsername: '', qobuzToken: '', qobuzUserId: '' }
     return JSON.stringify(exported, null, 2)
   }
 
@@ -758,11 +813,17 @@ export const useSettingsStore = defineStore('settings', () => {
       const currentSpotifyId = settings.value.spotifyClientId
       const currentSpotifySecret = settings.value.spotifyClientSecret
       const currentSpotifyUser = settings.value.spotifyUsername
+      const currentQobuzToken = settings.value.qobuzToken
+      const currentQobuzUserId = settings.value.qobuzUserId
       settings.value = deepMerge(defaultSettings, imported)
       settings.value.arl = currentArl
       settings.value.spotifyClientId = currentSpotifyId
       settings.value.spotifyClientSecret = currentSpotifySecret
       settings.value.spotifyUsername = currentSpotifyUser
+      // Qobuz credentials are never importable — preserve the live session
+      // (an imported file could otherwise blank or inject a token).
+      settings.value.qobuzToken = currentQobuzToken
+      settings.value.qobuzUserId = currentQobuzUserId
       saveSettings()
       return true
     } catch {
@@ -771,7 +832,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   function exportConfiguration(profiles?: any[]): string {
-    const settingsData = { ...settings.value, arl: '', spotifyClientId: '', spotifyClientSecret: '', spotifyUsername: '' }
+    const settingsData = { ...settings.value, arl: '', spotifyClientId: '', spotifyClientSecret: '', spotifyUsername: '', qobuzToken: '', qobuzUserId: '' }
     return JSON.stringify({
       type: 'deemix-configuration',
       version: 1,
@@ -790,11 +851,15 @@ export const useSettingsStore = defineStore('settings', () => {
       const currentSpotifyId = settings.value.spotifyClientId
       const currentSpotifySecret = settings.value.spotifyClientSecret
       const currentSpotifyUser = settings.value.spotifyUsername
+      const currentQobuzToken = settings.value.qobuzToken
+      const currentQobuzUserId = settings.value.qobuzUserId
       settings.value = deepMerge(defaultSettings, data.settings)
       settings.value.arl = currentArl
       settings.value.spotifyClientId = currentSpotifyId
       settings.value.spotifyClientSecret = currentSpotifySecret
       settings.value.spotifyUsername = currentSpotifyUser
+      settings.value.qobuzToken = currentQobuzToken
+      settings.value.qobuzUserId = currentQobuzUserId
       saveSettings()
 
       // Return profiles for the caller to import via profileStore
@@ -845,6 +910,9 @@ export const useSettingsStore = defineStore('settings', () => {
     setTheme,
     setArl,
     setSpotifyCredentials,
+    isQobuzConnected,
+    connectQobuz,
+    disconnectQobuz,
     exportSettings,
     importSettings,
     exportConfiguration,

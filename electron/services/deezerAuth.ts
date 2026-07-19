@@ -1201,15 +1201,39 @@ export class DeezerAuth extends EventEmitter {
   private newReleasesCache: { data: any[]; timestamp: number; token: string } | null = null
   private readonly NEW_RELEASES_CACHE_TTL = 60 * 60 * 1000 // 1 hour
 
+  // In-flight guest bootstrap, memoized so concurrent callers share one round-trip.
+  private gwGuestBootstrap: Promise<void> | null = null
+
   // Ensure we have a usable gw-light session (api_token + cookies). When the user
   // is logged in this is already set; otherwise bootstrap an anonymous guest one.
+  //
+  // Startup race guard: at boot the renderer fires /api/login (ARL restore) and
+  // /api/new-releases (Home tab) near-simultaneously. If an ARL login is mid-flight
+  // (login() sets the arl cookie before its getUserData round-trip completes), we
+  // wait for it instead of bootstrapping a guest session — fetching anonymous
+  // homepage cookies into a logged-in session is exactly the state conflict the
+  // login path's comments warn about.
   private async ensureGwSession(): Promise<void> {
     if (this.apiToken) return
-    await this.getInitialCookies()
-    const userData = await this.rawApiCall('deezer.getUserData', {})
-    if (userData?.results?.checkForm) {
-      this.apiToken = userData.results.checkForm
+
+    if (this.cookies.has('arl')) {
+      for (let i = 0; i < 40 && !this.apiToken && this.cookies.has('arl'); i++) {
+        await this.delay(250)
+      }
+      if (this.apiToken) return
     }
+
+    if (!this.gwGuestBootstrap) {
+      this.gwGuestBootstrap = (async () => {
+        await this.getInitialCookies()
+        const userData = await this.rawApiCall('deezer.getUserData', {})
+        // A real login may have completed while we bootstrapped — never clobber it.
+        if (!this.apiToken && userData?.results?.checkForm) {
+          this.apiToken = userData.results.checkForm
+        }
+      })().finally(() => { this.gwGuestBootstrap = null })
+    }
+    await this.gwGuestBootstrap
   }
 
   // Best available release date across the gw date fields (originals win).

@@ -154,6 +154,7 @@ const errorDetails = ref<{
   serverResponse?: string
   suggestion?: string
   timestamp?: string
+  source?: 'deezer' | 'qobuz'
 } | null>(null)
 
 function showErrorDetails(item: DownloadItem) {
@@ -167,17 +168,19 @@ function showErrorDetails(item: DownloadItem) {
     httpStatus: details?.httpStatus,
     serverResponse: details?.serverResponse,
     suggestion: details?.suggestion,
-    timestamp: details?.timestamp
+    timestamp: details?.timestamp,
+    source: item.source
   }
 }
 
-function showFailedTrackError(failed: { title: string; artist?: string; error?: string; id?: string; errorDetails?: any }) {
+function showFailedTrackError(failed: { title: string; artist?: string; error?: string; id?: string; errorDetails?: any }, source?: 'deezer' | 'qobuz') {
   const details = failed.errorDetails
   errorDetails.value = {
     title: failed.title,
     artist: failed.artist || 'Unknown Artist',
     error: details?.message || failed.error || 'Unknown error',
     trackId: failed.id || details?.trackId?.toString(),
+    source,
     errorCode: details?.code,
     httpStatus: details?.httpStatus,
     serverResponse: details?.serverResponse,
@@ -355,6 +358,8 @@ function isDowngraded(item: { quality?: string; actualFormat?: string }): boolea
 function getQualityColor(format?: string): string {
   if (!format) return 'bg-background-main/60 text-foreground-muted border-white/[0.1]'
   const f = format.toUpperCase()
+  // Stepped-down lossless tiers ('FLAC 24/96') keep the FLAC amber.
+  if (f.startsWith('FLAC ')) return 'bg-amber-500/10 text-amber-400 border-amber-500/30'
   if (f === 'FLAC' || f === 'flac') return 'bg-amber-500/10 text-amber-400 border-amber-500/30'
   if (f === '320' || f === 'MP3_320') return 'bg-green-500/10 text-green-400 border-green-500/30'
   if (f === '128' || f === 'MP3_128') return 'bg-blue-500/10 text-blue-400 border-blue-500/30'
@@ -640,6 +645,12 @@ function copyAllErrorDetails() {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
               <p class="text-[13px] font-semibold truncate">{{ item.title }}</p>
+              <!-- Channel Q source chip — this unit's signal came from Qobuz -->
+              <span
+                v-if="item.source === 'qobuz'"
+                v-tooltip="'Qobuz'"
+                class="flex-shrink-0 px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-[0.08em] border border-qobuz-500/50 text-qobuz-400 bg-qobuz-500/10"
+              >Q</span>
               <!-- Quality tag - shows actual downloaded format (not just requested) -->
               <span
                 v-if="showQualityTag && getDisplayFormat(item)"
@@ -837,7 +848,7 @@ function copyAllErrorDetails() {
             <button
               v-for="failed in item.failedTracks"
               :key="failed.id"
-              @click="showFailedTrackError(failed)"
+              @click="showFailedTrackError(failed, item.source)"
               class="flex items-center gap-2 text-[12px] py-1.5 px-2 w-full text-left border-l-2 border-red-500 bg-red-500/5 hover:bg-red-500/10 transition-colors cursor-pointer group"
             >
               <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -997,7 +1008,13 @@ function copyAllErrorDetails() {
         <!-- Possible Causes (only show if no specific suggestion) -->
         <div v-if="!errorDetails.suggestion" class="text-sm text-foreground-muted mb-4">
           <p class="font-medium mb-2">{{ t('downloads.possibleCauses') }}:</p>
-          <ul class="list-disc list-inside space-y-1 text-xs">
+          <!-- Source-aware: a Qobuz failure must not suggest Deezer causes -->
+          <ul v-if="errorDetails.source === 'qobuz'" class="list-disc list-inside space-y-1 text-xs">
+            <li>Track not available on Qobuz at the requested quality or on your plan</li>
+            <li>Qobuz session expired — reconnect in Settings</li>
+            <li>Network or Qobuz CDN connectivity issues — retry usually recovers</li>
+          </ul>
+          <ul v-else class="list-disc list-inside space-y-1 text-xs">
             <li>{{ t('downloads.causeGeoRestriction') }}</li>
             <li>{{ t('downloads.causeUnavailable') }}</li>
             <li>{{ t('downloads.causeSession') }}</li>
@@ -1098,7 +1115,13 @@ function copyAllErrorDetails() {
           </div>
           <!-- Info -->
           <div class="flex-1 min-w-0">
-            <p class="truncate font-medium">{{ entry.title }}</p>
+            <p class="truncate font-medium">
+              {{ entry.title }}
+              <span
+                v-if="entry.source === 'qobuz'"
+                class="ml-1 px-1 py-px font-mono text-[9px] font-bold tracking-[0.08em] border border-qobuz-500/50 text-qobuz-400 bg-qobuz-500/10 align-middle"
+              >Q</span>
+            </p>
             <p class="text-xs text-foreground-muted truncate">
               {{ entry.artist || 'Unknown Artist' }}
               <span v-if="entry.actualFormat"> · {{ entry.actualFormat }}</span>

@@ -16,6 +16,9 @@ export interface Track {
     name?: string
     role?: string
   }>
+  // Non-Deezer source markers (Qobuz) — drive download routing in downloadStore.
+  source?: 'deezer' | 'qobuz'
+  qobuzId?: string | number
 }
 
 export interface Album {
@@ -35,6 +38,11 @@ export interface Album {
   explicit_lyrics?: boolean
   link?: string
   fans?: number
+  // Non-Deezer source markers (Qobuz) — drive download routing in downloadStore.
+  source?: 'deezer' | 'qobuz'
+  qobuzId?: string | number
+  qobuzType?: 'album' | 'playlist'
+  qobuzData?: any
 }
 
 export interface Artist {
@@ -68,6 +76,10 @@ export interface Playlist {
   public?: boolean
   link?: string
   tracks?: { data: Track[] }
+  // Non-Deezer source markers (Qobuz) — drive download routing.
+  source?: 'deezer' | 'qobuz'
+  qobuzId?: string | number
+  qobuzType?: 'album' | 'playlist'
 }
 
 export type DownloadStatus = 'pending' | 'downloading' | 'completed' | 'error' | 'paused'
@@ -107,6 +119,8 @@ export interface DownloadItem {
   track?: Track
   album?: Album
   playlist?: Playlist
+  // Which service fulfilled this download — drives the source chip in the rack.
+  source?: 'deezer' | 'qobuz'
   title: string
   artist?: string
   cover?: string
@@ -151,6 +165,7 @@ export interface DownloadHistoryEntry {
   title: string
   artist?: string
   type: 'track' | 'album' | 'playlist'
+  source?: 'deezer' | 'qobuz'
   quality?: string
   actualFormat?: string
   substituted?: boolean

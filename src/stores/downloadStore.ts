@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { Track, Album, Playlist, DownloadItem, DownloadStatus, FailedTrack, SubstitutedTrack, DownloadHistoryEntry } from '../types'
 import { useSettingsStore } from './settingsStore'
 import { useToastStore } from './toastStore'
+import { useAuthStore } from './authStore'
 
 export const useDownloadStore = defineStore('downloads', () => {
   // Use regular ref for proper reactivity
@@ -321,6 +322,7 @@ export const useDownloadStore = defineStore('downloads', () => {
       title: item.title,
       artist: item.artist,
       type: item.type,
+      source: item.source,
       quality: item.quality,
       actualFormat: item.actualFormat,
       substituted: item.substituted,
@@ -474,6 +476,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     const item: DownloadItem = {
       id: tempId,
       track,
+      source: (track as any).source === 'qobuz' ? 'qobuz' : 'deezer',
       title: track.title,
       artist: extractArtistName(track.artist),
       cover: extractCoverUrl(track.album || {}, 'cover_medium', 'cover_big', 'cover_small', 'cover') || (typeof track.cover === 'string' ? track.cover : undefined),
@@ -492,9 +495,13 @@ export const useDownloadStore = defineStore('downloads', () => {
     saveDownloads()
 
     try {
-      const requestBody: Record<string, any> = { trackId: track.id }
-      if (playlistName) requestBody.playlistName = playlistName
-      const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/download`, {
+      // Qobuz-sourced search results route to the Qobuz download endpoint (which
+      // returns { downloadId }); Deezer uses /api/download (returns { id }).
+      const isQobuz = (track as any).source === 'qobuz'
+      const requestBody: Record<string, any> = { trackId: isQobuz ? ((track as any).qobuzId ?? track.id) : track.id }
+      if (playlistName && !isQobuz) requestBody.playlistName = playlistName
+      const endpoint = isQobuz ? '/api/qobuz/download' : '/api/download'
+      const response = await fetch(`http://127.0.0.1:${serverPort.value}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)
@@ -515,10 +522,11 @@ export const useDownloadStore = defineStore('downloads', () => {
       }
 
       const data = await response.json()
-      if (data.id) {
-        item.id = data.id
+      const dlId = data.id || data.downloadId
+      if (dlId) {
+        item.id = dlId
         saveDownloads()
-        registerForPolling(data.id, [data.id], 'track')
+        registerForPolling(dlId, [dlId], 'track')
       } else {
         throw new Error('Server did not return a download ID')
       }
@@ -530,6 +538,13 @@ export const useDownloadStore = defineStore('downloads', () => {
 
   async function addAlbumDownload(album: Album, tracks: Track[], refreshTags = false) {
     const toastStore = useToastStore()
+
+    // Qobuz-sourced album/playlist → grouped Qobuz download path.
+    if ((album as any).source === 'qobuz') {
+      const qType = (album as any).qobuzType === 'playlist' ? 'playlist' : 'album'
+      await addQobuzAlbumDownload({ type: qType, id: String((album as any).qobuzId ?? album.id), data: (album as any).qobuzData || album })
+      return
+    }
 
     // Check if already downloaded (completed). Refresh-tags intentionally
     // re-processes existing files, so it bypasses this guard.
@@ -563,6 +578,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     const item: DownloadItem = {
       id: albumId,
       album,
+      source: 'deezer',
       title: album.title,
       artist: extractArtistName(album.artist),
       cover: extractCoverUrl(album, 'cover_medium', 'cover_big', 'cover_small', 'cover_xl', 'cover'),
@@ -628,8 +644,98 @@ export const useDownloadStore = defineStore('downloads', () => {
     }
   }
 
+  /**
+   * Qobuz album/playlist download — creates ONE grouped parent row (like the
+   * Deezer album path) whose children are the enqueued Qobuz tracks, so the
+   * Transfer Rack shows a single aggregated album unit instead of N track rows.
+   * `qobuz` is the analyze result: { type, id, data }.
+   */
+  async function addQobuzAlbumDownload(qobuz: { type: string; id: string; data: any }) {
+    const toastStore = useToastStore()
+    const d = qobuz.data || {}
+
+    // Same double-queue guards as the Deezer album path. The numeric
+    // isAlbumInQueue/isAlbumCompleted maps can't index Qobuz's alphanumeric
+    // ids, so match the rows directly. Retries are unaffected — retryDownload
+    // removes the failed row before re-adding.
+    const rowMatches = (dl: DownloadItem) =>
+      dl.type === 'album' && dl.source === 'qobuz' && String((dl.album as any)?.id) === qobuz.id
+    if (downloads.value.some(dl => rowMatches(dl) && (dl.status === 'pending' || dl.status === 'downloading'))) {
+      toastStore.info(`"${d.title || 'This album'}" is already downloading`)
+      return
+    }
+    if (downloads.value.some(dl => rowMatches(dl) && dl.status === 'completed')) {
+      toastStore.info(`"${d.title || 'This album'}" was already downloaded`)
+      return
+    }
+
+    await syncSettingsToServer()
+    const settingsStore = useSettingsStore()
+    const groupId = `qobuzalbum_${qobuz.id}_${Date.now()}`
+    const trackTotal = d.tracks?.items?.length || d.tracks_count || 0
+
+    const item: DownloadItem = {
+      id: groupId,
+      // Full source markers + covers on the embedded album: retry/resume paths
+      // route by these, and the Deezer path once swallowed a marker-less Qobuz
+      // row ('Album not available: no data' + blank art).
+      album: {
+        id: qobuz.id, title: d.title, artist: { name: d.artist?.name },
+        cover_medium: d.image?.large || d.image?.small || (d as any).cover_medium || (d as any).images300?.[0],
+        source: 'qobuz', qobuzId: qobuz.id, qobuzType: qobuz.type, qobuzData: d,
+      } as any,
+      source: 'qobuz',
+      title: d.title || 'Qobuz Album',
+      artist: d.artist?.name || (qobuz.type === 'playlist' ? (d.owner?.name || 'Playlist') : 'Unknown Artist'),
+      cover: d.image?.large || d.image?.small || d.images?.[0] || (d as any).cover_medium || (d as any).cover_big || (d as any).images300?.[0] || '',
+      progress: 0,
+      status: 'pending',
+      type: 'album',
+      addedAt: new Date().toISOString(),
+      quality: settingsStore.settings.quality,
+      totalTracks: trackTotal,
+      completedTracks: 0,
+      failedTracks: [],
+      trackIds: [],
+    }
+    downloads.value = [item, ...downloads.value]
+    saveDownloads()
+
+    try {
+      const body = qobuz.type === 'playlist' ? { playlistId: qobuz.id } : { albumId: qobuz.id }
+      const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/qobuz/download-album`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err.error || 'Qobuz album download request failed')
+      }
+      const data = await response.json()
+      if (data.ids && data.ids.length > 0) {
+        item.trackIds = data.ids
+        item.totalTracks = data.ids.length
+        item.status = 'downloading'
+        saveDownloads()
+        registerForPolling(groupId, data.ids, 'album')
+      } else {
+        throw new Error('Server did not return download IDs')
+      }
+    } catch (error: any) {
+      console.error('[DownloadStore] Qobuz album download error:', error.message)
+      updateDownloadStatus(groupId, 'error', error.message || String(error))
+    }
+  }
+
   async function addPlaylistDownload(playlist: Playlist, tracks: Track[], refreshTags = false) {
     const toastStore = useToastStore()
+
+    // Qobuz-sourced playlist → grouped Qobuz download path.
+    if ((playlist as any).source === 'qobuz') {
+      await addQobuzAlbumDownload({ type: 'playlist', id: String((playlist as any).qobuzId ?? playlist.id), data: playlist })
+      return
+    }
 
     // Check if already downloaded (completed). Refresh-tags re-processes
     // existing files on purpose, so it bypasses this guard.
@@ -654,6 +760,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     const item: DownloadItem = {
       id: playlistId,
       playlist,
+      source: 'deezer',
       title: playlist.title,
       artist: extractArtistName(playlist.creator),
       cover: extractCoverUrl(playlist, 'picture_medium', 'picture_big', 'picture_small', 'picture_xl', 'picture'),
@@ -1206,10 +1313,21 @@ export const useDownloadStore = defineStore('downloads', () => {
     if (!item) return
 
     if (deleteFiles && item.path && window.electronAPI) {
-      try {
-        await window.electronAPI.deletePath(item.path)
-      } catch (error) {
-        console.error('[DownloadStore] Failed to delete files:', error)
+      // Safety rail: never delete the download root itself. A row whose path
+      // resolved to the root (e.g. from a bad folder derivation) must not be
+      // able to wipe the whole library — remove the row, keep the files.
+      // Trailing-separator-insensitive so it holds on Windows paths too.
+      const settingsStore = useSettingsStore()
+      const norm = (p: string) => p.replace(/[/\\]+$/, '')
+      const root = norm(settingsStore.settings.downloadPath || '')
+      if (root && norm(item.path) === root) {
+        console.warn('[DownloadStore] Refusing to delete the download root folder:', item.path)
+      } else {
+        try {
+          await window.electronAPI.deletePath(item.path)
+        } catch (error) {
+          console.error('[DownloadStore] Failed to delete files:', error)
+        }
       }
     }
 
@@ -1234,6 +1352,27 @@ export const useDownloadStore = defineStore('downloads', () => {
       await addDownload(item.track)
     } else if (item.type === 'album' && item.album) {
       toastStore.info(`Retrying album "${item.title}"...`)
+      // Qobuz albums re-route straight to the Qobuz pipeline (their id isn't a
+      // Deezer id; the server refetches the tracklist, existing files skip).
+      // Call addQobuzAlbumDownload directly and reconstruct the Qobuz ref from
+      // whatever the row carries — legacy rows may lack album-level markers,
+      // and routing them through addAlbumDownload's own source check once sent
+      // Qobuz ids to Deezer ('Album not available: no data').
+      if ((item.album as any).source === 'qobuz' || item.source === 'qobuz') {
+        try {
+          const alb: any = item.album
+          const qType = alb.qobuzType === 'playlist' ? 'playlist' : 'album'
+          await addQobuzAlbumDownload({
+            type: qType,
+            id: String(alb.qobuzId ?? alb.id),
+            data: alb.qobuzData || { title: item.title, artist: { name: item.artist }, image: { large: item.cover }, tracks_count: item.totalTracks }
+          })
+        } catch (e) {
+          console.error('[DownloadStore] Failed to retry Qobuz album:', e)
+          toastStore.error(`Failed to retry "${item.title}"`)
+        }
+        return
+      }
       // Fetch fresh track list for the album using correct endpoint
       try {
         const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/album?id=${item.album.id}`)
@@ -1270,6 +1409,14 @@ export const useDownloadStore = defineStore('downloads', () => {
         console.error('[DownloadStore] Failed to retry playlist:', e)
         toastStore.error(`Failed to retry "${item.title}"`)
       }
+    } else {
+      // No branch could handle this row (missing track/album/playlist context).
+      // The item was already removed above — NEVER let it silently vanish: put
+      // it back so the user can still see, retry, or delete it deliberately.
+      downloads.value.unshift(item)
+      rebuildLookupMaps()
+      saveDownloads()
+      toastStore.error(`Couldn't retry "${item.title}" — missing download context`)
     }
   }
 
@@ -1476,11 +1623,19 @@ export const useDownloadStore = defineStore('downloads', () => {
     // Sequential: retryDownload re-adds through add* paths; serialising avoids a
     // burst of list-build requests, and the global concurrency gate + pacing
     // (#97, applied at boot) still bound the actual downloads regardless.
+    const authStore = useAuthStore()
+    const settingsStore2 = useSettingsStore()
     for (const id of ids) {
       // Only resume items still in the interrupted error state (user may have
       // already retried or removed one before auth finished).
       const item = downloads.value.find(d => d.id === id)
-      if (item && item.status === 'error') {
+      if (!item || item.status !== 'error') continue
+      // Per-row service eligibility: resume a row only when ITS service has a
+      // session — a Qobuz row must not be blocked by missing Deezer auth, and
+      // vice versa. Ineligible rows stay one-click-retryable.
+      const isQobuzRow = item.source === 'qobuz' || (item.track as any)?.source === 'qobuz' || (item.album as any)?.source === 'qobuz'
+      const eligible = isQobuzRow ? settingsStore2.isQobuzConnected : authStore.isLoggedIn
+      if (eligible) {
         await retryDownload(id)
       }
     }
@@ -1509,6 +1664,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     init,
     addDownload,
     addAlbumDownload,
+    addQobuzAlbumDownload,
     addPlaylistDownload,
     addBatchDownload,
     cancelDownload,

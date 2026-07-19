@@ -47,6 +47,10 @@ export interface SelectedSegments {
   profileIds?: string[] | null
 }
 
+// Qobuz is deliberately ABSENT from this bundle: the Qobuz session token lives
+// only in OS secure storage and is never written to backup files, even with the
+// Credentials segment opted in. After restoring on a new machine, reconnect
+// Qobuz in Settings.
 export interface CredentialBundle {
   arl?: string
   spotifyClientId?: string
@@ -90,7 +94,9 @@ export interface ApplyResult {
   errors: Partial<Record<SegmentKey, string>>
 }
 
-const BACKUP_APP_VERSION = '1.10.15'
+// Fallback only — buildBackup asks the main process for the real version so
+// backup files stamp correctly without a hardcoded constant going stale.
+const BACKUP_APP_VERSION = '2.1.0'
 const FAVORITES_LOCALSTORAGE_KEY = 'favorites'
 
 export const useBackupStore = defineStore('backup', () => {
@@ -117,9 +123,14 @@ export const useBackupStore = defineStore('backup', () => {
       }
 
       if (selected.settings) {
-        // Strip credentials from the settings blob — they live in their own
-        // segment so users can include or exclude them deliberately.
-        const s = { ...settingsStore.settings, arl: '', spotifyClientId: '', spotifyClientSecret: '', spotifyUsername: '' }
+        // Strip credentials from the settings blob — Deezer/Spotify live in
+        // their own opt-in segment; the Qobuz session is NEVER written to a
+        // backup file (secure storage only — reconnect after restore).
+        const s = {
+          ...settingsStore.settings,
+          arl: '', spotifyClientId: '', spotifyClientSecret: '', spotifyUsername: '',
+          qobuzToken: '', qobuzUserId: ''
+        }
         segments.settings = s as Settings
       }
 
@@ -177,11 +188,15 @@ export const useBackupStore = defineStore('backup', () => {
         }
       }
 
+      let appVersion = BACKUP_APP_VERSION
+      if (window.electronAPI?.getVersion) {
+        try { appVersion = await window.electronAPI.getVersion() } catch { /* keep fallback */ }
+      }
       const file: BackupFile = {
         type: 'deemix-backup',
         version: 1,
         exportedAt: new Date().toISOString(),
-        appVersion: BACKUP_APP_VERSION,
+        appVersion,
         segments
       }
 
@@ -293,6 +308,10 @@ export const useBackupStore = defineStore('backup', () => {
           delete incoming.spotifyClientId
           delete incoming.spotifyClientSecret
           delete incoming.spotifyUsername
+          // A foreign/legacy file must never blank or inject the live Qobuz
+          // session (importSettings also guards this — defense in depth).
+          delete incoming.qobuzToken
+          delete incoming.qobuzUserId
           const ok = settingsStore.importSettings(JSON.stringify(incoming))
           result.settings = ok ? 'ok' : 'error'
           if (!ok) result.errors.settings = 'Settings format not recognised'

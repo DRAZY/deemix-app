@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-2.0.3-C8F135" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.1.0-C8F135" />
   <img alt="Electron" src="https://img.shields.io/badge/Electron-39-47848F?logo=electron&logoColor=white" />
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
@@ -25,6 +25,16 @@
 
 ## Features
 
+### Qobuz Integration (v2.1.0) — True Hi-Res Downloads
+
+- **Hi-Res FLAC up to 24-bit/192 kHz** -- Qobuz files come down DRM-free at the highest tier your plan and the track allow (paid Qobuz plan required)
+- **Channel Q Discover Tab** -- A dedicated Qobuz home: your Purchases and Favorites up top, then Qobuz's editorial feeds (New Releases, Editor's Picks, Press Awards, Most Streamed) and playlists, with genre filter chips, per-row LOAD MORE, and SEE ALL full-catalog pages
+- **Native Search & Browse** -- A Deezer/Qobuz source toggle on Search (sticky between sessions), Qobuz artist pages with release-type tabs (Albums/EPs/Singles/Compilations), album/playlist views, and 30-second track previews
+- **Link Analyzer Support** -- Paste any Qobuz track, album, or playlist URL and download it directly
+- **Quality Transparency** -- Album cards show each release's quality ceiling (e.g. 24/192, CD); every download reports the tier actually delivered (e.g. "FLAC 24/96"); tier step-down on repeated CDN stream failures happens only with Bitrate Fallback enabled — never silently
+- **Full Settings Parity** -- Folder structure, naming templates, CD subfolders, artwork, the complete tagging option set, duplicate skip (by ISRC), overwrite modes, and playlist handling all apply to Qobuz exactly as they do to Deezer
+- **Secure by Design** -- Your Qobuz session token lives only in OS secure storage — never in settings files, exports, or backups
+
 ### Music Discovery & Browsing
 
 - **Home Dashboard** -- New releases, top tracks, top albums, and popular playlists at a glance
@@ -34,12 +44,12 @@
 - **Artist Pages** -- Full discographies with filters for albums, EPs, singles, compilations, and featured-in releases, with sorting by name or date
 - **Sorting** -- Sort favorites and artist discographies by name (A-Z, Z-A), date, or default order
 - **Album & Playlist Views** -- Track listings with metadata, selective track downloads, and audio previews
-- **Link Analyzer** -- Paste any Deezer or Spotify URL to view content details and download directly (supports share links like `link.deezer.com`)
+- **Link Analyzer** -- Paste any Deezer, Spotify, or Qobuz URL to view content details and download directly (supports share links like `link.deezer.com`)
 - **Favorites Import** -- Import your liked tracks, albums, artists, and playlists from your Deezer account
 
 ### Downloading
 
-- **Audio Formats** -- MP3 128 kbps, MP3 320 kbps, and FLAC (lossless)
+- **Audio Formats** -- MP3 128 kbps, MP3 320 kbps, and FLAC (lossless); Qobuz downloads reach hi-res FLAC up to 24-bit/192 kHz (v2.1.0+)
 - **Batch Downloads** -- Download entire albums, playlists, or select individual tracks
 - **Bulk Link Paste** -- Paste multiple Deezer links into the Search bar or anywhere in the app to queue them all at once
 - **Batch Favorites** -- Download all your favorite tracks, albums, or playlists with one click
@@ -138,7 +148,8 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
 
 ### Security
 
-- **Encrypted Credentials** -- ARL tokens and Spotify secrets stored using Electron safeStorage
+- **Encrypted Credentials** -- ARL tokens, Spotify secrets, and the Qobuz session token stored using Electron safeStorage; the Qobuz token is never written to settings files, exports, or backups (v2.1.0+)
+- **Recoverable, Bounded Deletes** -- "Delete Files" moves to the system Trash (never permanent), and the download root itself can never be deleted (v2.1.0+)
 - **Path Traversal Protection** -- Download paths validated against directory traversal attacks
 - **Session Management** -- Automatic expiration detection and re-authentication
 - **SSRF Protection** -- Share link resolution validates redirect destinations against domain whitelist
@@ -171,7 +182,7 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
 <p align="center">
   <img src="docs/screenshots/link-analyzer.png" alt="Link Analyzer - LINK command bar" width="800" />
   <br />
-  <em>Link Analyzer — Paste any Deezer or Spotify URL into the LINK command bar for details and direct downloads</em>
+  <em>Link Analyzer — Paste any Deezer, Spotify, or Qobuz URL into the LINK command bar for details and direct downloads</em>
 </p>
 
 <p align="center">
@@ -235,9 +246,13 @@ A Deezer ARL (Authentication) token is required to download music:
 
 > **Note:** A Deezer Premium or HiFi subscription is required for high-quality downloads (FLAC and 320 kbps).
 
+### 2b. (Optional) Connect Qobuz for Hi-Res
+
+Go to **Settings → Qobuz** and click **Connect** — a real Qobuz login window opens; sign in and you're done. Your session is stored encrypted on your machine. A paid Qobuz plan is required for downloads; hi-res tiers follow your plan.
+
 ### 3. Browse, Search, or Paste a Link
 
-Use the search bar, browse charts and new releases, or paste a Deezer/Spotify URL into the Link Analyzer to find music.
+Use the search bar, browse charts and new releases (or the **Channel Q** tab for Qobuz), or paste a Deezer/Spotify/Qobuz URL into the Link Analyzer to find music.
 
 ### 4. Download
 

@@ -6,6 +6,7 @@ import { DeemixServer } from './server'
 import { playlistSync } from './services/playlistSync'
 import { artistSync } from './services/artistSync'
 import { spotifyAPI } from './services/spotifyAPI'
+import { qobuzAuth } from './services/qobuzAuth'
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 // Squirrel startup is handled by electron-builder
@@ -233,7 +234,7 @@ function createWindow() {
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'self' https://www.google.com; connect-src 'self' http://127.0.0.1:* http://localhost:* https://api.deezer.com https://*.dzcdn.net https://*.deezer.com https://api.github.com https://www.google.com; img-src 'self' data: https://*.dzcdn.net https://*.deezer.com https://*.scdn.co https://*.spotifycdn.com https://www.gstatic.com; media-src 'self' https://*.dzcdn.net https://*.deezer.com"
+          "default-src 'self' 'unsafe-inline' 'unsafe-eval'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'self' https://www.google.com; connect-src 'self' http://127.0.0.1:* http://localhost:* https://api.deezer.com https://*.dzcdn.net https://*.deezer.com https://api.github.com https://www.google.com; img-src 'self' data: https://*.dzcdn.net https://*.deezer.com https://*.scdn.co https://*.spotifycdn.com https://*.qobuz.com https://www.gstatic.com; media-src 'self' https://*.dzcdn.net https://*.deezer.com https://*.akamaized.net https://*.qobuz.com"
         ]
       }
     })
@@ -333,6 +334,13 @@ async function initServer() {
       if (spotifyClientId && spotifyClientSecret) {
         spotifyAPI.setCredentials(spotifyClientId, spotifyClientSecret)
         console.log('[Main] Spotify credentials restored from storage')
+      }
+      // Restore Qobuz session (browser-minted token) if present.
+      const qobuzUserId = decodeField(credData.qobuzUserId)
+      const qobuzToken = decodeField(credData.qobuzToken)
+      if (qobuzUserId && qobuzToken) {
+        qobuzAuth.restoreSession(qobuzToken, Number(qobuzUserId))
+        console.log('[Main] Qobuz session restored from storage')
       }
     } catch (e: any) {
       if (e.code !== 'ENOENT') {
@@ -670,14 +678,29 @@ ipcMain.handle('shell:deletePath', async (_, path: string) => {
     return { success: false, error: 'Cannot delete this directory' }
   }
 
+  // Never delete the configured download root itself — a queue row whose path
+  // resolves to the root (however it got that way) must not be able to wipe
+  // the whole library. Defense-in-depth with the renderer-side rail.
+  try {
+    const downloadRoot = server ? normalize(resolve(server.getSettings().downloadPath)) : ''
+    if (downloadRoot && normalizedPath === downloadRoot) {
+      console.warn('[Security] Refusing to delete the download root folder:', path)
+      return { success: false, error: 'Cannot delete the download folder itself' }
+    }
+  } catch { /* settings unavailable — other guards still apply */ }
+
   try {
     // Verify path exists before attempting delete
     await stat(path)
-    await rm(path, { recursive: true, force: true })
+    // Recoverable by design: move to the OS trash (macOS Trash / Windows
+    // Recycle Bin / Linux trash) instead of permanent rm. A wrong deletion —
+    // user mistake or app bug — must always be reversible. If the platform
+    // has no trash available, fail closed rather than deleting permanently.
+    await shell.trashItem(normalizedPath)
     return { success: true }
   } catch (error: any) {
-    console.error('[Main] Failed to delete path:', path, error)
-    return { success: false, error: error.message }
+    console.error('[Main] Failed to move path to trash:', path, error)
+    return { success: false, error: `Could not move to trash: ${error.message}` }
   }
 })
 
@@ -871,9 +894,157 @@ ipcMain.handle('deezer:closeLoginWindow', () => {
   }
 })
 
+// --- Qobuz login: capture user_auth_token from a real browser session ---
+// Qobuz moved to OAuth+reCAPTCHA (2026-04), so raw email/password login no
+// longer works. We open the real play.qobuz.com login in a window, let the user
+// authenticate, and intercept the `user/login` API RESPONSE (which carries the
+// user_auth_token + user id) via the Chrome DevTools Protocol — the token is NOT
+// stored under any plainly-named localStorage key, so response interception is
+// the reliable capture. The partition is cleared on open so a fresh login POST
+// always fires (analogous to the Deezer flow clearing cookies each time).
+let qobuzLoginWindow: BrowserWindow | null = null
+
+ipcMain.handle('qobuz:openLoginWindow', async () => {
+  if (qobuzLoginWindow) {
+    qobuzLoginWindow.focus()
+    return { success: false, error: 'Login window already open' }
+  }
+
+  // Force a fresh login so the user/login request happens (and CDP can catch it).
+  const qSession = session.fromPartition('persist:qobuz-login')
+  await qSession.clearStorageData({ storages: ['cookies', 'localstorage'] })
+
+  return new Promise((resolve) => {
+    let resolved = false
+    let pollInterval: NodeJS.Timeout | null = null
+
+    const finish = (result: any) => {
+      if (resolved) return
+      resolved = true
+      if (pollInterval) clearInterval(pollInterval)
+      if (qobuzLoginWindow) {
+        try {
+          if (qobuzLoginWindow.webContents.debugger.isAttached()) qobuzLoginWindow.webContents.debugger.detach()
+        } catch { /* ignore */ }
+        qobuzLoginWindow.close()
+        qobuzLoginWindow = null
+      }
+      resolve(result)
+    }
+
+    qobuzLoginWindow = new BrowserWindow({
+      // Qobuz's web player hard-refuses to render below 1024px wide ("needs a
+      // screen size at least 1024 pixels"), unlike Deezer's login — so this
+      // window must clear that bar.
+      width: 1100,
+      height: 780,
+      minWidth: 1024,
+      parent: mainWindow || undefined,
+      modal: false,
+      show: false,
+      title: 'Login to Qobuz',
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        partition: 'persist:qobuz-login',
+      },
+    })
+
+    // Primary capture: intercept the user/login API response body via CDP.
+    const wc = qobuzLoginWindow.webContents
+    try {
+      wc.debugger.attach('1.3')
+      wc.debugger.sendCommand('Network.enable')
+      const loginRequestIds = new Set<string>()
+      wc.debugger.on('message', async (_e, method, params) => {
+        try {
+          if (method === 'Network.responseReceived' && /\/api\.json\/[\d.]+\/user\/login/.test(params.response?.url || '')) {
+            loginRequestIds.add(params.requestId)
+          }
+          if (method === 'Network.loadingFinished' && loginRequestIds.has(params.requestId)) {
+            loginRequestIds.delete(params.requestId)
+            const res: any = await wc.debugger.sendCommand('Network.getResponseBody', { requestId: params.requestId })
+            const body = res.base64Encoded ? Buffer.from(res.body, 'base64').toString('utf8') : res.body
+            const json = JSON.parse(body)
+            if (json?.user_auth_token && json?.user?.id) {
+              console.log('[QobuzLogin] token captured via user/login response for user', json.user.id)
+              finish({ success: true, userId: String(json.user.id), token: json.user_auth_token })
+            }
+          }
+        } catch (err: any) {
+          console.log('[QobuzLogin] CDP message handling error:', err?.message)
+        }
+      })
+    } catch (err: any) {
+      console.log('[QobuzLogin] debugger attach failed, relying on localStorage fallback:', err?.message)
+    }
+
+    qobuzLoginWindow.loadURL('https://play.qobuz.com/login')
+    qobuzLoginWindow.once('ready-to-show', () => qobuzLoginWindow?.show())
+
+    // Deep-scan localStorage for the node holding user_auth_token (+ the user id
+    // that sits with it). Qobuz's web player may store the auth nested and/or as
+    // redux-persist double-stringified JSON, so we recurse into objects AND into
+    // strings that are themselves JSON. Also returns the localStorage key names
+    // for one-time diagnostics if capture ever misses.
+    const probe = `(() => {
+      const found = { keys: Object.keys(localStorage), token: null, id: null };
+      const visit = (v) => {
+        if (found.token) return;
+        if (typeof v === 'string') {
+          const s = v.trim();
+          if (s && (s[0] === '{' || s[0] === '[')) { try { visit(JSON.parse(s)); } catch (e) {} }
+          return;
+        }
+        if (v && typeof v === 'object') {
+          if (typeof v.user_auth_token === 'string' && v.user_auth_token.length > 20) {
+            found.token = v.user_auth_token;
+            found.id = String((v.user && v.user.id) || v.id || '');
+          }
+          for (const k of Object.keys(v)) { if (found.token) break; visit(v[k]); }
+        }
+      };
+      for (const k of Object.keys(localStorage)) {
+        if (found.token) break;
+        const raw = localStorage.getItem(k);
+        try { visit(JSON.parse(raw)); } catch (e) { visit(raw); }
+      }
+      return JSON.stringify(found);
+    })()`
+
+    let loggedKeys = false
+    const checkForToken = async () => {
+      if (!qobuzLoginWindow || resolved) return
+      try {
+        const raw = await qobuzLoginWindow.webContents.executeJavaScript(probe, true)
+        const found = JSON.parse(raw || '{}')
+        if (!loggedKeys) {
+          loggedKeys = true
+          console.log('[QobuzLogin] localStorage keys:', JSON.stringify(found.keys))
+        }
+        if (found.token && found.id) {
+          console.log('[QobuzLogin] token captured for user', found.id)
+          finish({ success: true, userId: found.id, token: found.token })
+        }
+      } catch (err) {
+        /* page may be mid-navigation; keep polling */
+      }
+    }
+
+    pollInterval = setInterval(checkForToken, 700)
+    qobuzLoginWindow.webContents.on('did-finish-load', checkForToken)
+
+    qobuzLoginWindow.on('closed', () => {
+      qobuzLoginWindow = null
+      finish({ success: false, error: 'Login window closed' })
+    })
+  })
+})
+
 // Persistent storage for credentials (stored in userData, not localStorage)
 // This fixes session persistence issues with file:// protocol
-ipcMain.handle('storage:saveCredentials', async (_, credentials: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string }) => {
+ipcMain.handle('storage:saveCredentials', async (_, credentials: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string; qobuzUserId?: string; qobuzToken?: string }) => {
   try {
     const credentialsPath = getCredentialsPath()
     const data: any = {}
@@ -918,6 +1089,8 @@ ipcMain.handle('storage:saveCredentials', async (_, credentials: { arl?: string;
     storeCredential(credentials.spotifyClientId, 'spotifyClientId')
     storeCredential(credentials.spotifyClientSecret, 'spotifyClientSecret')
     storeCredential(credentials.spotifyUsername, 'spotifyUsername')
+    storeCredential(credentials.qobuzUserId, 'qobuzUserId')
+    storeCredential(credentials.qobuzToken, 'qobuzToken')
 
     await mkdir(app.getPath('userData'), { recursive: true })
     await writeFile(credentialsPath, JSON.stringify(data, null, 2))
@@ -963,11 +1136,13 @@ ipcMain.handle('storage:loadCredentials', async () => {
       return stored.data
     }
 
-    const result: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string } = {}
+    const result: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string; qobuzUserId?: string; qobuzToken?: string } = {}
     result.arl = decodeCredential(data.arl)
     result.spotifyClientId = decodeCredential(data.spotifyClientId)
     result.spotifyClientSecret = decodeCredential(data.spotifyClientSecret)
     result.spotifyUsername = decodeCredential(data.spotifyUsername)
+    result.qobuzUserId = decodeCredential(data.qobuzUserId)
+    result.qobuzToken = decodeCredential(data.qobuzToken)
 
     console.log('[Main] Credentials loaded from userData')
     return { success: true, credentials: result }

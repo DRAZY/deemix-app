@@ -12,6 +12,7 @@ import ErrorState from '../components/ErrorState.vue'
 import ContextMenu from '../components/ContextMenu.vue'
 import { useContextMenu } from '../composables/useContextMenu'
 import type { Artist, Track, Album } from '../types'
+import { qobuzRecordType } from '../utils/qobuzMap'
 
 const { t } = useI18n()
 
@@ -47,6 +48,10 @@ const getFilterCount = (filter: DiscographyFilter): number => {
   if (filter === 'featured') return featuredInAlbums.value.length
   return albums.value.filter(a => a.record_type === filter).length
 }
+
+// Qobuz artist pages must propagate the source on every album link — a Qobuz
+// album id sent to the Deezer loader is a guaranteed "Failed to load".
+const sourceQuery = computed(() => route.query.source === 'qobuz' ? { source: 'qobuz' } : undefined)
 
 const filterTabs = computed(() => [
   { key: 'all' as DiscographyFilter, label: t('artistView.all'), count: getFilterCount('all') },
@@ -155,6 +160,42 @@ async function loadArtist(artistId: string) {
   albums.value = []
   featuredInAlbums.value = []
   activeFilter.value = 'all'
+
+  // Qobuz artist: load from the Qobuz backend (its id isn't a Deezer id).
+  if (route.query.source === 'qobuz') {
+    try {
+      const port = window.electronAPI ? await window.electronAPI.getServerPort() : (downloadStore.serverPort || 6595)
+      const resp = await fetch(`http://127.0.0.1:${port}/api/qobuz/artist?id=${artistId}`)
+      if (!resp.ok) throw new Error('Qobuz artist load failed')
+      const a = await resp.json()
+      artist.value = {
+        id: a.id, name: a.name,
+        picture_medium: a.image?.medium || a.image?.small || a.picture || '',
+        picture_big: a.image?.large || a.picture || '',
+        nb_album: a.albums_count,
+      } as any
+      albums.value = (a.albums?.items || []).map((al: any) => ({
+        id: al.id, title: al.title, record_type: qobuzRecordType(al),
+        cover_small: al.image?.small, cover_medium: al.image?.large, cover_big: al.image?.large,
+        qobuzQuality: (al.maximum_bit_depth && al.maximum_sampling_rate)
+          ? { hires: !!al.hires, bitDepth: al.maximum_bit_depth, samplingRate: al.maximum_sampling_rate }
+          : undefined,
+        artist: { id: a.id, name: a.name },
+        nb_tracks: al.tracks_count,
+        release_date: al.release_date_original || al.released_at,
+        source: 'qobuz', qobuzId: al.id,
+        qobuzData: { title: al.title, artist: { name: a.name }, image: al.image, tracks_count: al.tracks_count },
+      }))
+    } catch (e) {
+      console.error('[ArtistView] Qobuz load error:', e)
+      hasError.value = true
+    } finally {
+      isLoading.value = false
+      isLoadingDetails.value = false
+      isLoadingFeatured.value = false
+    }
+    return
+  }
 
   try {
     // First load artist info and top tracks quickly
@@ -290,8 +331,14 @@ async function downloadAllTracks() {
 }
 
 async function downloadAlbum(album: Album) {
-  // Fetch tracks for this album and download
   try {
+    // Qobuz-sourced albums route straight to the Qobuz pipeline — the server
+    // fetches the tracklist (a Qobuz id against Deezer returns nothing, which
+    // made these buttons silently dead on Qobuz artist pages).
+    if ((album as any).source === 'qobuz') {
+      await downloadStore.addAlbumDownload(album, [])
+      return
+    }
     const tracks = await deezerAPI.getAlbumTracks(album.id)
     await downloadStore.addAlbumDownload(album, tracks)
   } catch (error) {
@@ -309,6 +356,10 @@ async function downloadFilteredAlbums() {
   // pass, so a large discography doesn't burst past Deezer's rate limit and
   // silently drop releases from the queue (issue #84).
   const queueAlbum = async (album: Album): Promise<void> => {
+    if ((album as any).source === 'qobuz') {
+      await downloadStore.addAlbumDownload(album, [])
+      return
+    }
     const tracks = await deezerAPI.getAlbumTracks(album.id)
     await downloadStore.addAlbumDownload(album, tracks)
   }
@@ -440,7 +491,7 @@ const contextMenuItems = computed(() => {
             <!-- Album title with badges -->
             <div class="flex items-center gap-2 flex-wrap">
               <router-link
-                :to="`/album/${latestRelease.id}`"
+                :to="{ path: `/album/${latestRelease.id}`, query: sourceQuery }"
                 class="text-lg font-bold hover:text-primary-400 transition-colors"
               >
                 {{ latestRelease.title }}
@@ -461,7 +512,7 @@ const contextMenuItems = computed(() => {
             </p>
             <!-- Action buttons -->
             <div class="flex gap-2 mt-3">
-              <router-link :to="`/album/${latestRelease.id}`" class="btn btn-secondary text-sm">
+              <router-link :to="{ path: `/album/${latestRelease.id}`, query: sourceQuery }" class="btn btn-secondary text-sm">
                 {{ t('artistView.viewAlbum') }}
               </router-link>
               <button @click="downloadAlbum(latestRelease)" class="btn btn-primary text-sm">
@@ -563,7 +614,7 @@ const contextMenuItems = computed(() => {
             <router-link
               v-for="album in sortedAlbums"
               :key="album.id"
-              :to="`/album/${album.id}`"
+              :to="{ path: `/album/${album.id}`, query: sourceQuery }"
               class="grid grid-cols-[auto_1fr_auto_auto_auto] gap-4 px-4 py-3 items-center hover:bg-white/5 transition-colors group"
             >
               <!-- Cover -->
@@ -604,17 +655,17 @@ const contextMenuItems = computed(() => {
                 {{ album.nb_tracks || '-' }}
               </div>
 
-              <!-- Download Button -->
+              <!-- Download Button — the app's canonical GET ↓ acquisition
+                   control, in the source colorway (chartreuse = Deezer,
+                   cyan = Channel Q / Qobuz). -->
               <button
                 @click.prevent="downloadAlbum(album)"
-                class="w-12 h-8 flex items-center justify-center rounded hover:bg-primary-500/20 text-foreground-muted hover:text-primary-400 transition-colors"
+                class="px-2.5 py-1 font-mono text-[10px] font-bold tracking-[0.12em] border transition-colors whitespace-nowrap"
+                :class="(album as any).source === 'qobuz'
+                  ? 'border-qobuz-500/70 text-qobuz-400 hover:bg-qobuz-500 hover:text-background-main'
+                  : 'border-primary-600/70 text-primary-500 hover:bg-primary-500 hover:text-background-main'"
                 :title="t('artistView.downloadAlbum')"
-              >
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-              </button>
+              >GET&nbsp;↓</button>
             </router-link>
           </div>
 

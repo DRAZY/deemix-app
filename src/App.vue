@@ -74,6 +74,10 @@ const { showShortcutsHelp } = useKeyboardShortcuts()
 const handleBeforeUnload = () => {
   // Trigger a synchronous save attempt
   settingsStore.saveSettings()
+  // Flush the debounced downloads save synchronously — rows created within the
+  // last ~1s (e.g. a just-clicked retry) are otherwise lost if the app closes
+  // inside the debounce window, leaving finished files with no queue record.
+  downloadStore.saveDownloadsImmediate()
   // Optionally clear the download queue on close (off by default)
   if (settingsStore.settings.clearQueueOnClose) {
     downloadStore.clearAll()
@@ -118,10 +122,11 @@ onMounted(async () => {
   }
 
   // Opt-in: auto-resume downloads interrupted by the app closing (#98). Runs
-  // only once auth is restored, since a resume re-queues real downloads that
-  // hit Deezer. No-op unless the setting is on and something was interrupted.
-  // If auth failed/timed out, interrupted items stay one-click-retryable.
-  if (authStore.isLoggedIn) {
+  // once EITHER service session is restored — per-row service eligibility is
+  // enforced inside resumeInterruptedDownloads (a Deezer row won't retry
+  // without Deezer auth, a Qobuz row won't retry without the Qobuz session).
+  // If both are unavailable, interrupted items stay one-click-retryable.
+  if (authStore.isLoggedIn || settingsStore.isQobuzConnected) {
     try {
       await downloadStore.resumeInterruptedDownloads()
     } catch (e: any) {

@@ -81,15 +81,19 @@ function togglePlay() {
   playerStore.play(props.track)
 }
 
+// Qobuz-sourced tracks carry Qobuz ids — their artist/album pages load from the
+// Qobuz backend, flagged via the source query param (mirrors AlbumCard).
 function goToArtist() {
   if (props.track.artist?.id != null) {
-    router.push(`/artist/${props.track.artist.id}`)
+    const query = props.track.source === 'qobuz' ? { source: 'qobuz' } : undefined
+    router.push({ path: `/artist/${props.track.artist.id}`, query })
   }
 }
 
 function goToAlbum() {
   if (props.track.album?.id != null) {
-    router.push(`/album/${props.track.album.id}`)
+    const query = props.track.source === 'qobuz' ? { source: 'qobuz' } : undefined
+    router.push({ path: `/album/${props.track.album.id}`, query })
   }
 }
 
@@ -119,7 +123,10 @@ const contextMenuItems = computed(() => [
 <template>
   <div
     class="track-card group flex items-center gap-3 px-2 py-2 border-b border-white/[0.05] transition-colors"
-    :class="isPlaying ? 'bg-primary-500/10' : 'hover:bg-primary-500/[0.04]'"
+    :class="[
+      isPlaying ? 'bg-primary-500/10' : 'hover:bg-primary-500/[0.04]',
+      track.source === 'qobuz' ? 'border-l-2 border-l-qobuz-500/60' : ''
+    ]"
     @contextmenu="openMenu"
   >
     <!-- Index / Play button -->
@@ -138,10 +145,13 @@ const contextMenuItems = computed(() => [
       <!-- Show index normally, play button on hover -->
       <template v-else>
         <span class="group-hover:hidden font-mono text-[12px] text-foreground-muted">{{ index || '' }}</span>
+        <!-- Qobuz tracks have no static preview URL — the player resolves a
+             signed stream on demand, so the button shows for them too. -->
         <button
-          v-if="track.preview"
+          v-if="track.preview || track.source === 'qobuz'"
           @click="togglePlay"
-          class="hidden group-hover:block text-foreground-muted hover:text-primary-400"
+          class="hidden group-hover:block text-foreground-muted"
+          :class="track.source === 'qobuz' ? 'hover:text-qobuz-400' : 'hover:text-primary-400'"
         >
           <svg class="w-5 h-5 mx-auto" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
@@ -230,7 +240,8 @@ const contextMenuItems = computed(() => [
         class="get-btn"
         :class="{
           'get-btn-queued': downloadState === 'downloading',
-          'get-btn-stored': downloadState === 'completed'
+          'get-btn-stored': downloadState === 'completed',
+          'get-btn-qobuz': track.source === 'qobuz' && downloadState === 'available'
         }"
         :title="downloadState === 'downloading' ? t('trackCard.inQueue') : downloadState === 'completed' ? t('trackCard.alreadyDownloaded') : t('trackCard.download')"
         :disabled="downloadState !== 'available'"
@@ -270,6 +281,17 @@ const contextMenuItems = computed(() => [
   color: rgb(var(--bg-main));
   border-color: rgb(var(--primary-500));
   box-shadow: 0 0 14px rgb(var(--primary-500) / 0.35);
+}
+/* Channel Q — Qobuz-sourced tracks acquire in the fixed brand cyan */
+.get-btn-qobuz {
+  color: #59C2D6;
+  border-color: rgb(89 194 214 / 0.7);
+}
+.get-btn-qobuz:not(:disabled):hover {
+  background: #59C2D6;
+  color: rgb(var(--bg-main));
+  border-color: #59C2D6;
+  box-shadow: 0 0 14px rgb(89 194 214 / 0.35);
 }
 .get-btn-queued {
   color: #ffb454;
