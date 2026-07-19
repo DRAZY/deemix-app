@@ -21,7 +21,8 @@ import { qobuzAuth, QOBUZ_FORMAT, type QobuzFormatId } from './qobuzAuth'
 function httpsStreamToFile(
   url: string,
   outputPath: string,
-  onProgress?: (bytes: number, total: number) => void
+  onProgress?: (bytes: number, total: number) => void,
+  signal?: AbortSignal
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const req = https.get(url, {
@@ -31,6 +32,7 @@ function httpsStreamToFile(
         'Accept': '*/*',
       },
       timeout: 30000,
+      signal,
     }, (res) => {
       if (res.statusCode !== 200 && res.statusCode !== 206) {
         res.resume()
@@ -103,7 +105,8 @@ export async function downloadQobuzTrack(
   quality: '128' | '320' | 'flac',
   outputPath: string,
   onProgress?: (bytes: number, total: number) => void,
-  bitrateFallback: boolean = true
+  bitrateFallback: boolean = true,
+  signal?: AbortSignal
 ): Promise<QobuzDownloadResult> {
   if (!qobuzAuth.isLoggedIn()) throw new Error('Qobuz: not connected — link your account in Settings')
 
@@ -182,7 +185,7 @@ export async function downloadQobuzTrack(
     }
     try {
       try {
-        await httpsStreamToFile(file.url, outputPath, onProgress)
+        await httpsStreamToFile(file.url, outputPath, onProgress, signal)
       } catch (err) {
         // Never leave a truncated file behind.
         try { fs.unlinkSync(outputPath) } catch { /* ignore */ }
@@ -190,6 +193,11 @@ export async function downloadQobuzTrack(
       }
       streamed = true
     } catch (err: any) {
+      // A user-initiated abort (pause/cancel) must surface immediately —
+      // never burn retry attempts or re-resolve URLs for a dead download.
+      if (signal?.aborted) {
+        throw new Error('Download cancelled')
+      }
       lastStreamError = err
       if (!isNetworkError(err) || attempt === STREAM_ATTEMPTS) {
         let host = ''

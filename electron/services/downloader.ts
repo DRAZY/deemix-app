@@ -867,6 +867,12 @@ export class Downloader extends EventEmitter {
   ): Promise<void> {
     progress.status = 'downloading'
     this.emit('start', progress)
+    // Same lifecycle guarantees as the Deezer path: the reservation is always
+    // released and the abort controller is registered so pause/cancel can kill
+    // the in-flight stream instead of letting it run to completion.
+    let reservedPathForCleanup: string | null = null
+    const abortController = new AbortController()
+    this.downloadAborts.set(downloadId, abortController)
     try {
       const meta = await qobuzAuth.getTrack(options.trackId)
       const artist = meta?.performer?.name || meta?.album?.artist?.name || 'Unknown Artist'
@@ -936,6 +942,7 @@ export class Downloader extends EventEmitter {
         this.emit('complete', { ...progress, path: initialOutputPath })
         return
       }
+      reservedPathForCleanup = outputPath
       fs.mkdirSync(path.dirname(outputPath), { recursive: true })
 
       // Pace the actual CDN fetch (issue #86) — past the skip checks so existing
@@ -973,7 +980,7 @@ export class Downloader extends EventEmitter {
         progress.progress = total ? Math.floor((recv / total) * 100) : 0
         progress.speed = recv / ((Date.now() - dlStartTime) / 1000)
         this.emitProgressThrottled(progress)
-      }, options.bitrateFallback !== false)
+      }, options.bitrateFallback !== false, abortController.signal)
       progress.speed = 0
 
       // The delivered format is authoritative — a FLAC request on a lossy-only
@@ -1065,6 +1072,9 @@ export class Downloader extends EventEmitter {
           error.message
         )
       }
+    } finally {
+      this.downloadAborts.delete(downloadId)
+      if (reservedPathForCleanup) this.releaseOutputPath(reservedPathForCleanup)
     }
     // NOTE: concurrency (currentDownloads--) and queue re-processing are handled
     // by the processQueue() wrapper's .finally(); do not touch them here.
