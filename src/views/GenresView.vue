@@ -260,7 +260,7 @@ onMounted(loadGenres)
     <!-- ==================== QOBUZ MODE ==================== -->
     <template v-if="source === 'qobuz'">
       <!-- Top-level genre chips -->
-      <div v-if="qGenres.length > 0" class="flex gap-2 overflow-x-auto pb-1 -mb-2">
+      <div v-if="qGenres.length > 0" class="flex flex-wrap gap-2">
         <button
           v-for="g in qGenres"
           :key="g.id"
@@ -319,7 +319,7 @@ onMounted(loadGenres)
     <!-- ==================== DEEZER MODE ==================== -->
     <template v-else>
       <!-- Genre chips (chartreuse — Deezer colorway) -->
-      <div v-if="genres.length > 0" class="flex gap-2 overflow-x-auto pb-1 -mb-2">
+      <div v-if="genres.length > 0" class="flex flex-wrap gap-2">
         <button
           v-for="g in genres"
           :key="g.id"
