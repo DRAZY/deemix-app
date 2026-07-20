@@ -180,7 +180,14 @@
     "deleteTip": "Delete download",
     "cancelRemoveTip": "Cancel and remove from queue",
     "inLibrary": "In Library",
-    "inLibraryTip": "Already in your library — nothing was downloaded; your existing files were kept."
+    "inLibraryTip": "Already in your library — nothing was downloaded; your existing files were kept.",
+    "noHistoryYet": "No download history yet",
+    "clearAllTitle": "Clear All Downloads",
+    "clearAllMessage": "Are you sure you want to clear all {count} downloads? This will remove all items from the download list but will not delete downloaded files.",
+    "clearAllConfirm": "Clear All",
+    "clearCompletedTitle": "Clear Completed Downloads",
+    "clearCompletedMessage": "Are you sure you want to clear {count} completed downloads? This will remove them from the download list but will not delete downloaded files.",
+    "clearCompletedConfirm": "Clear Completed"
   },
   "charts": {
     "title": "Charts",
@@ -861,5 +868,31 @@
     "inspiredBy": "Inspired by the original deemix project. Powered by the Deezer API.",
     "license": "Licensed under the GNU General Public License v3.0",
     "disclaimer": "This application is not affiliated with or endorsed by Deezer or Spotify."
+  },
+  "qobuz": {
+    "myPurchases": "My Purchases",
+    "myFavorites": "My Favorites",
+    "newReleases": "New Releases",
+    "editorPicks": "Editor's Picks",
+    "pressAwards": "Press Awards",
+    "mostStreamed": "Most Streamed",
+    "playlists": "Qobuz Playlists",
+    "heroTagline": "Editorial feeds · lossless & hi-res up to 24-bit/192 kHz",
+    "seeAll": "SEE ALL",
+    "more": "MORE"
+  },
+  "genres": {
+    "title": "Genres",
+    "heroQobuz": "The full Qobuz catalog by genre — paginated to the end of every genre",
+    "heroDeezer": "Deezer editorial picks, charts & paginated new releases by genre",
+    "freshPicks": "Fresh Picks",
+    "topTracks": "Top Tracks",
+    "topAlbums": "Top Albums",
+    "moreTracks": "MORE TRACKS",
+    "moreAlbums": "MORE ALBUMS"
+  },
+  "titleBar": {
+    "qobuzLinkedTip": "Qobuz connected",
+    "qobuzOfflineTip": "Qobuz not connected — connect in Settings"
   }
 }

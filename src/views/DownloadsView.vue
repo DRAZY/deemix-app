@@ -1062,9 +1062,9 @@ function copyAllErrorDetails() {
     <!-- Clear All Confirmation Dialog -->
     <ConfirmDialog
       :show="showClearAllConfirm"
-      title="Clear All Downloads"
-      :message="`Are you sure you want to clear all ${downloadStore.downloads.length} downloads? This will remove all items from the download list but will not delete downloaded files.`"
-      confirm-text="Clear All"
+      :title="t('downloads.clearAllTitle')"
+      :message="t('downloads.clearAllMessage', { count: downloadStore.downloads.length })"
+      :confirm-text="t('downloads.clearAllConfirm')"
       cancel-text="Cancel"
       confirm-style="danger"
       @confirm="executeClearAll"
@@ -1074,9 +1074,9 @@ function copyAllErrorDetails() {
     <!-- Clear Completed Confirmation Dialog -->
     <ConfirmDialog
       :show="showClearCompletedConfirm"
-      title="Clear Completed Downloads"
-      :message="`Are you sure you want to clear ${downloadStore.completedDownloads.length} completed downloads? This will remove them from the download list but will not delete downloaded files.`"
-      confirm-text="Clear Completed"
+      :title="t('downloads.clearCompletedTitle')"
+      :message="t('downloads.clearCompletedMessage', { count: downloadStore.completedDownloads.length })"
+      :confirm-text="t('downloads.clearCompletedConfirm')"
       cancel-text="Cancel"
       confirm-style="warning"
       @confirm="executeClearCompleted"
@@ -1106,7 +1106,7 @@ function copyAllErrorDetails() {
 
       <div v-if="showHistory" class="space-y-1">
         <div v-if="downloadStore.downloadHistory.length === 0" class="text-sm text-foreground-muted text-center py-8">
-          No download history yet
+          {{ t('downloads.noHistoryYet') }}
         </div>
         <div
           v-for="entry in downloadStore.downloadHistory"

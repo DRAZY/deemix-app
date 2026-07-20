@@ -77,7 +77,23 @@
     "causeGeoRestriction": "Titel ist in deiner Region geografisch eingeschränkt",
     "causeUnavailable": "Titel ist auf Deezer nicht mehr verfügbar",
     "causeSession": "Deine Anmeldesitzung ist möglicherweise abgelaufen",
-    "causeNetwork": "Netzwerk- oder Serververbindungsprobleme"
+    "causeNetwork": "Netzwerk- oder Serververbindungsprobleme",
+    "cancelRemoveTip": "Abbrechen und aus der Warteschlange entfernen",
+    "deleteTip": "Download löschen",
+    "downloadNextTip": "Als Nächstes herunterladen (an den Anfang der Warteschlange)",
+    "hideFailedTracks": "Fehlgeschlagene Titel ausblenden",
+    "showFailedTracks": "Fehlgeschlagene Titel anzeigen",
+    "inLibrary": "In der Bibliothek",
+    "inLibraryTip": "Bereits in deiner Bibliothek — es wurde nichts heruntergeladen; deine vorhandenen Dateien wurden beibehalten.",
+    "noHistoryYet": "Noch kein Download-Verlauf",
+    "retryTip": "Download wiederholen",
+    "retryFailedTip": "{n} fehlgeschlagenen Titel wiederholen | {n} fehlgeschlagene Titel wiederholen",
+    "clearAllConfirm": "Alle löschen",
+    "clearAllTitle": "Alle Downloads löschen",
+    "clearAllMessage": "Möchtest du wirklich alle {count} Downloads löschen? Dadurch werden alle Einträge aus der Download-Liste entfernt, heruntergeladene Dateien werden jedoch nicht gelöscht.",
+    "clearCompletedConfirm": "Abgeschlossene löschen",
+    "clearCompletedTitle": "Abgeschlossene Downloads löschen",
+    "clearCompletedMessage": "Möchtest du wirklich {count} abgeschlossene Downloads löschen? Dadurch werden sie aus der Download-Liste entfernt, heruntergeladene Dateien werden jedoch nicht gelöscht."
   },
   "charts": {
     "title": "Charts",
@@ -339,6 +355,22 @@
       "credentialsRequired": "Bitte gib sowohl Client-ID als auch Client-Secret ein",
       "getCredentials": "Spotify-Entwickler-Zugangsdaten erhalten",
       "credentialsHelp": "Erstelle eine App im Spotify Developer Dashboard, um deine Client-ID und dein Secret zu erhalten."
+    },
+    "qobuz": {
+      "title": "Qobuz",
+      "description": "Verbinde dein Qobuz-Konto, um Hi-Res-FLAC herunterzuladen (bis zu 24-bit/192 kHz). Ein kostenpflichtiger Qobuz-Tarif ist erforderlich; mit kostenlosen Konten ist kein Download möglich.",
+      "connect": "Qobuz-Konto verbinden",
+      "connecting": "Anmeldung wird geöffnet…",
+      "connected": "Verbunden",
+      "connectedTo": "Mit Qobuz verbunden",
+      "disconnect": "Trennen",
+      "couldNotConnect": "Verbindung nicht möglich",
+      "loginNotCompleted": "Anmeldung wurde nicht abgeschlossen",
+      "help": "Ein Qobuz-Anmeldefenster öffnet sich; melde dich wie gewohnt an. Dein Sitzungs-Token wird verschlüsselt gespeichert und beim erneuten Verbinden aktualisiert.",
+      "tokenLabel": "Oder mit einem Token verbinden",
+      "tokenPlaceholder": "Füge deinen Qobuz user_auth_token ein",
+      "tokenConnect": "Token verwenden",
+      "tokenHelp": "Für Konten, die nur über ein Authentifizierungs-Token verfügen (zum Beispiel aus der Konfiguration eines anderen Tools) oder wenn das Anmeldefenster nicht verfügbar ist. Das Token wird mit Qobuz validiert und dann verschlüsselt gespeichert — genau wie beim Anmeldefenster-Ablauf. Es erscheint niemals in Einstellungsdateien, Exporten oder Backups."
     }
   },
   "login": {
@@ -484,5 +516,34 @@
     "sortTracks": "Heruntergeladene Titel",
     "filterPlaceholder": "Nach Name filtern…",
     "noMatches": "Keine Treffer"
+  },
+  "genres": {
+    "title": "Genres",
+    "heroQobuz": "Der vollständige Qobuz-Katalog nach Genre — paginiert bis zum Ende jedes Genres",
+    "heroDeezer": "Deezer-Redaktionstipps, Charts & paginierte Neuerscheinungen nach Genre",
+    "freshPicks": "Frische Auswahl",
+    "topTracks": "Top-Titel",
+    "topAlbums": "Top-Alben",
+    "moreTracks": "MEHR TITEL",
+    "moreAlbums": "MEHR ALBEN"
+  },
+  "qobuz": {
+    "myPurchases": "Meine Käufe",
+    "myFavorites": "Meine Favoriten",
+    "newReleases": "Neuerscheinungen",
+    "editorPicks": "Redaktionstipps",
+    "pressAwards": "Presseauszeichnungen",
+    "mostStreamed": "Meistgestreamt",
+    "playlists": "Qobuz-Playlists",
+    "heroTagline": "Redaktionelle Feeds · verlustfrei & Hi-Res bis zu 24-bit/192 kHz",
+    "seeAll": "ALLE ANZEIGEN",
+    "more": "MEHR"
+  },
+  "retag": {
+    "viaQobuzTip": "Tags von Qobuz bezogen — Deezer hatte keine Übereinstimmung für diese ISRC"
+  },
+  "titleBar": {
+    "qobuzLinkedTip": "Qobuz verbunden",
+    "qobuzOfflineTip": "Qobuz nicht verbunden — in den Einstellungen verbinden"
   }
 }

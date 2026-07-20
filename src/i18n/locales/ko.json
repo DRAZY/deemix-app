@@ -77,7 +77,23 @@
     "causeGeoRestriction": "해당 지역에서 트랙이 지역 제한됨",
     "causeUnavailable": "트랙이 더 이상 Deezer에서 이용 불가",
     "causeSession": "로그인 세션이 만료되었을 수 있음",
-    "causeNetwork": "네트워크 또는 서버 연결 문제"
+    "causeNetwork": "네트워크 또는 서버 연결 문제",
+    "cancelRemoveTip": "취소하고 대기열에서 제거",
+    "clearAllConfirm": "모두 지우기",
+    "clearAllMessage": "{count}개의 다운로드를 모두 지우시겠습니까? 다운로드 목록에서 모든 항목이 제거되지만 다운로드된 파일은 삭제되지 않습니다.",
+    "clearAllTitle": "모든 다운로드 지우기",
+    "clearCompletedConfirm": "완료된 항목 지우기",
+    "clearCompletedMessage": "완료된 다운로드 {count}개를 지우시겠습니까? 다운로드 목록에서 제거되지만 다운로드된 파일은 삭제되지 않습니다.",
+    "clearCompletedTitle": "완료된 다운로드 지우기",
+    "deleteTip": "다운로드 삭제",
+    "downloadNextTip": "다음 다운로드 (대기열 맨 앞으로 이동)",
+    "hideFailedTracks": "실패한 트랙 숨기기",
+    "inLibrary": "라이브러리에 있음",
+    "inLibraryTip": "이미 라이브러리에 있습니다 — 아무것도 다운로드되지 않았으며 기존 파일이 유지되었습니다.",
+    "noHistoryYet": "아직 다운로드 기록이 없습니다",
+    "retryFailedTip": "실패한 트랙 {n}개 재시도 | 실패한 트랙 {n}개 재시도",
+    "retryTip": "다운로드 재시도",
+    "showFailedTracks": "실패한 트랙 표시"
   },
   "charts": {
     "title": "차트",
@@ -339,6 +355,22 @@
       "credentialsRequired": "클라이언트 ID와 클라이언트 시크릿을 모두 입력해주세요",
       "getCredentials": "Spotify 개발자 자격 증명 받기",
       "credentialsHelp": "Spotify Developer Dashboard에서 앱을 만들어 클라이언트 ID와 시크릿을 받으세요."
+    },
+    "qobuz": {
+      "connect": "Qobuz 계정 연결",
+      "connected": "연결됨",
+      "connectedTo": "Qobuz에 연결됨",
+      "connecting": "로그인 여는 중…",
+      "couldNotConnect": "연결할 수 없습니다",
+      "description": "Qobuz 계정을 연결하여 고해상도 FLAC(최대 24-bit/192 kHz)를 다운로드하세요. 유료 Qobuz 요금제가 필요하며 무료 계정으로는 다운로드할 수 없습니다.",
+      "disconnect": "연결 해제",
+      "help": "Qobuz 로그인 창이 열립니다. 평소처럼 로그인하세요. 세션 토큰은 암호화되어 저장되며 다시 연결할 때 갱신됩니다.",
+      "loginNotCompleted": "로그인이 완료되지 않았습니다",
+      "title": "Qobuz",
+      "tokenConnect": "토큰 사용",
+      "tokenHelp": "인증 토큰만 있는 계정(예: 다른 도구의 설정에서 가져온 경우)이거나 로그인 창을 사용할 수 없을 때 사용합니다. 토큰은 Qobuz로 검증된 후 암호화되어 저장되며 — 로그인 창 방식과 동일합니다. 설정 파일, 내보내기 또는 백업에 절대 나타나지 않습니다.",
+      "tokenLabel": "또는 토큰으로 연결",
+      "tokenPlaceholder": "Qobuz user_auth_token을 붙여넣으세요"
     }
   },
   "login": {
@@ -484,5 +516,34 @@
     "sortTracks": "다운로드한 트랙",
     "filterPlaceholder": "이름으로 필터…",
     "noMatches": "일치하는 항목 없음"
+  },
+  "genres": {
+    "freshPicks": "새로운 추천",
+    "heroDeezer": "장르별 Deezer 편집 추천, 차트 및 페이지 단위 신규 발매",
+    "heroQobuz": "장르별 전체 Qobuz 카탈로그 — 각 장르의 끝까지 페이지 단위로 제공",
+    "moreAlbums": "앨범 더 보기",
+    "moreTracks": "트랙 더 보기",
+    "title": "장르",
+    "topAlbums": "인기 앨범",
+    "topTracks": "인기 트랙"
+  },
+  "qobuz": {
+    "editorPicks": "편집자 추천",
+    "heroTagline": "편집 피드 · 무손실 및 고해상도 최대 24-bit/192 kHz",
+    "more": "더 보기",
+    "mostStreamed": "가장 많이 스트리밍됨",
+    "myFavorites": "내 즐겨찾기",
+    "myPurchases": "내 구매 목록",
+    "newReleases": "신규 발매",
+    "playlists": "Qobuz 재생목록",
+    "pressAwards": "언론 수상",
+    "seeAll": "모두 보기"
+  },
+  "retag": {
+    "viaQobuzTip": "Qobuz에서 가져온 태그 — Deezer에 이 ISRC와 일치하는 항목이 없습니다"
+  },
+  "titleBar": {
+    "qobuzLinkedTip": "Qobuz 연결됨",
+    "qobuzOfflineTip": "Qobuz 연결 안 됨 — 설정에서 연결하세요"
   }
 }

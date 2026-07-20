@@ -111,7 +111,23 @@
     "causeUnavailable": "Bài hát không còn khả dụng trên Deezer",
     "causeSession": "Phiên đăng nhập của bạn có thể đã hết hạn",
     "causeNetwork": "Vấn đề mạng hoặc kết nối máy chủ",
-    "speed": "Tốc độ"
+    "speed": "Tốc độ",
+    "cancelRemoveTip": "Hủy và xóa khỏi hàng đợi",
+    "clearAllConfirm": "Xóa tất cả",
+    "clearAllMessage": "Bạn có chắc muốn xóa tất cả {count} lượt tải xuống không? Thao tác này sẽ xóa tất cả các mục khỏi danh sách tải xuống nhưng sẽ không xóa các tệp đã tải.",
+    "clearAllTitle": "Xóa tất cả lượt tải xuống",
+    "clearCompletedConfirm": "Xóa đã hoàn thành",
+    "clearCompletedMessage": "Bạn có chắc muốn xóa {count} lượt tải xuống đã hoàn thành không? Thao tác này sẽ xóa chúng khỏi danh sách tải xuống nhưng sẽ không xóa các tệp đã tải.",
+    "clearCompletedTitle": "Xóa các lượt tải xuống đã hoàn thành",
+    "deleteTip": "Xóa lượt tải xuống",
+    "downloadNextTip": "Tải mục tiếp theo (chuyển lên đầu hàng đợi)",
+    "hideFailedTracks": "Ẩn các bản nhạc thất bại",
+    "inLibrary": "Trong thư viện",
+    "inLibraryTip": "Đã có trong thư viện của bạn — không có gì được tải xuống; các tệp hiện có của bạn được giữ nguyên.",
+    "noHistoryYet": "Chưa có lịch sử tải xuống",
+    "retryFailedTip": "Thử lại {n} bản nhạc thất bại | Thử lại {n} bản nhạc thất bại",
+    "retryTip": "Thử tải lại",
+    "showFailedTracks": "Hiện các bản nhạc thất bại"
   },
   "charts": {
     "title": "Bảng xếp hạng",
@@ -394,6 +410,22 @@
       "getCredentials": "Lấy thông tin Spotify Developer",
       "credentialsHelp": "Tạo ứng dụng trong Spotify Developer Dashboard để lấy Client ID và Secret.",
       "howToEnable": "Làm thế nào để bật tính năng Spotify?"
+    },
+    "qobuz": {
+      "title": "Qobuz",
+      "description": "Kết nối tài khoản Qobuz của bạn để tải FLAC hi-res (lên đến 24-bit/192 kHz). Cần có gói Qobuz trả phí; tài khoản miễn phí không thể tải xuống.",
+      "connect": "Kết nối tài khoản Qobuz",
+      "connecting": "Đang mở đăng nhập…",
+      "connected": "Đã kết nối",
+      "connectedTo": "Đã kết nối với Qobuz",
+      "disconnect": "Ngắt kết nối",
+      "couldNotConnect": "Không thể kết nối",
+      "loginNotCompleted": "Đăng nhập chưa hoàn tất",
+      "help": "Cửa sổ đăng nhập Qobuz sẽ mở ra; đăng nhập như bình thường. Mã thông báo phiên của bạn được lưu trữ mã hóa và làm mới khi bạn kết nối lại.",
+      "tokenLabel": "Hoặc kết nối bằng mã thông báo",
+      "tokenPlaceholder": "Dán user_auth_token của Qobuz",
+      "tokenConnect": "Dùng mã thông báo",
+      "tokenHelp": "Dành cho các tài khoản chỉ có mã thông báo xác thực (ví dụ, từ cấu hình của công cụ khác) hoặc khi cửa sổ đăng nhập không khả dụng. Mã thông báo được xác thực với Qobuz, sau đó lưu trữ mã hóa — giống hệt như quy trình cửa sổ đăng nhập. Nó không bao giờ xuất hiện trong tệp cài đặt, bản xuất hoặc bản sao lưu."
     }
   },
   "login": {
@@ -566,5 +598,34 @@
     "sortTracks": "Bản nhạc đã tải",
     "filterPlaceholder": "Lọc theo tên…",
     "noMatches": "Không có kết quả"
+  },
+  "retag": {
+    "viaQobuzTip": "Thẻ được lấy từ Qobuz — Deezer không tìm thấy kết quả khớp cho ISRC này"
+  },
+  "genres": {
+    "title": "Thể loại",
+    "heroQobuz": "Toàn bộ danh mục Qobuz theo thể loại — phân trang đến hết mỗi thể loại",
+    "heroDeezer": "Tuyển chọn biên tập, bảng xếp hạng & nhạc mới phát hành theo thể loại của Deezer, phân trang",
+    "freshPicks": "Tuyển chọn mới",
+    "topTracks": "Bản nhạc hàng đầu",
+    "topAlbums": "Album hàng đầu",
+    "moreTracks": "THÊM BẢN NHẠC",
+    "moreAlbums": "THÊM ALBUM"
+  },
+  "qobuz": {
+    "myPurchases": "Đã mua của tôi",
+    "myFavorites": "Yêu thích của tôi",
+    "newReleases": "Nhạc mới phát hành",
+    "editorPicks": "Tuyển chọn của biên tập viên",
+    "pressAwards": "Giải thưởng báo chí",
+    "mostStreamed": "Nghe nhiều nhất",
+    "playlists": "Danh sách phát Qobuz",
+    "heroTagline": "Nguồn cấp biên tập · không mất dữ liệu & hi-res lên đến 24-bit/192 kHz",
+    "seeAll": "XEM TẤT CẢ",
+    "more": "THÊM"
+  },
+  "titleBar": {
+    "qobuzLinkedTip": "Qobuz đã kết nối",
+    "qobuzOfflineTip": "Qobuz chưa kết nối — kết nối trong Cài đặt"
   }
 }

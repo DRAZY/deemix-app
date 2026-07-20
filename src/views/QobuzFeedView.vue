@@ -110,7 +110,7 @@ onMounted(loadPage)
         <button
           @click="loadPage"
           class="font-mono text-[10px] tracking-[0.16em] uppercase px-5 py-2 border border-qobuz-500/50 text-qobuz-400 hover:bg-qobuz-500 hover:text-background-main transition-colors"
-        >MORE ({{ items.length }}/{{ total }})</button>
+        >{{ t('qobuz.more') }} ({{ items.length }}/{{ total }})</button>
       </div>
     </template>
   </div>

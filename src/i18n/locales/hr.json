@@ -77,7 +77,23 @@
     "causeGeoRestriction": "Pjesma je geografski ograničena u vašoj regiji",
     "causeUnavailable": "Pjesma više nije dostupna na Deezeru",
     "causeSession": "Vaša sesija prijave je možda istekla",
-    "causeNetwork": "Problemi s mrežom ili povezivanjem sa serverom"
+    "causeNetwork": "Problemi s mrežom ili povezivanjem sa serverom",
+    "cancelRemoveTip": "Otkaži i ukloni iz reda čekanja",
+    "clearAllConfirm": "Očisti sve",
+    "clearAllMessage": "Jeste li sigurni da želite očistiti svih {count} preuzimanja? Time će se svi elementi ukloniti s popisa preuzimanja, ali preuzete datoteke neće biti izbrisane.",
+    "clearAllTitle": "Očisti sva preuzimanja",
+    "clearCompletedConfirm": "Očisti dovršena",
+    "clearCompletedMessage": "Jeste li sigurni da želite očistiti {count} dovršenih preuzimanja? Time će se ukloniti s popisa preuzimanja, ali preuzete datoteke neće biti izbrisane.",
+    "clearCompletedTitle": "Očisti dovršena preuzimanja",
+    "deleteTip": "Izbriši preuzimanje",
+    "downloadNextTip": "Preuzmi sljedeće (pomakni na početak reda)",
+    "hideFailedTracks": "Sakrij neuspjele pjesme",
+    "inLibrary": "U biblioteci",
+    "inLibraryTip": "Već je u vašoj biblioteci — ništa nije preuzeto; vaše postojeće datoteke su zadržane.",
+    "noHistoryYet": "Još nema povijesti preuzimanja",
+    "retryFailedTip": "Ponovi {n} neuspjelu pjesmu | Ponovi {n} neuspjelih pjesama",
+    "retryTip": "Ponovi preuzimanje",
+    "showFailedTracks": "Prikaži neuspjele pjesme"
   },
   "charts": {
     "title": "Ljestvice",
@@ -339,6 +355,22 @@
       "credentialsRequired": "Unesite i Client ID i Client Secret",
       "getCredentials": "Nabavite Spotify Developer vjerodajnice",
       "credentialsHelp": "Stvorite aplikaciju na Spotify Developer Dashboardu za dobivanje Client ID-a i Secreta."
+    },
+    "qobuz": {
+      "connect": "Poveži Qobuz račun",
+      "connected": "Povezano",
+      "connectedTo": "Povezano s Qobuzom",
+      "connecting": "Otvaranje prijave…",
+      "couldNotConnect": "Povezivanje nije uspjelo",
+      "description": "Povežite svoj Qobuz račun za preuzimanje FLAC datoteka visoke razlučivosti (do 24-bit/192 kHz). Potreban je plaćeni Qobuz plan; besplatni računi ne mogu preuzimati.",
+      "disconnect": "Odspoji",
+      "help": "Otvara se prozor za Qobuz prijavu; prijavite se uobičajeno. Vaš token sesije pohranjen je šifrirano i obnavlja se pri ponovnom povezivanju.",
+      "loginNotCompleted": "Prijava nije dovršena",
+      "title": "Qobuz",
+      "tokenConnect": "Upotrijebi token",
+      "tokenHelp": "Za račune koji imaju samo token za autentifikaciju (na primjer, iz konfiguracije drugog alata) ili kada prozor za prijavu nije dostupan. Token se provjerava s Qobuzom, a zatim pohranjuje šifrirano — jednako kao i tijek prijave putem prozora. Nikada se ne pojavljuje u datotekama postavki, izvozima ni sigurnosnim kopijama.",
+      "tokenLabel": "Ili se poveži pomoću tokena",
+      "tokenPlaceholder": "Zalijepite svoj Qobuz user_auth_token"
     }
   },
   "login": {
@@ -484,5 +516,34 @@
     "sortTracks": "Preuzete pjesme",
     "filterPlaceholder": "Filtriraj po nazivu…",
     "noMatches": "Nema rezultata"
+  },
+  "genres": {
+    "freshPicks": "Svježi odabir",
+    "heroDeezer": "Deezer urednički odabir, ljestvice i paginirana nova izdanja po žanru",
+    "heroQobuz": "Cijeli Qobuz katalog po žanru — paginiran do kraja svakog žanra",
+    "moreAlbums": "VIŠE ALBUMA",
+    "moreTracks": "VIŠE PJESAMA",
+    "title": "Žanrovi",
+    "topAlbums": "Najbolji albumi",
+    "topTracks": "Najbolje pjesme"
+  },
+  "qobuz": {
+    "editorPicks": "Urednički odabir",
+    "heroTagline": "Urednički sadržaji · bez gubitaka i visoke razlučivosti do 24-bit/192 kHz",
+    "more": "VIŠE",
+    "mostStreamed": "Najslušanije",
+    "myFavorites": "Moji favoriti",
+    "myPurchases": "Moje kupnje",
+    "newReleases": "Nova izdanja",
+    "playlists": "Qobuz popisi za reprodukciju",
+    "pressAwards": "Nagrade tiska",
+    "seeAll": "PRIKAŽI SVE"
+  },
+  "retag": {
+    "viaQobuzTip": "Oznake preuzete s Qobuza — Deezer nije imao podudaranje za ovaj ISRC"
+  },
+  "titleBar": {
+    "qobuzLinkedTip": "Qobuz povezan",
+    "qobuzOfflineTip": "Qobuz nije povezan — povežite se u Postavkama"
   }
 }
