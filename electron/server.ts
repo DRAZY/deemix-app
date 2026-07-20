@@ -3299,7 +3299,7 @@ export class DeemixServer extends EventEmitter {
       return
     }
     const offset = Math.max(0, Number(url.searchParams.get('offset')) || 0)
-    const limit = Math.min(50, Math.max(1, Number(url.searchParams.get('limit')) || 20))
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit')) || 20))
     const genreId = Number(url.searchParams.get('genre')) || undefined
     try {
       if (type === 'playlists') {

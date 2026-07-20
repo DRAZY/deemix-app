@@ -622,7 +622,10 @@
     "playlists": "Qobuz 播放清單",
     "heroTagline": "編輯精選內容 · 無損及最高 24-bit/192 kHz 高解析度",
     "seeAll": "查看全部",
-    "more": "更多"
+    "more": "更多",
+    "sortDefault": "來源順序",
+    "sortName": "依名稱",
+    "sortTracks": "曲目最多"
   },
   "titleBar": {
     "qobuzLinkedTip": "Qobuz 已連接",

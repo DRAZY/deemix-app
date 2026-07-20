@@ -540,7 +540,10 @@
     "playlists": "Qobuz 播放列表",
     "heroTagline": "编辑精选内容 · 无损及最高 24-bit/192 kHz 高解析度",
     "seeAll": "查看全部",
-    "more": "更多"
+    "more": "更多",
+    "sortDefault": "源顺序",
+    "sortName": "按名称",
+    "sortTracks": "曲目最多"
   },
   "titleBar": {
     "qobuzLinkedTip": "Qobuz 已连接",

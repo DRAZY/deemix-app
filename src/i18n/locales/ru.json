@@ -474,7 +474,10 @@
     "newReleases": "Новые релизы",
     "playlists": "Плейлисты Qobuz",
     "pressAwards": "Награды прессы",
-    "seeAll": "СМОТРЕТЬ ВСЕ"
+    "seeAll": "СМОТРЕТЬ ВСЕ",
+    "sortDefault": "ПОРЯДОК ЛЕНТЫ",
+    "sortName": "А–Я",
+    "sortTracks": "БОЛЬШЕ ТРЕКОВ"
   },
   "retag": {
     "viaQobuzTip": "Теги получены из Qobuz — Deezer не нашёл совпадения для этого ISRC"

@@ -622,7 +622,10 @@
     "playlists": "เพลย์ลิสต์ Qobuz",
     "heroTagline": "ฟีดจากบรรณาธิการ · เสียงไม่สูญเสียคุณภาพและ hi-res สูงสุด 24-bit/192 kHz",
     "seeAll": "ดูทั้งหมด",
-    "more": "เพิ่มเติม"
+    "more": "เพิ่มเติม",
+    "sortDefault": "ลำดับฟีด",
+    "sortName": "ก–ฮ",
+    "sortTracks": "แทร็กมากที่สุด"
   },
   "titleBar": {
     "qobuzLinkedTip": "เชื่อมต่อ Qobuz แล้ว",

@@ -540,7 +540,10 @@
     "playlists": "Qobuz Çalma Listeleri",
     "heroTagline": "Editör akışları · 24-bit/192 kHz'e kadar kayıpsız ve hi-res",
     "seeAll": "TÜMÜNÜ GÖR",
-    "more": "DAHA FAZLA"
+    "more": "DAHA FAZLA",
+    "sortDefault": "AKIŞ SIRASI",
+    "sortName": "A–Z",
+    "sortTracks": "EN ÇOK PARÇA"
   },
   "titleBar": {
     "qobuzLinkedTip": "Qobuz bağlı",

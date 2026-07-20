@@ -622,7 +622,10 @@
     "playlists": "Danh sách phát Qobuz",
     "heroTagline": "Nguồn cấp biên tập · không mất dữ liệu & hi-res lên đến 24-bit/192 kHz",
     "seeAll": "XEM TẤT CẢ",
-    "more": "THÊM"
+    "more": "THÊM",
+    "sortDefault": "Thứ tự bảng tin",
+    "sortName": "A–Z",
+    "sortTracks": "Nhiều bản nhạc nhất"
   },
   "titleBar": {
     "qobuzLinkedTip": "Qobuz đã kết nối",

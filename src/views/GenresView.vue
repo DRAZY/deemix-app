@@ -104,7 +104,7 @@ async function loadQobuzPage(initial = false) {
   if (initial) { isLoading.value = true; hasError.value = false }
   try {
     const r = await fetch(
-      `http://127.0.0.1:${await serverPort()}/api/qobuz/featured?type=${qActiveFeed.value}&genre=${qActiveGenre.value.id}&offset=${qItems.value.length}&limit=50`
+      `http://127.0.0.1:${await serverPort()}/api/qobuz/featured?type=${qActiveFeed.value}&genre=${qActiveGenre.value.id}&offset=${qItems.value.length}&limit=100`
     )
     if (!r.ok) throw new Error(`feed: ${r.status}`)
     const d = await r.json()

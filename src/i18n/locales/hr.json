@@ -537,7 +537,10 @@
     "newReleases": "Nova izdanja",
     "playlists": "Qobuz popisi za reprodukciju",
     "pressAwards": "Nagrade tiska",
-    "seeAll": "PRIKAŽI SVE"
+    "seeAll": "PRIKAŽI SVE",
+    "sortDefault": "REDOSLIJED FEEDA",
+    "sortName": "A–Ž",
+    "sortTracks": "NAJVIŠE PJESAMA"
   },
   "retag": {
     "viaQobuzTip": "Oznake preuzete s Qobuza — Deezer nije imao podudaranje za ovaj ISRC"

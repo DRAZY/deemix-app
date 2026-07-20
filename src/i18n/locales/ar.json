@@ -537,7 +537,10 @@
     "playlists": "قوائم تشغيل Qobuz",
     "heroTagline": "خلاصات تحريرية · بدون فقدان وعالية الدقة حتى 24-bit/192 kHz",
     "seeAll": "عرض الكل",
-    "more": "المزيد"
+    "more": "المزيد",
+    "sortDefault": "ترتيب التغذية",
+    "sortName": "أبجدي",
+    "sortTracks": "الأكثر مقطوعات"
   },
   "retag": {
     "viaQobuzTip": "المعلومات مصدرها Qobuz — لم يجد Deezer تطابقًا لرمز ISRC هذا"

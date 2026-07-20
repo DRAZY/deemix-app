@@ -537,7 +537,10 @@
     "playlists": "Listas de Qobuz",
     "heroTagline": "Feeds editoriales · sin pérdidas y alta resolución hasta 24-bit/192 kHz",
     "seeAll": "VER TODO",
-    "more": "MÁS"
+    "more": "MÁS",
+    "sortDefault": "ORDEN DEL FEED",
+    "sortName": "A–Z",
+    "sortTracks": "MÁS PISTAS"
   },
   "retag": {
     "viaQobuzTip": "Etiquetas obtenidas de Qobuz — Deezer no tenía coincidencia para este ISRC"

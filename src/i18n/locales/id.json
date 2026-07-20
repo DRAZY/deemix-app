@@ -474,7 +474,10 @@
     "newReleases": "Rilis Baru",
     "playlists": "Playlist Qobuz",
     "pressAwards": "Penghargaan Pers",
-    "seeAll": "LIHAT SEMUA"
+    "seeAll": "LIHAT SEMUA",
+    "sortDefault": "URUTAN FEED",
+    "sortName": "A–Z",
+    "sortTracks": "TRACK TERBANYAK"
   },
   "retag": {
     "viaQobuzTip": "Tag bersumber dari Qobuz — Deezer tidak memiliki kecocokan untuk ISRC ini"

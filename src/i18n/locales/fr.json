@@ -537,7 +537,10 @@
     "newReleases": "Nouveautés",
     "playlists": "Playlists Qobuz",
     "pressAwards": "Récompenses de la presse",
-    "seeAll": "TOUT VOIR"
+    "seeAll": "TOUT VOIR",
+    "sortDefault": "ORDRE DU FLUX",
+    "sortName": "A–Z",
+    "sortTracks": "PLUS DE TITRES"
   },
   "retag": {
     "viaQobuzTip": "Tags provenant de Qobuz — Deezer n'avait aucune correspondance pour cet ISRC"

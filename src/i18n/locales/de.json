@@ -537,7 +537,10 @@
     "playlists": "Qobuz-Playlists",
     "heroTagline": "Redaktionelle Feeds · verlustfrei & Hi-Res bis zu 24-bit/192 kHz",
     "seeAll": "ALLE ANZEIGEN",
-    "more": "MEHR"
+    "more": "MEHR",
+    "sortDefault": "FEED-REIHENFOLGE",
+    "sortName": "A–Z",
+    "sortTracks": "MEISTE TITEL"
   },
   "retag": {
     "viaQobuzTip": "Tags von Qobuz bezogen — Deezer hatte keine Übereinstimmung für diese ISRC"

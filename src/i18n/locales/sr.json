@@ -619,7 +619,10 @@
     "newReleases": "Нова издања",
     "playlists": "Qobuz плејлисте",
     "pressAwards": "Награде критике",
-    "seeAll": "ПРИКАЖИ СВЕ"
+    "seeAll": "ПРИКАЖИ СВЕ",
+    "sortDefault": "РЕДОСЛЕД ФИДА",
+    "sortName": "А–Ш",
+    "sortTracks": "НАЈВИШЕ НУМЕРА"
   },
   "retag": {
     "viaQobuzTip": "Ознаке преузете са Qobuz-а — Deezer није нашао подударање за овај ISRC"

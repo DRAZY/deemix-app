@@ -537,7 +537,10 @@
     "playlists": "Λίστες Qobuz",
     "heroTagline": "Συντακτικές ροές · lossless & hi-res έως 24-bit/192 kHz",
     "seeAll": "ΔΕΙΤΕ ΟΛΑ",
-    "more": "ΠΕΡΙΣΣΟΤΕΡΑ"
+    "more": "ΠΕΡΙΣΣΟΤΕΡΑ",
+    "sortDefault": "ΣΕΙΡΑ ΡΟΗΣ",
+    "sortName": "Α–Ω",
+    "sortTracks": "ΠΕΡΙΣΣΟΤΕΡΑ ΚΟΜΜΑΤΙΑ"
   },
   "retag": {
     "viaQobuzTip": "Οι ετικέτες προέρχονται από το Qobuz — το Deezer δεν είχε αντιστοίχιση για αυτό το ISRC"

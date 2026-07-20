@@ -80,7 +80,7 @@ async function loadMoreRow(key: string) {
   try {
     const port = window.electronAPI ? await window.electronAPI.getServerPort() : 6595
     const genreParam = genreAtRequest ? `&genre=${genreAtRequest}` : ''
-    const r = await fetch(`http://127.0.0.1:${port}/api/qobuz/featured?type=${feedType}&offset=${rowRef.value.length}&limit=20${genreParam}`)
+    const r = await fetch(`http://127.0.0.1:${port}/api/qobuz/featured?type=${feedType}&offset=${rowRef.value.length}&limit=50${genreParam}`)
     if (activeGenre.value !== genreAtRequest) return
     if (r.ok) {
       const d = await r.json()

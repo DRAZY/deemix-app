@@ -24,6 +24,21 @@ const total = ref(0)
 const isLoading = ref(false)
 const hasError = ref(false)
 
+// Client-side sort over everything loaded so far — helps clean up big feeds
+// (especially the playlists catalog). 'default' preserves Qobuz's feed order.
+type SortMode = 'default' | 'name' | 'tracks'
+const sortMode = ref<SortMode>('default')
+const sortedItems = computed(() => {
+  if (sortMode.value === 'default') return items.value
+  const arr = [...items.value]
+  if (sortMode.value === 'name') {
+    arr.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' }))
+  } else {
+    arr.sort((a, b) => (b.nb_tracks || 0) - (a.nb_tracks || 0))
+  }
+  return arr
+})
+
 function mapAlbum(a: any): Album {
   return {
     id: a.id, title: a.title, nb_tracks: a.tracks_count, record_type: qobuzRecordType(a),
@@ -56,7 +71,7 @@ async function loadPage() {
   try {
     const port = window.electronAPI ? await window.electronAPI.getServerPort() : 6595
     const genreParam = genreId.value ? `&genre=${genreId.value}` : ''
-    const r = await fetch(`http://127.0.0.1:${port}/api/qobuz/featured?type=${feedType.value}&offset=${items.value.length}&limit=50${genreParam}`)
+    const r = await fetch(`http://127.0.0.1:${port}/api/qobuz/featured?type=${feedType.value}&offset=${items.value.length}&limit=100${genreParam}`)
     if (!r.ok) throw new Error(`feed: ${r.status}`)
     const d = await r.json()
     const mapper = isPlaylistFeed.value ? mapPlaylist : mapAlbum
@@ -83,6 +98,17 @@ onMounted(loadPage)
       <h1 class="font-display uppercase text-[22px] tracking-[0.02em]">{{ title }}</h1>
       <span class="font-mono text-[9px] px-1.5 py-0.5 border border-qobuz-500/40 text-qobuz-400 tracking-[0.12em]">QOBUZ</span>
       <span v-if="total" class="font-mono text-[10px] text-foreground-muted">{{ items.length }} / {{ total }}</span>
+      <div class="flex-1"></div>
+      <!-- Sort over loaded items -->
+      <div class="flex gap-1">
+        <button
+          v-for="m in (['default','name','tracks'] as const)"
+          :key="m"
+          @click="sortMode = m"
+          class="font-mono text-[9.5px] tracking-[0.1em] uppercase px-2 py-0.5 border transition-colors"
+          :class="sortMode === m ? 'border-qobuz-500/60 text-qobuz-400 bg-qobuz-500/10' : 'border-white/[0.08] text-foreground-muted hover:text-foreground'"
+        >{{ t('qobuz.sort' + m.charAt(0).toUpperCase() + m.slice(1)) }}</button>
+      </div>
     </div>
 
     <ErrorState
@@ -95,7 +121,7 @@ onMounted(loadPage)
     <template v-else>
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         <AlbumCard
-          v-for="item in items"
+          v-for="item in sortedItems"
           :key="item.id"
           :album="item"
           :type="isPlaylistFeed ? 'playlist' : 'album'"

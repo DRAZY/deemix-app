@@ -537,7 +537,10 @@
     "newReleases": "신규 발매",
     "playlists": "Qobuz 재생목록",
     "pressAwards": "언론 수상",
-    "seeAll": "모두 보기"
+    "seeAll": "모두 보기",
+    "sortDefault": "피드 순서",
+    "sortName": "가나다순",
+    "sortTracks": "트랙 많은 순"
   },
   "retag": {
     "viaQobuzTip": "Qobuz에서 가져온 태그 — Deezer에 이 ISRC와 일치하는 항목이 없습니다"

@@ -537,7 +537,10 @@
     "playlists": "Mga Playlist ng Qobuz",
     "heroTagline": "Mga editorial feed · lossless at hi-res hanggang 24-bit/192 kHz",
     "seeAll": "TINGNAN LAHAT",
-    "more": "HIGIT PA"
+    "more": "HIGIT PA",
+    "sortDefault": "AYOS NG FEED",
+    "sortName": "A–Z",
+    "sortTracks": "PINAKAMARAMING TRACK"
   },
   "retag": {
     "viaQobuzTip": "Nagmula sa Qobuz ang mga tag — walang tugma ang Deezer para sa ISRC na ito"

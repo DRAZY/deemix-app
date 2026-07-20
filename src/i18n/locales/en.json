@@ -879,7 +879,10 @@
     "playlists": "Qobuz Playlists",
     "heroTagline": "Editorial feeds · lossless & hi-res up to 24-bit/192 kHz",
     "seeAll": "SEE ALL",
-    "more": "MORE"
+    "more": "MORE",
+    "sortDefault": "Feed Order",
+    "sortName": "A–Z",
+    "sortTracks": "Most Tracks"
   },
   "genres": {
     "title": "Genres",
