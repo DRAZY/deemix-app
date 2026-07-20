@@ -35,6 +35,14 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '2.2.0',
+    date: '2026-07-20',
+    items: [
+      'Connect Qobuz with just a token: Settings → Qobuz now has an "Or connect with a token" field for accounts that only hold a user_auth_token or can\'t use the login window — single paste, validated with Qobuz, stored encrypted like every credential.',
+      'The retagger now falls back to Qobuz when Deezer can\'t match a file\'s ISRC — matches are accepted only when the ISRC is identical, and rows show a Q chip when Qobuz sourced the tags. Plus: big queues scroll smoothly (browser-native row windowing), album downloads skip a redundant per-track metadata call, and the whole Qobuz era of the app is now translated in all 20 languages.'
+    ]
+  },
+  {
     version: '2.1.2',
     date: '2026-07-19',
     items: [

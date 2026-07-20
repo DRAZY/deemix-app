@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-2.1.2-C8F135" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.2.0-C8F135" />
   <img alt="Electron" src="https://img.shields.io/badge/Electron-39-47848F?logo=electron&logoColor=white" />
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
@@ -30,6 +30,7 @@
 - **Quality Transparency** -- Album cards show each release's quality ceiling (e.g. 24/192, CD); every download reports the tier actually delivered (e.g. "FLAC 24/96"); tier step-down on repeated CDN stream failures happens only with Bitrate Fallback enabled — never silently
 - **Full Settings Parity** -- Folder structure, naming templates, CD subfolders, artwork, the complete tagging option set, duplicate skip (by ISRC), overwrite modes, and playlist handling all apply to Qobuz exactly as they do to Deezer
 - **Secure by Design** -- Your Qobuz session token lives only in OS secure storage — never in settings files, exports, or backups
+- **Token Login (v2.2.0)** -- Connect with a bare `user_auth_token` when that's all you have (or the login window is unavailable in your region) — single-field paste, validated and stored encrypted
 
 ### Music Discovery & Browsing
 
