@@ -3476,12 +3476,17 @@ export class DeemixServer extends EventEmitter {
       playlistPosition?: number
       playlistOwner?: string
       m3uTrackerId?: string
+      qobuzMeta?: any
     } = {}
   ): any {
     const isFromPlaylist = !!ctx.playlistName
     return {
       service: 'qobuz',
       trackId,
+      // Track metadata already held from the album/playlist listing (#112) —
+      // saves the per-track track/get round-trip; the downloader falls back to
+      // a live fetch when essentials are missing.
+      qobuzMeta: ctx.qobuzMeta,
       outputPath: this.settings.downloadPath,
       // settings.quality is already server-format ('MP3_128'|'MP3_320'|'FLAC') —
       // pass it through. (A renderer-format map here once made every Qobuz
@@ -3578,6 +3583,12 @@ export class DeemixServer extends EventEmitter {
         downloader.registerPlaylistForM3U(m3uTrackerId, playlistName, this.settings.downloadPath, validTracks.length, this.settings.m3uNameTemplate)
       }
 
+      // Listing metadata reuse (#112): album/get track items carry no per-track
+      // `album` object (the container IS the album) — graft it on so the shim
+      // has everything track/get would have returned. Playlist items already
+      // carry their own per-track album.
+      const albumForMeta = albumId ? { ...data, tracks: undefined } : undefined
+
       const ids: string[] = []
       let position = 0
       for (const t of validTracks) {
@@ -3589,6 +3600,7 @@ export class DeemixServer extends EventEmitter {
           playlistPosition: playlistName ? position : undefined,
           playlistOwner,
           m3uTrackerId,
+          qobuzMeta: albumId ? { ...t, album: albumForMeta } : t,
         }))
         ids.push(id)
       }

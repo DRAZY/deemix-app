@@ -98,6 +98,7 @@ export interface DownloadOptions {
   trackId: string | number
   outputPath: string
   service?: 'deezer' | 'qobuz'  // download backend; defaults to deezer
+  qobuzMeta?: any               // listing-supplied track metadata (#112) — skips the per-track track/get when complete
   prefetchedCover?: Buffer      // pre-fetched cover art (e.g. Qobuz URL), used instead of the Deezer-hash CDN fetch
   quality: 'MP3_128' | 'MP3_320' | 'FLAC'
   bitrateFallback?: boolean  // Whether to fallback to lower bitrates if preferred unavailable
@@ -878,7 +879,16 @@ export class Downloader extends EventEmitter {
     const abortController = new AbortController()
     this.downloadAborts.set(downloadId, abortController)
     try {
-      const meta = await qobuzAuth.getTrack(options.trackId)
+      // #112: album/playlist queues pass the listing's track metadata through —
+      // skip the per-track track/get round-trip when it carries the essentials
+      // the shim needs; anything short falls back to the live fetch. 'isrc' is
+      // checked for PRESENCE (some tracks legitimately have isrc: null; an
+      // absent field means the listing shape can't be trusted for tagging).
+      const cached = options.qobuzMeta
+      const cachedUsable = !!(cached && cached.id && cached.title &&
+        (cached.performer?.name || cached.album?.artist?.name) &&
+        cached.album?.title && cached.album?.image && 'isrc' in cached)
+      const meta = cachedUsable ? cached : await qobuzAuth.getTrack(options.trackId)
       const artist = meta?.performer?.name || meta?.album?.artist?.name || 'Unknown Artist'
       const title = meta?.title || `track-${options.trackId}`
       progress.trackTitle = title
