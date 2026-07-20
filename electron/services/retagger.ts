@@ -15,6 +15,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import * as https from 'https'
+import { qobuzAuth } from './qobuzAuth'
 
 const NodeID3 = require('node-id3')
 
@@ -78,6 +79,7 @@ export interface ResolvedMeta {
   explicit: boolean
   recordType: string // Deezer record_type (album/single/ep/compile) → RELEASETYPE tag (#82)
   gain: string       // Deezer per-track gain value (e.g. "-6.3") → REPLAYGAIN_TRACK_GAIN. '' when absent.
+  source?: 'deezer' | 'qobuz'  // which catalog resolved this metadata (#108)
 }
 
 export interface TagChange {
@@ -90,6 +92,9 @@ export interface RetagResult {
   path: string
   status: 'updated' | 'skipped' | 'failed' | 'preview'
   changes: TagChange[]
+  // Which catalog sourced the new tags — 'qobuz' when the Deezer lookup missed
+  // and the Qobuz fallback matched (#108). Disclosed in the Retag UI.
+  source?: 'deezer' | 'qobuz'
   // Selected fields Deezer had no value for (e.g. an album with no genre).
   // Lets the UI say "not available on Deezer" instead of silently skipping.
   unavailable?: string[]
@@ -210,7 +215,8 @@ function buildMeta(track: any, album: any): ResolvedMeta {
     duration: track.duration ? str(track.duration) : '',
     explicit: track.explicit_lyrics === true,
     recordType: typeof album.record_type === 'string' ? album.record_type : '',
-    gain: (track.gain === null || track.gain === undefined) ? '' : String(track.gain)
+    gain: (track.gain === null || track.gain === undefined) ? '' : String(track.gain),
+    source: 'deezer'
   }
 }
 
@@ -259,6 +265,72 @@ export async function resolveTrackById(trackId: string | number): Promise<Resolv
   if (!track || track.error || !track.id) return null
   const album = track.album?.id ? await getAlbum(track.album.id) : {}
   return buildMeta(track, album)
+}
+
+// --- Qobuz fallback resolver (#108) ---------------------------------------
+// Qobuz's api.json has no first-class ISRC endpoint, but catalog/search DOES
+// index ISRCs (verified live: real library ISRCs return the exact track as the
+// first hit). Search, then require the candidate's isrc field to EQUAL the
+// file's before accepting — never an unverified match. Requires a connected
+// Qobuz session; the caller treats null as "no match".
+
+const qobuzAlbumCache = new Map<string, Promise<any>>()
+function getQobuzAlbumCached(albumId: string): Promise<any> {
+  let p = qobuzAlbumCache.get(albumId)
+  if (!p) {
+    p = qobuzAuth.getAlbum(albumId).catch(() => null)
+    qobuzAlbumCache.set(albumId, p)
+    p.finally(() => setTimeout(() => qobuzAlbumCache.delete(albumId), 120000))
+  }
+  return p
+}
+
+/** Normalize a Qobuz search-hit track + album/get container into ResolvedMeta. */
+function buildMetaQobuz(track: any, album: any): ResolvedMeta {
+  const a = album || {}
+  const releaseDate: string = str(a.release_date_original || track.release_date_original || '')
+  const version = str(track.version).trim()
+  const baseTitle = str(track.title)
+  return {
+    // Qobuz keeps edition qualifiers in `version` — fold it in unless the title
+    // already carries it (mirrors how the download tagger composes titles).
+    title: version && !baseTitle.toLowerCase().includes(version.toLowerCase())
+      ? `${baseTitle} ${version}` : baseTitle,
+    artist: str(track.performer?.name || a.artist?.name),
+    album: str(a.title || track.album?.title),
+    albumArtist: str(a.artist?.name || track.performer?.name),
+    trackNumber: str(track.track_number),
+    trackTotal: str(a.tracks_count),
+    discNumber: str(track.media_number),
+    isrc: str(track.isrc),
+    upc: typeof a.upc === 'string' ? a.upc : '',
+    label: str(a.label?.name),
+    year: releaseDate ? releaseDate.split('-')[0] : '',
+    date: releaseDate,
+    bpm: '', // not exposed by Qobuz's catalog
+    genre: str(a.genre?.name),
+    duration: track.duration ? str(track.duration) : '',
+    explicit: track.parental_warning === true,
+    recordType: '', // Qobuz has no Deezer-style record_type — never write a guess
+    gain: '', // Qobuz exposes no per-track gain
+    source: 'qobuz'
+  }
+}
+
+/** ISRC lookup on Qobuz (search-then-verify). Null when disconnected or no exact match. */
+export async function resolveByIsrcQobuz(isrc: string): Promise<ResolvedMeta | null> {
+  if (!qobuzAuth.isLoggedIn()) return null
+  try {
+    const res = await qobuzAuth.search(isrc, 5)
+    const items: any[] = res?.tracks?.items || []
+    const hit = items.find(t => str(t?.isrc).toUpperCase() === isrc.toUpperCase())
+    if (!hit) return null
+    const albumId = hit.album?.id ? String(hit.album.id) : null
+    const album = albumId ? await getQobuzAlbumCached(albumId) : null
+    return buildMetaQobuz(hit, album || hit.album || {})
+  } catch {
+    return null // fallback resolver never fails the file — Deezer's miss already reported
+  }
 }
 
 // --- Field plan (which tags to overlay, with their new values) ------------
@@ -555,8 +627,8 @@ export function applyMergeFromMeta(filePath: string, meta: ResolvedMeta, fields:
 
   try {
     const { changes, unchanged } = fmt === 'flac' ? applyFlac(filePath, plan, dryRun) : applyMp3(filePath, plan, dryRun)
-    if (changes.length === 0) return { path: filePath, status: 'skipped', changes: [], unchanged, unavailable, reason: 'tags already up to date' }
-    return { path: filePath, status: dryRun ? 'preview' : 'updated', changes, unchanged, unavailable }
+    if (changes.length === 0) return { path: filePath, status: 'skipped', changes: [], unchanged, unavailable, reason: 'tags already up to date', source: meta.source }
+    return { path: filePath, status: dryRun ? 'preview' : 'updated', changes, unchanged, unavailable, source: meta.source }
   } catch (e: any) {
     return { path: filePath, status: 'failed', changes: [], unavailable, error: e?.message || String(e) }
   }
@@ -573,7 +645,12 @@ export async function retagFile(filePath: string, fields: RetagFields, dryRun: b
 
   let meta: ResolvedMeta | null
   try { meta = await resolveByIsrc(isrc) } catch (e: any) { return { path: filePath, status: 'failed', changes: [], error: `lookup failed: ${e?.message || e}` } }
-  if (!meta) return { path: filePath, status: 'failed', changes: [], error: `no Deezer match for ISRC ${isrc}` }
+  // Deezer miss -> Qobuz fallback (#108); connected sessions only, exact-ISRC verified.
+  if (!meta) meta = await resolveByIsrcQobuz(isrc)
+  if (!meta) {
+    const tried = qobuzAuth.isLoggedIn() ? 'Deezer or Qobuz' : 'Deezer'
+    return { path: filePath, status: 'failed', changes: [], error: `no ${tried} match for ISRC ${isrc}` }
+  }
 
   return applyMergeFromMeta(filePath, meta, fields, dryRun)
 }
@@ -692,7 +769,12 @@ export async function retagFileInFolder(filePath: string, folder: string, fields
   } catch (e: any) {
     return { path: filePath, status: 'failed', changes: [], error: `lookup failed: ${e?.message || e}` }
   }
-  if (!meta) return { path: filePath, status: 'failed', changes: [], error: `no Deezer match for ISRC ${tags.isrc}` }
+  // Deezer miss -> Qobuz fallback (#108); connected sessions only, exact-ISRC verified.
+  if (!meta) meta = await resolveByIsrcQobuz(tags.isrc)
+  if (!meta) {
+    const tried = qobuzAuth.isLoggedIn() ? 'Deezer or Qobuz' : 'Deezer'
+    return { path: filePath, status: 'failed', changes: [], error: `no ${tried} match for ISRC ${tags.isrc}` }
+  }
 
   return applyMergeFromMeta(filePath, meta, fields, dryRun)
 }

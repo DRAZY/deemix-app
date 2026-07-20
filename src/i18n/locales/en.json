@@ -52,7 +52,8 @@
     "refreshTagsHint": "Rewrite tags on already-downloaded files from this exact release — no re-download, audio untouched",
     "upToDate": "Already up to date — tags match Deezer.",
     "alreadyCorrect": "Already correct",
-    "notOnDeezer": "Not available on Deezer"
+    "notOnDeezer": "Not available on Deezer",
+    "viaQobuzTip": "Tags sourced from Qobuz — Deezer had no match for this ISRC"
   },
   "sidebar": {
     "appName": "Deemix Remastered",
