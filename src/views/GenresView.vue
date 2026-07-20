@@ -44,10 +44,10 @@ async function serverPort(): Promise<number> {
 // ==================== QOBUZ ====================
 
 const QOBUZ_FEEDS = [
-  { type: 'new-releases-full', label: 'New Releases' },
-  { type: 'most-streamed', label: 'Most Streamed' },
-  { type: 'press-awards', label: 'Press Awards' },
-  { type: 'editor-picks', label: "Editor's Picks" },
+  { type: 'new-releases-full', labelKey: 'qobuz.newReleases' },
+  { type: 'most-streamed', labelKey: 'qobuz.mostStreamed' },
+  { type: 'press-awards', labelKey: 'qobuz.pressAwards' },
+  { type: 'editor-picks', labelKey: 'qobuz.editorPicks' },
 ] as const
 
 const qGenres = ref<Genre[]>([])
@@ -237,7 +237,7 @@ onMounted(loadGenres)
         </div>
         <h1 class="font-display uppercase text-[36px] leading-[1] tracking-[-0.01em] mb-2">Genres</h1>
         <p class="font-mono text-[11px] tracking-[0.06em] uppercase text-foreground-muted">
-          {{ source === 'qobuz' ? 'The full Qobuz catalog by genre — paginated to the end of every genre' : 'Deezer editorial picks, charts & paginated new releases by genre' }}
+          {{ source === 'qobuz' ? t('genres.heroQobuz') : t('genres.heroDeezer') }}
         </p>
       </div>
       <div class="absolute -right-6 -bottom-16 font-display text-[220px] leading-none text-white/[0.03] select-none pointer-events-none" aria-hidden="true">▮</div>
@@ -279,7 +279,7 @@ onMounted(loadGenres)
             @click="selectQobuzFeed(f.type)"
             class="font-mono text-[10px] tracking-[0.1em] uppercase px-2.5 py-1 border-b-2 transition-colors"
             :class="qActiveFeed === f.type ? 'border-qobuz-500 text-qobuz-400' : 'border-transparent text-foreground-muted hover:text-foreground'"
-          >{{ f.label }}</button>
+          >{{ t(f.labelKey) }}</button>
         </div>
         <div class="flex-1"></div>
         <span v-if="qTotal" class="font-mono text-[10px] text-foreground-muted">{{ qItems.length }} / {{ qTotal }}</span>
@@ -311,7 +311,7 @@ onMounted(loadGenres)
           <button
             @click="loadQobuzPage()"
             class="font-mono text-[10px] tracking-[0.16em] uppercase px-5 py-2 border border-qobuz-500/50 text-qobuz-400 hover:bg-qobuz-500 hover:text-background-main transition-colors"
-          >MORE ({{ qItems.length }}/{{ qTotal }})</button>
+          >{{ t('qobuz.more') }} ({{ qItems.length }}/{{ qTotal }})</button>
         </div>
       </template>
     </template>
@@ -345,7 +345,7 @@ onMounted(loadGenres)
       <template v-else>
         <!-- Editorial picks -->
         <section v-if="picks.length > 0">
-          <h2 class="font-display text-[15px] uppercase tracking-[0.06em] mb-4">Fresh Picks</h2>
+          <h2 class="font-display text-[15px] uppercase tracking-[0.06em] mb-4">{{ t('genres.freshPicks') }}</h2>
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <AlbumCard v-for="album in picks" :key="album.id" :album="album" />
           </div>
@@ -354,7 +354,7 @@ onMounted(loadGenres)
         <!-- Genre chart tracks — pages toward Deezer's 100 cap -->
         <section v-if="chartTracks.length > 0">
           <div class="flex items-center gap-3 mb-4">
-            <h2 class="font-display text-[15px] uppercase tracking-[0.06em]">Top Tracks</h2>
+            <h2 class="font-display text-[15px] uppercase tracking-[0.06em]">{{ t('genres.topTracks') }}</h2>
             <span v-if="dzChart.tracks.total" class="font-mono text-[10px] text-foreground-muted">{{ chartTracks.length }} / {{ dzChart.tracks.total }}</span>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -367,14 +367,14 @@ onMounted(loadGenres)
             <button
               @click="loadDeezerChartPage('tracks')"
               class="font-mono text-[10px] tracking-[0.16em] uppercase px-5 py-2 border border-primary-500/50 text-primary-400 hover:bg-primary-500 hover:text-background-main transition-colors"
-            >MORE TRACKS</button>
+            >{{ t('genres.moreTracks') }}</button>
           </div>
         </section>
 
         <!-- Genre chart albums — pages toward Deezer's 100 cap -->
         <section v-if="chartAlbums.length > 0">
           <div class="flex items-center gap-3 mb-4">
-            <h2 class="font-display text-[15px] uppercase tracking-[0.06em]">Top Albums</h2>
+            <h2 class="font-display text-[15px] uppercase tracking-[0.06em]">{{ t('genres.topAlbums') }}</h2>
             <span v-if="dzChart.albums.total" class="font-mono text-[10px] text-foreground-muted">{{ chartAlbums.length }} / {{ dzChart.albums.total }}</span>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -387,7 +387,7 @@ onMounted(loadGenres)
             <button
               @click="loadDeezerChartPage('albums')"
               class="font-mono text-[10px] tracking-[0.16em] uppercase px-5 py-2 border border-primary-500/50 text-primary-400 hover:bg-primary-500 hover:text-background-main transition-colors"
-            >MORE ALBUMS</button>
+            >{{ t('genres.moreAlbums') }}</button>
           </div>
         </section>
       </template>

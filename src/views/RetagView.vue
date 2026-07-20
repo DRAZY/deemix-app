@@ -28,6 +28,7 @@ interface FileResult {
   unchanged?: string[]
   reason?: string
   error?: string
+  source?: 'deezer' | 'qobuz'  // which catalog sourced the tags (#108) — disclosed as a chip
 }
 
 const files = ref<ScannedFile[]>([])
@@ -363,6 +364,13 @@ function resultClass(status?: string) {
             >
               {{ t('retag.retry') }}
             </button>
+            <!-- Cross-catalog disclosure (#108): tags sourced from Qobuz's catalog
+                 because Deezer had no match for this ISRC -->
+            <span
+              v-if="results[f.path].source === 'qobuz'"
+              v-tooltip="t('retag.viaQobuzTip')"
+              class="font-mono text-[9px] px-1 py-px border border-qobuz-500/50 text-qobuz-400 bg-qobuz-500/10 tracking-[0.08em] cursor-help"
+            >Q</span>
             <span
               class="font-mono text-[10px] tracking-[0.08em] uppercase font-medium"
               :class="resultClass(results[f.path].status)"

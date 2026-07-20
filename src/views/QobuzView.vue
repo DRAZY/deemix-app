@@ -178,12 +178,12 @@ onMounted(() => { loadGenres(); loadDiscover() })
 // Personal rows lead — your purchases and favorites are what make the tab
 // feel like YOUR Qobuz, mirroring the Qobuz player's own ordering.
 const sections = [
-  { key: 'myPurchases', title: 'My Purchases', data: myPurchases },
-  { key: 'myFavorites', title: 'My Favorites', data: myFavorites },
-  { key: 'newReleases', title: 'New Releases', data: newReleases },
-  { key: 'editorPicks', title: "Editor's Picks", data: editorPicks },
-  { key: 'pressAwards', title: 'Press Awards', data: pressAwards },
-  { key: 'mostStreamed', title: 'Most Streamed', data: mostStreamed },
+  { key: 'myPurchases', title: t('qobuz.myPurchases'), data: myPurchases },
+  { key: 'myFavorites', title: t('qobuz.myFavorites'), data: myFavorites },
+  { key: 'newReleases', title: t('qobuz.newReleases'), data: newReleases },
+  { key: 'editorPicks', title: t('qobuz.editorPicks'), data: editorPicks },
+  { key: 'pressAwards', title: t('qobuz.pressAwards'), data: pressAwards },
+  { key: 'mostStreamed', title: t('qobuz.mostStreamed'), data: mostStreamed },
 ]
 </script>
 
@@ -195,7 +195,7 @@ const sections = [
         <div class="font-mono text-[10px] tracking-[0.3em] text-qobuz-500 mb-2">// CHANNEL Q · HI-RES</div>
         <h1 class="font-display uppercase text-[36px] leading-[1] tracking-[-0.01em] mb-2">Qobuz</h1>
         <p class="font-mono text-[11px] tracking-[0.06em] uppercase text-foreground-muted mb-6">
-          Editorial feeds · lossless & hi-res up to 24-bit/192 kHz
+          {{ t('qobuz.heroTagline') }}
         </p>
 
         <!-- Channel-scoped search — routes to the shared search view in Qobuz mode -->
@@ -267,7 +267,7 @@ const sections = [
               v-if="FEED_TYPE[s.key]"
               :to="{ path: '/qobuz/feed', query: { type: FEED_TYPE[s.key], title: s.title, ...(activeGenre ? { genre: activeGenre } : {}) } }"
               class="font-mono text-[10px] tracking-[0.16em] uppercase text-qobuz-400 hover:text-qobuz-500 flex items-center gap-1"
-            >SEE ALL
+            >{{ t('qobuz.seeAll') }}
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
               </svg>
@@ -290,13 +290,13 @@ const sections = [
       <section v-if="playlists.length > 0">
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center gap-2">
-            <h2 class="font-display text-[15px] uppercase tracking-[0.06em]">Qobuz Playlists</h2>
+            <h2 class="font-display text-[15px] uppercase tracking-[0.06em]">{{ t('qobuz.playlists') }}</h2>
             <span class="font-mono text-[9px] px-1.5 py-0.5 border border-qobuz-500/40 text-qobuz-400 tracking-[0.12em]">QOBUZ</span>
           </div>
           <router-link
             :to="{ path: '/qobuz/feed', query: { type: 'playlists', title: 'Qobuz Playlists', ...(activeGenre ? { genre: activeGenre } : {}) } }"
             class="font-mono text-[10px] tracking-[0.16em] uppercase text-qobuz-400 hover:text-qobuz-500 flex items-center gap-1"
-          >SEE ALL
+          >{{ t('qobuz.seeAll') }}
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>

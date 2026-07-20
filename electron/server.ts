@@ -2076,14 +2076,9 @@ export class DeemixServer extends EventEmitter {
   }
 
   private handleGetQueue(res: ServerResponse): void {
-    const queue = downloader.getAllProgress()
-    // Debug: Log status summary
-    const statusSummary = queue.reduce((acc: any, q) => {
-      acc[q.status] = (acc[q.status] || 0) + 1
-      return acc
-    }, {})
-    console.log(`[Server] /api/queue: returning ${queue.length} items, statuses:`, statusSummary)
-    this.sendJSON(res, { queue })
+    // No per-poll logging here (#113): this endpoint fires every 1-2s and the
+    // old status-summary reduce over a 1,000-row queue was pure overhead.
+    this.sendJSON(res, { queue: downloader.getAllProgress() })
   }
 
   private async handleCancelDownload(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -3103,11 +3098,15 @@ export class DeemixServer extends EventEmitter {
       const body = await this.parseBody(req)
       const userId = Number(body.userId)
       const token = String(body.token || '')
-      if (!userId || !token) {
-        this.sendJSON(res, { success: false, error: 'userId and token required' }, 400)
+      if (!token) {
+        this.sendJSON(res, { success: false, error: 'token required' }, 400)
         return
       }
-      const session = await qobuzAuth.loginWithToken(userId, token)
+      // userId present → login-window path (id captured alongside the token).
+      // userId absent → token-paste path (#114): Qobuz identifies the account.
+      const session = userId
+        ? await qobuzAuth.loginWithToken(userId, token)
+        : await qobuzAuth.connectWithToken(token)
       this.sendJSON(res, { success: true, userId: session.userId, plan: session.credentialLabel })
     } catch (error: any) {
       this.sendJSON(res, { success: false, error: sanitizeErrorMessage(error, 'Qobuz login failed') }, 401)
@@ -3472,12 +3471,17 @@ export class DeemixServer extends EventEmitter {
       playlistPosition?: number
       playlistOwner?: string
       m3uTrackerId?: string
+      qobuzMeta?: any
     } = {}
   ): any {
     const isFromPlaylist = !!ctx.playlistName
     return {
       service: 'qobuz',
       trackId,
+      // Track metadata already held from the album/playlist listing (#112) —
+      // saves the per-track track/get round-trip; the downloader falls back to
+      // a live fetch when essentials are missing.
+      qobuzMeta: ctx.qobuzMeta,
       outputPath: this.settings.downloadPath,
       // settings.quality is already server-format ('MP3_128'|'MP3_320'|'FLAC') —
       // pass it through. (A renderer-format map here once made every Qobuz
@@ -3574,6 +3578,12 @@ export class DeemixServer extends EventEmitter {
         downloader.registerPlaylistForM3U(m3uTrackerId, playlistName, this.settings.downloadPath, validTracks.length, this.settings.m3uNameTemplate)
       }
 
+      // Listing metadata reuse (#112): album/get track items carry no per-track
+      // `album` object (the container IS the album) — graft it on so the shim
+      // has everything track/get would have returned. Playlist items already
+      // carry their own per-track album.
+      const albumForMeta = albumId ? { ...data, tracks: undefined } : undefined
+
       const ids: string[] = []
       let position = 0
       for (const t of validTracks) {
@@ -3585,6 +3595,7 @@ export class DeemixServer extends EventEmitter {
           playlistPosition: playlistName ? position : undefined,
           playlistOwner,
           m3uTrackerId,
+          qobuzMeta: albumId ? { ...t, album: albumForMeta } : t,
         }))
         ids.push(id)
       }

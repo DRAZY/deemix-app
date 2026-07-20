@@ -279,6 +279,43 @@ class QobuzAuth extends EventEmitter {
     return this.session
   }
 
+  /**
+   * Token-paste login (#114): authenticate from a bare user_auth_token alone —
+   * for users who only hold a token (e.g. from another tool's config) or whose
+   * region blocks the embedded login window. Asks Qobuz who the token belongs
+   * to (user/get with no user_id returns the authenticated user), then runs the
+   * normal loginWithToken validation (plan check included). Never touches the
+   * current session until the token proves valid.
+   */
+  async connectWithToken(userAuthToken: string): Promise<QobuzSession> {
+    const token = userAuthToken.trim()
+    if (!token) throw new Error('Qobuz: token required')
+    const { appId } = await this.fetchAppCredentials()
+    // Raw fetch, not apiGet: this must not read this.session, and a 401 here
+    // means "bad pasted token" — it must never expire the existing session.
+    const res = await this.fetchWithRetry(
+      `${QOBUZ_API_BASE}/user/get?app_id=${appId}`,
+      { headers: { 'X-App-Id': appId, 'X-User-Auth-Token': token } },
+      15000
+    )
+    if (res.status === 401) {
+      throw new Error('Qobuz rejected this token — it may be expired, revoked, or mistyped')
+    }
+    if (!res.ok) {
+      let detail = ''
+      try { detail = (await res.text()).slice(0, 200) } catch { /* body unreadable */ }
+      throw new Error(`Qobuz token validation failed: HTTP ${res.status}${detail ? ` — ${detail}` : ''}`)
+    }
+    const me = await res.json()
+    const userId = Number(me?.id)
+    if (!userId) {
+      throw new Error('Qobuz accepted the token but did not identify the account — cannot complete token login')
+    }
+    const session = await this.loginWithToken(userId, token)
+    this.authExpired = false
+    return session
+  }
+
   restoreSession(userAuthToken: string, userId: number): void {
     this.session = { userAuthToken, userId, isValid: true }
   }

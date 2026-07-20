@@ -77,7 +77,23 @@
     "causeGeoRestriction": "A faixa tem restrição geográfica na sua região",
     "causeUnavailable": "A faixa não está mais disponível no Deezer",
     "causeSession": "Sua sessão de login pode ter expirado",
-    "causeNetwork": "Problemas de rede ou conectividade do servidor"
+    "causeNetwork": "Problemas de rede ou conectividade do servidor",
+    "cancelRemoveTip": "Cancelar e remover da fila",
+    "clearAllConfirm": "Limpar tudo",
+    "clearAllMessage": "Tem certeza de que deseja limpar todos os {count} downloads? Isso removerá todos os itens da lista de downloads, mas não excluirá os arquivos baixados.",
+    "clearAllTitle": "Limpar todos os downloads",
+    "clearCompletedConfirm": "Limpar concluídos",
+    "clearCompletedMessage": "Tem certeza de que deseja limpar os {count} downloads concluídos? Isso os removerá da lista de downloads, mas não excluirá os arquivos baixados.",
+    "clearCompletedTitle": "Limpar downloads concluídos",
+    "deleteTip": "Excluir download",
+    "downloadNextTip": "Baixar próximo (mover para o início da fila)",
+    "hideFailedTracks": "Ocultar faixas com falha",
+    "inLibrary": "Na biblioteca",
+    "inLibraryTip": "Já está na sua biblioteca — nada foi baixado; seus arquivos existentes foram mantidos.",
+    "noHistoryYet": "Nenhum histórico de downloads ainda",
+    "retryFailedTip": "Tentar novamente {n} faixa com falha | Tentar novamente {n} faixas com falha",
+    "retryTip": "Tentar download novamente",
+    "showFailedTracks": "Mostrar faixas com falha"
   },
   "charts": {
     "title": "Rankings",
@@ -339,6 +355,22 @@
       "credentialsRequired": "Por favor, insira o Client ID e o Client Secret",
       "getCredentials": "Obter credenciais do Spotify Developer",
       "credentialsHelp": "Crie um app no Spotify Developer Dashboard para obter seu Client ID e Secret."
+    },
+    "qobuz": {
+      "connect": "Conectar conta Qobuz",
+      "connected": "Conectado",
+      "connectedTo": "Conectado ao Qobuz",
+      "connecting": "Abrindo login…",
+      "couldNotConnect": "Não foi possível conectar",
+      "description": "Conecte sua conta Qobuz para baixar FLAC em alta resolução (até 24-bit/192 kHz). É necessário um plano Qobuz pago; contas gratuitas não podem baixar.",
+      "disconnect": "Desconectar",
+      "help": "Uma janela de login do Qobuz será aberta; faça login normalmente. Seu token de sessão é armazenado de forma criptografada e atualizado quando você reconecta.",
+      "loginNotCompleted": "O login não foi concluído",
+      "title": "Qobuz",
+      "tokenConnect": "Usar token",
+      "tokenHelp": "Para contas que possuem apenas um token de autenticação (por exemplo, da configuração de outra ferramenta) ou quando a janela de login está indisponível. O token é validado com o Qobuz e depois armazenado de forma criptografada — exatamente como no fluxo da janela de login. Ele nunca aparece em arquivos de configuração, exportações ou backups.",
+      "tokenLabel": "Ou conecte com um token",
+      "tokenPlaceholder": "Cole seu user_auth_token do Qobuz"
     }
   },
   "login": {
@@ -484,5 +516,34 @@
     "sortTracks": "Faixas baixadas",
     "filterPlaceholder": "Filtrar por nome…",
     "noMatches": "Nenhum resultado"
+  },
+  "genres": {
+    "freshPicks": "Novidades selecionadas",
+    "heroDeezer": "Seleções editoriais do Deezer, paradas e novos lançamentos paginados por gênero",
+    "heroQobuz": "O catálogo completo do Qobuz por gênero — paginado até o fim de cada gênero",
+    "moreAlbums": "MAIS ÁLBUNS",
+    "moreTracks": "MAIS FAIXAS",
+    "title": "Gêneros",
+    "topAlbums": "Top Álbuns",
+    "topTracks": "Top Faixas"
+  },
+  "qobuz": {
+    "editorPicks": "Escolhas do editor",
+    "heroTagline": "Seleções editoriais · sem perdas e hi-res até 24-bit/192 kHz",
+    "more": "MAIS",
+    "mostStreamed": "Mais ouvidas",
+    "myFavorites": "Meus favoritos",
+    "myPurchases": "Minhas compras",
+    "newReleases": "Novos lançamentos",
+    "playlists": "Playlists do Qobuz",
+    "pressAwards": "Prêmios da imprensa",
+    "seeAll": "VER TUDO"
+  },
+  "retag": {
+    "viaQobuzTip": "Tags obtidas do Qobuz — o Deezer não encontrou correspondência para este ISRC"
+  },
+  "titleBar": {
+    "qobuzLinkedTip": "Qobuz conectado",
+    "qobuzOfflineTip": "Qobuz não conectado — conecte nas Configurações"
   }
 }

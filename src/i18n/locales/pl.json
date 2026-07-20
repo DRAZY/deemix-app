@@ -77,7 +77,23 @@
     "causeGeoRestriction": "Utwór jest ograniczony geograficznie w Twoim regionie",
     "causeUnavailable": "Utwór nie jest już dostępny w Deezer",
     "causeSession": "Twoja sesja logowania mogła wygasnąć",
-    "causeNetwork": "Problemy z siecią lub łącznością serwera"
+    "causeNetwork": "Problemy z siecią lub łącznością serwera",
+    "cancelRemoveTip": "Anuluj i usuń z kolejki",
+    "clearAllConfirm": "Wyczyść wszystko",
+    "clearAllMessage": "Czy na pewno chcesz wyczyścić wszystkie pobrania ({count})? Spowoduje to usunięcie wszystkich pozycji z listy pobierania, ale nie usunie pobranych plików.",
+    "clearAllTitle": "Wyczyść wszystkie pobrania",
+    "clearCompletedConfirm": "Wyczyść ukończone",
+    "clearCompletedMessage": "Czy na pewno chcesz wyczyścić ukończone pobrania ({count})? Spowoduje to usunięcie ich z listy pobierania, ale nie usunie pobranych plików.",
+    "clearCompletedTitle": "Wyczyść ukończone pobrania",
+    "deleteTip": "Usuń pobranie",
+    "downloadNextTip": "Pobierz następne (przenieś na początek kolejki)",
+    "hideFailedTracks": "Ukryj nieudane utwory",
+    "inLibrary": "W bibliotece",
+    "inLibraryTip": "Już w Twojej bibliotece — nic nie zostało pobrane; istniejące pliki pozostały bez zmian.",
+    "noHistoryYet": "Brak historii pobierania",
+    "retryFailedTip": "Ponów {n} nieudany utwór | Ponów {n} nieudanych utworów",
+    "retryTip": "Ponów pobieranie",
+    "showFailedTracks": "Pokaż nieudane utwory"
   },
   "charts": {
     "title": "Rankingi",
@@ -339,6 +355,22 @@
       "credentialsRequired": "Wprowadź zarówno Client ID jak i Client Secret",
       "getCredentials": "Uzyskaj dane uwierzytelniające Spotify Developer",
       "credentialsHelp": "Utwórz aplikację w Spotify Developer Dashboard, aby uzyskać Client ID i Secret."
+    },
+    "qobuz": {
+      "connect": "Połącz konto Qobuz",
+      "connected": "Połączono",
+      "connectedTo": "Połączono z Qobuz",
+      "connecting": "Otwieranie logowania…",
+      "couldNotConnect": "Nie udało się połączyć",
+      "description": "Połącz swoje konto Qobuz, aby pobierać pliki FLAC hi-res (do 24-bit/192 kHz). Wymagany jest płatny plan Qobuz; darmowe konta nie mogą pobierać.",
+      "disconnect": "Rozłącz",
+      "help": "Otworzy się okno logowania Qobuz; zaloguj się normalnie. Token sesji jest przechowywany w postaci zaszyfrowanej i odświeżany przy ponownym połączeniu.",
+      "loginNotCompleted": "Logowanie nie zostało ukończone",
+      "title": "Qobuz",
+      "tokenConnect": "Użyj tokena",
+      "tokenHelp": "Dla kont, które mają tylko token uwierzytelniający (na przykład z konfiguracji innego narzędzia) lub gdy okno logowania jest niedostępne. Token jest weryfikowany w Qobuz, a następnie przechowywany w postaci zaszyfrowanej — dokładnie tak jak w przypadku logowania przez okno. Nigdy nie pojawia się w plikach ustawień, eksportach ani kopiach zapasowych.",
+      "tokenLabel": "Lub połącz za pomocą tokena",
+      "tokenPlaceholder": "Wklej swój token Qobuz user_auth_token"
     }
   },
   "login": {
@@ -484,5 +516,34 @@
     "sortTracks": "Pobrane utwory",
     "filterPlaceholder": "Filtruj według nazwy…",
     "noMatches": "Brak wyników"
+  },
+  "genres": {
+    "freshPicks": "Świeże propozycje",
+    "heroDeezer": "Redakcyjne typy Deezera, listy przebojów i podzielone na strony nowości według gatunku",
+    "heroQobuz": "Pełny katalog Qobuz według gatunku — podzielony na strony do końca każdego gatunku",
+    "moreAlbums": "WIĘCEJ ALBUMÓW",
+    "moreTracks": "WIĘCEJ UTWORÓW",
+    "title": "Gatunki",
+    "topAlbums": "Najlepsze albumy",
+    "topTracks": "Najlepsze utwory"
+  },
+  "qobuz": {
+    "editorPicks": "Wybór redakcji",
+    "heroTagline": "Kanały redakcyjne · bezstratny i hi-res do 24-bit/192 kHz",
+    "more": "WIĘCEJ",
+    "mostStreamed": "Najczęściej odtwarzane",
+    "myFavorites": "Moje ulubione",
+    "myPurchases": "Moje zakupy",
+    "newReleases": "Nowości",
+    "playlists": "Playlisty Qobuz",
+    "pressAwards": "Nagrody prasy",
+    "seeAll": "ZOBACZ WSZYSTKO"
+  },
+  "retag": {
+    "viaQobuzTip": "Tagi pobrane z Qobuz — Deezer nie znalazł dopasowania dla tego ISRC"
+  },
+  "titleBar": {
+    "qobuzLinkedTip": "Qobuz połączony",
+    "qobuzOfflineTip": "Qobuz nie połączony — połącz w Ustawieniach"
   }
 }

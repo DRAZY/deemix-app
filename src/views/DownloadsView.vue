@@ -595,7 +595,7 @@ function copyAllErrorDetails() {
         v-for="item in downloadStore.downloads"
         :key="item.id"
         draggable="true"
-        class="card relative transition-transform dl-unit"
+        class="card relative transition-transform dl-unit cv-auto-row"
         :class="[
           `dl-${item.status}`,
           isSlim ? 'p-2' : '',
@@ -1062,9 +1062,9 @@ function copyAllErrorDetails() {
     <!-- Clear All Confirmation Dialog -->
     <ConfirmDialog
       :show="showClearAllConfirm"
-      title="Clear All Downloads"
-      :message="`Are you sure you want to clear all ${downloadStore.downloads.length} downloads? This will remove all items from the download list but will not delete downloaded files.`"
-      confirm-text="Clear All"
+      :title="t('downloads.clearAllTitle')"
+      :message="t('downloads.clearAllMessage', { count: downloadStore.downloads.length })"
+      :confirm-text="t('downloads.clearAllConfirm')"
       cancel-text="Cancel"
       confirm-style="danger"
       @confirm="executeClearAll"
@@ -1074,9 +1074,9 @@ function copyAllErrorDetails() {
     <!-- Clear Completed Confirmation Dialog -->
     <ConfirmDialog
       :show="showClearCompletedConfirm"
-      title="Clear Completed Downloads"
-      :message="`Are you sure you want to clear ${downloadStore.completedDownloads.length} completed downloads? This will remove them from the download list but will not delete downloaded files.`"
-      confirm-text="Clear Completed"
+      :title="t('downloads.clearCompletedTitle')"
+      :message="t('downloads.clearCompletedMessage', { count: downloadStore.completedDownloads.length })"
+      :confirm-text="t('downloads.clearCompletedConfirm')"
       cancel-text="Cancel"
       confirm-style="warning"
       @confirm="executeClearCompleted"
@@ -1106,12 +1106,12 @@ function copyAllErrorDetails() {
 
       <div v-if="showHistory" class="space-y-1">
         <div v-if="downloadStore.downloadHistory.length === 0" class="text-sm text-foreground-muted text-center py-8">
-          No download history yet
+          {{ t('downloads.noHistoryYet') }}
         </div>
         <div
           v-for="entry in downloadStore.downloadHistory"
           :key="entry.id"
-          class="flex items-center gap-3 px-3 py-2 border border-white/[0.06] bg-background-secondary/30 text-sm"
+          class="flex items-center gap-3 px-3 py-2 border border-white/[0.06] bg-background-secondary/30 text-sm cv-auto-row-slim"
         >
           <!-- Status icon -->
           <div class="flex-shrink-0">
@@ -1239,5 +1239,18 @@ function copyAllErrorDetails() {
 }
 .dl-paused::before {
   background: #ffb454;
+}
+
+/* #113: browser-native list virtualization — rows outside the viewport skip
+   rendering and layout entirely (content-visibility). With a 1,000-row queue
+   the DOM stays but paint/layout cost drops to the visible window. The
+   intrinsic size reserves approximate row height so the scrollbar stays honest. */
+.cv-auto-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 96px;
+}
+.cv-auto-row-slim {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 44px;
 }
 </style>

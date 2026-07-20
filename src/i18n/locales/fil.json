@@ -77,7 +77,23 @@
     "causeGeoRestriction": "Ang kanta ay may geo-restriction sa iyong rehiyon",
     "causeUnavailable": "Ang kanta ay hindi na available sa Deezer",
     "causeSession": "Maaaring nag-expire na ang iyong login session",
-    "causeNetwork": "Mga problema sa network o koneksyon ng server"
+    "causeNetwork": "Mga problema sa network o koneksyon ng server",
+    "cancelRemoveTip": "Kanselahin at alisin sa pila",
+    "deleteTip": "Burahin ang download",
+    "downloadNextTip": "I-download na susunod (ilipat sa unahan ng pila)",
+    "hideFailedTracks": "Itago ang mga nabigong track",
+    "showFailedTracks": "Ipakita ang mga nabigong track",
+    "inLibrary": "Nasa Library",
+    "inLibraryTip": "Nasa iyong library na — walang na-download; pinanatili ang iyong mga umiiral nang file.",
+    "noHistoryYet": "Wala pang kasaysayan ng download",
+    "retryTip": "Subukan muli ang download",
+    "retryFailedTip": "Subukan muli ang {n} nabigong track | Subukan muli ang {n} na mga nabigong track",
+    "clearAllConfirm": "Burahin Lahat",
+    "clearAllTitle": "Burahin Lahat ng Download",
+    "clearAllMessage": "Sigurado ka bang gusto mong burahin lahat ng {count} download? Aalisin nito ang lahat ng item sa listahan ng download ngunit hindi buburahin ang mga na-download na file.",
+    "clearCompletedConfirm": "Burahin ang Nakumpleto",
+    "clearCompletedTitle": "Burahin ang mga Nakumpletong Download",
+    "clearCompletedMessage": "Sigurado ka bang gusto mong burahin ang {count} nakumpletong download? Aalisin nito ang mga ito sa listahan ng download ngunit hindi buburahin ang mga na-download na file."
   },
   "charts": {
     "title": "Mga Chart",
@@ -339,6 +355,22 @@
       "credentialsRequired": "Pakilagay ang Client ID at Client Secret",
       "getCredentials": "Kumuha ng Spotify Developer Credentials",
       "credentialsHelp": "Gumawa ng app sa Spotify Developer Dashboard para makuha ang iyong Client ID at Secret."
+    },
+    "qobuz": {
+      "title": "Qobuz",
+      "description": "Ikonekta ang iyong Qobuz account para mag-download ng hi-res FLAC (hanggang 24-bit/192 kHz). Kailangan ng bayad na Qobuz plan; hindi makakapag-download ang mga libreng account.",
+      "connect": "Ikonekta ang Qobuz Account",
+      "connecting": "Binubuksan ang login…",
+      "connected": "Nakakonekta",
+      "connectedTo": "Nakakonekta sa Qobuz",
+      "disconnect": "I-disconnect",
+      "couldNotConnect": "Hindi makakonekta",
+      "loginNotCompleted": "Hindi nakumpleto ang login",
+      "help": "May bubukas na window ng login sa Qobuz; mag-sign in gaya ng dati. Ang iyong session token ay naka-encrypt kapag iniimbak at nire-refresh kapag muli kang kumonekta.",
+      "tokenLabel": "O kumonekta gamit ang token",
+      "tokenPlaceholder": "I-paste ang iyong Qobuz user_auth_token",
+      "tokenConnect": "Gumamit ng Token",
+      "tokenHelp": "Para sa mga account na may authentication token lang (halimbawa, mula sa configuration ng ibang tool) o kapag hindi available ang login window. Ang token ay bine-validate sa Qobuz, pagkatapos ay iniimbak na naka-encrypt — katulad na katulad ng daloy ng login window. Hindi ito kailanman lumalabas sa mga settings file, export, o backup."
     }
   },
   "login": {
@@ -484,5 +516,34 @@
     "sortTracks": "Na-download na mga track",
     "filterPlaceholder": "I-filter ayon sa pangalan…",
     "noMatches": "Walang tugma"
+  },
+  "genres": {
+    "title": "Mga Genre",
+    "heroQobuz": "Ang buong katalogo ng Qobuz ayon sa genre — pinaghahati-hati hanggang sa dulo ng bawat genre",
+    "heroDeezer": "Mga piling editorial ng Deezer, mga chart at pinaghahati-hating bagong labas ayon sa genre",
+    "freshPicks": "Mga Sariwang Pili",
+    "topTracks": "Nangungunang Track",
+    "topAlbums": "Nangungunang Album",
+    "moreTracks": "HIGIT PANG TRACK",
+    "moreAlbums": "HIGIT PANG ALBUM"
+  },
+  "qobuz": {
+    "myPurchases": "Aking mga Binili",
+    "myFavorites": "Aking mga Paborito",
+    "newReleases": "Mga Bagong Labas",
+    "editorPicks": "Mga Pili ng Editor",
+    "pressAwards": "Mga Parangal ng Press",
+    "mostStreamed": "Pinakamaraming Stream",
+    "playlists": "Mga Playlist ng Qobuz",
+    "heroTagline": "Mga editorial feed · lossless at hi-res hanggang 24-bit/192 kHz",
+    "seeAll": "TINGNAN LAHAT",
+    "more": "HIGIT PA"
+  },
+  "retag": {
+    "viaQobuzTip": "Nagmula sa Qobuz ang mga tag — walang tugma ang Deezer para sa ISRC na ito"
+  },
+  "titleBar": {
+    "qobuzLinkedTip": "Nakakonekta ang Qobuz",
+    "qobuzOfflineTip": "Hindi nakakonekta ang Qobuz — kumonekta sa Settings"
   }
 }

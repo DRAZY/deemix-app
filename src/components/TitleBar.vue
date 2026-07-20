@@ -100,7 +100,7 @@ const close = () => window.electronAPI?.close()
     <div
       class="hidden sm:flex items-center gap-2 h-full px-4 border-r border-white/[0.06] font-mono text-[10.5px] tracking-[0.08em]"
       :class="settingsStore.isQobuzLinked ? 'text-foreground-muted' : 'text-foreground-muted/50'"
-      v-tooltip="settingsStore.isQobuzLinked ? 'Qobuz connected' : 'Qobuz not connected — connect in Settings'"
+      v-tooltip="settingsStore.isQobuzLinked ? t('titleBar.qobuzLinkedTip') : t('titleBar.qobuzOfflineTip')"
     >
       <span
         class="w-[7px] h-[7px] rounded-[1px] status-led"

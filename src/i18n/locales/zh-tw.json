@@ -111,7 +111,23 @@
     "causeUnavailable": "曲目在 Deezer 上已不再可用",
     "causeSession": "您的登入會話可能已過期",
     "causeNetwork": "網路或伺服器連線問題",
-    "speed": "速度"
+    "speed": "速度",
+    "cancelRemoveTip": "取消並從佇列中移除",
+    "clearAllConfirm": "全部清除",
+    "clearAllMessage": "確定要清除全部 {count} 個下載項目嗎？此操作將從下載清單中移除所有項目，但不會刪除已下載的檔案。",
+    "clearAllTitle": "清除全部下載",
+    "clearCompletedConfirm": "清除已完成",
+    "clearCompletedMessage": "確定要清除 {count} 個已完成的下載項目嗎？此操作將從下載清單中移除它們，但不會刪除已下載的檔案。",
+    "clearCompletedTitle": "清除已完成的下載",
+    "deleteTip": "刪除下載",
+    "downloadNextTip": "下載下一個（移至佇列前端）",
+    "hideFailedTracks": "隱藏失敗的曲目",
+    "inLibrary": "已在音樂庫中",
+    "inLibraryTip": "已在您的音樂庫中 — 未下載任何內容；已保留您現有的檔案。",
+    "noHistoryYet": "尚無下載記錄",
+    "retryFailedTip": "重試 {n} 個失敗的曲目 | 重試 {n} 個失敗的曲目",
+    "retryTip": "重試下載",
+    "showFailedTracks": "顯示失敗的曲目"
   },
   "charts": {
     "title": "排行榜",
@@ -394,6 +410,22 @@
       "getCredentials": "取得 Spotify 開發者憑證",
       "credentialsHelp": "在 Spotify 開發者儀表板建立應用程式以取得您的 Client ID 和 Secret。",
       "howToEnable": "如何啟用 Spotify 功能？"
+    },
+    "qobuz": {
+      "title": "Qobuz",
+      "description": "連接您的 Qobuz 帳戶以下載高解析度 FLAC（最高 24-bit/192 kHz）。需要付費的 Qobuz 方案；免費帳戶無法下載。",
+      "connect": "連接 Qobuz 帳戶",
+      "connecting": "正在開啟登入…",
+      "connected": "已連接",
+      "connectedTo": "已連接到 Qobuz",
+      "disconnect": "中斷連接",
+      "couldNotConnect": "無法連接",
+      "loginNotCompleted": "登入未完成",
+      "help": "將開啟一個 Qobuz 登入視窗；正常登入即可。您的工作階段權杖將加密儲存，並在您重新連接時重新整理。",
+      "tokenLabel": "或使用權杖連接",
+      "tokenPlaceholder": "貼上您的 Qobuz user_auth_token",
+      "tokenConnect": "使用權杖",
+      "tokenHelp": "適用於僅有驗證權杖的帳戶（例如，來自其他工具的設定），或登入視窗無法使用時。權杖會透過 Qobuz 驗證，然後加密儲存 — 與登入視窗流程完全相同。它絕不會出現在設定檔、匯出或備份中。"
     }
   },
   "login": {
@@ -566,5 +598,34 @@
     "sortTracks": "已下載曲目",
     "filterPlaceholder": "依名稱篩選…",
     "noMatches": "無相符項目"
+  },
+  "retag": {
+    "viaQobuzTip": "標籤來源於 Qobuz — Deezer 未找到與此 ISRC 相符的內容"
+  },
+  "genres": {
+    "title": "曲風",
+    "heroQobuz": "依曲風瀏覽完整的 Qobuz 目錄 — 每個曲風分頁至結尾",
+    "heroDeezer": "Deezer 編輯精選、排行榜及依曲風分頁的新發行",
+    "freshPicks": "新鮮精選",
+    "topTracks": "熱門曲目",
+    "topAlbums": "熱門專輯",
+    "moreTracks": "更多曲目",
+    "moreAlbums": "更多專輯"
+  },
+  "qobuz": {
+    "myPurchases": "我的購買",
+    "myFavorites": "我的收藏",
+    "newReleases": "新發行",
+    "editorPicks": "編輯精選",
+    "pressAwards": "媒體大獎",
+    "mostStreamed": "播放最多",
+    "playlists": "Qobuz 播放清單",
+    "heroTagline": "編輯精選內容 · 無損及最高 24-bit/192 kHz 高解析度",
+    "seeAll": "查看全部",
+    "more": "更多"
+  },
+  "titleBar": {
+    "qobuzLinkedTip": "Qobuz 已連接",
+    "qobuzOfflineTip": "Qobuz 未連接 — 請在設定中連接"
   }
 }

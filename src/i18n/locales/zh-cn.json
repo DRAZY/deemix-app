@@ -77,7 +77,23 @@
     "causeGeoRestriction": "歌曲在您所在地区受地域限制",
     "causeUnavailable": "歌曲在 Deezer 上已不可用",
     "causeSession": "您的登录会话可能已过期",
-    "causeNetwork": "网络或服务器连接问题"
+    "causeNetwork": "网络或服务器连接问题",
+    "cancelRemoveTip": "取消并从队列中移除",
+    "clearAllConfirm": "清除全部",
+    "clearAllMessage": "确定要清除全部 {count} 个下载项吗？此操作将从下载列表中移除所有项目，但不会删除已下载的文件。",
+    "clearAllTitle": "清除全部下载",
+    "clearCompletedConfirm": "清除已完成",
+    "clearCompletedMessage": "确定要清除 {count} 个已完成的下载项吗？此操作将从下载列表中移除它们，但不会删除已下载的文件。",
+    "clearCompletedTitle": "清除已完成的下载",
+    "deleteTip": "删除下载",
+    "downloadNextTip": "下载下一个（移至队列前端）",
+    "hideFailedTracks": "隐藏失败的曲目",
+    "inLibrary": "已在音乐库中",
+    "inLibraryTip": "已在您的音乐库中 — 未下载任何内容；已保留您现有的文件。",
+    "noHistoryYet": "暂无下载历史",
+    "retryFailedTip": "重试 {n} 个失败的曲目 | 重试 {n} 个失败的曲目",
+    "retryTip": "重试下载",
+    "showFailedTracks": "显示失败的曲目"
   },
   "charts": {
     "title": "排行榜",
@@ -339,6 +355,22 @@
       "credentialsRequired": "请输入客户端 ID 和客户端密钥",
       "getCredentials": "获取 Spotify 开发者凭据",
       "credentialsHelp": "在 Spotify Developer Dashboard 中创建应用以获取您的客户端 ID 和密钥。"
+    },
+    "qobuz": {
+      "title": "Qobuz",
+      "description": "连接您的 Qobuz 账户以下载高解析度 FLAC（最高 24-bit/192 kHz）。需要付费的 Qobuz 套餐；免费账户无法下载。",
+      "connect": "连接 Qobuz 账户",
+      "connecting": "正在打开登录…",
+      "connected": "已连接",
+      "connectedTo": "已连接到 Qobuz",
+      "disconnect": "断开连接",
+      "couldNotConnect": "无法连接",
+      "loginNotCompleted": "登录未完成",
+      "help": "将打开一个 Qobuz 登录窗口；正常登录即可。您的会话令牌将加密存储，并在您重新连接时刷新。",
+      "tokenLabel": "或使用令牌连接",
+      "tokenPlaceholder": "粘贴您的 Qobuz user_auth_token",
+      "tokenConnect": "使用令牌",
+      "tokenHelp": "适用于仅有身份验证令牌的账户（例如，来自其他工具的配置），或登录窗口不可用时。令牌会通过 Qobuz 验证，然后加密存储 — 与登录窗口流程完全相同。它绝不会出现在设置文件、导出或备份中。"
     }
   },
   "login": {
@@ -484,5 +516,34 @@
     "sortTracks": "已下载曲目",
     "filterPlaceholder": "按名称筛选…",
     "noMatches": "无匹配项"
+  },
+  "retag": {
+    "viaQobuzTip": "标签来源于 Qobuz — Deezer 未找到与此 ISRC 匹配的内容"
+  },
+  "genres": {
+    "title": "流派",
+    "heroQobuz": "按流派浏览完整的 Qobuz 目录 — 每个流派分页至末尾",
+    "heroDeezer": "Deezer 编辑精选、排行榜及按流派分页的新发行",
+    "freshPicks": "新鲜精选",
+    "topTracks": "热门曲目",
+    "topAlbums": "热门专辑",
+    "moreTracks": "更多曲目",
+    "moreAlbums": "更多专辑"
+  },
+  "qobuz": {
+    "myPurchases": "我的购买",
+    "myFavorites": "我的收藏",
+    "newReleases": "新发行",
+    "editorPicks": "编辑精选",
+    "pressAwards": "媒体大奖",
+    "mostStreamed": "播放最多",
+    "playlists": "Qobuz 播放列表",
+    "heroTagline": "编辑精选内容 · 无损及最高 24-bit/192 kHz 高解析度",
+    "seeAll": "查看全部",
+    "more": "更多"
+  },
+  "titleBar": {
+    "qobuzLinkedTip": "Qobuz 已连接",
+    "qobuzOfflineTip": "Qobuz 未连接 — 请在设置中连接"
   }
 }

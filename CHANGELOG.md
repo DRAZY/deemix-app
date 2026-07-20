@@ -6,6 +6,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [2.2.0] — 2026-07-20
+
+### Added
+
+- **Token-based Qobuz login (#114).** Settings → Qobuz gains an "Or connect with a token" field: paste a bare `user_auth_token` (e.g. from another tool's configuration, or when the login window is unavailable in your region) and Qobuz identifies the account from the token itself — single-field paste, validated with a plan check, stored through the same encrypted path as the login window. A bad token can never disturb an existing session.
+- **Retagger Qobuz fallback (#108).** Files Deezer can't match by ISRC now fall back to Qobuz's catalog (search-then-verify — a candidate is only accepted when its ISRC equals the file's). Retag rows disclose cross-catalog sourcing with a Q chip; fields Qobuz doesn't expose stay untouched rather than guessed.
+- **Full localization of the Qobuz era (#109).** Every Channel Q / Genres / token-login / downloads-UX string is keyed and translated across all 20 non-English locales.
+
+### Performance
+
+- **Album/playlist downloads skip a per-track metadata round-trip (#112).** The queue reuses the listing's own track metadata, falling back to a live fetch only when essentials are missing.
+- **The Downloads view stays smooth with huge queues (#113).** Queue and history rows use browser-native windowing (content-visibility) so a 1,000-row Transfer Rack renders at the cost of the visible screen; the queue endpoint no longer logs a status reduce on every poll.
+
 ## [2.1.2] — 2026-07-19
 
 ### Added

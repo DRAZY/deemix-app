@@ -77,7 +77,23 @@
     "causeGeoRestriction": "Lagu dibatasi secara geografis di wilayah Anda",
     "causeUnavailable": "Lagu tidak lagi tersedia di Deezer",
     "causeSession": "Sesi login Anda mungkin telah kedaluwarsa",
-    "causeNetwork": "Masalah jaringan atau konektivitas server"
+    "causeNetwork": "Masalah jaringan atau konektivitas server",
+    "cancelRemoveTip": "Batalkan dan hapus dari antrean",
+    "clearAllConfirm": "Hapus Semua",
+    "clearAllMessage": "Yakin ingin menghapus semua {count} unduhan? Ini akan menghapus semua item dari daftar unduhan tetapi tidak akan menghapus berkas yang sudah diunduh.",
+    "clearAllTitle": "Hapus Semua Unduhan",
+    "clearCompletedConfirm": "Hapus yang Selesai",
+    "clearCompletedMessage": "Yakin ingin menghapus {count} unduhan yang selesai? Ini akan menghapusnya dari daftar unduhan tetapi tidak akan menghapus berkas yang sudah diunduh.",
+    "clearCompletedTitle": "Hapus Unduhan yang Selesai",
+    "deleteTip": "Hapus unduhan",
+    "downloadNextTip": "Unduh berikutnya (pindahkan ke depan antrean)",
+    "hideFailedTracks": "Sembunyikan trek yang gagal",
+    "inLibrary": "Di Pustaka",
+    "inLibraryTip": "Sudah ada di pustaka Anda — tidak ada yang diunduh; berkas Anda yang sudah ada tetap dipertahankan.",
+    "noHistoryYet": "Belum ada riwayat unduhan",
+    "retryFailedTip": "Coba lagi {n} trek yang gagal | Coba lagi {n} trek yang gagal",
+    "retryTip": "Coba lagi unduhan",
+    "showFailedTracks": "Tampilkan trek yang gagal"
   },
   "charts": {
     "title": "Tangga Lagu",
@@ -339,6 +355,22 @@
       "credentialsRequired": "Silakan masukkan Client ID dan Client Secret",
       "getCredentials": "Dapatkan Kredensial Spotify Developer",
       "credentialsHelp": "Buat aplikasi di Spotify Developer Dashboard untuk mendapatkan Client ID dan Secret Anda."
+    },
+    "qobuz": {
+      "connect": "Hubungkan Akun Qobuz",
+      "connected": "Terhubung",
+      "connectedTo": "Terhubung ke Qobuz",
+      "connecting": "Membuka login…",
+      "couldNotConnect": "Tidak dapat terhubung",
+      "description": "Hubungkan akun Qobuz Anda untuk mengunduh FLAC hi-res (hingga 24-bit/192 kHz). Diperlukan paket Qobuz berbayar; akun gratis tidak dapat mengunduh.",
+      "disconnect": "Putuskan",
+      "help": "Jendela login Qobuz akan terbuka; masuk seperti biasa. Token sesi Anda disimpan terenkripsi dan diperbarui saat Anda menghubungkan kembali.",
+      "loginNotCompleted": "Login belum selesai",
+      "title": "Qobuz",
+      "tokenConnect": "Gunakan Token",
+      "tokenHelp": "Untuk akun yang hanya memiliki token autentikasi (misalnya, dari konfigurasi alat lain) atau saat jendela login tidak tersedia. Token divalidasi dengan Qobuz, lalu disimpan terenkripsi — persis seperti alur jendela login. Token tidak pernah muncul di berkas pengaturan, ekspor, atau cadangan.",
+      "tokenLabel": "Atau hubungkan dengan token",
+      "tokenPlaceholder": "Tempel user_auth_token Qobuz Anda"
     }
   },
   "login": {
@@ -421,5 +453,34 @@
     "sortTracks": "Lagu yang diunduh",
     "filterPlaceholder": "Filter berdasarkan nama…",
     "noMatches": "Tidak ada hasil"
+  },
+  "genres": {
+    "freshPicks": "Pilihan Terbaru",
+    "heroDeezer": "Pilihan editorial Deezer, tangga lagu & rilis baru berpaginasi menurut genre",
+    "heroQobuz": "Seluruh katalog Qobuz menurut genre — berpaginasi hingga akhir setiap genre",
+    "moreAlbums": "LEBIH BANYAK ALBUM",
+    "moreTracks": "LEBIH BANYAK TREK",
+    "title": "Genre",
+    "topAlbums": "Album Teratas",
+    "topTracks": "Trek Teratas"
+  },
+  "qobuz": {
+    "editorPicks": "Pilihan Editor",
+    "heroTagline": "Umpan editorial · lossless & hi-res hingga 24-bit/192 kHz",
+    "more": "LEBIH BANYAK",
+    "mostStreamed": "Paling Banyak Diputar",
+    "myFavorites": "Favorit Saya",
+    "myPurchases": "Pembelian Saya",
+    "newReleases": "Rilis Baru",
+    "playlists": "Playlist Qobuz",
+    "pressAwards": "Penghargaan Pers",
+    "seeAll": "LIHAT SEMUA"
+  },
+  "retag": {
+    "viaQobuzTip": "Tag bersumber dari Qobuz — Deezer tidak memiliki kecocokan untuk ISRC ini"
+  },
+  "titleBar": {
+    "qobuzLinkedTip": "Qobuz terhubung",
+    "qobuzOfflineTip": "Qobuz tidak terhubung — hubungkan di Pengaturan"
   }
 }

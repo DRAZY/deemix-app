@@ -77,7 +77,23 @@
     "causeGeoRestriction": "Şarkı bölgenizde coğrafi olarak kısıtlı",
     "causeUnavailable": "Şarkı artık Deezer'da mevcut değil",
     "causeSession": "Oturum süreniz dolmuş olabilir",
-    "causeNetwork": "Ağ veya sunucu bağlantı sorunları"
+    "causeNetwork": "Ağ veya sunucu bağlantı sorunları",
+    "cancelRemoveTip": "İptal et ve kuyruktan kaldır",
+    "clearAllConfirm": "Tümünü Temizle",
+    "clearAllMessage": "Tüm {count} indirmeyi temizlemek istediğinizden emin misiniz? Bu, tüm öğeleri indirme listesinden kaldırır ancak indirilen dosyaları silmez.",
+    "clearAllTitle": "Tüm İndirmeleri Temizle",
+    "clearCompletedConfirm": "Tamamlananları Temizle",
+    "clearCompletedMessage": "Tamamlanan {count} indirmeyi temizlemek istediğinizden emin misiniz? Bu, onları indirme listesinden kaldırır ancak indirilen dosyaları silmez.",
+    "clearCompletedTitle": "Tamamlanan İndirmeleri Temizle",
+    "deleteTip": "İndirmeyi sil",
+    "downloadNextTip": "Sıradakini indir (kuyruğun başına taşı)",
+    "hideFailedTracks": "Başarısız parçaları gizle",
+    "inLibrary": "Kitaplıkta",
+    "inLibraryTip": "Zaten kitaplığınızda — hiçbir şey indirilmedi; mevcut dosyalarınız korundu.",
+    "noHistoryYet": "Henüz indirme geçmişi yok",
+    "retryFailedTip": "{n} başarısız parçayı yeniden dene | {n} başarısız parçayı yeniden dene",
+    "retryTip": "İndirmeyi yeniden dene",
+    "showFailedTracks": "Başarısız parçaları göster"
   },
   "charts": {
     "title": "Listeler",
@@ -339,6 +355,22 @@
       "credentialsRequired": "Lütfen hem Client ID hem de Client Secret girin",
       "getCredentials": "Spotify Developer Kimlik Bilgilerini Alın",
       "credentialsHelp": "Client ID ve Secret almak için Spotify Developer Dashboard'da bir uygulama oluşturun."
+    },
+    "qobuz": {
+      "title": "Qobuz",
+      "description": "Hi-res FLAC (24-bit/192 kHz'e kadar) indirmek için Qobuz hesabınızı bağlayın. Ücretli bir Qobuz planı gereklidir; ücretsiz hesaplar indiremez.",
+      "connect": "Qobuz Hesabını Bağla",
+      "connecting": "Giriş açılıyor…",
+      "connected": "Bağlandı",
+      "connectedTo": "Qobuz'a bağlandı",
+      "disconnect": "Bağlantıyı kes",
+      "couldNotConnect": "Bağlanılamadı",
+      "loginNotCompleted": "Giriş tamamlanmadı",
+      "help": "Bir Qobuz giriş penceresi açılır; normal şekilde oturum açın. Oturum belirteciniz şifreli olarak saklanır ve yeniden bağlandığınızda yenilenir.",
+      "tokenLabel": "Veya bir belirteçle bağlanın",
+      "tokenPlaceholder": "Qobuz user_auth_token değerinizi yapıştırın",
+      "tokenConnect": "Belirteç Kullan",
+      "tokenHelp": "Yalnızca bir kimlik doğrulama belirteci olan hesaplar için (örneğin, başka bir aracın yapılandırmasından) veya giriş penceresi kullanılamadığında. Belirteç Qobuz ile doğrulanır, ardından şifreli olarak saklanır — tıpkı giriş penceresi akışı gibi. Ayarlar dosyalarında, dışa aktarımlarda veya yedeklerde asla görünmez."
     }
   },
   "login": {
@@ -484,5 +516,34 @@
     "sortTracks": "İndirilen parçalar",
     "filterPlaceholder": "Ada göre filtrele…",
     "noMatches": "Eşleşme yok"
+  },
+  "retag": {
+    "viaQobuzTip": "Etiketler Qobuz'dan alındı — Deezer bu ISRC için eşleşme bulamadı"
+  },
+  "genres": {
+    "title": "Türler",
+    "heroQobuz": "Türe göre tüm Qobuz kataloğu — her türün sonuna kadar sayfalanır",
+    "heroDeezer": "Türe göre Deezer editör seçkileri, listeler ve sayfalanmış yeni çıkanlar",
+    "freshPicks": "Yeni Seçkiler",
+    "topTracks": "En İyi Parçalar",
+    "topAlbums": "En İyi Albümler",
+    "moreTracks": "DAHA FAZLA PARÇA",
+    "moreAlbums": "DAHA FAZLA ALBÜM"
+  },
+  "qobuz": {
+    "myPurchases": "Satın Aldıklarım",
+    "myFavorites": "Favorilerim",
+    "newReleases": "Yeni Çıkanlar",
+    "editorPicks": "Editör Seçkileri",
+    "pressAwards": "Basın Ödülleri",
+    "mostStreamed": "En Çok Dinlenenler",
+    "playlists": "Qobuz Çalma Listeleri",
+    "heroTagline": "Editör akışları · 24-bit/192 kHz'e kadar kayıpsız ve hi-res",
+    "seeAll": "TÜMÜNÜ GÖR",
+    "more": "DAHA FAZLA"
+  },
+  "titleBar": {
+    "qobuzLinkedTip": "Qobuz bağlı",
+    "qobuzOfflineTip": "Qobuz bağlı değil — Ayarlar'dan bağlanın"
   }
 }
