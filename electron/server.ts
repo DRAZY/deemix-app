@@ -3103,11 +3103,15 @@ export class DeemixServer extends EventEmitter {
       const body = await this.parseBody(req)
       const userId = Number(body.userId)
       const token = String(body.token || '')
-      if (!userId || !token) {
-        this.sendJSON(res, { success: false, error: 'userId and token required' }, 400)
+      if (!token) {
+        this.sendJSON(res, { success: false, error: 'token required' }, 400)
         return
       }
-      const session = await qobuzAuth.loginWithToken(userId, token)
+      // userId present → login-window path (id captured alongside the token).
+      // userId absent → token-paste path (#114): Qobuz identifies the account.
+      const session = userId
+        ? await qobuzAuth.loginWithToken(userId, token)
+        : await qobuzAuth.connectWithToken(token)
       this.sendJSON(res, { success: true, userId: session.userId, plan: session.credentialLabel })
     } catch (error: any) {
       this.sendJSON(res, { success: false, error: sanitizeErrorMessage(error, 'Qobuz login failed') }, 401)

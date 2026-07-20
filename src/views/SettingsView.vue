@@ -341,6 +341,31 @@ async function connectQobuz() {
   }
 }
 
+const qobuzTokenInput = ref('')
+
+async function connectQobuzToken() {
+  if (!qobuzTokenInput.value.trim()) return
+  qobuzConnecting.value = true
+  qobuzStatus.value = 'idle'
+  qobuzMessage.value = ''
+  try {
+    const res = await settingsStore.connectQobuzWithToken(qobuzTokenInput.value)
+    if (res.success) {
+      qobuzStatus.value = 'success'
+      qobuzMessage.value = t('settings.qobuz.connectedTo')
+      qobuzTokenInput.value = ''
+    } else {
+      qobuzStatus.value = 'error'
+      qobuzMessage.value = res.error || t('settings.qobuz.couldNotConnect')
+    }
+  } catch (e: any) {
+    qobuzStatus.value = 'error'
+    qobuzMessage.value = e.message || t('settings.qobuz.couldNotConnect')
+  } finally {
+    qobuzConnecting.value = false
+  }
+}
+
 async function disconnectQobuz() {
   await settingsStore.disconnectQobuz()
   qobuzStatus.value = 'idle'
@@ -1917,16 +1942,39 @@ async function reindexLibrary() {
           </button>
         </div>
 
-        <button
-          v-else
-          type="button"
-          @click="connectQobuz"
-          :disabled="qobuzConnecting"
-          class="btn btn-primary font-mono text-[11px] uppercase tracking-[0.12em] disabled:opacity-50"
-        >
-          <span v-if="qobuzConnecting">{{ t('settings.qobuz.connecting') }}</span>
-          <span v-else>{{ t('settings.qobuz.connect') }}</span>
-        </button>
+        <div v-else class="space-y-4">
+          <button
+            type="button"
+            @click="connectQobuz"
+            :disabled="qobuzConnecting"
+            class="btn btn-primary font-mono text-[11px] uppercase tracking-[0.12em] disabled:opacity-50"
+          >
+            <span v-if="qobuzConnecting">{{ t('settings.qobuz.connecting') }}</span>
+            <span v-else>{{ t('settings.qobuz.connect') }}</span>
+          </button>
+
+          <!-- Token-paste alternative (#114) — for users who only hold a
+               user_auth_token or whose region blocks the login window -->
+          <div class="pt-3 border-t border-white/[0.08] space-y-2">
+            <label class="block font-mono text-[10px] tracking-[0.12em] uppercase text-foreground-muted">{{ t('settings.qobuz.tokenLabel') }}</label>
+            <div class="flex gap-2">
+              <input
+                v-model="qobuzTokenInput"
+                type="password"
+                :placeholder="t('settings.qobuz.tokenPlaceholder')"
+                class="input flex-1 font-mono text-xs"
+                @keyup.enter="connectQobuzToken"
+              />
+              <button
+                type="button"
+                @click="connectQobuzToken"
+                :disabled="qobuzConnecting || !qobuzTokenInput.trim()"
+                class="px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-primary-500/50 text-primary-400 hover:bg-primary-500 hover:text-background-main transition-colors disabled:opacity-50"
+              >{{ t('settings.qobuz.tokenConnect') }}</button>
+            </div>
+            <p class="text-xs text-foreground-muted">{{ t('settings.qobuz.tokenHelp') }}</p>
+          </div>
+        </div>
 
         <div v-if="qobuzMessage" class="flex items-center gap-2">
           <span :class="qobuzStatus === 'success' ? 'text-green-400' : 'text-red-400'" class="text-sm">{{ qobuzMessage }}</span>

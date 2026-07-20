@@ -580,7 +580,11 @@
       "disconnect": "Disconnect",
       "couldNotConnect": "Could not connect",
       "loginNotCompleted": "Login was not completed",
-      "help": "A Qobuz login window opens; sign in normally. Your session token is stored encrypted and refreshes when you reconnect."
+      "help": "A Qobuz login window opens; sign in normally. Your session token is stored encrypted and refreshes when you reconnect.",
+      "tokenLabel": "Or connect with a token",
+      "tokenPlaceholder": "Paste your Qobuz user_auth_token",
+      "tokenConnect": "Use Token",
+      "tokenHelp": "For accounts that only have an authentication token (for example, from another tool’s configuration) or when the login window is unavailable. The token is validated with Qobuz, then stored encrypted — exactly like the login-window flow. It never appears in settings files, exports, or backups."
     }
   },
   "login": {

@@ -723,6 +723,39 @@ export const useSettingsStore = defineStore('settings', () => {
     return { success: true }
   }
 
+  /**
+   * Token-paste login (#114): connect Qobuz from a bare user_auth_token — for
+   * users who only hold a token or whose region blocks the login window. The
+   * backend derives the account from the token, validates it (plan check
+   * included), and only then do we persist — same encrypted path as the
+   * login-window flow, never plaintext.
+   */
+  async function connectQobuzWithToken(token: string): Promise<{ success: boolean; error?: string }> {
+    const trimmed = token.trim()
+    if (!trimmed) return { success: false, error: 'Token required' }
+    try {
+      const port = window.electronAPI ? await window.electronAPI.getServerPort() : 6595
+      const r = await fetch(`http://127.0.0.1:${port}/api/qobuz/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: trimmed }),
+      })
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok || !d.success || !d.userId) {
+        return { success: false, error: d.error || 'Qobuz rejected the token' }
+      }
+      settings.value.qobuzUserId = String(d.userId)
+      settings.value.qobuzToken = trimmed
+      if (window.electronAPI?.storage) {
+        await window.electronAPI.storage.saveCredentials({ qobuzUserId: String(d.userId), qobuzToken: trimmed })
+      }
+      qobuzSessionExpired.value = false
+      return { success: true }
+    } catch (e: any) {
+      return { success: false, error: e?.message || 'Token login failed' }
+    }
+  }
+
   async function disconnectQobuz() {
     qobuzSessionExpired.value = false
     settings.value.qobuzUserId = ''
@@ -936,6 +969,7 @@ export const useSettingsStore = defineStore('settings', () => {
     isQobuzLinked,
     qobuzSessionExpired,
     connectQobuz,
+    connectQobuzWithToken,
     disconnectQobuz,
     exportSettings,
     importSettings,
