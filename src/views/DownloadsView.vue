@@ -595,7 +595,7 @@ function copyAllErrorDetails() {
         v-for="item in downloadStore.downloads"
         :key="item.id"
         draggable="true"
-        class="card relative transition-transform dl-unit"
+        class="card relative transition-transform dl-unit cv-auto-row"
         :class="[
           `dl-${item.status}`,
           isSlim ? 'p-2' : '',
@@ -1111,7 +1111,7 @@ function copyAllErrorDetails() {
         <div
           v-for="entry in downloadStore.downloadHistory"
           :key="entry.id"
-          class="flex items-center gap-3 px-3 py-2 border border-white/[0.06] bg-background-secondary/30 text-sm"
+          class="flex items-center gap-3 px-3 py-2 border border-white/[0.06] bg-background-secondary/30 text-sm cv-auto-row-slim"
         >
           <!-- Status icon -->
           <div class="flex-shrink-0">
@@ -1239,5 +1239,18 @@ function copyAllErrorDetails() {
 }
 .dl-paused::before {
   background: #ffb454;
+}
+
+/* #113: browser-native list virtualization — rows outside the viewport skip
+   rendering and layout entirely (content-visibility). With a 1,000-row queue
+   the DOM stays but paint/layout cost drops to the visible window. The
+   intrinsic size reserves approximate row height so the scrollbar stays honest. */
+.cv-auto-row {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 96px;
+}
+.cv-auto-row-slim {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 44px;
 }
 </style>

@@ -2076,14 +2076,9 @@ export class DeemixServer extends EventEmitter {
   }
 
   private handleGetQueue(res: ServerResponse): void {
-    const queue = downloader.getAllProgress()
-    // Debug: Log status summary
-    const statusSummary = queue.reduce((acc: any, q) => {
-      acc[q.status] = (acc[q.status] || 0) + 1
-      return acc
-    }, {})
-    console.log(`[Server] /api/queue: returning ${queue.length} items, statuses:`, statusSummary)
-    this.sendJSON(res, { queue })
+    // No per-poll logging here (#113): this endpoint fires every 1-2s and the
+    // old status-summary reduce over a 1,000-row queue was pure overhead.
+    this.sendJSON(res, { queue: downloader.getAllProgress() })
   }
 
   private async handleCancelDownload(req: IncomingMessage, res: ServerResponse): Promise<void> {
