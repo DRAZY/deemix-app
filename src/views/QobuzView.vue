@@ -216,7 +216,7 @@ const sections = [
     </div>
 
     <!-- Genre chips — Qobuz's own Discover genre filter (#106) -->
-    <div v-if="!notConnected && genres.length > 0" class="flex gap-2 overflow-x-auto pb-1 -mb-2">
+    <div v-if="!notConnected && genres.length > 0" class="flex flex-wrap gap-2">
       <button
         @click="setGenre(0)"
         class="flex-shrink-0 font-mono text-[10px] tracking-[0.12em] uppercase px-2.5 py-1 border transition-colors"
