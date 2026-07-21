@@ -68,11 +68,24 @@ export const usePlayerStore = defineStore('player', () => {
         currentTrack.value = null
       })
 
-      // Qobuz streams are full-length files — cap playback at preview length
-      // so the play button samples the track like Deezer's 30s clips.
+      // Qobuz streams are full-length files, not curated clips — so playing
+      // from 0:00 samples the intro (often a quiet fade-in), unlike Deezer's
+      // editor-picked mid-song excerpts. Seek to a representative point (~25%
+      // in, capped at 60s) before playing, then cap the window at 30s. Short
+      // tracks (<45s) just play from the top. The CDN supports range requests,
+      // so the seek costs one ranged fetch, not a full download.
       if ((track as any).source === 'qobuz') {
-        audio.value.addEventListener('timeupdate', () => {
-          if (audio.value && audio.value.currentTime >= QOBUZ_PREVIEW_SECONDS) {
+        let previewStart = 0
+        const audioEl = audio.value
+        audioEl.addEventListener('loadedmetadata', () => {
+          const d = audioEl.duration
+          if (isFinite(d) && d > 45) {
+            previewStart = Math.min(d * 0.25, 60)
+            audioEl.currentTime = previewStart
+          }
+        })
+        audioEl.addEventListener('timeupdate', () => {
+          if (audio.value && audio.value.currentTime >= previewStart + QOBUZ_PREVIEW_SECONDS) {
             stop()
           }
         })
