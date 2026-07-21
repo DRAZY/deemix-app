@@ -41,6 +41,8 @@
 - **Artist Pages** -- Full discographies with filters for albums, EPs, singles, compilations, and featured-in releases, with sorting by name or date
 - **Sorting** -- Sort favorites and artist discographies by name (A-Z, Z-A), date, or default order
 - **Album & Playlist Views** -- Track listings with metadata, selective track downloads, and audio previews
+- **Genres Tab (v2.2.0)** -- Dual-service genre browser: on Qobuz, every primary genre with feed tabs (New Releases / Most Streamed / Press Awards / Editor's Picks) and a catalog grid that paginates to the end of the genre; on Deezer, editorial picks plus Top Tracks / Top Albums paging to the API's chart cap — all genres stacked and visible at once, no scroll hunting
+- **Mid-Song Previews (v2.2.0)** -- Qobuz previews seek to a representative point (~25% in) instead of sampling the intro, mirroring the mid-song excerpts Deezer's curated clips provide
 - **Link Analyzer** -- Paste any Deezer, Spotify, or Qobuz URL to view content details and download directly (supports share links like `link.deezer.com`)
 - **Favorites Import** -- Import your liked tracks, albums, artists, and playlists from your Deezer account
 
@@ -55,6 +57,8 @@
 - **Resume Interrupted Downloads on Startup** -- Optional, off by default: if a download was still going when you last closed the app, it continues automatically the next time you open it (already-downloaded tracks are skipped, so it picks up where it left off). Runs only once you're logged in (#98)
 - **Download Next** -- Move pending items to the front of the download queue so they download first
 - **Duplicate Album Detection** -- Warns when an album already exists on disk before downloading
+- **Smooth at Any Scale (v2.2.0)** -- The queue and history render only what's on screen, so a 1,000-track Transfer Rack scrolls like a 10-track one; album covers fetch once per album and album/playlist runs skip redundant per-track metadata calls
+- **In Library Disclosure** -- Downloads whose tracks all skipped as library duplicates show an IN LIBRARY chip explaining nothing was re-downloaded — never a misleading quality badge
 - **Skip Duplicate Tracks (by ISRC)** -- Optional, off by default: before downloading, skip any recording you already have in your library — matched by ISRC, so it catches the same song appearing on a different album, single, or compilation. Tracks without an ISRC are always downloaded. Includes a one-click "Index existing library" backfill so it works on a pre-existing collection (v1.10.21+, #91/#92)
 - **Live Batch Throughput** -- Album/playlist rows show their real combined download speed while running, mirrored in the sidebar sparkline and title-bar meter (v2.0.0+)
 - **Alternate-Version Drill-Down** -- The "Alternate version" badge is clickable with a count and lists exactly which tracks were fulfilled from an ISRC-matched alternate release, in the Transfer Rack and in history (v2.0.0+)
@@ -87,10 +91,11 @@
 - **Metadata-Only Retag** -- Point the Retag Library tool at a folder and it rewrites tags on your *existing* `.mp3`/`.flac` files — no re-download, and the audio stream is left byte-identical. Ideal for backfilling fields like UPC/Label or Release Type onto files downloaded before they were supported (#77, #82)
 - **ISRC Matching** -- Each file is matched to Deezer by the ISRC already stored in its tags; files without an ISRC are listed and skipped (never guessed)
 - **Public Catalog, No Account** -- Looks up metadata via Deezer's public API, so retagging needs no ARL/login and won't burn your download quota
+- **Qobuz Fallback (v2.2.0)** -- Files Deezer can't match by ISRC fall back to Qobuz's catalog when a Qobuz session is connected — matches are accepted only when the candidate's ISRC exactly equals the file's, and rows carry a **Q** chip whenever Qobuz sourced the tags, so cross-catalog metadata is never silent
 - **Merge, Never Replace** -- Only the tags you enable are rewritten; all other tags and embedded artwork are preserved. UPC and Label are enabled by default
 - **Dry-Run Preview** -- Preview exactly which tags would change, per file, before writing anything
 - **Refresh Tags from an Album/Playlist** -- A "Refresh tags" button on every Album and Playlist view rewrites tags on files you already have, using the **exact** Deezer release you're viewing — so the barcode/label/genre always come from the right edition (no ISRC guesswork), with no re-download and audio untouched. It fills in every tag Deezer offers for that release; merge semantics preserve anything Deezer doesn't have
-- **Clear Retag Results** -- The Retag Library reports per file whether each tag was written, was "Already up to date", or is "Not available on Deezer" (some albums genuinely have no genre upstream) — no silent skips
+- **Clear Retag Results** -- The Retag Library reports per file whether each tag was written, was "Already up to date", or is not available upstream (some albums genuinely have no genre) — no silent skips, and failed lookups name which catalogs were tried
 - **Retaggable Fields** -- UPC, Label, Release Type (RELEASETYPE), Genre, Track Length, Explicit, ISRC, Year, Date, BPM, track/disc numbers, album/artist/title — all from Deezer's public catalog
 
 ### Spotify Integration
@@ -141,7 +146,7 @@
 
 ### Supported Languages
 
-Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French, German, Greek, Indonesian, Italian, Korean, Polish, Portuguese (Brazil & Portugal), Russian, Serbian, Spanish, Thai, Turkish, and Vietnamese
+Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French, German, Greek, Indonesian, Italian, Korean, Polish, Portuguese (Brazil & Portugal), Russian, Serbian, Spanish, Thai, Turkish, and Vietnamese — with the full Qobuz-era surface (Channel Q, Genres, token login, download UX) translated in every locale as of v2.2.0
 
 ### Security
 
@@ -179,7 +184,7 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
 <p align="center">
   <img src="docs/screenshots/genres.png" alt="Genres - Deezer Browse" width="800" />
   <br />
-  <em>Genres (v2.1.0) — Deezer editorial picks and charts by genre, from Pop to Traditional Mexicano</em>
+  <em>Genres — dual-service browser (v2.2.0): full Qobuz catalogs per genre, plus Deezer editorial picks and charts</em>
 </p>
 
 <p align="center">
