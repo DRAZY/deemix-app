@@ -573,6 +573,12 @@ export const useDownloadStore = defineStore('downloads', () => {
       const data = await response.json()
       const dlId = data.id || data.downloadId
       if (dlId) {
+        // Cancelled while the enqueue request was in flight (#118): the row is
+        // gone, so stop the server work the response just created.
+        if (!downloads.value.some(d => d.id === item.id)) {
+          cancelServerIds([dlId])
+          return
+        }
         item.id = dlId
         saveDownloads()
         registerForPolling(dlId, [dlId], 'track')
@@ -675,6 +681,12 @@ export const useDownloadStore = defineStore('downloads', () => {
 
       const data = await response.json()
       if (data.ids && data.ids.length > 0) {
+        // Cancelled while the enqueue request was in flight (#118): the row is
+        // gone, so stop the server work the response just created.
+        if (!downloads.value.some(d => d.id === item.id)) {
+          cancelServerIds(data.ids)
+          return
+        }
         console.log(`[DownloadStore] Album ${item.title}: received ${data.ids.length} IDs from server:`, data.ids.slice(0, 3), '...')
         item.trackIds = data.ids
         // Update totalTracks to match actual download count (may differ from UI track list)
@@ -767,6 +779,12 @@ export const useDownloadStore = defineStore('downloads', () => {
       }
       const data = await response.json()
       if (data.ids && data.ids.length > 0) {
+        // Cancelled while the enqueue request was in flight (#118): the row is
+        // gone, so stop the server work the response just created.
+        if (!downloads.value.some(d => d.id === item.id)) {
+          cancelServerIds(data.ids)
+          return
+        }
         item.trackIds = data.ids
         item.totalTracks = data.ids.length
         item.status = 'downloading'
@@ -860,6 +878,12 @@ export const useDownloadStore = defineStore('downloads', () => {
 
       const data = await response.json()
       if (data.ids && data.ids.length > 0) {
+        // Cancelled while the enqueue request was in flight (#118): the row is
+        // gone, so stop the server work the response just created.
+        if (!downloads.value.some(d => d.id === item.id)) {
+          cancelServerIds(data.ids)
+          return
+        }
         console.log(`[DownloadStore] Playlist ${item.title}: received ${data.ids.length} IDs from server`)
         item.trackIds = data.ids
         // Update totalTracks to match actual download count (may differ from UI track list)
@@ -946,6 +970,12 @@ export const useDownloadStore = defineStore('downloads', () => {
 
       const data = await response.json()
       if (data.ids && data.ids.length > 0) {
+        // Cancelled while the enqueue request was in flight (#118): the row is
+        // gone, so stop the server work the response just created.
+        if (!downloads.value.some(d => d.id === item.id)) {
+          cancelServerIds(data.ids)
+          return
+        }
         console.log(`[DownloadStore] Batch "${config.title}": received ${data.ids.length} IDs from server`)
         item.trackIds = data.ids
         if (item.totalTracks !== data.ids.length) {
@@ -1383,7 +1413,33 @@ export const useDownloadStore = defineStore('downloads', () => {
     }
   }
 
+  // Tell the server to stop work on these download ids (#118). Fire-and-forget:
+  // the row removal must not block on it, and a miss just means the orphaned
+  // tracks finish silently (the pre-fix behavior) rather than anything worse.
+  function cancelServerIds(serverIds: string[]) {
+    if (serverIds.length === 0) return
+    fetch(`http://127.0.0.1:${serverPort.value}/api/queue/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: serverIds })
+    }).catch(e => console.warn('[DownloadStore] Server cancel failed:', e?.message))
+  }
+
   function cancelDownload(id: string) {
+    const item = downloads.value.find(d => d.id === id)
+    // Actually stop the server-side work before dropping the row (#118) —
+    // removing the row alone left the server downloading the rest of an album
+    // headless, with app-quit as the only way out. Server ids: single rows
+    // carry theirs as item.id once the server responds (dl_…); album/playlist
+    // rows carry per-track ids in trackIds. temp_ rows never reached the
+    // server; finished rows have nothing to stop (the server ignores
+    // completed/errored ids anyway — this is just to skip the request).
+    if (item && item.status !== 'completed' && item.status !== 'error') {
+      const serverIds = item.type === 'track' || !item.type
+        ? (item.id.startsWith('dl_') ? [item.id] : [])
+        : (item.trackIds || [])
+      cancelServerIds(serverIds)
+    }
     const index = downloads.value.findIndex(d => d.id === id)
     if (index !== -1) {
       downloads.value = downloads.value.filter(d => d.id !== id)

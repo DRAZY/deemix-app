@@ -242,6 +242,10 @@ export class Downloader extends EventEmitter {
   // Downloads that were aborted specifically by a pause (so their catch re-queues
   // them for resume instead of marking them failed).
   private pausedDownloadIds: Set<string> = new Set()
+  // Marks in-flight downloads killed by cancelDownload (#118) so the abort
+  // catch exits quietly (no error event, no errors.txt, no resume re-queue) —
+  // distinguishing user cancel from pause and from real failures.
+  private cancelledDownloadIds: Set<string> = new Set()
   // Download pacing (issue #86): a tiered opt-in. 'off' (default) is a true no-op —
   // the gate is fully bypassed and the queue drains exactly as it always has.
   // 'balanced'/'cautious' space out the rate of NEW download starts with a jittered
@@ -848,7 +852,9 @@ export class Downloader extends EventEmitter {
       })
       .finally(() => {
         console.log(`[Downloader] processDownload finished for ${next.id}`)
-        this.currentDownloads--
+        // Never below zero: clearAll() resets the counter to 0 while aborted
+        // in-flight downloads are still unwinding toward this decrement.
+        this.currentDownloads = Math.max(0, this.currentDownloads - 1)
         this.processQueue()
       })
 
@@ -1069,6 +1075,17 @@ export class Downloader extends EventEmitter {
       progress.path = result.path
       this.emit('complete', { ...progress })
     } catch (error: any) {
+      // Aborted by cancel (#118): downloadQobuzTrack already removed the
+      // partial file; status is error/'Cancelled'. Exit without the error
+      // event / errors.txt (M3U failure bookkeeping still runs below so a
+      // partially-cancelled playlist's tracker completes and generates).
+      if (this.cancelledDownloadIds.delete(downloadId)) {
+        console.log(`[Downloader] Qobuz download ${downloadId} cancelled mid-stream`)
+        if (options.isFromPlaylist && options.playlistName) {
+          this.recordM3UFailure(options._m3uTrackerId || options.playlistName || '')
+        }
+        return
+      }
       console.error(`[Downloader] Qobuz download error for ${downloadId}:`, error.message)
       progress.status = 'error'
       progress.error = error.message
@@ -1091,6 +1108,9 @@ export class Downloader extends EventEmitter {
     } finally {
       this.downloadAborts.delete(downloadId)
       if (reservedPathForCleanup) this.releaseOutputPath(reservedPathForCleanup)
+      // Cancel marker consumed by the catch on abort; clear any leftover from
+      // a cancel that landed after the network phase (too late to stop).
+      this.cancelledDownloadIds.delete(downloadId)
     }
     // NOTE: concurrency (currentDownloads--) and queue re-processing are handled
     // by the processQueue() wrapper's .finally(); do not touch them here.
@@ -1526,6 +1546,13 @@ export class Downloader extends EventEmitter {
             fs.unlinkSync(encryptedPath)
           }
         } catch (e) {}
+        // Aborted by cancel (#118): status is already error/'Cancelled' and the
+        // partial file was cleaned above — exit without an error event, an
+        // errors.txt entry, or a resume re-queue.
+        if (this.cancelledDownloadIds.delete(downloadId)) {
+          console.log(`[Downloader] Download ${downloadId} cancelled mid-stream`)
+          return
+        }
         // If this download was aborted by a queue pause, re-queue it for resume
         // instead of failing it. The finally block releases the reserved path, so
         // resume re-reserves and re-downloads cleanly.
@@ -1655,6 +1682,8 @@ export class Downloader extends EventEmitter {
       this.releaseOutputPath(outputPath)
       // Drop the abort handle for this download (no longer in-flight)
       this.downloadAborts.delete(downloadId)
+      // Clear any cancel marker that landed too late to abort the stream
+      this.cancelledDownloadIds.delete(downloadId)
 
       // Clean up encrypted file if it still exists (in case of error before cleanup)
       if (encryptedPath && fs.existsSync(encryptedPath)) {
@@ -4266,8 +4295,20 @@ export class Downloader extends EventEmitter {
     // Update status
     const progress = this.activeDownloads.get(downloadId)
     if (progress) {
+      // Finished items are immutable — the renderer cancels album rows by
+      // sending the WHOLE trackIds list (#118), so completed/errored tracks
+      // must not be rewritten as 'Cancelled'.
+      if (progress.status === 'completed' || progress.status === 'error') return
       progress.status = 'error'
       progress.error = 'Cancelled'
+      // Kill the in-flight stream — same AbortController pauseQueue() uses,
+      // minus the resume re-queue. Without this, cancel only dequeued pending
+      // tracks while the active one streamed to completion (#118).
+      const controller = this.downloadAborts.get(downloadId)
+      if (controller) {
+        this.cancelledDownloadIds.add(downloadId)
+        try { controller.abort() } catch (e) { /* already settled */ }
+      }
       this.emit('cancelled', progress)
     }
   }
@@ -4316,6 +4357,13 @@ export class Downloader extends EventEmitter {
    * Called when user cancels all downloads to ensure clean state.
    */
   clearAll(): void {
+    // Abort every in-flight stream first (#118) — clearing the maps alone let
+    // active downloads run to completion headless, the same defect as the old
+    // cancelDownload. The cancelled marker makes each abort catch exit quietly.
+    for (const [id, controller] of this.downloadAborts) {
+      this.cancelledDownloadIds.add(id)
+      try { controller.abort() } catch (e) { /* already settled */ }
+    }
     this.downloadQueue = []
     this.activeDownloads.clear()
     this.currentDownloads = 0

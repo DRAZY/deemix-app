@@ -2086,15 +2086,18 @@ export class DeemixServer extends EventEmitter {
 
   private async handleCancelDownload(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const body = await this.parseBody(req)
-    const { id } = body
+    // Single {id} or batch {ids: []} — album/playlist rows cancel every one of
+    // their per-track server ids in one request (#118).
+    const ids: unknown[] = Array.isArray(body.ids) ? body.ids : (body.id ? [body.id] : [])
+    const valid = ids.filter((i): i is string => typeof i === 'string' && i.length > 0 && i.length < 128)
 
-    if (!id) {
+    if (valid.length === 0) {
       this.sendJSON(res, { error: 'Download ID is required' }, 400)
       return
     }
 
-    downloader.cancelDownload(id)
-    this.sendJSON(res, { success: true })
+    for (const id of valid) downloader.cancelDownload(id)
+    this.sendJSON(res, { success: true, cancelled: valid.length })
   }
 
   private async handleQueuePriority(req: IncomingMessage, res: ServerResponse): Promise<void> {
