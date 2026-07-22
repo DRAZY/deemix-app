@@ -3895,14 +3895,25 @@ export class DeemixServer extends EventEmitter {
     } catch (error: any) {
       console.error('[Server] Spotify analyze error:', error.message)
       const msg = error.message || 'Failed to analyze Spotify URL'
-      // Spotify returns "Resource not found" / "Not found" for personalized playlists
-      // (Daily Mix, Discover Weekly, etc.) because they require user-level OAuth
-      if (msg.toLowerCase().includes('not found') && parsedUrl?.type === 'playlist') {
+      const status: number = typeof error.status === 'number' ? error.status : 0
+      const notFound = status === 404 || msg.toLowerCase().includes('not found')
+      // Spotify-owned editorial + algorithmic playlists (Today's Top Hits,
+      // RapCaviar, Discover Weekly — IDs starting 37i9) stopped being reachable
+      // without user-level OAuth after Spotify's Nov-2024 Client-Credentials
+      // deprecation. Name the real cause, not "personalized".
+      if (notFound && parsedUrl?.type === 'playlist') {
         this.sendJSON(res, {
-          error: 'This playlist is not accessible. Spotify personalized playlists (Daily Mix, Discover Weekly, etc.) require user-level authentication which is not supported. Try a public or user-created playlist instead.'
+          error: "This playlist can't be opened. Spotify's own editorial and algorithmic playlists (Today's Top Hits, RapCaviar, Discover Weekly — links starting with 37i9) require a personal Spotify login that this app doesn't use, following a Spotify API change in late 2024. Playlists created by regular users still work."
         }, 404)
+      } else if (status === 429 || status >= 500) {
+        // Transient — makeRequest already retried; tell the user to retry.
+        this.sendJSON(res, {
+          error: status === 429
+            ? 'Spotify is rate-limiting requests right now. Wait a moment and try again.'
+            : 'Spotify is temporarily unavailable. Please try again in a moment.'
+        }, 503)
       } else {
-        this.sendJSON(res, { error: msg }, 500)
+        this.sendJSON(res, { error: msg }, status >= 400 ? status : 500)
       }
     }
   }
