@@ -499,6 +499,24 @@ class QobuzAuth extends EventEmitter {
     return artist
   }
 
+  /** Artist top tracks — the list Qobuz's own artist page renders. artist/page
+   *  is the primary source (popularity-ordered top_tracks); artist/get's
+   *  popular-tracks extra is the fallback when the newer endpoint misses.
+   *  Returns raw Qobuz track objects; callers map defensively because the two
+   *  endpoints don't guarantee identical track shapes. */
+  async getArtistTopTracks(artistId: string | number, limit = 10): Promise<any[]> {
+    const { appId } = await this.fetchAppCredentials()
+    try {
+      const page = await this.apiGet(`artist/page?artist_id=${artistId}&sort=relevant&app_id=${appId}`, true)
+      const top = page?.top_tracks
+      if (Array.isArray(top) && top.length > 0) return top.slice(0, limit)
+    } catch (e: any) {
+      console.log('[QobuzAuth] artist/page unavailable, using extra=tracks:', e.message)
+    }
+    const artist = await this.apiGet(`artist/get?artist_id=${artistId}&extra=tracks&limit=${limit}&app_id=${appId}`, true)
+    return ((artist?.tracks?.items || []) as any[]).slice(0, limit)
+  }
+
   /** Fetch an artist's releases per release-type bucket and stamp each item
    *  with the app's record_type. epSingle splits by track count (≤3 → single)
    *  — safe because the bucket itself guarantees ep-or-single. */

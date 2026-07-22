@@ -13,6 +13,8 @@ Entries use a compact format — short bullets, one line each. Full per-version 
 - **Token-based Qobuz login (#114).** Settings → Qobuz gains an "Or connect with a token" field: paste a bare `user_auth_token` (e.g. from another tool's configuration, or when the login window is unavailable in your region) and Qobuz identifies the account from the token itself — single-field paste, validated with a plan check, stored through the same encrypted path as the login window. A bad token can never disturb an existing session.
 - **Retagger Qobuz fallback (#108).** Files Deezer can't match by ISRC now fall back to Qobuz's catalog (search-then-verify — a candidate is only accepted when its ISRC equals the file's). Retag rows disclose cross-catalog sourcing with a Q chip; fields Qobuz doesn't expose stay untouched rather than guessed.
 - **Full localization of the Qobuz era (#109).** Every Channel Q / Genres / token-login / downloads-UX string is keyed and translated across all 20 non-English locales.
+- **Qobuz artist Top Tracks wired.** Qobuz artist pages now load the artist's popularity-ordered top tracks (the same list Qobuz's own artist page shows), so the Top Tracks section renders and Download Top Tracks queues them; the button is disabled instead of silently inert when no top tracks exist.
+- **Duplicate toast covers album-downloaded tracks.** Album and playlist rows remember the catalog ids of their contained tracks, so re-queuing one of those songs as a single is refused with the familiar "already downloaded" toast instead of creating a row the ISRC library check then skips. Failed tracks inside an album stay re-downloadable.
 
 ### Performance
 

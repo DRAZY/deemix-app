@@ -889,6 +889,9 @@ export class DeemixServer extends EventEmitter {
       case '/api/qobuz/artist':
         await this.handleQobuzArtist(url, res)
         break
+      case '/api/qobuz/artist-top-tracks':
+        await this.handleQobuzArtistTopTracks(url, res)
+        break
       case '/api/qobuz/album':
         await this.handleQobuzAlbum(url, res)
         break
@@ -3150,6 +3153,17 @@ export class DeemixServer extends EventEmitter {
     if (!qobuzAuth.isLoggedIn()) { this.sendJSON(res, { error: 'Qobuz not connected' }, 401); return }
     try {
       this.sendJSON(res, await qobuzAuth.getArtist(id))
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  private async handleQobuzArtistTopTracks(url: URL, res: ServerResponse): Promise<void> {
+    const id = validateQobuzId(url.searchParams.get('id'))
+    if (!id) { this.sendJSON(res, { error: 'Valid id required' }, 400); return }
+    if (!qobuzAuth.isLoggedIn()) { this.sendJSON(res, { error: 'Qobuz not connected' }, 401); return }
+    try {
+      this.sendJSON(res, { items: await qobuzAuth.getArtistTopTracks(id) })
     } catch (error: any) {
       this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
     }

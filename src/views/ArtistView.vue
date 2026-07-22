@@ -203,6 +203,34 @@ async function loadArtist(artistId: string) {
         source: 'qobuz', qobuzId: al.id,
         qobuzData: { title: al.title, artist: { name: a.name }, image: al.image, tracks_count: al.tracks_count },
       }))
+      // Top tracks load separately and non-blocking — a miss just hides the
+      // section (and disables Download Top Tracks) instead of erroring the
+      // page. Mapped defensively: artist/page and artist/get's tracks extra
+      // don't guarantee identical shapes (e.g. name may be {display} object).
+      fetch(`http://127.0.0.1:${port}/api/qobuz/artist-top-tracks?id=${artistId}`)
+        .then(r => r.ok ? r.json() : { items: [] })
+        .then(d => {
+          const asName = (n: any): string =>
+            (n && typeof n === 'object') ? (n.display || n.name || '') : (n || '')
+          topTracks.value = (d.items || [])
+            .filter((t: any) => t?.id && t?.title)
+            .map((t: any) => ({
+              id: t.id, title: t.title, duration: t.duration,
+              artist: {
+                id: t.performer?.id ?? t.artist?.id ?? a.id,
+                name: asName(t.performer?.name) || asName(t.artist?.name) || a.name,
+              },
+              album: {
+                id: t.album?.id, title: t.album?.title,
+                cover_small: t.album?.image?.small || t.album?.image?.thumbnail,
+                cover_medium: t.album?.image?.large || t.album?.image?.small,
+                cover_big: t.album?.image?.large,
+              },
+              explicit_lyrics: !!t.parental_warning,
+              source: 'qobuz', qobuzId: t.id,
+            })) as any
+        })
+        .catch(() => { /* section stays hidden */ })
     } catch (e) {
       console.error('[ArtistView] Qobuz load error:', e)
       hasError.value = true
@@ -475,7 +503,8 @@ const contextMenuItems = computed(() => {
           <div class="flex gap-3">
             <button
               @click="downloadAllTracks"
-              class="btn btn-primary flex items-center gap-2"
+              :disabled="topTracks.length === 0"
+              class="btn btn-primary flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

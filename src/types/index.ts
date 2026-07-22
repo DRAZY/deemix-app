@@ -141,6 +141,10 @@ export interface DownloadItem {
   completedTracks?: number
   failedTracks?: FailedTrack[]
   trackIds?: string[]  // Server-side download IDs for individual tracks
+  // Catalog ids of the tracks contained in an album/playlist row — feeds the
+  // duplicate toast so a single-track re-attempt of an album-downloaded song
+  // is refused at enqueue instead of creating a row the ISRC layer must skip.
+  catalogTrackIds?: Array<number | string>
   // Tracks completed before a retry — added to completedTracks for display
   previouslyCompletedTracks?: number
   // Original total track count — preserved across retries for display

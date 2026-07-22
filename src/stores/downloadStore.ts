@@ -34,6 +34,12 @@ export const useDownloadStore = defineStore('downloads', () => {
   }
   let currentPollingInterval = POLLING_INTERVALS.moderate
 
+  // Normalize a catalog track id to the numeric form the status-map lookups
+  // use (isTrackInQueue/isTrackCompleted parseInt string ids before .get()).
+  function asCatalogKey(id: number | string): number {
+    return typeof id === 'string' ? parseInt(id, 10) : id
+  }
+
   // Helper to rebuild lookup Maps from downloads array
   function rebuildLookupMaps() {
     trackIdToStatus.clear()
@@ -47,6 +53,25 @@ export const useDownloadStore = defineStore('downloads', () => {
       if (d.refresh) continue
       if (d.track?.id) {
         trackIdToStatus.set(d.track.id, d.status)
+      }
+      // Album/playlist rows also register their contained catalog track ids,
+      // so re-attempting one of those songs as a single hits the same
+      // "already downloaded" toast as a plain single — instead of creating a
+      // queue row only the server's ISRC layer can skip. Failed tracks are
+      // excluded: they must stay re-downloadable.
+      if (d.catalogTrackIds?.length) {
+        const failed = new Set(
+          (d.failedTracks || [])
+            .map(f => f.trackId != null ? asCatalogKey(f.trackId) : NaN)
+            .filter(k => !Number.isNaN(k))
+        )
+        for (const cid of d.catalogTrackIds) {
+          const key = asCatalogKey(cid)
+          if (Number.isNaN(key) || failed.has(key)) continue
+          // Never overwrite an entry already set — single-track rows are more
+          // specific, and iteration is newest-first so the freshest row wins.
+          if (!trackIdToStatus.has(key)) trackIdToStatus.set(key, d.status)
+        }
       }
       if (d.type === 'album' && d.album?.id) {
         albumIdToStatus.set(d.album.id, d.status)
@@ -615,6 +640,7 @@ export const useDownloadStore = defineStore('downloads', () => {
       completedTracks: 0,
       failedTracks: [],
       trackIds: [],
+      catalogTrackIds: tracks.map(t => t.id),
       refresh: refreshTags
     }
 
@@ -721,6 +747,9 @@ export const useDownloadStore = defineStore('downloads', () => {
       completedTracks: 0,
       failedTracks: [],
       trackIds: [],
+      // Track list is often absent here (server resolves it) — polling
+      // backfills catalogTrackIds from the server's progress entries.
+      catalogTrackIds: (d.tracks?.items || []).map((t: any) => t.id),
     }
     downloads.value = [item, ...downloads.value]
     saveDownloads()
@@ -797,6 +826,7 @@ export const useDownloadStore = defineStore('downloads', () => {
       completedTracks: 0,
       failedTracks: [],
       trackIds: [],
+      catalogTrackIds: tracks.map(t => t.id),
       refresh: refreshTags
     }
 
@@ -880,6 +910,7 @@ export const useDownloadStore = defineStore('downloads', () => {
       completedTracks: 0,
       failedTracks: [],
       trackIds: [],
+      catalogTrackIds: [...config.trackIds],
       batchConfig: {
         trackIds: config.trackIds,
         playlistName: config.playlistName,
@@ -1148,10 +1179,22 @@ export const useDownloadStore = defineStore('downloads', () => {
     let skippedCount = 0
     let speedSum = 0
     const substitutedTracks: SubstitutedTrack[] = []
+    // Backfill contained catalog ids from server progress entries — enqueue
+    // paths that don't know the tracklist (Qobuz albums/playlists resolved
+    // server-side) get captured here for the duplicate toast.
+    const knownCatalogIds = new Set((item.catalogTrackIds || []).map(asCatalogKey))
 
     for (const trackId of trackIds) {
       const serverItem = queueMap.get(trackId)
       if (serverItem) {
+        if (serverItem.trackId != null) {
+          const catalogKey = asCatalogKey(serverItem.trackId)
+          if (!Number.isNaN(catalogKey) && !knownCatalogIds.has(catalogKey)) {
+            knownCatalogIds.add(catalogKey)
+            ;(item.catalogTrackIds ||= []).push(catalogKey)
+            changed = true
+          }
+        }
         // Capture playlist folder path for deletion of entire playlist directory
         if (!playlistFolderPath && serverItem.playlistFolder) {
           playlistFolderPath = serverItem.playlistFolder
