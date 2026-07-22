@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [2.2.1] — 2026-07-22
+
+### Fixed
+
+- **Canceling a download actually stops it (#118).** Trash-canning a queue row previously only removed it from the screen — the server kept downloading every remaining track (an entire album, in the report) until the app was quit. Cancel now stops the server-side work: pending tracks are dequeued, the in-flight stream is aborted mid-transfer with its partial file cleaned up, and completed tracks are left untouched. Clear All had the same defect and now aborts in-flight work too. Canceling in the instant before the server has even replied with download ids is also handled. Reported by cisko99za.
+
 ## [2.2.0] — 2026-07-20
 
 ### Added
