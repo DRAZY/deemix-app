@@ -6,6 +6,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [2.2.2] — 2026-07-22
+
+### Fixed
+
+- **Spotify Link Analyzer no longer fails opaquely (#119).** The Spotify client used to collapse every non-JSON response into a bare "Failed to parse Spotify response," hiding the real cause (a transient gateway error, a rate-limit, an empty body, or a proxy page) and never retrying. It now retries transient failures (429/5xx and network errors) with backoff honoring Retry-After, and when a response genuinely can't be read it reports the HTTP status and a snippet instead of a dead-end message. The editorial-playlist error now names the real cause — Spotify's late-2024 API change that made its own curated/algorithmic playlists (Today's Top Hits, RapCaviar, Discover Weekly — links starting `37i9`) require a personal login this app doesn't use. Reported by lazside and alex5908.
+- **Playlist M3U is saved with the music (#121).** With "create playlist folder" on, the `.m3u8` was written to the download root while the tracks went into the playlist's own subfolder, so it appeared to be missing. It's now written inside the playlist folder, next to the songs, with correct relative paths. Reported by username227.
+
 ## [2.2.1] — 2026-07-22
 
 ### Fixed
