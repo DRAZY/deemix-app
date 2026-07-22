@@ -282,6 +282,12 @@ export class Downloader extends EventEmitter {
   // so M3U can be generated from real paths instead of reconstructed guesses
   private playlistM3UTracker: Map<string, {
     outputDir: string
+    // The playlist's own folder, captured from the first track that carries it
+    // (set only when createPlaylistFolder is on). The M3U is written here — next
+    // to the music — instead of the download root, and its relative paths are
+    // computed against it (#121). Undefined → falls back to outputDir (root),
+    // which is correct when playlist folders are off.
+    resolvedPlaylistFolder?: string
     totalTracks: number
     processedCount: number
     m3uNameTemplate: string
@@ -913,7 +919,8 @@ export class Downloader extends EventEmitter {
             duration: shim.DURATION || 0,
             artist: shim.ART_NAME || 'Unknown Artist',
             title: progress.trackTitle || shim.SNG_TITLE || 'Unknown Track',
-            absolutePath
+            absolutePath,
+            playlistFolder: progress.playlistFolder
           })
         }
       }
@@ -1454,7 +1461,8 @@ export class Downloader extends EventEmitter {
             duration: trackInfo.DURATION || 0,
             artist: trackInfo.ART_NAME || 'Unknown Artist',
             title: progress.trackTitle || trackInfo.SNG_TITLE || 'Unknown Track',
-            absolutePath: existingPath
+            absolutePath: existingPath,
+            playlistFolder: progress.playlistFolder
           })
         }
         this.emit('progress', progress)
@@ -1478,7 +1486,8 @@ export class Downloader extends EventEmitter {
           duration: trackInfo.DURATION || 0,
           artist: trackInfo.ART_NAME || 'Unknown Artist',
           title: progress.trackTitle || trackInfo.SNG_TITLE || 'Unknown Track',
-          absolutePath: initialOutputPath
+          absolutePath: initialOutputPath,
+          playlistFolder: progress.playlistFolder
         })
       }
       // Keep the library index fresh even when the file already existed at the
@@ -1667,7 +1676,8 @@ export class Downloader extends EventEmitter {
           duration: trackInfo.DURATION || 0,
           artist: trackInfo.ART_NAME || 'Unknown Artist',
           title: progress.trackTitle || trackInfo.SNG_TITLE || 'Unknown Track',
-          absolutePath: decryptedPath
+          absolutePath: decryptedPath,
+          playlistFolder: progress.playlistFolder
         })
       }
 
@@ -4477,10 +4487,15 @@ export class Downloader extends EventEmitter {
     artist: string
     title: string
     absolutePath: string
+    playlistFolder?: string
   }): void {
     const tracker = this.playlistM3UTracker.get(trackerId)
     if (!tracker) return
 
+    // First track that knows its playlist folder pins where the M3U lands (#121).
+    if (entry.playlistFolder && !tracker.resolvedPlaylistFolder) {
+      tracker.resolvedPlaylistFolder = entry.playlistFolder
+    }
     tracker.completedEntries.push(entry)
     tracker.processedCount++
     tracker.lastActivity = Date.now()
@@ -4526,11 +4541,14 @@ export class Downloader extends EventEmitter {
           // Sort by playlist position to maintain order
           tracker.completedEntries.sort((a, b) => a.position - b.position)
 
-          // Convert absolute paths to relative paths from the output directory
+          // Write the M3U into the playlist folder (next to the music) when one
+          // exists, else the download root — and compute relative paths against
+          // that same base so entries stay relative (#121).
+          const baseDir = tracker.resolvedPlaylistFolder || tracker.outputDir
           const tracks = tracker.completedEntries.map(e => {
             let relativePath = e.absolutePath
-            if (relativePath.startsWith(tracker.outputDir)) {
-              relativePath = relativePath.slice(tracker.outputDir.length)
+            if (relativePath.startsWith(baseDir)) {
+              relativePath = relativePath.slice(baseDir.length)
               relativePath = relativePath.replace(/^[/\\]/, '')
             }
             return {
@@ -4541,8 +4559,8 @@ export class Downloader extends EventEmitter {
             }
           })
 
-          this.generateM3U(tracker.playlistName, tracker.outputDir, tracks, tracker.m3uNameTemplate)
-          console.log(`[Downloader] M3U generated for "${tracker.playlistName}" (${tracks.length} tracks)`)
+          this.generateM3U(tracker.playlistName, baseDir, tracks, tracker.m3uNameTemplate)
+          console.log(`[Downloader] M3U generated for "${tracker.playlistName}" (${tracks.length} tracks) at ${baseDir}`)
         } else {
           console.warn(`[Downloader] No M3U entries for "${tracker.playlistName}" — all tracks failed`)
         }
@@ -4601,13 +4619,18 @@ export class Downloader extends EventEmitter {
         content += `${track.relativePath}\n`
       }
 
+      // Ensure the target directory exists — normally the playlist folder was
+      // already created for the music, but guard the root/edge cases so the
+      // write can't fail silently on a missing dir (#121).
+      fs.mkdirSync(outputDir, { recursive: true })
+
       // Write the file
       fs.writeFileSync(m3uPath, content, 'utf8')
       console.log(`[Downloader] Generated M3U playlist: ${m3uPath}`)
 
       return m3uPath
     } catch (error: any) {
-      console.error('[Downloader] Failed to generate M3U:', error.message)
+      console.error(`[Downloader] Failed to generate M3U at "${outputDir}":`, error.message)
       throw error
     }
   }

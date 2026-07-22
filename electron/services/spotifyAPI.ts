@@ -1,6 +1,18 @@
 import * as https from 'https'
 import { isSpotifyUrl as isSpotifyUrlByHost } from '../utils/urlHost'
 
+/**
+ * Error from the Spotify API carrying the HTTP status, so callers can
+ * distinguish transient (429/5xx), not-found (404), auth (401/403), and
+ * non-JSON responses instead of pattern-matching a message string (#119).
+ */
+export class SpotifyApiError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message)
+    this.name = 'SpotifyApiError'
+  }
+}
+
 export interface SpotifyTrack {
   id: string
   name: string
@@ -134,15 +146,17 @@ class SpotifyAPI {
   }
 
   /**
-   * Make an HTTP request
+   * Perform a single HTTP request. Resolves with { status, body } — parsing and
+   * retry decisions are the caller's (requestWithRetry), so transport stays
+   * dumb and every status/body is observable rather than collapsed to a string.
    */
-  private makeRequest<T>(options: {
+  private rawRequest(options: {
     hostname: string
     path: string
     method?: string
     headers?: Record<string, string>
     body?: string
-  }): Promise<T> {
+  }): Promise<{ status: number; body: string; retryAfter?: number }> {
     return new Promise((resolve, reject) => {
       const req = https.request({
         hostname: options.hostname,
@@ -150,19 +164,18 @@ class SpotifyAPI {
         method: options.method || 'GET',
         headers: options.headers
       }, (res) => {
-        let data = ''
-        res.on('data', chunk => data += chunk)
+        // Collect as Buffers and decode once, so multi-byte UTF-8 split across
+        // chunk boundaries can't corrupt the JSON (string += Buffer decoded per
+        // chunk).
+        const chunks: Buffer[] = []
+        res.on('data', chunk => chunks.push(Buffer.from(chunk)))
         res.on('end', () => {
-          try {
-            const parsed = JSON.parse(data)
-            if (res.statusCode && res.statusCode >= 400) {
-              reject(new Error(parsed.error?.message || `HTTP ${res.statusCode}`))
-            } else {
-              resolve(parsed)
-            }
-          } catch (e) {
-            reject(new Error('Failed to parse Spotify response'))
-          }
+          const ra = parseInt(String(res.headers['retry-after'] || ''), 10)
+          resolve({
+            status: res.statusCode || 0,
+            body: Buffer.concat(chunks).toString('utf-8'),
+            retryAfter: Number.isFinite(ra) ? ra : undefined
+          })
         })
       })
 
@@ -173,6 +186,86 @@ class SpotifyAPI {
       }
       req.end()
     })
+  }
+
+  /**
+   * Make an HTTP request with diagnostics and transient-failure retry.
+   *
+   * - 2xx non-JSON body → SpotifyApiError with status + a body snippet, so a
+   *   gateway HTML page / empty body is legible instead of the old opaque
+   *   "Failed to parse Spotify response".
+   * - 429 and 5xx → retried up to `maxRetries` with backoff (honoring
+   *   Retry-After), since these are the transient responses that surface as
+   *   non-JSON bodies from Spotify's edge (issue #119).
+   * - 4xx (non-429) → SpotifyApiError carrying Spotify's own error message and
+   *   status, no retry.
+   */
+  private async makeRequest<T>(options: {
+    hostname: string
+    path: string
+    method?: string
+    headers?: Record<string, string>
+    body?: string
+  }, maxRetries = 3): Promise<T> {
+    let lastErr: Error | null = null
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      let res: { status: number; body: string; retryAfter?: number }
+      try {
+        res = await this.rawRequest(options)
+      } catch (e: any) {
+        // Network-layer failure (DNS, reset, timeout) — transient, retry.
+        lastErr = new SpotifyApiError(`Spotify request failed: ${e.message}`, 0)
+        if (attempt < maxRetries) { await this.backoff(attempt); continue }
+        throw lastErr
+      }
+
+      const { status, body, retryAfter } = res
+
+      // Transient server/edge errors and rate limits — retry with backoff.
+      if (status === 429 || status >= 500) {
+        lastErr = new SpotifyApiError(
+          status === 429 ? 'Spotify is rate-limiting requests' : `Spotify service error (HTTP ${status})`,
+          status
+        )
+        if (attempt < maxRetries) {
+          await this.backoff(attempt, retryAfter)
+          continue
+        }
+        throw lastErr
+      }
+
+      // Parse the body. Spotify sends JSON for every normal response including
+      // 4xx; a parse failure here means a non-JSON body (empty, HTML block
+      // page, proxy interception) — surface status + snippet, don't retry.
+      let parsed: any
+      try {
+        parsed = JSON.parse(body)
+      } catch {
+        const snippet = body.trim().slice(0, 120).replace(/\s+/g, ' ')
+        throw new SpotifyApiError(
+          snippet
+            ? `Spotify returned a non-JSON response (HTTP ${status}): ${snippet}`
+            : `Spotify returned an empty response (HTTP ${status})`,
+          status
+        )
+      }
+
+      if (status >= 400) {
+        throw new SpotifyApiError(parsed?.error?.message || `HTTP ${status}`, status)
+      }
+      return parsed as T
+    }
+
+    throw lastErr || new SpotifyApiError('Spotify request failed', 0)
+  }
+
+  /** Backoff between retries: Retry-After (capped) when given, else exponential. */
+  private backoff(attempt: number, retryAfterSec?: number): Promise<void> {
+    const ms = retryAfterSec != null
+      ? Math.min(retryAfterSec * 1000, 10000)
+      : Math.min(500 * 2 ** attempt, 4000)
+    return new Promise(resolve => setTimeout(resolve, ms))
   }
 
   /**
