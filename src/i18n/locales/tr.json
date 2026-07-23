@@ -371,7 +371,12 @@
       "tokenLabel": "Veya bir belirteçle bağlanın",
       "tokenPlaceholder": "Qobuz user_auth_token değerinizi yapıştırın",
       "tokenConnect": "Belirteç Kullan",
-      "tokenHelp": "Yalnızca bir kimlik doğrulama belirteci olan hesaplar için (örneğin, başka bir aracın yapılandırmasından) veya giriş penceresi kullanılamadığında. Belirteç Qobuz ile doğrulanır, ardından şifreli olarak saklanır — tıpkı giriş penceresi akışı gibi. Ayarlar dosyalarında, dışa aktarımlarda veya yedeklerde asla görünmez."
+      "tokenHelp": "Yalnızca bir kimlik doğrulama belirteci olan hesaplar için (örneğin, başka bir aracın yapılandırmasından) veya giriş penceresi kullanılamadığında. Belirteç Qobuz ile doğrulanır, ardından şifreli olarak saklanır — tıpkı giriş penceresi akışı gibi. Ayarlar dosyalarında, dışa aktarımlarda veya yedeklerde asla görünmez.",
+      "advancedToggle": "Gelişmiş: başka bir uygulamadan belirteç",
+      "advancedHelp": "Belirteciniz başka bir araç (streamrip, qobuz-dl vb.) tarafından oluşturulduysa, o aracın App ID ve App Secret değerlerini de buraya yapıştırın; varsa User ID değerinizi de girin. Qobuz belirteçleri onları oluşturan uygulamaya bağlar, bu sayede başka bir yerden gelen bir belirteç çalışır. Normal bir belirteç için boş bırakın.",
+      "appIdPlaceholder": "App ID (isteğe bağlı)",
+      "appSecretPlaceholder": "App Secret (isteğe bağlı)",
+      "userIdPlaceholder": "User ID (isteğe bağlı)"
     }
   },
   "login": {

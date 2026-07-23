@@ -426,7 +426,12 @@
       "tokenLabel": "Hoặc kết nối bằng mã thông báo",
       "tokenPlaceholder": "Dán user_auth_token của Qobuz",
       "tokenConnect": "Dùng mã thông báo",
-      "tokenHelp": "Dành cho các tài khoản chỉ có mã thông báo xác thực (ví dụ, từ cấu hình của công cụ khác) hoặc khi cửa sổ đăng nhập không khả dụng. Mã thông báo được xác thực với Qobuz, sau đó lưu trữ mã hóa — giống hệt như quy trình cửa sổ đăng nhập. Nó không bao giờ xuất hiện trong tệp cài đặt, bản xuất hoặc bản sao lưu."
+      "tokenHelp": "Dành cho các tài khoản chỉ có mã thông báo xác thực (ví dụ, từ cấu hình của công cụ khác) hoặc khi cửa sổ đăng nhập không khả dụng. Mã thông báo được xác thực với Qobuz, sau đó lưu trữ mã hóa — giống hệt như quy trình cửa sổ đăng nhập. Nó không bao giờ xuất hiện trong tệp cài đặt, bản xuất hoặc bản sao lưu.",
+      "advancedToggle": "Nâng cao: mã thông báo từ ứng dụng khác",
+      "advancedHelp": "Nếu mã thông báo của bạn được tạo bởi một công cụ khác (streamrip, qobuz-dl, v.v.), hãy dán cả App ID và App Secret của công cụ đó vào đây, cùng với User ID của bạn nếu có. Qobuz gắn mã thông báo với ứng dụng đã tạo ra chúng, vì vậy điều này giúp mã thông báo từ nơi khác hoạt động. Để trống nếu là mã thông báo thông thường.",
+      "appIdPlaceholder": "App ID (tùy chọn)",
+      "appSecretPlaceholder": "App Secret (tùy chọn)",
+      "userIdPlaceholder": "User ID (tùy chọn)"
     }
   },
   "login": {

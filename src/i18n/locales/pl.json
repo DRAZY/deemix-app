@@ -371,7 +371,12 @@
       "tokenConnect": "Użyj tokena",
       "tokenHelp": "Dla kont, które mają tylko token uwierzytelniający (na przykład z konfiguracji innego narzędzia) lub gdy okno logowania jest niedostępne. Token jest weryfikowany w Qobuz, a następnie przechowywany w postaci zaszyfrowanej — dokładnie tak jak w przypadku logowania przez okno. Nigdy nie pojawia się w plikach ustawień, eksportach ani kopiach zapasowych.",
       "tokenLabel": "Lub połącz za pomocą tokena",
-      "tokenPlaceholder": "Wklej swój token Qobuz user_auth_token"
+      "tokenPlaceholder": "Wklej swój token Qobuz user_auth_token",
+      "advancedToggle": "Zaawansowane: token z innej aplikacji",
+      "advancedHelp": "Jeśli Twój token został utworzony przez inne narzędzie (streamrip, qobuz-dl itp.), wklej tutaj także App ID i App Secret tego narzędzia oraz swój User ID, jeśli go masz. Qobuz wiąże tokeny z aplikacją, która je utworzyła, dzięki czemu token z innego źródła zadziała. Pozostaw puste w przypadku zwykłego tokena.",
+      "appIdPlaceholder": "App ID (opcjonalnie)",
+      "appSecretPlaceholder": "App Secret (opcjonalnie)",
+      "userIdPlaceholder": "User ID (opcjonalnie)"
     }
   },
   "login": {

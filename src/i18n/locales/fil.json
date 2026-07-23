@@ -371,7 +371,12 @@
       "tokenLabel": "O kumonekta gamit ang token",
       "tokenPlaceholder": "I-paste ang iyong Qobuz user_auth_token",
       "tokenConnect": "Gumamit ng Token",
-      "tokenHelp": "Para sa mga account na may authentication token lang (halimbawa, mula sa configuration ng ibang tool) o kapag hindi available ang login window. Ang token ay bine-validate sa Qobuz, pagkatapos ay iniimbak na naka-encrypt — katulad na katulad ng daloy ng login window. Hindi ito kailanman lumalabas sa mga settings file, export, o backup."
+      "tokenHelp": "Para sa mga account na may authentication token lang (halimbawa, mula sa configuration ng ibang tool) o kapag hindi available ang login window. Ang token ay bine-validate sa Qobuz, pagkatapos ay iniimbak na naka-encrypt — katulad na katulad ng daloy ng login window. Hindi ito kailanman lumalabas sa mga settings file, export, o backup.",
+      "advancedToggle": "Advanced: token mula sa ibang app",
+      "advancedHelp": "Kung ginawa ang iyong token ng ibang tool (streamrip, qobuz-dl, atbp.), i-paste din dito ang App ID at App Secret ng tool na iyon, at ang iyong User ID kung mayroon ka. Iniuugnay ng Qobuz ang mga token sa app na gumawa ng mga ito, kaya nito gumagana ang token mula sa ibang pinagmulan. Iwanang blangko para sa normal na token.",
+      "appIdPlaceholder": "App ID (opsyonal)",
+      "appSecretPlaceholder": "App Secret (opsyonal)",
+      "userIdPlaceholder": "User ID (opsyonal)"
     }
   },
   "login": {

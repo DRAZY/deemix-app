@@ -371,7 +371,12 @@
       "tokenConnect": "Utiliser le jeton",
       "tokenHelp": "Pour les comptes qui ne disposent que d'un jeton d'authentification (par exemple, depuis la configuration d'un autre outil) ou lorsque la fenêtre de connexion n'est pas disponible. Le jeton est validé auprès de Qobuz, puis stocké chiffré — exactement comme le flux de la fenêtre de connexion. Il n'apparaît jamais dans les fichiers de paramètres, les exports ou les sauvegardes.",
       "tokenLabel": "Ou connectez-vous avec un jeton",
-      "tokenPlaceholder": "Collez votre user_auth_token Qobuz"
+      "tokenPlaceholder": "Collez votre user_auth_token Qobuz",
+      "advancedToggle": "Avancé : jeton provenant d'une autre application",
+      "advancedHelp": "Si votre jeton a été créé par un autre outil (streamrip, qobuz-dl, etc.), collez ici aussi l'App ID et l'App Secret de cet outil, ainsi que votre User ID si vous en avez un. Qobuz lie les jetons à l'application qui les a créés ; c'est ce qui permet à un jeton provenant d'ailleurs de fonctionner. Laissez vide pour un jeton normal.",
+      "appIdPlaceholder": "App ID (facultatif)",
+      "appSecretPlaceholder": "App Secret (facultatif)",
+      "userIdPlaceholder": "User ID (facultatif)"
     }
   },
   "login": {
