@@ -260,12 +260,20 @@ function getCoverUrl(item: DownloadItem): string {
   return ''
 }
 
-// Handle image load errors
-function handleImageError(event: Event) {
-  const img = event.target as HTMLImageElement
-  if (img.src !== '/placeholder.png') {
-    img.src = '/placeholder.png'
-  }
+// Covers that failed to load — tracked in reactive state (keyed by row id) so
+// a failed cover settles on the fallback tile instead of oscillating. The old
+// handler mutated img.src to '/placeholder.png' directly; that looped forever
+// (flashing) because the guard compared the absolute img.src to the relative
+// string and never matched, and the placeholder file isn't even a valid image.
+// Vue would also reset img.src back to the failing URL on every re-render.
+const failedCovers = ref(new Set<string>())
+
+function showCover(item: DownloadItem): boolean {
+  return !!getCoverUrl(item) && !failedCovers.value.has(item.id)
+}
+
+function onCoverError(item: DownloadItem) {
+  if (item.id) failedCovers.value.add(item.id)
 }
 
 function formatSpeed(bytesPerSecond: number): string {
@@ -621,17 +629,29 @@ function copyAllErrorDetails() {
               <circle cx="15" cy="18" r="1.5" />
             </svg>
           </div>
-          <!-- Album art -->
+          <!-- Album art — reactive fallback tile when the cover is missing or
+               fails to load (no broken-image loop). -->
           <div class="relative flex-shrink-0">
             <img
-              :src="getCoverUrl(item) || '/placeholder.png'"
+              v-if="showCover(item)"
+              :src="getCoverUrl(item)"
               :alt="item.title"
               loading="lazy"
               decoding="async"
               class="object-cover bg-background-tertiary border border-white/[0.08]"
               :class="isSlim ? 'w-8 h-8' : 'w-12 h-12'"
-              @error="handleImageError"
+              @error="onCoverError(item)"
             />
+            <div
+              v-else
+              class="bg-background-tertiary border border-white/[0.08] flex items-center justify-center"
+              :class="isSlim ? 'w-8 h-8' : 'w-12 h-12'"
+            >
+              <svg class="text-foreground-muted/50" :class="isSlim ? 'w-4 h-4' : 'w-6 h-6'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+              </svg>
+            </div>
             <!-- Type badge for album/playlist -->
             <span
               v-if="(item.type === 'album' || item.type === 'playlist') && !isSlim"

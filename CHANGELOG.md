@@ -17,6 +17,7 @@ Entries use a compact format — short bullets, one line each. Full per-version 
 
 - **Spotify → Deezer conversion no longer misreports a rate-limit as "no match."** The converter's Deezer client now retries transient failures (with jittered backoff) via the shared hardened helper, and a real rate-limit surfaces as a clear "Deezer is rate-limiting, try again" message instead of silently marking every track unmatched.
 - **Truncated downloads are now detected.** If a transfer closes cleanly but delivers fewer bytes than promised, it's rejected and cleaned up instead of being saved as a corrupt file.
+- **Download-row cover art no longer flashes when a cover fails to load.** A failed cover (e.g. a flaky CDN response) used to trigger an infinite reload loop against a broken placeholder; it now settles on a fallback tile.
 - **Track preview button now has a tooltip.**
 
 ### Performance
