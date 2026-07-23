@@ -371,7 +371,12 @@
       "tokenConnect": "토큰 사용",
       "tokenHelp": "인증 토큰만 있는 계정(예: 다른 도구의 설정에서 가져온 경우)이거나 로그인 창을 사용할 수 없을 때 사용합니다. 토큰은 Qobuz로 검증된 후 암호화되어 저장되며 — 로그인 창 방식과 동일합니다. 설정 파일, 내보내기 또는 백업에 절대 나타나지 않습니다.",
       "tokenLabel": "또는 토큰으로 연결",
-      "tokenPlaceholder": "Qobuz user_auth_token을 붙여넣으세요"
+      "tokenPlaceholder": "Qobuz user_auth_token을 붙여넣으세요",
+      "advancedToggle": "고급: 다른 앱의 토큰",
+      "advancedHelp": "토큰이 다른 도구(streamrip, qobuz-dl 등)에서 생성된 경우, 해당 도구의 App ID와 App Secret도 여기에 붙여넣고, User ID가 있다면 함께 입력하세요. Qobuz는 토큰을 이를 생성한 앱에 연결하므로, 이렇게 하면 다른 곳에서 만든 토큰도 작동합니다. 일반 토큰인 경우 비워 두세요.",
+      "appIdPlaceholder": "App ID (선택 사항)",
+      "appSecretPlaceholder": "App Secret (선택 사항)",
+      "userIdPlaceholder": "User ID (선택 사항)"
     }
   },
   "login": {

@@ -81,6 +81,13 @@ class QobuzAuth extends EventEmitter {
   // candidate). We collect all candidates and resolve the winner by trial on
   // the first getFileUrl, then cache it.
   private secretCandidates: string[] = []
+  // Advanced connect (#117 follow-up): user-supplied app_id + app_secret that
+  // OVERRIDE the auto-scraped web-player credentials. Needed for tokens minted
+  // under a different Qobuz app_id (Qobuz runs separate app_ids per client —
+  // web/iOS/Android/desktop — and tokens pulled from other tools are bound to
+  // theirs, so validating against ours returns a false "expired"). When set,
+  // every credential fetch returns these and signing uses this secret.
+  private manualCreds: QobuzAppCredentials | null = null
   private session: QobuzSession | null = null
 
   isLoggedIn(): boolean {
@@ -136,7 +143,30 @@ class QobuzAuth extends EventEmitter {
     return path.join(app.getPath('userData'), 'qobuz-app-creds.json')
   }
 
+  /** Set (or clear) user-supplied app credentials that override the auto-scrape.
+   *  Both empty → revert to auto-scrape (forces a re-fetch on next use). */
+  setManualCredentials(appId?: string, appSecret?: string): void {
+    const id = (appId || '').trim()
+    const secret = (appSecret || '').trim()
+    if (id && secret) {
+      this.manualCreds = { appId: id, appSecret: secret }
+      this.appCreds = this.manualCreds
+      this.secretCandidates = [secret]
+      console.log('[QobuzAuth] Using user-supplied app credentials')
+    } else {
+      this.manualCreds = null
+      this.appCreds = null
+      this.secretCandidates = []
+    }
+  }
+
+  hasManualCredentials(): boolean {
+    return this.manualCreds !== null
+  }
+
   async fetchAppCredentials(force = false): Promise<QobuzAppCredentials> {
+    // User-supplied credentials always win and never get re-scraped over.
+    if (this.manualCreds) return this.manualCreds
     if (this.appCreds && !force) return this.appCreds
     if (this.credsInFlight && !force) return this.credsInFlight
     this.credsInFlight = this.fetchAppCredentialsInternal(force)

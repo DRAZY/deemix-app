@@ -134,6 +134,8 @@ export interface Settings {
   // Qobuz integration (browser-minted token; see qobuzAuth.ts)
   qobuzUserId: string
   qobuzToken: string
+  qobuzAppId: string
+  qobuzAppSecret: string
 }
 
 export const defaultSettings: Settings = {
@@ -244,7 +246,9 @@ export const defaultSettings: Settings = {
   spotifyUsername: '',
   // Qobuz integration
   qobuzUserId: '',
-  qobuzToken: ''
+  qobuzToken: '',
+  qobuzAppId: '',
+  qobuzAppSecret: ''
 }
 
 function applyColorTheme(theme: ColorTheme) {
@@ -553,6 +557,12 @@ export const useSettingsStore = defineStore('settings', () => {
           if (result.credentials.qobuzToken) {
             settings.value.qobuzToken = result.credentials.qobuzToken
           }
+          if (result.credentials.qobuzAppId) {
+            settings.value.qobuzAppId = result.credentials.qobuzAppId
+          }
+          if (result.credentials.qobuzAppSecret) {
+            settings.value.qobuzAppSecret = result.credentials.qobuzAppSecret
+          }
           return // Successfully loaded from userData
         }
       } catch (e) {
@@ -730,15 +740,26 @@ export const useSettingsStore = defineStore('settings', () => {
    * included), and only then do we persist — same encrypted path as the
    * login-window flow, never plaintext.
    */
-  async function connectQobuzWithToken(token: string): Promise<{ success: boolean; error?: string }> {
+  // Token-paste connect. `advanced` is optional: a user whose token was minted
+  // under a different Qobuz app_id can supply that app_id + secret (and, if they
+  // have it, their user id) so the token validates and downloads sign correctly.
+  // Omitting advanced keeps the plain auto-scrape path unchanged. The
+  // username/password login window remains a fully separate, unchanged option.
+  async function connectQobuzWithToken(
+    token: string,
+    advanced?: { appId?: string; appSecret?: string; userId?: string }
+  ): Promise<{ success: boolean; error?: string }> {
     const trimmed = token.trim()
     if (!trimmed) return { success: false, error: 'Token required' }
+    const appId = (advanced?.appId || '').trim()
+    const appSecret = (advanced?.appSecret || '').trim()
+    const advUserId = (advanced?.userId || '').trim()
     try {
       const port = window.electronAPI ? await window.electronAPI.getServerPort() : 6595
       const r = await fetch(`http://127.0.0.1:${port}/api/qobuz/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: trimmed }),
+        body: JSON.stringify({ token: trimmed, appId, appSecret, userId: advUserId }),
       })
       const d = await r.json().catch(() => ({}))
       if (!r.ok || !d.success || !d.userId) {
@@ -746,8 +767,17 @@ export const useSettingsStore = defineStore('settings', () => {
       }
       settings.value.qobuzUserId = String(d.userId)
       settings.value.qobuzToken = trimmed
+      settings.value.qobuzAppId = appId
+      settings.value.qobuzAppSecret = appSecret
       if (window.electronAPI?.storage) {
-        await window.electronAPI.storage.saveCredentials({ qobuzUserId: String(d.userId), qobuzToken: trimmed })
+        await window.electronAPI.storage.saveCredentials({
+          qobuzUserId: String(d.userId),
+          qobuzToken: trimmed,
+          // Persist (or clear) the advanced creds so the session restores with
+          // the right app on next launch.
+          qobuzAppId: appId,
+          qobuzAppSecret: appSecret,
+        })
       }
       qobuzSessionExpired.value = false
       return { success: true }
@@ -760,8 +790,10 @@ export const useSettingsStore = defineStore('settings', () => {
     qobuzSessionExpired.value = false
     settings.value.qobuzUserId = ''
     settings.value.qobuzToken = ''
+    settings.value.qobuzAppId = ''
+    settings.value.qobuzAppSecret = ''
     if (window.electronAPI?.storage) {
-      await window.electronAPI.storage.saveCredentials({ qobuzUserId: '', qobuzToken: '' })
+      await window.electronAPI.storage.saveCredentials({ qobuzUserId: '', qobuzToken: '', qobuzAppId: '', qobuzAppSecret: '' })
     }
   }
 

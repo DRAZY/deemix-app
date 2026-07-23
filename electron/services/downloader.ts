@@ -744,7 +744,7 @@ export class Downloader extends EventEmitter {
     if (existingDownload) {
       console.log(`[Downloader] Track ${options.trackId} already in queue/downloading (${existingDownload.id}), returning existing ID`)
       // Record as processed for M3U tracking — this track won't go through processDownload
-      if (options.isFromPlaylist && options.playlistName) {
+      if (options._m3uTrackerId) {
         this.recordM3UFailure(options._m3uTrackerId || options.playlistName || "")
       }
       return existingDownload.id
@@ -836,7 +836,7 @@ export class Downloader extends EventEmitter {
           this.emit('error', progress)
 
           // Record failure for M3U tracking (so M3U still generates with available tracks)
-          if (next.options.isFromPlaylist && next.options.playlistName) {
+          if (next.options._m3uTrackerId) {
             this.recordM3UFailure(next.options._m3uTrackerId || next.options.playlistName || "")
           }
 
@@ -913,14 +913,14 @@ export class Downloader extends EventEmitter {
       // M3U bookkeeping for playlist tracks — records the real on-disk path so
       // the generated playlist file matches disk exactly (Deezer parity).
       const recordM3U = (absolutePath: string) => {
-        if (options.isFromPlaylist && options.playlistName) {
+        if (options._m3uTrackerId) {
           this.recordM3UEntry(options._m3uTrackerId || options.playlistName || '', {
             position: options.playlistPosition || 0,
             duration: shim.DURATION || 0,
             artist: shim.ART_NAME || 'Unknown Artist',
             title: progress.trackTitle || shim.SNG_TITLE || 'Unknown Track',
             absolutePath,
-            playlistFolder: progress.playlistFolder
+            playlistFolder: progress.playlistFolder || progress.albumRootFolder || progress.albumFolder
           })
         }
       }
@@ -1088,7 +1088,7 @@ export class Downloader extends EventEmitter {
       // partially-cancelled playlist's tracker completes and generates).
       if (this.cancelledDownloadIds.delete(downloadId)) {
         console.log(`[Downloader] Qobuz download ${downloadId} cancelled mid-stream`)
-        if (options.isFromPlaylist && options.playlistName) {
+        if (options._m3uTrackerId) {
           this.recordM3UFailure(options._m3uTrackerId || options.playlistName || '')
         }
         return
@@ -1100,7 +1100,7 @@ export class Downloader extends EventEmitter {
       // This catch swallows the error (the queue wrapper's error path never
       // runs for Qobuz), so mirror its bookkeeping here: keep the M3U tracker
       // counting so the playlist file still generates, and write errors.txt.
-      if (options.isFromPlaylist && options.playlistName) {
+      if (options._m3uTrackerId) {
         this.recordM3UFailure(options._m3uTrackerId || options.playlistName || '')
       }
       if (options.createErrorLog && progress.albumFolder) {
@@ -1455,14 +1455,14 @@ export class Downloader extends EventEmitter {
         progress.progress = 100
         progress.skippedAsDuplicate = true
         // M3U: point the playlist entry at the file we already have.
-        if (options.isFromPlaylist && options.playlistName) {
+        if (options._m3uTrackerId) {
           this.recordM3UEntry(options._m3uTrackerId || options.playlistName || "", {
             position: options.playlistPosition || 0,
             duration: trackInfo.DURATION || 0,
             artist: trackInfo.ART_NAME || 'Unknown Artist',
             title: progress.trackTitle || trackInfo.SNG_TITLE || 'Unknown Track',
             absolutePath: existingPath,
-            playlistFolder: progress.playlistFolder
+            playlistFolder: progress.playlistFolder || progress.albumRootFolder || progress.albumFolder
           })
         }
         this.emit('progress', progress)
@@ -1480,14 +1480,14 @@ export class Downloader extends EventEmitter {
       progress.status = 'completed'
       progress.progress = 100
       // Record skipped file for M3U — it still exists on disk
-      if (options.isFromPlaylist && options.playlistName) {
+      if (options._m3uTrackerId) {
         this.recordM3UEntry(options._m3uTrackerId || options.playlistName || "", {
           position: options.playlistPosition || 0,
           duration: trackInfo.DURATION || 0,
           artist: trackInfo.ART_NAME || 'Unknown Artist',
           title: progress.trackTitle || trackInfo.SNG_TITLE || 'Unknown Track',
           absolutePath: initialOutputPath,
-          playlistFolder: progress.playlistFolder
+          playlistFolder: progress.playlistFolder || progress.albumRootFolder || progress.albumFolder
         })
       }
       // Keep the library index fresh even when the file already existed at the
@@ -1670,14 +1670,14 @@ export class Downloader extends EventEmitter {
       this.cleanupThrottle(downloadId)
 
       // Record actual file path for M3U generation (playlist tracks only)
-      if (options.isFromPlaylist && options.playlistName) {
+      if (options._m3uTrackerId) {
         this.recordM3UEntry(options._m3uTrackerId || options.playlistName || "", {
           position: options.playlistPosition || 0,
           duration: trackInfo.DURATION || 0,
           artist: trackInfo.ART_NAME || 'Unknown Artist',
           title: progress.trackTitle || trackInfo.SNG_TITLE || 'Unknown Track',
           absolutePath: decryptedPath,
-          playlistFolder: progress.playlistFolder
+          playlistFolder: progress.playlistFolder || progress.albumRootFolder || progress.albumFolder
         })
       }
 

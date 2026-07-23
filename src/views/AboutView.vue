@@ -35,12 +35,21 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '2.3.0',
+    date: '2026-07-23',
+    items: [
+      'Advanced Qobuz connect: if your token was made by another tool (streamrip, qobuz-dl, and the like), Settings, Qobuz now has an optional Advanced section where you can paste that tool\'s App ID and App Secret (and your User ID if you have it) alongside the token. Qobuz ties tokens to the app that created them, so this lets a token from elsewhere connect. The normal username and password login and plain token paste are unchanged.',
+      'Album playlist files: with "create playlist file" turned on, album downloads now generate an .m3u8 next to the tracks, the same way playlists do (legacy Deemix parity).',
+      'Security: removed an unused image library (sharp) that carried high-severity vulnerabilities. No feature change, just a lighter and safer build.'
+    ]
+  },
+  {
     version: '2.2.3',
     date: '2026-07-22',
     items: [
       'Album covers now open the album (like Spotify, Apple Music, and Deezer) instead of downloading the whole album — the one-click whole-album download is now the GET button that appears on the cover when you hover, so the track list is easy to reach. To download individual songs: open the album, then use Select Tracks.',
       'A hint under the search box now surfaces something the app could already do quietly — paste a Deezer, Spotify, or Qobuz link straight into search, and paste several at once to bulk-download. Localized in every language.',
-      'Hardening: Spotify → Deezer conversion no longer misreports a Deezer rate-limit as "no matches" (it retries, then tells you to try again), truncated downloads are caught instead of saved as corrupt files, and the download queue stays lean over long sessions.'
+      'Hardening: Spotify to Deezer conversion no longer misreports a Deezer rate-limit as "no matches" (it retries, then tells you to try again), and truncated downloads are caught instead of saved as corrupt files.'
     ]
   },
   {

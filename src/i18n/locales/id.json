@@ -371,7 +371,12 @@
       "tokenConnect": "Gunakan Token",
       "tokenHelp": "Untuk akun yang hanya memiliki token autentikasi (misalnya, dari konfigurasi alat lain) atau saat jendela login tidak tersedia. Token divalidasi dengan Qobuz, lalu disimpan terenkripsi — persis seperti alur jendela login. Token tidak pernah muncul di berkas pengaturan, ekspor, atau cadangan.",
       "tokenLabel": "Atau hubungkan dengan token",
-      "tokenPlaceholder": "Tempel user_auth_token Qobuz Anda"
+      "tokenPlaceholder": "Tempel user_auth_token Qobuz Anda",
+      "advancedToggle": "Lanjutan: token dari aplikasi lain",
+      "advancedHelp": "Jika token Anda dibuat oleh alat lain (streamrip, qobuz-dl, dll.), tempel juga App ID dan App Secret alat tersebut di sini, beserta User ID Anda jika ada. Qobuz mengikat token ke aplikasi yang membuatnya, sehingga token dari sumber lain pun bisa berfungsi. Biarkan kosong untuk token biasa.",
+      "appIdPlaceholder": "App ID (opsional)",
+      "appSecretPlaceholder": "App Secret (opsional)",
+      "userIdPlaceholder": "User ID (opsional)"
     }
   },
   "login": {

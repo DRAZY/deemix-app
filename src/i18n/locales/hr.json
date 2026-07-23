@@ -371,7 +371,12 @@
       "tokenConnect": "Upotrijebi token",
       "tokenHelp": "Za račune koji imaju samo token za autentifikaciju (na primjer, iz konfiguracije drugog alata) ili kada prozor za prijavu nije dostupan. Token se provjerava s Qobuzom, a zatim pohranjuje šifrirano — jednako kao i tijek prijave putem prozora. Nikada se ne pojavljuje u datotekama postavki, izvozima ni sigurnosnim kopijama.",
       "tokenLabel": "Ili se poveži pomoću tokena",
-      "tokenPlaceholder": "Zalijepite svoj Qobuz user_auth_token"
+      "tokenPlaceholder": "Zalijepite svoj Qobuz user_auth_token",
+      "advancedToggle": "Napredno: token iz druge aplikacije",
+      "advancedHelp": "Ako je vaš token izradio drugi alat (streamrip, qobuz-dl itd.), ovdje zalijepite i App ID i App Secret tog alata te svoj User ID ako ga imate. Qobuz veže tokene uz aplikaciju koja ih je izradila, pa zbog toga token s drugog mjesta radi. Ostavite prazno za obični token.",
+      "appIdPlaceholder": "App ID (neobavezno)",
+      "appSecretPlaceholder": "App Secret (neobavezno)",
+      "userIdPlaceholder": "User ID (neobavezno)"
     }
   },
   "login": {

@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-2.2.3-C8F135" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.3.0-C8F135" />
   <img alt="Electron" src="https://img.shields.io/badge/Electron-39-47848F?logo=electron&logoColor=white" />
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
@@ -31,6 +31,7 @@
 - **Full Settings Parity** -- Folder structure, naming templates, CD subfolders, artwork, the complete tagging option set, duplicate skip (by ISRC), overwrite modes, and playlist handling all apply to Qobuz exactly as they do to Deezer
 - **Secure by Design** -- Your Qobuz session token lives only in OS secure storage — never in settings files, exports, or backups
 - **Token Login (v2.2.0)** -- Connect with a bare `user_auth_token` when that's all you have (or the login window is unavailable in your region) — single-field paste, validated and stored encrypted
+- **Advanced Token Connect (v2.3.0)** -- Optional fields to pair a token minted by another Qobuz tool (streamrip, qobuz-dl, and similar) with that tool's App ID and App Secret (and User ID); Qobuz binds tokens to the app that created them, so this lets a token from elsewhere connect. The username/password login window and plain token paste are unchanged
 
 ### Music Discovery & Browsing
 
@@ -77,7 +78,7 @@
 - **ID3 Tagging** -- 26 configurable tag fields including title, artist, album, lyrics, ISRC, BPM, and more
 - **Release Type Tag** -- Writes `RELEASETYPE` (Album / Single / EP / Compilation) so servers like Navidrome automatically separate albums, singles, and EPs; on by default and toggleable under Settings → Metadata tags (#82)
 - **Featured Artists** -- All credited artists (main + featured) included in tags with configurable separator
-- **M3U Playlists** -- Automatic M3U8 playlist file generation with paths matching actual downloaded files and customizable filename template (`%playlist%`, `%date%`, `%year%`)
+- **M3U Playlists** -- Automatic M3U8 playlist file generation for playlists and albums (v2.3.0), written into the folder alongside the tracks with paths matching the actual downloaded files and a customizable filename template (`%playlist%`, `%date%`, `%year%`)
 - **Album Artwork** -- Embedded and local cover art with configurable size and format (JPEG/PNG)
 - **Playlist Artwork** -- Playlist cover image saved as `cover.jpg` in the playlist folder (Deezer, Spotify, and Playlist Sync)
 - **Synced Lyrics** -- Optional LRC file generation for synced lyrics

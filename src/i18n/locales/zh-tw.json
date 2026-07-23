@@ -426,7 +426,12 @@
       "tokenLabel": "或使用權杖連接",
       "tokenPlaceholder": "貼上您的 Qobuz user_auth_token",
       "tokenConnect": "使用權杖",
-      "tokenHelp": "適用於僅有驗證權杖的帳戶（例如，來自其他工具的設定），或登入視窗無法使用時。權杖會透過 Qobuz 驗證，然後加密儲存 — 與登入視窗流程完全相同。它絕不會出現在設定檔、匯出或備份中。"
+      "tokenHelp": "適用於僅有驗證權杖的帳戶（例如，來自其他工具的設定），或登入視窗無法使用時。權杖會透過 Qobuz 驗證，然後加密儲存 — 與登入視窗流程完全相同。它絕不會出現在設定檔、匯出或備份中。",
+      "advancedToggle": "進階：來自其他應用程式的權杖",
+      "advancedHelp": "如果您的權杖是由其他工具（streamrip、qobuz-dl 等）建立的，請同時在此貼上該工具的 App ID 和 App Secret，如果有 User ID 也一併填寫。Qobuz 會將權杖繫結至建立它的應用程式，因此這樣可以讓來自其他來源的權杖正常運作。若為一般權杖，請留空。",
+      "appIdPlaceholder": "App ID（選填）",
+      "appSecretPlaceholder": "App Secret（選填）",
+      "userIdPlaceholder": "User ID（選填）"
     }
   },
   "login": {

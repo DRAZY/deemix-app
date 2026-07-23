@@ -6,6 +6,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [2.3.0] — 2026-07-23
+
+### Added
+
+- **Advanced Qobuz connect (from #105).** Settings, Qobuz gains an optional Advanced section where a token minted by another tool (streamrip, qobuz-dl, and similar) can be paired with that tool's App ID and App Secret (and an optional User ID). Qobuz binds tokens to the app that created them, so a token from elsewhere previously read as "expired"; supplying the matching app credentials lets it connect and downloads sign correctly. The username and password login window and plain token paste are unchanged. Confirmed with alex5908 and cisko99za.
+- **Album M3U files (#121, legacy Deemix parity).** With "create playlist file" enabled, album downloads now write an .m3u8 into the album folder alongside the tracks, matching the behavior playlists already had. Reported by username227.
+
+### Security
+
+- **Removed the unused `sharp` dependency (Dependabot #46, high).** `sharp` 0.34.5 carried high-severity inherited libvips CVEs but was never imported anywhere in the app (artwork sizing uses CDN-served sizes, not local resizing). Removing it resolves the alert outright and trims a native dependency from the build.
+
 ## [2.2.3] — 2026-07-22
 
 ### Changed

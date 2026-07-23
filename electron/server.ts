@@ -1718,6 +1718,14 @@ export class DeemixServer extends EventEmitter {
       // same context via fetchAlbumContext so retried tracks land in the same folder.
       const albumContext = buildAlbumContext(albumId, albumInfo, albumTracks.data)
 
+      // Album M3U (#121, legacy deemix parity): when "create playlist file" is
+      // on, generate an .m3u8 for the album too, written into the album folder.
+      // Reuses the playlist M3U tracker; recording keys off _m3uTrackerId.
+      const albumM3uId = `album_${albumId}_${Date.now()}`
+      if (this.settings.createPlaylistFile) {
+        downloader.registerPlaylistForM3U(albumM3uId, albumInfo.title || 'Album', this.settings.downloadPath, albumTracks.data.length, this.settings.m3uNameTemplate)
+      }
+
       for (const track of albumTracks.data) {
         const downloadId = await downloader.download({
           trackId: track.id,
@@ -1771,7 +1779,12 @@ export class DeemixServer extends EventEmitter {
           albumContext: albumContext,
           skipDuplicateTracks: this.settings.skipDuplicateTracks,
           createErrorLog: this.settings.createErrorLog,
-          overwriteMode
+          overwriteMode,
+          // Album M3U tracking (#121). playlistPosition orders the M3U entries;
+          // for an album that's the track position. isFromPlaylist stays false
+          // so no playlist folder is created.
+          _m3uTrackerId: albumM3uId,
+          playlistPosition: track.track_position
         })
         downloadIds.push(downloadId)
       }
@@ -3108,7 +3121,12 @@ export class DeemixServer extends EventEmitter {
         this.sendJSON(res, { success: false, error: 'token required' }, 400)
         return
       }
-      // userId present → login-window path (id captured alongside the token).
+      // Advanced connect: user-supplied app_id + app_secret override the
+      // auto-scrape so a token minted under a different Qobuz app_id validates
+      // and downloads sign correctly. Empty values revert to auto-scrape.
+      qobuzAuth.setManualCredentials(String(body.appId || ''), String(body.appSecret || ''))
+      // userId present → login-window path (id captured alongside the token),
+      // or the advanced path where the user pasted their own user id.
       // userId absent → token-paste path (#114): Qobuz identifies the account.
       const session = userId
         ? await qobuzAuth.loginWithToken(userId, token)
@@ -3590,9 +3608,17 @@ export class DeemixServer extends EventEmitter {
       // playlist path uses, honoring the createPlaylistFile setting.
       const validTracks = tracks.filter((t: any) => t?.id)
       let m3uTrackerId: string | undefined
-      if (playlistName && this.settings.createPlaylistFile) {
-        m3uTrackerId = `qobuzplaylist_${playlistId}_${Date.now()}`
-        downloader.registerPlaylistForM3U(m3uTrackerId, playlistName, this.settings.downloadPath, validTracks.length, this.settings.m3uNameTemplate)
+      if (this.settings.createPlaylistFile) {
+        // Album M3U (#121) mirrors the playlist path: register a tracker so an
+        // .m3u8 is written into the folder. Album gets its own tracker keyed by
+        // album id; playlist keeps its existing one.
+        if (playlistName) {
+          m3uTrackerId = `qobuzplaylist_${playlistId}_${Date.now()}`
+          downloader.registerPlaylistForM3U(m3uTrackerId, playlistName, this.settings.downloadPath, validTracks.length, this.settings.m3uNameTemplate)
+        } else if (albumId) {
+          m3uTrackerId = `qobuzalbum_${albumId}_${Date.now()}`
+          downloader.registerPlaylistForM3U(m3uTrackerId, album?.title || 'Album', this.settings.downloadPath, validTracks.length, this.settings.m3uNameTemplate)
+        }
       }
 
       // Listing metadata reuse (#112): album/get track items carry no per-track
@@ -3609,7 +3635,8 @@ export class DeemixServer extends EventEmitter {
           partOfAlbum: !!albumId,
           album,
           playlistName,
-          playlistPosition: playlistName ? position : undefined,
+          // Position drives M3U ordering for both albums and playlists.
+          playlistPosition: position,
           playlistOwner,
           m3uTrackerId,
           qobuzMeta: albumId ? { ...t, album: albumForMeta } : t,

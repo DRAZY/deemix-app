@@ -371,7 +371,12 @@
       "tokenConnect": "Usar token",
       "tokenHelp": "Para contas que possuem apenas um token de autenticação (por exemplo, da configuração de outra ferramenta) ou quando a janela de login está indisponível. O token é validado com o Qobuz e depois armazenado de forma criptografada — exatamente como no fluxo da janela de login. Ele nunca aparece em arquivos de configuração, exportações ou backups.",
       "tokenLabel": "Ou conecte com um token",
-      "tokenPlaceholder": "Cole seu user_auth_token do Qobuz"
+      "tokenPlaceholder": "Cole seu user_auth_token do Qobuz",
+      "advancedToggle": "Avançado: token de outro app",
+      "advancedHelp": "Se o seu token foi criado por outra ferramenta (streamrip, qobuz-dl, etc.), cole aqui também o App ID e o App Secret dessa ferramenta, e o seu User ID se você tiver. O Qobuz vincula os tokens ao app que os criou, então isso faz um token de outra origem funcionar. Deixe em branco para um token normal.",
+      "appIdPlaceholder": "App ID (opcional)",
+      "appSecretPlaceholder": "App Secret (opcional)",
+      "userIdPlaceholder": "User ID (opcional)"
     }
   },
   "login": {
