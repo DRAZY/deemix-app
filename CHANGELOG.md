@@ -6,6 +6,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [2.2.3] — 2026-07-22
+
+### Changed
+
+- **Album covers now open the album (#105 follow-up).** Clicking an album cover opens its detail page and track list — matching Spotify, Apple Music, and Deezer's own client — instead of downloading the whole album. The one-click whole-album download is now the explicit **GET** button that appears on hover. This resolves the common confusion where users clicked the cover expecting to open the album and instead queued a download, never finding the tracklist.
+- **Paste-to-bulk-download is now discoverable.** A hint under the search box tells users they can paste Deezer / Spotify / Qobuz links, and that pasting several downloads them in bulk — a capability that already existed but was invisible. Localized across all 21 languages.
+
+### Fixed
+
+- **Spotify → Deezer conversion no longer misreports a rate-limit as "no match."** The converter's Deezer client now retries transient failures (with jittered backoff) via the shared hardened helper, and a real rate-limit surfaces as a clear "Deezer is rate-limiting, try again" message instead of silently marking every track unmatched.
+- **Truncated downloads are now detected.** If a transfer closes cleanly but delivers fewer bytes than promised, it's rejected and cleaned up instead of being saved as a corrupt file.
+- **Track preview button now has a tooltip.**
+
+### Performance
+
+- **The download-queue API stays bounded.** Long-completed downloads are pruned from the server's active-queue payload instead of accumulating for the whole session, and the renderer rebuilds its duplicate-detection maps only on status changes rather than on every progress tick.
+
 ## [2.2.2] — 2026-07-22
 
 ### Fixed
