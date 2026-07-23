@@ -68,7 +68,10 @@ async function loadWindowState(): Promise<WindowState> {
 
 async function saveWindowState(win: BrowserWindow): Promise<void> {
   try {
-    const bounds = win.getBounds()
+    // getNormalBounds (not getBounds) so a maximized window still records its
+    // restore-down size — otherwise un-maximizing later would snap to the
+    // maximized size.
+    const bounds = win.getNormalBounds()
     const state: WindowState = {
       width: bounds.width,
       height: bounds.height,
@@ -191,6 +194,13 @@ function createWindow() {
   }
 
   mainWindow = new BrowserWindow(windowOptions)
+
+  // Restore the maximized state. The saved bounds alone don't re-maximize, so a
+  // window closed maximized reopened at its normal size (reported on Windows by
+  // cisko99za). Maximize before show so it appears maximized without a flash.
+  if (windowState.isMaximized) {
+    mainWindow.maximize()
+  }
 
   // Show window when ready to prevent white flash
   // Use timeout fallback in case ready-to-show never fires
