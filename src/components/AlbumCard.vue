@@ -125,9 +125,10 @@ const contextMenuItems = computed(() => [
 
 <template>
   <div class="album-card group" @contextmenu="openMenu">
-    <!-- Album cover - click to download -->
+    <!-- Album cover — click OPENS the album (matches Spotify/Apple/Deezer);
+         the GET button in the hover overlay is the explicit download. -->
     <div
-      @click="downloadAlbum"
+      @click="navigate"
       class="relative aspect-square mb-3 cursor-pointer"
       :class="{ 'opacity-50 pointer-events-none': isDownloading }"
     >
@@ -167,13 +168,20 @@ const contextMenuItems = computed(() => [
           ? 'bg-qobuz-500 text-background-main'
           : 'bg-black/70 text-foreground-muted border border-white/[0.15]'"
       >{{ (album as any).qobuzQuality.bitDepth }}/{{ (album as any).qobuzQuality.samplingRate }}</span>
-      <!-- Download overlay -->
+      <!-- Download overlay — the GET button is the explicit download action.
+           @click.stop keeps it from also triggering the cover's open-album
+           click; clicking the dimmed area (not the button) opens the album. -->
       <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity
                   flex items-center justify-center">
-        <div class="flex items-center gap-2 px-4 py-2 text-background-main
-                    font-mono text-[11px] font-bold tracking-[0.12em]
-                    transform scale-95 group-hover:scale-100 transition-transform shadow-[0_0_18px_rgba(0,0,0,0.4)]"
-             :class="(album as any).source === 'qobuz' ? 'bg-qobuz-500' : 'bg-primary-500'">
+        <button
+          type="button"
+          @click.stop="downloadAlbum"
+          :disabled="isDownloading"
+          :title="t('albumView.downloadAlbum')"
+          class="flex items-center gap-2 px-4 py-2 text-background-main cursor-pointer
+                 font-mono text-[11px] font-bold tracking-[0.12em]
+                 transform scale-95 group-hover:scale-100 transition-transform shadow-[0_0_18px_rgba(0,0,0,0.4)]"
+          :class="(album as any).source === 'qobuz' ? 'bg-qobuz-500' : 'bg-primary-500'">
           <!-- Download icon -->
           <template v-if="!isDownloading">GET&nbsp;↓</template>
           <!-- Loading spinner -->
@@ -181,7 +189,7 @@ const contextMenuItems = computed(() => [
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-        </div>
+        </button>
       </div>
     </div>
     <!-- Title - click to navigate to album details -->
