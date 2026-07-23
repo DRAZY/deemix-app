@@ -70,7 +70,8 @@
     "selectAllTracks": "เลือกเพลงทั้งหมด",
     "selectAllAlbums": "เลือกอัลบั้มทั้งหมด",
     "clearSelection": "ล้าง",
-    "downloadSelected": "ดาวน์โหลดที่เลือก"
+    "downloadSelected": "ดาวน์โหลดที่เลือก",
+    "searchHintPaste": "หรือวางลิงก์ Deezer, Spotify หรือ Qobuz — วางหลายลิงก์เพื่อดาวน์โหลดพร้อมกัน"
   },
   "downloads": {
     "title": "ดาวน์โหลด",

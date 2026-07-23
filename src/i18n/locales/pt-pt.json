@@ -41,7 +41,8 @@
     "loading": "A carregar...",
     "noResults": "Sem resultados para \"{query}\"",
     "startTyping": "Escreva para pesquisar",
-    "of": "de"
+    "of": "de",
+    "searchHintPaste": "Ou cole links do Deezer, Spotify ou Qobuz — cole vários para transferir em lote"
   },
   "downloads": {
     "title": "Transferências",

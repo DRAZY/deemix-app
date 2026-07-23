@@ -228,6 +228,10 @@ class DownloadError extends Error {
 
 export class Downloader extends EventEmitter {
   private activeDownloads: Map<string, DownloadProgress> = new Map()
+  // When a download was first served to the renderer in a terminal state, so
+  // getAllProgress can prune long-dead entries and keep /api/queue bounded
+  // (activeDownloads otherwise grows for the whole session).
+  private terminalSeenAt: Map<string, number> = new Map()
   private downloadQueue: { id: string; options: DownloadOptions }[] = []
   private isProcessing = false
   private maxConcurrent = 5
@@ -2417,6 +2421,24 @@ export class Downloader extends EventEmitter {
           return
         }
 
+        // Truncated transfer: the stream closed cleanly but fewer bytes arrived
+        // than Content-Length promised (a partial body with a clean FIN, no
+        // 'error' event). The stall timer only catches a *hang*, not an early
+        // close, so without this a truncated file would resolve as success and
+        // land on disk as a corrupt track. Only checkable when the server sent
+        // a length.
+        if (total > 0 && downloaded < total) {
+          console.error(`[Downloader] Truncated download: ${downloaded}/${total} bytes`)
+          try {
+            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath)
+          } catch (e) {}
+          reject(new DownloadError(`Download incomplete: received ${downloaded} of ${total} bytes`, {
+            code: 'TRUNCATED',
+            httpStatus: response.statusCode
+          }))
+          return
+        }
+
         // Verify file actually exists on disk after close
         if (!fs.existsSync(outputPath)) {
           console.error(`[Downloader] File does not exist after close: ${outputPath}`)
@@ -4292,6 +4314,27 @@ export class Downloader extends EventEmitter {
   }
 
   getAllProgress(): DownloadProgress[] {
+    // Prune long-dead entries so /api/queue stays bounded. A terminal
+    // (completed/error) entry is kept until it has been served here for at
+    // least PRUNE_GRACE_MS — comfortably longer than the renderer's slowest
+    // poll (5s) so the row's completion is always observed before removal —
+    // then dropped. Non-terminal (incl. retried) entries reset their stamp.
+    const PRUNE_GRACE_MS = 45000
+    const now = Date.now()
+    for (const [id, p] of this.activeDownloads) {
+      const terminal = p.status === 'completed' || p.status === 'error'
+      if (!terminal) {
+        if (this.terminalSeenAt.has(id)) this.terminalSeenAt.delete(id)
+        continue
+      }
+      const seenAt = this.terminalSeenAt.get(id)
+      if (seenAt == null) {
+        this.terminalSeenAt.set(id, now)
+      } else if (now - seenAt > PRUNE_GRACE_MS) {
+        this.activeDownloads.delete(id)
+        this.terminalSeenAt.delete(id)
+      }
+    }
     return Array.from(this.activeDownloads.values())
   }
 
@@ -4376,6 +4419,7 @@ export class Downloader extends EventEmitter {
     }
     this.downloadQueue = []
     this.activeDownloads.clear()
+    this.terminalSeenAt.clear()
     this.currentDownloads = 0
     this._isPaused = false
     this.reservedPaths.clear()

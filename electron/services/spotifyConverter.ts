@@ -1,5 +1,5 @@
-import * as https from 'https'
 import { SpotifyTrack, SpotifyAlbum, SpotifyPlaylist, spotifyAPI } from './spotifyAPI'
+import { fetchDeezerPublicJson, DeezerQuotaError } from './deezerPublicApi'
 
 export interface DeezerMatch {
   spotifyTrack: SpotifyTrack
@@ -32,28 +32,18 @@ class SpotifyConverter {
   }
 
   /**
-   * Make a request to Deezer API
+   * Make a request to the Deezer public API.
+   *
+   * Routed through the shared hardened helper (retry + jittered backoff + quota
+   * detection) instead of a bare https.get. Before this, a transient Deezer
+   * blip or a rate-limit during a playlist conversion was swallowed into a null
+   * match, so the user saw "0% matched" and concluded Deezer didn't have their
+   * music — when the API was actually throttling (#audit). A real rate-limit
+   * now throws DeezerQuotaError, which callers re-raise so it surfaces as
+   * "Deezer is rate-limiting" rather than a false miss.
    */
   private async deezerRequest<T>(endpoint: string): Promise<T> {
-    return new Promise((resolve, reject) => {
-      const url = `https://api.deezer.com${endpoint}`
-      https.get(url, (res) => {
-        let data = ''
-        res.on('data', chunk => data += chunk)
-        res.on('end', () => {
-          try {
-            const parsed = JSON.parse(data)
-            if (parsed.error) {
-              reject(new Error(parsed.error.message || 'Deezer API error'))
-            } else {
-              resolve(parsed)
-            }
-          } catch (e) {
-            reject(new Error('Failed to parse Deezer response'))
-          }
-        })
-      }).on('error', reject)
-    })
+    return fetchDeezerPublicJson<T>(`https://api.deezer.com${endpoint}`, { label: `convert ${endpoint}` })
   }
 
   /**
@@ -104,7 +94,10 @@ class SpotifyConverter {
         return result
       }
     } catch (error) {
-      // ISRC not found, return null
+      // A genuine "ISRC not found" is just a miss → null. But a rate-limit is
+      // NOT a miss — re-raise it so the conversion reports "Deezer throttling"
+      // instead of silently marking every track unmatched.
+      if (error instanceof DeezerQuotaError) throw error
     }
     return null
   }
@@ -160,6 +153,8 @@ class SpotifyConverter {
       }
 
     } catch (error: any) {
+      // Rate-limit re-raised (real miss stays null) — see matchByIsrc.
+      if (error instanceof DeezerQuotaError) throw error
       console.error('[SpotifyConverter] Search failed:', error.message)
     }
 
@@ -291,6 +286,8 @@ class SpotifyConverter {
         }
       }
     } catch (error) {
+      // Rate-limit re-raised (real miss stays null) — see matchByIsrc.
+      if (error instanceof DeezerQuotaError) throw error
       console.error('[SpotifyConverter] Album search failed:', error)
     }
 

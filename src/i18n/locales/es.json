@@ -41,7 +41,8 @@
     "loading": "Cargando...",
     "noResults": "Sin resultados para \"{query}\"",
     "startTyping": "Escribe para buscar",
-    "of": "de"
+    "of": "de",
+    "searchHintPaste": "O pega enlaces de Deezer, Spotify o Qobuz — pega varios para descargar en lote"
   },
   "downloads": {
     "title": "Descargas",

@@ -70,7 +70,8 @@
     "selectAllTracks": "選擇所有歌曲",
     "selectAllAlbums": "選擇所有專輯",
     "clearSelection": "清除",
-    "downloadSelected": "下載所選"
+    "downloadSelected": "下載所選",
+    "searchHintPaste": "或貼上 Deezer、Spotify 或 Qobuz 連結 — 貼上多個即可批次下載"
   },
   "downloads": {
     "title": "下載",

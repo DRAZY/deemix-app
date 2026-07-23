@@ -4007,6 +4007,15 @@ export class DeemixServer extends EventEmitter {
       })
     } catch (error: any) {
       console.error('[Server] Spotify convert error:', error.message)
+      // A Deezer rate-limit surviving the converter's retries means the matches
+      // are incomplete, not absent — say so, so the user retries instead of
+      // concluding Deezer doesn't have the playlist.
+      if (error?.name === 'DeezerQuotaError') {
+        this.sendJSON(res, {
+          error: 'Deezer is rate-limiting matching requests right now. Wait a moment and try the conversion again.'
+        }, 503)
+        return
+      }
       this.sendJSON(res, { error: error.message || 'Conversion failed' }, 500)
     }
   }

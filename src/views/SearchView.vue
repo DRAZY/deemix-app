@@ -792,6 +792,7 @@ const contextMenuItems = computed(() => {
               >Qobuz <span class="text-[8px] align-top">HI-RES</span></button>
             </div>
             <div class="mt-2 font-mono text-[10px] tracking-[0.06em] uppercase text-foreground-muted/80">{{ t('search.searchHint') }}</div>
+            <div class="mt-1 font-mono text-[10px] tracking-[0.04em] text-foreground-muted/55">{{ t('search.searchHintPaste') }}</div>
 
           <!-- Search History Dropdown -->
           <div

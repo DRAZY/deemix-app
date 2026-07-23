@@ -41,7 +41,8 @@
     "loading": "Chargement...",
     "noResults": "Aucun résultat pour \"{query}\"",
     "startTyping": "Commencez à taper pour rechercher",
-    "of": "sur"
+    "of": "sur",
+    "searchHintPaste": "Ou collez des liens Deezer, Spotify ou Qobuz — collez-en plusieurs pour télécharger en lot"
   },
   "downloads": {
     "title": "Téléchargements",

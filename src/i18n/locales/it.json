@@ -41,7 +41,8 @@
     "loading": "Caricamento...",
     "noResults": "Nessun risultato per \"{query}\"",
     "startTyping": "Inizia a digitare per cercare",
-    "of": "di"
+    "of": "di",
+    "searchHintPaste": "Oppure incolla link Deezer, Spotify o Qobuz — incollane più per scaricare in blocco"
   },
   "downloads": {
     "title": "Download",

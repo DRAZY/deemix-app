@@ -1040,6 +1040,12 @@ export const useDownloadStore = defineStore('downloads', () => {
         }
 
         let hasChanges = false
+        // The duplicate-detection lookup maps only depend on status and on the
+        // contained catalog ids — NOT on progress/speed, which change almost
+        // every tick. Rebuilding the whole maps per progress tick was the only
+        // structural per-tick cost; track map-relevant changes separately and
+        // rebuild only for those, while still persisting on any change.
+        let mapRelevantChange = false
         const groupsToRemove: string[] = []
 
         // Process all polling groups with the single response
@@ -1049,6 +1055,9 @@ export const useDownloadStore = defineStore('downloads', () => {
             groupsToRemove.push(groupId)
             continue
           }
+
+          const prevStatus = item.status
+          const prevCatalogLen = item.catalogTrackIds?.length || 0
 
           if (type === 'track') {
             const serverItem = queueMap.get(groupId)
@@ -1067,14 +1076,21 @@ export const useDownloadStore = defineStore('downloads', () => {
               groupsToRemove.push(groupId)
             }
           }
+
+          if (item.status !== prevStatus || (item.catalogTrackIds?.length || 0) !== prevCatalogLen) {
+            mapRelevantChange = true
+          }
         }
 
         // Remove completed groups
         groupsToRemove.forEach(id => pollingGroups.delete(id))
 
-        // Rebuild lookup Maps if any changes occurred (batched update)
-        if (hasChanges) {
+        // Rebuild the duplicate-lookup maps only on status/catalog changes;
+        // persist (debounced) on any change.
+        if (mapRelevantChange) {
           rebuildLookupMaps()
+        }
+        if (hasChanges) {
           saveDownloads()
         }
 
