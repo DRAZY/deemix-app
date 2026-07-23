@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [2.3.1] — 2026-07-23
+
+### Fixed
+
+- **Maximized window is remembered across launches.** A window closed while maximized reopened at its normal size, because only the size and position were restored, not the maximized state. It now re-maximizes on launch, and the restore-down size is saved correctly so un-maximizing still lands where expected. Reported by cisko99za.
+
 ## [2.3.0] — 2026-07-23
 
 ### Added

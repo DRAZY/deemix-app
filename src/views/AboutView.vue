@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '2.3.1',
+    date: '2026-07-23',
+    items: [
+      'Fixed: a window closed while maximized now reopens maximized instead of at the normal size. The maximized state is remembered across launches, and the restore-down size is kept so un-maximizing still lands where you expect.'
+    ]
+  },
+  {
     version: '2.3.0',
     date: '2026-07-23',
     items: [
