@@ -70,7 +70,8 @@
     "selectAllTracks": "Chọn tất cả bài hát",
     "selectAllAlbums": "Chọn tất cả album",
     "clearSelection": "Xóa",
-    "downloadSelected": "Tải đã chọn"
+    "downloadSelected": "Tải đã chọn",
+    "searchHintPaste": "Hoặc dán liên kết Deezer, Spotify hoặc Qobuz — dán nhiều liên kết để tải hàng loạt"
   },
   "downloads": {
     "title": "Tải xuống",

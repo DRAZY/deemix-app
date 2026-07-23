@@ -41,7 +41,8 @@
     "loading": "Naglo-load...",
     "noResults": "Walang resulta para sa \"{query}\"",
     "startTyping": "Mag-type para maghanap",
-    "of": "ng"
+    "of": "ng",
+    "searchHintPaste": "O mag-paste ng mga link ng Deezer, Spotify, o Qobuz — mag-paste ng ilan para mag-download nang maramihan"
   },
   "downloads": {
     "title": "Mga Download",

@@ -41,7 +41,8 @@
     "loading": "Učitavanje...",
     "noResults": "Nema rezultata za \"{query}\"",
     "startTyping": "Počnite tipkati za pretragu",
-    "of": "od"
+    "of": "od",
+    "searchHintPaste": "Ili zalijepite Deezer, Spotify ili Qobuz poveznice — zalijepite više za skupno preuzimanje"
   },
   "downloads": {
     "title": "Preuzimanja",

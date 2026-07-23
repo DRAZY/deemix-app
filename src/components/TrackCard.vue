@@ -152,6 +152,7 @@ const contextMenuItems = computed(() => [
           @click="togglePlay"
           class="hidden group-hover:block text-foreground-muted"
           :class="track.source === 'qobuz' ? 'hover:text-qobuz-400' : 'hover:text-primary-400'"
+          :title="t('trackCard.play')"
         >
           <svg class="w-5 h-5 mx-auto" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />

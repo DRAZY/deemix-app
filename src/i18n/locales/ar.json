@@ -41,7 +41,8 @@
     "loading": "جاري التحميل...",
     "noResults": "لا توجد نتائج لـ \"{query}\"",
     "startTyping": "ابدأ الكتابة للبحث",
-    "of": "من"
+    "of": "من",
+    "searchHintPaste": "أو الصق روابط Deezer أو Spotify أو Qobuz — الصق عدة روابط للتنزيل دفعة واحدة"
   },
   "downloads": {
     "title": "التنزيلات",

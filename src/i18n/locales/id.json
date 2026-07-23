@@ -41,7 +41,8 @@
     "loading": "Memuat...",
     "noResults": "Tidak ada hasil untuk \"{query}\"",
     "startTyping": "Ketik untuk mencari",
-    "of": "dari"
+    "of": "dari",
+    "searchHintPaste": "Atau tempel tautan Deezer, Spotify, atau Qobuz — tempel beberapa untuk unduh sekaligus"
   },
   "downloads": {
     "title": "Unduhan",

@@ -41,7 +41,8 @@
     "loading": "Laden...",
     "noResults": "Keine Ergebnisse für \"{query}\"",
     "startTyping": "Tippe um zu suchen",
-    "of": "von"
+    "of": "von",
+    "searchHintPaste": "Oder füge Deezer-, Spotify- oder Qobuz-Links ein — mehrere für den Massen-Download"
   },
   "downloads": {
     "title": "Downloads",

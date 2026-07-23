@@ -70,7 +70,8 @@
     "selectAllTracks": "Изабери све песме",
     "selectAllAlbums": "Изабери све албуме",
     "clearSelection": "Обриши",
-    "downloadSelected": "Преузми изабрано"
+    "downloadSelected": "Преузми изабрано",
+    "searchHintPaste": "Или налепите Deezer, Spotify или Qobuz линкове — налепите више за групно преузимање"
   },
   "downloads": {
     "title": "Преузимања",

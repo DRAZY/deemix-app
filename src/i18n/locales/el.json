@@ -41,7 +41,8 @@
     "loading": "Φόρτωση...",
     "noResults": "Δεν βρέθηκαν αποτελέσματα για \"{query}\"",
     "startTyping": "Πληκτρολογήστε για αναζήτηση",
-    "of": "από"
+    "of": "από",
+    "searchHintPaste": "Ή επικολλήστε συνδέσμους Deezer, Spotify ή Qobuz — πολλούς μαζί για μαζική λήψη"
   },
   "downloads": {
     "title": "Λήψεις",

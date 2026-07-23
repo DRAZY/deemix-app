@@ -41,7 +41,8 @@
     "loading": "로딩 중...",
     "noResults": "\"{query}\"에 대한 결과 없음",
     "startTyping": "검색하려면 입력하세요",
-    "of": "/"
+    "of": "/",
+    "searchHintPaste": "또는 Deezer, Spotify, Qobuz 링크를 붙여넣으세요 — 여러 개를 붙여넣으면 한 번에 다운로드"
   },
   "downloads": {
     "title": "다운로드",

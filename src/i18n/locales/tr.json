@@ -41,7 +41,8 @@
     "loading": "Yükleniyor...",
     "noResults": "\"{query}\" için sonuç bulunamadı",
     "startTyping": "Aramak için yazmaya başlayın",
-    "of": "/"
+    "of": "/",
+    "searchHintPaste": "Ya da Deezer, Spotify veya Qobuz bağlantıları yapıştırın — toplu indirmek için birden fazla yapıştırın"
   },
   "downloads": {
     "title": "İndirmeler",

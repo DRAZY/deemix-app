@@ -41,7 +41,8 @@
     "loading": "加载中...",
     "noResults": "未找到 \"{query}\" 的结果",
     "startTyping": "输入以搜索",
-    "of": "/"
+    "of": "/",
+    "searchHintPaste": "或粘贴 Deezer、Spotify 或 Qobuz 链接 — 粘贴多个即可批量下载"
   },
   "downloads": {
     "title": "下载",

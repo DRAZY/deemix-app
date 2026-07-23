@@ -121,7 +121,8 @@
     "selectAllTracks": "Select All Tracks",
     "selectAllAlbums": "Select All Albums",
     "clearSelection": "Clear",
-    "downloadSelected": "Download Selected"
+    "downloadSelected": "Download Selected",
+    "searchHintPaste": "Or paste Deezer, Spotify, or Qobuz links — paste several to download in bulk"
   },
   "downloads": {
     "title": "Downloads",
