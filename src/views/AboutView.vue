@@ -35,6 +35,30 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '2.2.3',
+    date: '2026-07-22',
+    items: [
+      'Album covers now open the album (like Spotify, Apple Music, and Deezer) instead of downloading the whole album — the one-click whole-album download is now the GET button that appears on the cover when you hover, so the track list is easy to reach. To download individual songs: open the album, then use Select Tracks.',
+      'A hint under the search box now surfaces something the app could already do quietly — paste a Deezer, Spotify, or Qobuz link straight into search, and paste several at once to bulk-download. Localized in every language.',
+      'Hardening: Spotify → Deezer conversion no longer misreports a Deezer rate-limit as "no matches" (it retries, then tells you to try again), truncated downloads are caught instead of saved as corrupt files, and the download queue stays lean over long sessions.'
+    ]
+  },
+  {
+    version: '2.2.2',
+    date: '2026-07-22',
+    items: [
+      'The Spotify Link Analyzer no longer fails with an opaque "Failed to parse Spotify response." It now retries temporary Spotify errors and, when a request genuinely can\'t be read, reports the real reason — including that Spotify\'s own editorial and algorithmic playlists (Today\'s Top Hits, RapCaviar, Discover Weekly — links starting 37i9) require a personal Spotify login the app doesn\'t use, following a Spotify API change in late 2024.',
+      'Playlist M3U files are now written inside the playlist folder, next to the music, instead of the download root — so they show up where you\'d expect them.'
+    ]
+  },
+  {
+    version: '2.2.1',
+    date: '2026-07-22',
+    items: [
+      'Canceling a download now actually stops it. Removing a row from the queue used to only clear it from the screen while the server kept downloading the rest of the album in the background — quitting the app was the only way to stop it. Canceling now halts the remaining tracks immediately, including mid-track, and Clear All does the same.'
+    ]
+  },
+  {
     version: '2.2.0',
     date: '2026-07-20',
     items: [
