@@ -593,7 +593,12 @@
       "tokenLabel": "Or connect with a token",
       "tokenPlaceholder": "Paste your Qobuz user_auth_token",
       "tokenConnect": "Use Token",
-      "tokenHelp": "For accounts that only have an authentication token (for example, from another tool’s configuration) or when the login window is unavailable. The token is validated with Qobuz, then stored encrypted — exactly like the login-window flow. It never appears in settings files, exports, or backups."
+      "tokenHelp": "For accounts that only have an authentication token (for example, from another tool’s configuration) or when the login window is unavailable. The token is validated with Qobuz, then stored encrypted — exactly like the login-window flow. It never appears in settings files, exports, or backups.",
+      "advancedToggle": "Advanced: token from another app",
+      "advancedHelp": "If your token was created by another tool (streamrip, qobuz-dl, etc.), paste that tool's App ID and App Secret here too, and your User ID if you have it. Qobuz binds tokens to the app that made them, so this makes a token from elsewhere work. Leave blank for a normal token.",
+      "appIdPlaceholder": "App ID (optional)",
+      "appSecretPlaceholder": "App Secret (optional)",
+      "userIdPlaceholder": "User ID (optional)"
     }
   },
   "login": {

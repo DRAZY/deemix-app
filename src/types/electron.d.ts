@@ -15,6 +15,8 @@ interface ElectronStorageCredentials {
   spotifyUsername?: string
   qobuzUserId?: string
   qobuzToken?: string
+  qobuzAppId?: string
+  qobuzAppSecret?: string
 }
 
 interface ElectronStorageResult {

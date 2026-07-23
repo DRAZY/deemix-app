@@ -3108,7 +3108,12 @@ export class DeemixServer extends EventEmitter {
         this.sendJSON(res, { success: false, error: 'token required' }, 400)
         return
       }
-      // userId present → login-window path (id captured alongside the token).
+      // Advanced connect: user-supplied app_id + app_secret override the
+      // auto-scrape so a token minted under a different Qobuz app_id validates
+      // and downloads sign correctly. Empty values revert to auto-scrape.
+      qobuzAuth.setManualCredentials(String(body.appId || ''), String(body.appSecret || ''))
+      // userId present → login-window path (id captured alongside the token),
+      // or the advanced path where the user pasted their own user id.
       // userId absent → token-paste path (#114): Qobuz identifies the account.
       const session = userId
         ? await qobuzAuth.loginWithToken(userId, token)

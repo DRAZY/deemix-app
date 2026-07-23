@@ -342,6 +342,12 @@ async function connectQobuz() {
 }
 
 const qobuzTokenInput = ref('')
+// Advanced connect (optional): for a token minted under a different Qobuz
+// app_id than the auto-scraped web-player one. Left empty for normal use.
+const qobuzAdvancedOpen = ref(false)
+const qobuzAppIdInput = ref('')
+const qobuzAppSecretInput = ref('')
+const qobuzUserIdInput = ref('')
 
 async function connectQobuzToken() {
   if (!qobuzTokenInput.value.trim()) return
@@ -349,11 +355,19 @@ async function connectQobuzToken() {
   qobuzStatus.value = 'idle'
   qobuzMessage.value = ''
   try {
-    const res = await settingsStore.connectQobuzWithToken(qobuzTokenInput.value)
+    const res = await settingsStore.connectQobuzWithToken(qobuzTokenInput.value, {
+      appId: qobuzAppIdInput.value,
+      appSecret: qobuzAppSecretInput.value,
+      userId: qobuzUserIdInput.value,
+    })
     if (res.success) {
       qobuzStatus.value = 'success'
       qobuzMessage.value = t('settings.qobuz.connectedTo')
       qobuzTokenInput.value = ''
+      qobuzAppIdInput.value = ''
+      qobuzAppSecretInput.value = ''
+      qobuzUserIdInput.value = ''
+      qobuzAdvancedOpen.value = false
     } else {
       qobuzStatus.value = 'error'
       qobuzMessage.value = res.error || t('settings.qobuz.couldNotConnect')
@@ -1973,6 +1987,41 @@ async function reindexLibrary() {
               >{{ t('settings.qobuz.tokenConnect') }}</button>
             </div>
             <p class="text-xs text-foreground-muted">{{ t('settings.qobuz.tokenHelp') }}</p>
+
+            <!-- Advanced (optional): user-supplied app_id + secret (+ user id)
+                 for a token minted under a different Qobuz app_id. Collapsed by
+                 default so normal token/login users never see the complexity. -->
+            <button
+              type="button"
+              @click="qobuzAdvancedOpen = !qobuzAdvancedOpen"
+              class="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.12em] uppercase text-foreground-muted/70 hover:text-foreground-muted transition-colors"
+            >
+              <svg class="w-3 h-3 transition-transform" :class="qobuzAdvancedOpen ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+              {{ t('settings.qobuz.advancedToggle') }}
+            </button>
+            <div v-if="qobuzAdvancedOpen" class="space-y-2 pl-1">
+              <p class="text-xs text-foreground-muted">{{ t('settings.qobuz.advancedHelp') }}</p>
+              <input
+                v-model="qobuzAppIdInput"
+                type="text"
+                :placeholder="t('settings.qobuz.appIdPlaceholder')"
+                class="input w-full font-mono text-xs"
+              />
+              <input
+                v-model="qobuzAppSecretInput"
+                type="password"
+                :placeholder="t('settings.qobuz.appSecretPlaceholder')"
+                class="input w-full font-mono text-xs"
+              />
+              <input
+                v-model="qobuzUserIdInput"
+                type="text"
+                :placeholder="t('settings.qobuz.userIdPlaceholder')"
+                class="input w-full font-mono text-xs"
+              />
+            </div>
           </div>
         </div>
 

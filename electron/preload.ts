@@ -101,7 +101,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Persistent storage (stored in userData, not localStorage)
   // This fixes session persistence issues with file:// protocol
   storage: {
-    saveCredentials: (credentials: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string; qobuzUserId?: string; qobuzToken?: string }) =>
+    saveCredentials: (credentials: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string; qobuzUserId?: string; qobuzToken?: string; qobuzAppId?: string; qobuzAppSecret?: string }) =>
       ipcRenderer.invoke('storage:saveCredentials', credentials),
     loadCredentials: () => ipcRenderer.invoke('storage:loadCredentials'),
     loadDownloadsState: () => ipcRenderer.invoke('storage:loadDownloadsState'),

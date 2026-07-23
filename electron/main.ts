@@ -353,6 +353,14 @@ async function initServer() {
       // Restore Qobuz session (browser-minted token) if present.
       const qobuzUserId = decodeField(credData.qobuzUserId)
       const qobuzToken = decodeField(credData.qobuzToken)
+      // Advanced connect: re-apply user-supplied app_id + app_secret BEFORE
+      // restoring the session, so API calls use the app the token belongs to.
+      const qobuzAppId = decodeField(credData.qobuzAppId)
+      const qobuzAppSecret = decodeField(credData.qobuzAppSecret)
+      if (qobuzAppId && qobuzAppSecret) {
+        qobuzAuth.setManualCredentials(qobuzAppId, qobuzAppSecret)
+        console.log('[Main] Qobuz manual app credentials restored from storage')
+      }
       if (qobuzUserId && qobuzToken) {
         qobuzAuth.restoreSession(qobuzToken, Number(qobuzUserId))
         console.log('[Main] Qobuz session restored from storage')
@@ -1059,7 +1067,7 @@ ipcMain.handle('qobuz:openLoginWindow', async () => {
 
 // Persistent storage for credentials (stored in userData, not localStorage)
 // This fixes session persistence issues with file:// protocol
-ipcMain.handle('storage:saveCredentials', async (_, credentials: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string; qobuzUserId?: string; qobuzToken?: string }) => {
+ipcMain.handle('storage:saveCredentials', async (_, credentials: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string; qobuzUserId?: string; qobuzToken?: string; qobuzAppId?: string; qobuzAppSecret?: string }) => {
   try {
     const credentialsPath = getCredentialsPath()
     const data: any = {}
@@ -1106,6 +1114,8 @@ ipcMain.handle('storage:saveCredentials', async (_, credentials: { arl?: string;
     storeCredential(credentials.spotifyUsername, 'spotifyUsername')
     storeCredential(credentials.qobuzUserId, 'qobuzUserId')
     storeCredential(credentials.qobuzToken, 'qobuzToken')
+    storeCredential(credentials.qobuzAppId, 'qobuzAppId')
+    storeCredential(credentials.qobuzAppSecret, 'qobuzAppSecret')
 
     await mkdir(app.getPath('userData'), { recursive: true })
     await writeFile(credentialsPath, JSON.stringify(data, null, 2))
@@ -1187,13 +1197,15 @@ ipcMain.handle('storage:loadCredentials', async () => {
       return stored.data
     }
 
-    const result: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string; qobuzUserId?: string; qobuzToken?: string } = {}
+    const result: { arl?: string; spotifyClientId?: string; spotifyClientSecret?: string; spotifyUsername?: string; qobuzUserId?: string; qobuzToken?: string; qobuzAppId?: string; qobuzAppSecret?: string } = {}
     result.arl = decodeCredential(data.arl)
     result.spotifyClientId = decodeCredential(data.spotifyClientId)
     result.spotifyClientSecret = decodeCredential(data.spotifyClientSecret)
     result.spotifyUsername = decodeCredential(data.spotifyUsername)
     result.qobuzUserId = decodeCredential(data.qobuzUserId)
     result.qobuzToken = decodeCredential(data.qobuzToken)
+    result.qobuzAppId = decodeCredential(data.qobuzAppId)
+    result.qobuzAppSecret = decodeCredential(data.qobuzAppSecret)
 
     console.log('[Main] Credentials loaded from userData')
     return { success: true, credentials: result }
