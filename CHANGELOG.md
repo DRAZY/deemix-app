@@ -20,10 +20,6 @@ Entries use a compact format — short bullets, one line each. Full per-version 
 - **Download-row cover art no longer flashes when a cover fails to load.** A failed cover (e.g. a flaky CDN response) used to trigger an infinite reload loop against a broken placeholder; it now settles on a fallback tile.
 - **Track preview button now has a tooltip.**
 
-### Performance
-
-- **The download-queue API stays bounded.** Long-completed downloads are pruned from the server's active-queue payload instead of accumulating for the whole session, and the renderer rebuilds its duplicate-detection maps only on status changes rather than on every progress tick.
-
 ## [2.2.2] — 2026-07-22
 
 ### Fixed
