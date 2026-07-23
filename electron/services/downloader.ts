@@ -228,10 +228,6 @@ class DownloadError extends Error {
 
 export class Downloader extends EventEmitter {
   private activeDownloads: Map<string, DownloadProgress> = new Map()
-  // When a download was first served to the renderer in a terminal state, so
-  // getAllProgress can prune long-dead entries and keep /api/queue bounded
-  // (activeDownloads otherwise grows for the whole session).
-  private terminalSeenAt: Map<string, number> = new Map()
   private downloadQueue: { id: string; options: DownloadOptions }[] = []
   private isProcessing = false
   private maxConcurrent = 5
@@ -4314,27 +4310,14 @@ export class Downloader extends EventEmitter {
   }
 
   getAllProgress(): DownloadProgress[] {
-    // Prune long-dead entries so /api/queue stays bounded. A terminal
-    // (completed/error) entry is kept until it has been served here for at
-    // least PRUNE_GRACE_MS — comfortably longer than the renderer's slowest
-    // poll (5s) so the row's completion is always observed before removal —
-    // then dropped. Non-terminal (incl. retried) entries reset their stamp.
-    const PRUNE_GRACE_MS = 45000
-    const now = Date.now()
-    for (const [id, p] of this.activeDownloads) {
-      const terminal = p.status === 'completed' || p.status === 'error'
-      if (!terminal) {
-        if (this.terminalSeenAt.has(id)) this.terminalSeenAt.delete(id)
-        continue
-      }
-      const seenAt = this.terminalSeenAt.get(id)
-      if (seenAt == null) {
-        this.terminalSeenAt.set(id, now)
-      } else if (now - seenAt > PRUNE_GRACE_MS) {
-        this.activeDownloads.delete(id)
-        this.terminalSeenAt.delete(id)
-      }
-    }
+    // NOTE: completed entries MUST remain here for the lifetime of the session.
+    // The renderer's updateAlbumProgress() recomputes an album/playlist's
+    // completed-track count every poll by looking each track up in this
+    // payload; if a completed entry is removed, the album undercounts and can
+    // never reach "all done", so a large album (one that takes longer than any
+    // prune window to finish) hangs as a permanent fake-active download. A 2.2.3
+    // pruning optimization did exactly that and was reverted — do not re-add it
+    // without also making album progress independent of this payload.
     return Array.from(this.activeDownloads.values())
   }
 
@@ -4419,7 +4402,6 @@ export class Downloader extends EventEmitter {
     }
     this.downloadQueue = []
     this.activeDownloads.clear()
-    this.terminalSeenAt.clear()
     this.currentDownloads = 0
     this._isPaused = false
     this.reservedPaths.clear()
