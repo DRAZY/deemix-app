@@ -6,6 +6,29 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+> **Releasing:** add entries under `## [Unreleased]` as you work. At release time, rename that heading to `## [X.Y.Z] — <date>`, add a fresh empty `## [Unreleased]` above it, then run `scripts/release-notes.sh X.Y.Z` to emit that version's notes for `gh release create --notes-file`.
+
+## [Unreleased]
+
+### Changed
+
+- **Linux window can be sized narrower (#125).** On Linux the window minimum width is lowered from 1024 to 800, so it can be resized smaller than before, which helps on smaller displays and for placing it side by side manually. macOS and Windows keep the 1024 minimum.
+
+## [2.4.1] — 2026-07-24
+
+### Fixed
+
+- **Linux window frame corrected (#125).** 2.4.0 applied the window frame logic backwards, which left Linux with no title bar and no window controls, and put a duplicate title bar on Windows. Linux now correctly uses a native title bar with working minimize, maximize, and top-snap, and Windows is back to a single custom title bar. macOS unaffected. Reported by username227.
+
+## [2.4.0] — 2026-07-24
+
+### Added
+
+- **Multi-service Link Analyzer (#117).** A Spotify link can be converted to Deezer, Qobuz, or both, with the service picker on the analyzer. Requested by alex5908 and cisko99za.
+- **Cross-service availability matrix.** In Both mode, every track shows whether it is on Deezer, Qobuz, or both, and how it matched (ISRC or search). A preferred service with automatic fallback resolves each track, and any track can be overridden by clicking its cell. Tracks on neither service are listed and skipped.
+- **Per-track source chips and expandable track lists.** Every album and playlist row expands to its full track list, each track tagged with a D (Deezer) or Q (Qobuz) chip. A mixed-source download carries both chips on the row, and downloads across the app are now uniformly source-tagged.
+- **Live conversion progress.** Converting a large playlist shows a progress bar with real per-track match counts instead of a static message.
+
 ## [2.3.2] — 2026-07-23
 
 ### Changed
