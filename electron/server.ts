@@ -3949,6 +3949,9 @@ export class DeemixServer extends EventEmitter {
     try {
       const body = await this.parseBody(req)
       const { type, id, fallbackSearch = true } = body
+      // 2.4: the Link Analyzer can resolve a Spotify link against Deezer (the
+      // default, unchanged behavior) or Qobuz. Anything not 'qobuz' stays Deezer.
+      const targetService: 'deezer' | 'qobuz' = body.targetService === 'qobuz' ? 'qobuz' : 'deezer'
 
       if (!type || !id) {
         this.sendJSON(res, { error: 'Type and ID are required' }, 400)
@@ -3960,59 +3963,89 @@ export class DeemixServer extends EventEmitter {
         return
       }
 
-      if (!deezerAuth.isLoggedIn()) {
+      // Each target service needs its own live session. Guard whichever one we
+      // are actually converting to, with a clear message for the Qobuz case.
+      if (targetService === 'deezer' && !deezerAuth.isLoggedIn()) {
         this.sendJSON(res, { error: 'Deezer authentication required' }, 401)
+        return
+      }
+      if (targetService === 'qobuz' && !qobuzAuth.isLoggedIn()) {
+        this.sendJSON(res, { error: 'Connect Qobuz first to convert to Qobuz. Add your Qobuz credentials in Settings.' }, 401)
         return
       }
 
       // Configure converter
       spotifyConverter.setFallbackSearch(fallbackSearch)
 
-      let result: any
-
+      // Resolve the Spotify link to a flat track list, uniformly for both
+      // services. The Deezer convertAlbum/convertPlaylist helpers did this same
+      // extraction internally; hoisting it here lets one path feed either
+      // service's matcher.
+      let tracks: any[] = []
       switch (type) {
-        case 'track': {
-          const track = await spotifyAPI.getTrack(id)
-          const match = await spotifyConverter.convertTrack(track)
-          result = {
-            matched: match.deezerTrack ? [match] : [],
-            unmatched: match.deezerTrack ? [] : [track],
-            matchRate: match.deezerTrack ? 100 : 0
-          }
+        case 'track':
+          tracks = [await spotifyAPI.getTrack(id)]
           break
-        }
-
         case 'album': {
           const album = await spotifyAPI.getAlbum(id)
-          result = await spotifyConverter.convertAlbum(album)
+          tracks = (album.tracks?.items || []).filter((t: any) => t && t.id)
           break
         }
-
         case 'playlist': {
           const playlist = await spotifyAPI.getPlaylist(id)
-          result = await spotifyConverter.convertPlaylist(playlist)
+          tracks = (playlist.tracks?.items || []).map((i: any) => i.track).filter((t: any) => t && t.id)
           break
         }
-
-        case 'artist': {
-          const topTracks = await spotifyAPI.getArtistTopTracks(id)
-          result = await spotifyConverter.convertTracks(topTracks)
+        case 'artist':
+          tracks = await spotifyAPI.getArtistTopTracks(id)
           break
-        }
-
         default:
           this.sendJSON(res, { error: 'Unsupported content type' }, 400)
           return
       }
 
-      this.sendJSON(res, {
-        matched: result.matched.map((m: any) => ({
-          spotify: {
-            id: m.spotifyTrack.id,
-            name: m.spotifyTrack.name,
-            artist: m.spotifyTrack.artists[0]?.name,
-            album: m.spotifyTrack.album?.name
-          },
+      // Neutralize a raw Deezer track into the shared match shape the
+      // multi-service UI reads, while we still return the legacy `deezer` field
+      // so the existing download path keeps working unchanged.
+      const deezerToNeutral = (d: any) => ({
+        service: 'deezer',
+        id: d.id,
+        title: d.title,
+        artist: d.artist || { id: 0, name: 'Unknown Artist' },
+        album: { id: d.album?.id || 0, title: d.album?.title || '', cover: d.album?.cover_medium || '' },
+        duration: d.duration || 0
+      })
+      const spotifyBrief = (t: any) => ({
+        id: t.id,
+        name: t.name,
+        artist: t.artists?.[0]?.name,
+        album: t.album?.name
+      })
+
+      let matched: any[]
+      let unmatched: any[]
+      let matchRate: number
+
+      if (targetService === 'qobuz') {
+        const result = await spotifyConverter.convertTracksToQobuz(tracks)
+        matchRate = result.matchRate
+        unmatched = result.unmatched
+        matched = result.matched.map(m => ({
+          spotify: spotifyBrief(m.spotifyTrack),
+          service: 'qobuz',
+          match: m.track, // already service-neutral
+          deezer: null,   // legacy field stays null on the Qobuz path
+          matchType: m.matchType,
+          confidence: m.confidence
+        }))
+      } else {
+        const result = await spotifyConverter.convertTracks(tracks)
+        matchRate = result.matchRate
+        unmatched = result.unmatched
+        matched = result.matched.map(m => ({
+          spotify: spotifyBrief(m.spotifyTrack),
+          service: 'deezer',
+          match: m.deezerTrack ? deezerToNeutral(m.deezerTrack) : null,
           deezer: m.deezerTrack ? {
             id: m.deezerTrack.id,
             title: m.deezerTrack.title,
@@ -4022,15 +4055,20 @@ export class DeemixServer extends EventEmitter {
           } : null,
           matchType: m.matchType,
           confidence: m.confidence
-        })),
-        unmatched: result.unmatched.map((t: any) => ({
+        }))
+      }
+
+      this.sendJSON(res, {
+        service: targetService,
+        matched,
+        unmatched: unmatched.map((t: any) => ({
           id: t.id,
           name: t.name,
-          artist: t.artists[0]?.name,
+          artist: t.artists?.[0]?.name,
           album: t.album?.name
         })),
-        matchRate: result.matchRate,
-        total: result.matched.length + result.unmatched.length
+        matchRate,
+        total: matched.length + unmatched.length
       })
     } catch (error: any) {
       console.error('[Server] Spotify convert error:', error.message)
