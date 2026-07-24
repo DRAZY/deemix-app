@@ -931,6 +931,9 @@ export const useDownloadStore = defineStore('downloads', () => {
       id: batchId,
       title: config.title,
       cover: config.cover,
+      // Tag the row with the service it was fulfilled from so the source chip
+      // (Q for Qobuz) shows on Link-Analyzer batches just like direct downloads.
+      source: service,
       progress: 0,
       status: 'pending',
       type: 'playlist',
