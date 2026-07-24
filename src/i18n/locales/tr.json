@@ -355,7 +355,8 @@
       "connectionFailed": "Spotify'a bağlanılamadı",
       "credentialsRequired": "Lütfen hem Client ID hem de Client Secret girin",
       "getCredentials": "Spotify Developer Kimlik Bilgilerini Alın",
-      "credentialsHelp": "Client ID ve Secret almak için Spotify Developer Dashboard'da bir uygulama oluşturun."
+      "credentialsHelp": "Client ID ve Secret almak için Spotify Developer Dashboard'da bir uygulama oluşturun.",
+      "disclaimer": "Kendi Spotify kimlik bilgilerinizi gerektirir; bunlar yalnızca dönüştürme için bağlantı ayrıntılarını okumak amacıyla kullanılır. İndirmeler Spotify'dan değil, Deezer veya Qobuz'dan gelir. Bu uygulama Spotify ile bağlantılı değildir. Lütfen Spotify'ın hizmet şartlarına uyun."
     },
     "qobuz": {
       "title": "Qobuz",
@@ -376,8 +377,10 @@
       "advancedHelp": "Belirteciniz başka bir araç (streamrip, qobuz-dl vb.) tarafından oluşturulduysa, o aracın App ID ve App Secret değerlerini de buraya yapıştırın; varsa User ID değerinizi de girin. Qobuz belirteçleri onları oluşturan uygulamaya bağlar, bu sayede başka bir yerden gelen bir belirteç çalışır. Normal bir belirteç için boş bırakın.",
       "appIdPlaceholder": "App ID (isteğe bağlı)",
       "appSecretPlaceholder": "App Secret (isteğe bağlı)",
-      "userIdPlaceholder": "User ID (isteğe bağlı)"
-    }
+      "userIdPlaceholder": "User ID (isteğe bağlı)",
+      "disclaimer": "Kendinize ait etkin ve ücretli bir Qobuz hesabı gerektirir. Bu uygulama Qobuz ile bağlantılı değildir. Lütfen Qobuz'un hizmet şartlarına uyun."
+    },
+    "deezerDisclaimer": "Kendi Deezer hesabınızı kullanın. Bu uygulama Deezer ile bağlantılı değildir. Lütfen Deezer'ın hizmet şartlarına uyun."
   },
   "login": {
     "title": "Deezer'a Giriş Yap",
@@ -554,5 +557,8 @@
   "titleBar": {
     "qobuzLinkedTip": "Qobuz bağlı",
     "qobuzOfflineTip": "Qobuz bağlı değil — Ayarlar'dan bağlanın"
+  },
+  "about": {
+    "disclaimer": "Bu uygulama Deezer, Qobuz veya Spotify ile bağlantılı değildir, onlar tarafından yetkilendirilmemiş ve onaylanmamıştır. Kendi hesaplarınızla kişisel kullanım için tasarlanmıştır. Lütfen uygulamayı sorumlu bir şekilde ve müzik indirmeyle ilgili yerel yasalarınıza uygun olarak kullanın, ayrıca her yayın platformunun telif haklarına ve hizmet şartlarına saygı gösterin. Qobuz indirmeleri, kendinize ait etkin ve ücretli bir Qobuz aboneliği gerektirir."
   }
 }

@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries use a compact format — short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
+## [2.3.2] — 2026-07-23
+
+### Changed
+
+- **Clearer, more complete disclaimers.** The in-app About disclaimer now names Deezer, Qobuz, and Spotify, states that the app is for personal use with your own accounts, and asks users to follow local laws, copyright, and each service's terms of service (it previously mentioned only Deezer and Spotify). Short per-service reminders were also added at each connect section in Settings. Localized across all 21 languages.
+
 ## [2.3.1] — 2026-07-23
 
 ### Fixed

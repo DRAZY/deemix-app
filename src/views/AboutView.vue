@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '2.3.2',
+    date: '2026-07-23',
+    items: [
+      'Clearer disclaimers. The About notice now covers Deezer, Qobuz, and Spotify and spells out that the app is for personal use with your own accounts, following each service\'s terms. Short reminders were also added at each service\'s connect section in Settings.'
+    ]
+  },
+  {
     version: '2.3.1',
     date: '2026-07-23',
     items: [

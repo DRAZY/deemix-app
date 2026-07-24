@@ -355,7 +355,8 @@
       "connectionFailed": "Nie udało się połączyć ze Spotify",
       "credentialsRequired": "Wprowadź zarówno Client ID jak i Client Secret",
       "getCredentials": "Uzyskaj dane uwierzytelniające Spotify Developer",
-      "credentialsHelp": "Utwórz aplikację w Spotify Developer Dashboard, aby uzyskać Client ID i Secret."
+      "credentialsHelp": "Utwórz aplikację w Spotify Developer Dashboard, aby uzyskać Client ID i Secret.",
+      "disclaimer": "Wymaga Twoich własnych danych logowania do Spotify, używanych wyłącznie do odczytania szczegółów linku na potrzeby konwersji. Pobrania pochodzą z Deezer lub Qobuz, a nie ze Spotify. Ta aplikacja nie jest powiązana ze Spotify. Przestrzegaj warunków korzystania z usługi Spotify."
     },
     "qobuz": {
       "connect": "Połącz konto Qobuz",
@@ -376,8 +377,10 @@
       "advancedHelp": "Jeśli Twój token został utworzony przez inne narzędzie (streamrip, qobuz-dl itp.), wklej tutaj także App ID i App Secret tego narzędzia oraz swój User ID, jeśli go masz. Qobuz wiąże tokeny z aplikacją, która je utworzyła, dzięki czemu token z innego źródła zadziała. Pozostaw puste w przypadku zwykłego tokena.",
       "appIdPlaceholder": "App ID (opcjonalnie)",
       "appSecretPlaceholder": "App Secret (opcjonalnie)",
-      "userIdPlaceholder": "User ID (opcjonalnie)"
-    }
+      "userIdPlaceholder": "User ID (opcjonalnie)",
+      "disclaimer": "Wymaga Twojego własnego aktywnego, płatnego konta Qobuz. Ta aplikacja nie jest powiązana z Qobuz. Przestrzegaj warunków korzystania z usługi Qobuz."
+    },
+    "deezerDisclaimer": "Używaj własnego konta Deezer. Ta aplikacja nie jest powiązana z Deezer. Przestrzegaj warunków korzystania z usługi Deezer."
   },
   "login": {
     "title": "Zaloguj się do Deezer",
@@ -554,5 +557,8 @@
   "titleBar": {
     "qobuzLinkedTip": "Qobuz połączony",
     "qobuzOfflineTip": "Qobuz nie połączony — połącz w Ustawieniach"
+  },
+  "about": {
+    "disclaimer": "Ta aplikacja nie jest powiązana z Deezer, Qobuz ani Spotify, nie jest przez nie autoryzowana ani wspierana. Jest przeznaczona do użytku osobistego z Twoimi własnymi kontami. Korzystaj z niej odpowiedzialnie i zgodnie z lokalnymi przepisami dotyczącymi pobierania muzyki oraz szanuj prawa autorskie i warunki korzystania z usługi każdej platformy streamingowej. Pobieranie z Qobuz wymaga Twojej własnej aktywnej, płatnej subskrypcji Qobuz."
   }
 }

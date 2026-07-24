@@ -355,7 +355,8 @@
       "connectionFailed": "Connessione a Spotify fallita",
       "credentialsRequired": "Inserisci sia il Client ID che il Client Secret",
       "getCredentials": "Ottieni credenziali Spotify Developer",
-      "credentialsHelp": "Crea un'app nel Spotify Developer Dashboard per ottenere il tuo Client ID e Secret."
+      "credentialsHelp": "Crea un'app nel Spotify Developer Dashboard per ottenere il tuo Client ID e Secret.",
+      "disclaimer": "Richiede le tue credenziali Spotify, usate solo per leggere i dettagli del link ai fini della conversione. I download provengono da Deezer o Qobuz, non da Spotify. Questa app non è affiliata a Spotify. Rispetta i termini di servizio di Spotify."
     },
     "qobuz": {
       "connect": "Collega account Qobuz",
@@ -376,8 +377,10 @@
       "advancedHelp": "Se il tuo token è stato creato da un altro strumento (streamrip, qobuz-dl, ecc.), incolla qui anche l'App ID e l'App Secret di quello strumento, e il tuo User ID se ce l'hai. Qobuz lega i token all'app che li ha creati, quindi questo fa funzionare un token proveniente da altrove. Lascia vuoto per un token normale.",
       "appIdPlaceholder": "App ID (facoltativo)",
       "appSecretPlaceholder": "App Secret (facoltativo)",
-      "userIdPlaceholder": "User ID (facoltativo)"
-    }
+      "userIdPlaceholder": "User ID (facoltativo)",
+      "disclaimer": "Richiede un tuo account Qobuz a pagamento attivo. Questa app non è affiliata a Qobuz. Rispetta i termini di servizio di Qobuz."
+    },
+    "deezerDisclaimer": "Usa il tuo account Deezer. Questa app non è affiliata a Deezer. Rispetta i termini di servizio di Deezer."
   },
   "login": {
     "title": "Accedi a Deezer",
@@ -554,5 +557,8 @@
   "titleBar": {
     "qobuzLinkedTip": "Qobuz collegato",
     "qobuzOfflineTip": "Qobuz non collegato — collegati nelle Impostazioni"
+  },
+  "about": {
+    "disclaimer": "Questa app non è affiliata, autorizzata né approvata da Deezer, Qobuz o Spotify. È destinata all'uso personale con i tuoi account. Utilizzala in modo responsabile e nel rispetto delle leggi locali sul download di musica, e rispetta il diritto d'autore e i termini di servizio di ciascuna piattaforma di streaming. I download da Qobuz richiedono un tuo abbonamento Qobuz a pagamento attivo."
   }
 }

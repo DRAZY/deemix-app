@@ -1918,6 +1918,9 @@ async function reindexLibrary() {
           <p class="text-sm text-foreground-muted mt-2">
             {{ t('settings.arlRequired') }}
           </p>
+          <p class="text-xs text-foreground-muted/70 mt-2 leading-relaxed">
+            {{ t('settings.deezerDisclaimer') }}
+          </p>
         </div>
       </div>
     </section>
@@ -1944,6 +1947,9 @@ async function reindexLibrary() {
       <div v-show="expandedSections.qobuz" class="space-y-5 pt-6">
         <p class="text-sm text-foreground-muted">
           {{ t('settings.qobuz.description') }}
+        </p>
+        <p class="text-xs text-foreground-muted/70 leading-relaxed">
+          {{ t('settings.qobuz.disclaimer') }}
         </p>
 
         <div v-if="settingsStore.isQobuzConnected" class="flex items-center gap-3">
@@ -2057,6 +2063,9 @@ async function reindexLibrary() {
       <div v-show="expandedSections.spotify" class="space-y-6 pt-6">
         <p class="text-sm text-foreground-muted">
         {{ t('settings.spotify.description') }}
+      </p>
+      <p class="text-xs text-foreground-muted/70 leading-relaxed">
+        {{ t('settings.spotify.disclaimer') }}
       </p>
 
       <!-- Client ID -->

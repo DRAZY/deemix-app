@@ -355,7 +355,8 @@
       "connectionFailed": "Falha ao ligar ao Spotify",
       "credentialsRequired": "Por favor, introduza o Client ID e o Client Secret",
       "getCredentials": "Obter credenciais do Spotify Developer",
-      "credentialsHelp": "Crie uma aplicação no Spotify Developer Dashboard para obter o seu Client ID e Secret."
+      "credentialsHelp": "Crie uma aplicação no Spotify Developer Dashboard para obter o seu Client ID e Secret.",
+      "disclaimer": "Requer as suas próprias credenciais do Spotify, utilizadas apenas para ler os detalhes da ligação para conversão. As transferências provêm da Deezer ou do Qobuz, não do Spotify. Esta aplicação não está associada ao Spotify. Cumpra os termos de serviço do Spotify."
     },
     "qobuz": {
       "connect": "Ligar conta Qobuz",
@@ -376,8 +377,10 @@
       "advancedHelp": "Se o seu token foi criado por outra ferramenta (streamrip, qobuz-dl, etc.), cole aqui também o App ID e o App Secret dessa ferramenta, e o seu User ID se o tiver. O Qobuz associa os tokens à aplicação que os criou, por isso isto faz funcionar um token de outra origem. Deixe em branco para um token normal.",
       "appIdPlaceholder": "App ID (opcional)",
       "appSecretPlaceholder": "App Secret (opcional)",
-      "userIdPlaceholder": "User ID (opcional)"
-    }
+      "userIdPlaceholder": "User ID (opcional)",
+      "disclaimer": "Requer a sua própria conta Qobuz paga e ativa. Esta aplicação não está associada ao Qobuz. Cumpra os termos de serviço do Qobuz."
+    },
+    "deezerDisclaimer": "Utilize a sua própria conta Deezer. Esta aplicação não está associada à Deezer. Cumpra os termos de serviço da Deezer."
   },
   "login": {
     "title": "Iniciar sessão no Deezer",
@@ -554,5 +557,8 @@
   "titleBar": {
     "qobuzLinkedTip": "Qobuz ligado",
     "qobuzOfflineTip": "Qobuz não ligado — ligue nas Definições"
+  },
+  "about": {
+    "disclaimer": "Esta aplicação não está associada, autorizada nem aprovada pela Deezer, Qobuz ou Spotify. Destina-se a uso pessoal com as suas próprias contas. Utilize-a de forma responsável e em conformidade com as leis locais relativas à transferência de música, e respeite os direitos de autor e os termos de serviço de cada plataforma de streaming. As transferências do Qobuz exigem a sua própria subscrição Qobuz paga e ativa."
   }
 }

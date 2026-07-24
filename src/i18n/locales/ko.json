@@ -355,7 +355,8 @@
       "connectionFailed": "Spotify 연결 실패",
       "credentialsRequired": "클라이언트 ID와 클라이언트 시크릿을 모두 입력해주세요",
       "getCredentials": "Spotify 개발자 자격 증명 받기",
-      "credentialsHelp": "Spotify Developer Dashboard에서 앱을 만들어 클라이언트 ID와 시크릿을 받으세요."
+      "credentialsHelp": "Spotify Developer Dashboard에서 앱을 만들어 클라이언트 ID와 시크릿을 받으세요.",
+      "disclaimer": "본인의 Spotify 자격 증명이 필요하며, 이는 변환을 위해 링크 정보를 읽는 데에만 사용됩니다. 다운로드는 Spotify가 아니라 Deezer 또는 Qobuz에서 이루어집니다. 이 앱은 Spotify와 제휴하지 않았습니다. Spotify의 서비스 약관을 준수해 주세요."
     },
     "qobuz": {
       "connect": "Qobuz 계정 연결",
@@ -376,8 +377,10 @@
       "advancedHelp": "토큰이 다른 도구(streamrip, qobuz-dl 등)에서 생성된 경우, 해당 도구의 App ID와 App Secret도 여기에 붙여넣고, User ID가 있다면 함께 입력하세요. Qobuz는 토큰을 이를 생성한 앱에 연결하므로, 이렇게 하면 다른 곳에서 만든 토큰도 작동합니다. 일반 토큰인 경우 비워 두세요.",
       "appIdPlaceholder": "App ID (선택 사항)",
       "appSecretPlaceholder": "App Secret (선택 사항)",
-      "userIdPlaceholder": "User ID (선택 사항)"
-    }
+      "userIdPlaceholder": "User ID (선택 사항)",
+      "disclaimer": "본인 명의의 활성 유료 Qobuz 계정이 필요합니다. 이 앱은 Qobuz와 제휴하지 않았습니다. Qobuz의 서비스 약관을 준수해 주세요."
+    },
+    "deezerDisclaimer": "본인의 Deezer 계정을 사용하세요. 이 앱은 Deezer와 제휴하지 않았습니다. Deezer의 서비스 약관을 준수해 주세요."
   },
   "login": {
     "title": "Deezer 로그인",
@@ -554,5 +557,8 @@
   "titleBar": {
     "qobuzLinkedTip": "Qobuz 연결됨",
     "qobuzOfflineTip": "Qobuz 연결 안 됨 — 설정에서 연결하세요"
+  },
+  "about": {
+    "disclaimer": "이 앱은 Deezer, Qobuz 또는 Spotify와 제휴하거나 이들로부터 승인 또는 보증을 받지 않았습니다. 본인 계정으로 개인적으로 사용하도록 만들어졌습니다. 음악 다운로드에 관한 현지 법률에 따라 책임감 있게 사용하고, 각 스트리밍 플랫폼의 저작권과 서비스 약관을 존중해 주세요. Qobuz 다운로드에는 본인 명의의 활성 유료 Qobuz 구독이 필요합니다."
   }
 }

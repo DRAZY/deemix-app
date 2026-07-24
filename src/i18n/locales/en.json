@@ -535,7 +535,8 @@
       "credentialsRequired": "Please enter both Client ID and Client Secret",
       "getCredentials": "Get Spotify Developer Credentials",
       "credentialsHelp": "Create an app in the Spotify Developer Dashboard to get your Client ID and Secret.",
-      "howToEnable": "How do I enable Spotify Features?"
+      "howToEnable": "How do I enable Spotify Features?",
+      "disclaimer": "Requires your own Spotify credentials, used only to read link details for conversion. Downloads come from Deezer or Qobuz, not from Spotify. This app is not affiliated with Spotify. Please follow Spotify's terms of service."
     },
     "backup": {
       "title": "Backup and Restore Settings",
@@ -598,8 +599,10 @@
       "advancedHelp": "If your token was created by another tool (streamrip, qobuz-dl, etc.), paste that tool's App ID and App Secret here too, and your User ID if you have it. Qobuz binds tokens to the app that made them, so this makes a token from elsewhere work. Leave blank for a normal token.",
       "appIdPlaceholder": "App ID (optional)",
       "appSecretPlaceholder": "App Secret (optional)",
-      "userIdPlaceholder": "User ID (optional)"
-    }
+      "userIdPlaceholder": "User ID (optional)",
+      "disclaimer": "Requires your own active paid Qobuz account. This app is not affiliated with Qobuz. Please follow Qobuz's terms of service."
+    },
+    "deezerDisclaimer": "Use your own Deezer account. This app is not affiliated with Deezer. Please follow Deezer's terms of service."
   },
   "login": {
     "title": "Login to Deezer",
@@ -873,7 +876,7 @@
     "builtBy": "Built with care by Team MAXIMUS.",
     "inspiredBy": "Inspired by the original deemix project. Powered by the Deezer API.",
     "license": "Licensed under the GNU General Public License v3.0",
-    "disclaimer": "This application is not affiliated with or endorsed by Deezer or Spotify."
+    "disclaimer": "This app is not affiliated with, authorized by, or endorsed by Deezer, Qobuz, or Spotify. It is intended for personal use with your own accounts. Please use it responsibly and in accordance with your local laws regarding music downloading, and respect copyright and the terms of service of each streaming platform. Qobuz downloads require your own active paid Qobuz subscription."
   },
   "qobuz": {
     "myPurchases": "My Purchases",

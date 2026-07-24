@@ -355,7 +355,8 @@
       "connectionFailed": "فشل الاتصال بـ Spotify",
       "credentialsRequired": "الرجاء إدخال معرف العميل وسر العميل",
       "getCredentials": "الحصول على بيانات اعتماد Spotify Developer",
-      "credentialsHelp": "أنشئ تطبيقاً في Spotify Developer Dashboard للحصول على معرف العميل والسر."
+      "credentialsHelp": "أنشئ تطبيقاً في Spotify Developer Dashboard للحصول على معرف العميل والسر.",
+      "disclaimer": "يتطلب بيانات اعتماد Spotify الخاصة بك، وتُستخدم فقط لقراءة تفاصيل الرابط لأغراض التحويل. تأتي التنزيلات من Deezer أو Qobuz، وليس من Spotify. هذا التطبيق ليس تابعاً لـ Spotify. يُرجى الالتزام بشروط خدمة Spotify."
     },
     "qobuz": {
       "title": "Qobuz",
@@ -376,8 +377,10 @@
       "advancedHelp": "إذا كان الرمز الخاص بك قد أُنشئ بواسطة أداة أخرى (streamrip أو qobuz-dl أو غيرها)، فالصق هنا أيضًا App ID و App Secret الخاصين بتلك الأداة، وكذلك User ID إن كان لديك. يربط Qobuz الرموز بالتطبيق الذي أنشأها، لذا يجعل هذا رمزًا من مصدر آخر يعمل. اتركها فارغة إذا كان الرمز عاديًا.",
       "appIdPlaceholder": "App ID (اختياري)",
       "appSecretPlaceholder": "App Secret (اختياري)",
-      "userIdPlaceholder": "User ID (اختياري)"
-    }
+      "userIdPlaceholder": "User ID (اختياري)",
+      "disclaimer": "يتطلب حساب Qobuz مدفوعاً ونشطاً خاصاً بك. هذا التطبيق ليس تابعاً لـ Qobuz. يُرجى الالتزام بشروط خدمة Qobuz."
+    },
+    "deezerDisclaimer": "استخدم حساب Deezer الخاص بك. هذا التطبيق ليس تابعاً لـ Deezer. يُرجى الالتزام بشروط خدمة Deezer."
   },
   "login": {
     "title": "تسجيل الدخول إلى Deezer",
@@ -554,5 +557,8 @@
   "titleBar": {
     "qobuzLinkedTip": "Qobuz متصل",
     "qobuzOfflineTip": "Qobuz غير متصل — اتصل من الإعدادات"
+  },
+  "about": {
+    "disclaimer": "هذا التطبيق ليس تابعاً لـ Deezer أو Qobuz أو Spotify، ولا مصرحاً به أو معتمداً منها. وهو مخصص للاستخدام الشخصي بحساباتك الخاصة. يُرجى استخدامه بمسؤولية ووفقاً للقوانين المحلية المتعلقة بتنزيل الموسيقى، واحترام حقوق النشر وشروط الخدمة لكل منصة بث. يتطلب تنزيل Qobuz اشتراكاً مدفوعاً ونشطاً خاصاً بك في Qobuz."
   }
 }

@@ -355,7 +355,8 @@
       "connectionFailed": "Hindi makakonekta sa Spotify",
       "credentialsRequired": "Pakilagay ang Client ID at Client Secret",
       "getCredentials": "Kumuha ng Spotify Developer Credentials",
-      "credentialsHelp": "Gumawa ng app sa Spotify Developer Dashboard para makuha ang iyong Client ID at Secret."
+      "credentialsHelp": "Gumawa ng app sa Spotify Developer Dashboard para makuha ang iyong Client ID at Secret.",
+      "disclaimer": "Nangangailangan ng sarili mong mga kredensyal ng Spotify, na ginagamit lamang upang basahin ang mga detalye ng link para sa conversion. Ang mga download ay nagmumula sa Deezer o Qobuz, hindi sa Spotify. Ang app na ito ay hindi kaakibat ng Spotify. Pakisunod ang mga tuntunin ng serbisyo ng Spotify."
     },
     "qobuz": {
       "title": "Qobuz",
@@ -376,8 +377,10 @@
       "advancedHelp": "Kung ginawa ang iyong token ng ibang tool (streamrip, qobuz-dl, atbp.), i-paste din dito ang App ID at App Secret ng tool na iyon, at ang iyong User ID kung mayroon ka. Iniuugnay ng Qobuz ang mga token sa app na gumawa ng mga ito, kaya nito gumagana ang token mula sa ibang pinagmulan. Iwanang blangko para sa normal na token.",
       "appIdPlaceholder": "App ID (opsyonal)",
       "appSecretPlaceholder": "App Secret (opsyonal)",
-      "userIdPlaceholder": "User ID (opsyonal)"
-    }
+      "userIdPlaceholder": "User ID (opsyonal)",
+      "disclaimer": "Nangangailangan ng sarili mong aktibo at bayad na Qobuz account. Ang app na ito ay hindi kaakibat ng Qobuz. Pakisunod ang mga tuntunin ng serbisyo ng Qobuz."
+    },
+    "deezerDisclaimer": "Gamitin ang sarili mong Deezer account. Ang app na ito ay hindi kaakibat ng Deezer. Pakisunod ang mga tuntunin ng serbisyo ng Deezer."
   },
   "login": {
     "title": "Mag-login sa Deezer",
@@ -554,5 +557,8 @@
   "titleBar": {
     "qobuzLinkedTip": "Nakakonekta ang Qobuz",
     "qobuzOfflineTip": "Hindi nakakonekta ang Qobuz — kumonekta sa Settings"
+  },
+  "about": {
+    "disclaimer": "Ang app na ito ay hindi kaakibat, hindi awtorisado, at hindi inirerekomenda ng Deezer, Qobuz, o Spotify. Nilalayon itong gamitin para sa personal na paggamit gamit ang sarili mong mga account. Pakigamit ito nang responsable at alinsunod sa iyong mga lokal na batas tungkol sa pag-download ng musika, at igalang ang copyright at ang mga tuntunin ng serbisyo ng bawat streaming platform. Ang mga download sa Qobuz ay nangangailangan ng sarili mong aktibo at bayad na subscription sa Qobuz."
   }
 }

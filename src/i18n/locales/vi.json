@@ -410,7 +410,8 @@
       "credentialsRequired": "Vui lòng nhập cả Client ID và Client Secret",
       "getCredentials": "Lấy thông tin Spotify Developer",
       "credentialsHelp": "Tạo ứng dụng trong Spotify Developer Dashboard để lấy Client ID và Secret.",
-      "howToEnable": "Làm thế nào để bật tính năng Spotify?"
+      "howToEnable": "Làm thế nào để bật tính năng Spotify?",
+      "disclaimer": "Yêu cầu thông tin đăng nhập Spotify của riêng bạn, chỉ được dùng để đọc thông tin liên kết nhằm chuyển đổi. Các bản tải xuống đến từ Deezer hoặc Qobuz, không phải từ Spotify. Ứng dụng này không liên kết với Spotify. Vui lòng tuân thủ điều khoản dịch vụ của Spotify."
     },
     "qobuz": {
       "title": "Qobuz",
@@ -431,8 +432,10 @@
       "advancedHelp": "Nếu mã thông báo của bạn được tạo bởi một công cụ khác (streamrip, qobuz-dl, v.v.), hãy dán cả App ID và App Secret của công cụ đó vào đây, cùng với User ID của bạn nếu có. Qobuz gắn mã thông báo với ứng dụng đã tạo ra chúng, vì vậy điều này giúp mã thông báo từ nơi khác hoạt động. Để trống nếu là mã thông báo thông thường.",
       "appIdPlaceholder": "App ID (tùy chọn)",
       "appSecretPlaceholder": "App Secret (tùy chọn)",
-      "userIdPlaceholder": "User ID (tùy chọn)"
-    }
+      "userIdPlaceholder": "User ID (tùy chọn)",
+      "disclaimer": "Yêu cầu tài khoản Qobuz trả phí đang hoạt động của riêng bạn. Ứng dụng này không liên kết với Qobuz. Vui lòng tuân thủ điều khoản dịch vụ của Qobuz."
+    },
+    "deezerDisclaimer": "Sử dụng tài khoản Deezer của riêng bạn. Ứng dụng này không liên kết với Deezer. Vui lòng tuân thủ điều khoản dịch vụ của Deezer."
   },
   "login": {
     "title": "Đăng nhập Deezer",
@@ -636,5 +639,8 @@
   "titleBar": {
     "qobuzLinkedTip": "Qobuz đã kết nối",
     "qobuzOfflineTip": "Qobuz chưa kết nối — kết nối trong Cài đặt"
+  },
+  "about": {
+    "disclaimer": "Ứng dụng này không liên kết với, không được cấp phép bởi, và không được xác nhận bởi Deezer, Qobuz hoặc Spotify. Ứng dụng dành cho mục đích sử dụng cá nhân với tài khoản của riêng bạn. Vui lòng sử dụng một cách có trách nhiệm và tuân thủ luật pháp địa phương về việc tải nhạc, đồng thời tôn trọng bản quyền và điều khoản dịch vụ của từng nền tảng phát trực tuyến. Việc tải xuống từ Qobuz yêu cầu gói đăng ký Qobuz trả phí đang hoạt động của riêng bạn."
   }
 }

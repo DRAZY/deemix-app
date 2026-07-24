@@ -355,7 +355,8 @@
       "connectionFailed": "Gagal terhubung ke Spotify",
       "credentialsRequired": "Silakan masukkan Client ID dan Client Secret",
       "getCredentials": "Dapatkan Kredensial Spotify Developer",
-      "credentialsHelp": "Buat aplikasi di Spotify Developer Dashboard untuk mendapatkan Client ID dan Secret Anda."
+      "credentialsHelp": "Buat aplikasi di Spotify Developer Dashboard untuk mendapatkan Client ID dan Secret Anda.",
+      "disclaimer": "Memerlukan kredensial Spotify milik Anda sendiri, yang hanya digunakan untuk membaca detail tautan untuk konversi. Unduhan berasal dari Deezer atau Qobuz, bukan dari Spotify. Aplikasi ini tidak berafiliasi dengan Spotify. Harap patuhi ketentuan layanan Spotify."
     },
     "qobuz": {
       "connect": "Hubungkan Akun Qobuz",
@@ -376,8 +377,10 @@
       "advancedHelp": "Jika token Anda dibuat oleh alat lain (streamrip, qobuz-dl, dll.), tempel juga App ID dan App Secret alat tersebut di sini, beserta User ID Anda jika ada. Qobuz mengikat token ke aplikasi yang membuatnya, sehingga token dari sumber lain pun bisa berfungsi. Biarkan kosong untuk token biasa.",
       "appIdPlaceholder": "App ID (opsional)",
       "appSecretPlaceholder": "App Secret (opsional)",
-      "userIdPlaceholder": "User ID (opsional)"
-    }
+      "userIdPlaceholder": "User ID (opsional)",
+      "disclaimer": "Memerlukan akun Qobuz berbayar milik Anda sendiri yang masih aktif. Aplikasi ini tidak berafiliasi dengan Qobuz. Harap patuhi ketentuan layanan Qobuz."
+    },
+    "deezerDisclaimer": "Gunakan akun Deezer Anda sendiri. Aplikasi ini tidak berafiliasi dengan Deezer. Harap patuhi ketentuan layanan Deezer."
   },
   "login": {
     "title": "Masuk ke Deezer",
@@ -491,5 +494,8 @@
   "titleBar": {
     "qobuzLinkedTip": "Qobuz terhubung",
     "qobuzOfflineTip": "Qobuz tidak terhubung — hubungkan di Pengaturan"
+  },
+  "about": {
+    "disclaimer": "Aplikasi ini tidak berafiliasi dengan, tidak diizinkan oleh, dan tidak didukung oleh Deezer, Qobuz, atau Spotify. Aplikasi ini ditujukan untuk penggunaan pribadi dengan akun Anda sendiri. Harap gunakan secara bertanggung jawab dan sesuai dengan hukum setempat mengenai pengunduhan musik, serta hormati hak cipta dan ketentuan layanan dari setiap platform streaming. Pengunduhan Qobuz memerlukan langganan Qobuz berbayar milik Anda sendiri yang masih aktif."
   }
 }

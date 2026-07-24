@@ -410,7 +410,8 @@
       "credentialsRequired": "請輸入 Client ID 和 Client Secret",
       "getCredentials": "取得 Spotify 開發者憑證",
       "credentialsHelp": "在 Spotify 開發者儀表板建立應用程式以取得您的 Client ID 和 Secret。",
-      "howToEnable": "如何啟用 Spotify 功能？"
+      "howToEnable": "如何啟用 Spotify 功能？",
+      "disclaimer": "需要您自己的 Spotify 憑證，僅用於讀取連結詳細資訊以進行轉換。下載來自 Deezer 或 Qobuz，而非 Spotify。本應用程式與 Spotify 並無隸屬關係。請遵守 Spotify 的服務條款。"
     },
     "qobuz": {
       "title": "Qobuz",
@@ -431,8 +432,10 @@
       "advancedHelp": "如果您的權杖是由其他工具（streamrip、qobuz-dl 等）建立的，請同時在此貼上該工具的 App ID 和 App Secret，如果有 User ID 也一併填寫。Qobuz 會將權杖繫結至建立它的應用程式，因此這樣可以讓來自其他來源的權杖正常運作。若為一般權杖，請留空。",
       "appIdPlaceholder": "App ID（選填）",
       "appSecretPlaceholder": "App Secret（選填）",
-      "userIdPlaceholder": "User ID（選填）"
-    }
+      "userIdPlaceholder": "User ID（選填）",
+      "disclaimer": "需要您本人有效的付費 Qobuz 帳戶。本應用程式與 Qobuz 並無隸屬關係。請遵守 Qobuz 的服務條款。"
+    },
+    "deezerDisclaimer": "請使用您自己的 Deezer 帳戶。本應用程式與 Deezer 並無隸屬關係。請遵守 Deezer 的服務條款。"
   },
   "login": {
     "title": "登入 Deezer",
@@ -636,5 +639,8 @@
   "titleBar": {
     "qobuzLinkedTip": "Qobuz 已連接",
     "qobuzOfflineTip": "Qobuz 未連接 — 請在設定中連接"
+  },
+  "about": {
+    "disclaimer": "本應用程式與 Deezer、Qobuz 或 Spotify 並無任何隸屬關係，未獲得其授權，也未獲得其認可。本應用程式僅供您使用自己的帳戶進行個人使用。請負責任地使用，並遵守您所在地關於音樂下載的法律，同時尊重版權以及各串流平台的服務條款。從 Qobuz 下載需要您本人有效的付費 Qobuz 訂閱。"
   }
 }

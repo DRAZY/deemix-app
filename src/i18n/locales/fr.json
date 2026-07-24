@@ -355,7 +355,8 @@
       "connectionFailed": "Échec de connexion à Spotify",
       "credentialsRequired": "Veuillez entrer le Client ID et le Client Secret",
       "getCredentials": "Obtenir les identifiants Spotify Developer",
-      "credentialsHelp": "Créez une application dans le Spotify Developer Dashboard pour obtenir votre Client ID et Secret."
+      "credentialsHelp": "Créez une application dans le Spotify Developer Dashboard pour obtenir votre Client ID et Secret.",
+      "disclaimer": "Nécessite vos propres identifiants Spotify, utilisés uniquement pour lire les détails du lien en vue de la conversion. Les téléchargements proviennent de Deezer ou Qobuz, pas de Spotify. Cette application n'est pas affiliée à Spotify. Veuillez respecter les conditions d'utilisation de Spotify."
     },
     "qobuz": {
       "connect": "Connecter un compte Qobuz",
@@ -376,8 +377,10 @@
       "advancedHelp": "Si votre jeton a été créé par un autre outil (streamrip, qobuz-dl, etc.), collez ici aussi l'App ID et l'App Secret de cet outil, ainsi que votre User ID si vous en avez un. Qobuz lie les jetons à l'application qui les a créés ; c'est ce qui permet à un jeton provenant d'ailleurs de fonctionner. Laissez vide pour un jeton normal.",
       "appIdPlaceholder": "App ID (facultatif)",
       "appSecretPlaceholder": "App Secret (facultatif)",
-      "userIdPlaceholder": "User ID (facultatif)"
-    }
+      "userIdPlaceholder": "User ID (facultatif)",
+      "disclaimer": "Nécessite votre propre compte Qobuz payant et actif. Cette application n'est pas affiliée à Qobuz. Veuillez respecter les conditions d'utilisation de Qobuz."
+    },
+    "deezerDisclaimer": "Utilisez votre propre compte Deezer. Cette application n'est pas affiliée à Deezer. Veuillez respecter les conditions d'utilisation de Deezer."
   },
   "login": {
     "title": "Connexion à Deezer",
@@ -554,5 +557,8 @@
   "titleBar": {
     "qobuzLinkedTip": "Qobuz connecté",
     "qobuzOfflineTip": "Qobuz non connecté — connectez-vous dans les Paramètres"
+  },
+  "about": {
+    "disclaimer": "Cette application n'est ni affiliée à Deezer, Qobuz ou Spotify, ni autorisée ou approuvée par eux. Elle est destinée à un usage personnel avec vos propres comptes. Veuillez l'utiliser de manière responsable et conformément aux lois locales relatives au téléchargement de musique, et respecter le droit d'auteur ainsi que les conditions d'utilisation de chaque plateforme de streaming. Les téléchargements Qobuz nécessitent votre propre abonnement Qobuz payant et actif."
   }
 }

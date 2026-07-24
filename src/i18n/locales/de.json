@@ -355,7 +355,8 @@
       "connectionFailed": "Verbindung zu Spotify fehlgeschlagen",
       "credentialsRequired": "Bitte gib sowohl Client-ID als auch Client-Secret ein",
       "getCredentials": "Spotify-Entwickler-Zugangsdaten erhalten",
-      "credentialsHelp": "Erstelle eine App im Spotify Developer Dashboard, um deine Client-ID und dein Secret zu erhalten."
+      "credentialsHelp": "Erstelle eine App im Spotify Developer Dashboard, um deine Client-ID und dein Secret zu erhalten.",
+      "disclaimer": "Erfordert deine eigenen Spotify-Zugangsdaten, die nur zum Auslesen der Link-Details für die Konvertierung verwendet werden. Downloads kommen von Deezer oder Qobuz, nicht von Spotify. Diese App ist nicht mit Spotify verbunden. Bitte halte dich an die Nutzungsbedingungen von Spotify."
     },
     "qobuz": {
       "title": "Qobuz",
@@ -376,8 +377,10 @@
       "advancedHelp": "Wenn dein Token von einem anderen Tool erstellt wurde (streamrip, qobuz-dl usw.), füge hier auch die App ID und das App Secret dieses Tools ein, sowie deine User ID, falls du sie hast. Qobuz bindet Tokens an die App, die sie erstellt hat, damit funktioniert ein Token aus einer anderen Quelle. Für ein normales Token leer lassen.",
       "appIdPlaceholder": "App ID (optional)",
       "appSecretPlaceholder": "App Secret (optional)",
-      "userIdPlaceholder": "User ID (optional)"
-    }
+      "userIdPlaceholder": "User ID (optional)",
+      "disclaimer": "Erfordert ein eigenes aktives, kostenpflichtiges Qobuz-Konto. Diese App ist nicht mit Qobuz verbunden. Bitte halte dich an die Nutzungsbedingungen von Qobuz."
+    },
+    "deezerDisclaimer": "Verwende dein eigenes Deezer-Konto. Diese App ist nicht mit Deezer verbunden. Bitte halte dich an die Nutzungsbedingungen von Deezer."
   },
   "login": {
     "title": "Bei Deezer anmelden",
@@ -554,5 +557,8 @@
   "titleBar": {
     "qobuzLinkedTip": "Qobuz verbunden",
     "qobuzOfflineTip": "Qobuz nicht verbunden — in den Einstellungen verbinden"
+  },
+  "about": {
+    "disclaimer": "Diese App ist nicht mit Deezer, Qobuz oder Spotify verbunden und wird von ihnen weder autorisiert noch unterstützt. Sie ist für den persönlichen Gebrauch mit deinen eigenen Konten bestimmt. Bitte nutze sie verantwortungsvoll und im Einklang mit den in deinem Land geltenden Gesetzen zum Herunterladen von Musik, und respektiere das Urheberrecht sowie die Nutzungsbedingungen der jeweiligen Streaming-Plattform. Qobuz-Downloads erfordern ein eigenes aktives, kostenpflichtiges Qobuz-Abonnement."
   }
 }

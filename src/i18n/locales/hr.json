@@ -355,7 +355,8 @@
       "connectionFailed": "Povezivanje sa Spotifyjem nije uspjelo",
       "credentialsRequired": "Unesite i Client ID i Client Secret",
       "getCredentials": "Nabavite Spotify Developer vjerodajnice",
-      "credentialsHelp": "Stvorite aplikaciju na Spotify Developer Dashboardu za dobivanje Client ID-a i Secreta."
+      "credentialsHelp": "Stvorite aplikaciju na Spotify Developer Dashboardu za dobivanje Client ID-a i Secreta.",
+      "disclaimer": "Zahtijeva vlastite Spotify vjerodajnice, koje se koriste samo za čitanje detalja poveznice radi pretvorbe. Preuzimanja dolaze s Deezera ili Qobuza, a ne sa Spotifyja. Ova aplikacija nije povezana sa Spotifyjem. Molimo pridržavajte se uvjeta pružanja usluge Spotifyja."
     },
     "qobuz": {
       "connect": "Poveži Qobuz račun",
@@ -376,8 +377,10 @@
       "advancedHelp": "Ako je vaš token izradio drugi alat (streamrip, qobuz-dl itd.), ovdje zalijepite i App ID i App Secret tog alata te svoj User ID ako ga imate. Qobuz veže tokene uz aplikaciju koja ih je izradila, pa zbog toga token s drugog mjesta radi. Ostavite prazno za obični token.",
       "appIdPlaceholder": "App ID (neobavezno)",
       "appSecretPlaceholder": "App Secret (neobavezno)",
-      "userIdPlaceholder": "User ID (neobavezno)"
-    }
+      "userIdPlaceholder": "User ID (neobavezno)",
+      "disclaimer": "Zahtijeva vlastiti aktivni plaćeni Qobuz račun. Ova aplikacija nije povezana s Qobuzom. Molimo pridržavajte se uvjeta pružanja usluge Qobuza."
+    },
+    "deezerDisclaimer": "Koristite vlastiti Deezer račun. Ova aplikacija nije povezana s Deezerom. Molimo pridržavajte se uvjeta pružanja usluge Deezera."
   },
   "login": {
     "title": "Prijava na Deezer",
@@ -554,5 +557,8 @@
   "titleBar": {
     "qobuzLinkedTip": "Qobuz povezan",
     "qobuzOfflineTip": "Qobuz nije povezan — povežite se u Postavkama"
+  },
+  "about": {
+    "disclaimer": "Ova aplikacija nije povezana s Deezerom, Qobuzom ni Spotifyjem, niti su je oni odobrili ili podržali. Namijenjena je osobnoj upotrebi s vlastitim računima. Molimo koristite je odgovorno i u skladu s lokalnim zakonima o preuzimanju glazbe te poštujte autorska prava i uvjete pružanja usluge svake streaming platforme. Preuzimanja s Qobuza zahtijevaju vlastitu aktivnu plaćenu Qobuz pretplatu."
   }
 }

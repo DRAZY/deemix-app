@@ -355,7 +355,8 @@
       "connectionFailed": "Falha ao conectar com o Spotify",
       "credentialsRequired": "Por favor, insira o Client ID e o Client Secret",
       "getCredentials": "Obter credenciais do Spotify Developer",
-      "credentialsHelp": "Crie um app no Spotify Developer Dashboard para obter seu Client ID e Secret."
+      "credentialsHelp": "Crie um app no Spotify Developer Dashboard para obter seu Client ID e Secret.",
+      "disclaimer": "Requer suas próprias credenciais do Spotify, usadas apenas para ler os detalhes do link para conversão. Os downloads vêm da Deezer ou do Qobuz, não do Spotify. Este app não é afiliado ao Spotify. Siga os termos de serviço do Spotify."
     },
     "qobuz": {
       "connect": "Conectar conta Qobuz",
@@ -376,8 +377,10 @@
       "advancedHelp": "Se o seu token foi criado por outra ferramenta (streamrip, qobuz-dl, etc.), cole aqui também o App ID e o App Secret dessa ferramenta, e o seu User ID se você tiver. O Qobuz vincula os tokens ao app que os criou, então isso faz um token de outra origem funcionar. Deixe em branco para um token normal.",
       "appIdPlaceholder": "App ID (opcional)",
       "appSecretPlaceholder": "App Secret (opcional)",
-      "userIdPlaceholder": "User ID (opcional)"
-    }
+      "userIdPlaceholder": "User ID (opcional)",
+      "disclaimer": "Requer sua própria conta Qobuz paga e ativa. Este app não é afiliado ao Qobuz. Siga os termos de serviço do Qobuz."
+    },
+    "deezerDisclaimer": "Use sua própria conta Deezer. Este app não é afiliado à Deezer. Siga os termos de serviço da Deezer."
   },
   "login": {
     "title": "Entrar no Deezer",
@@ -554,5 +557,8 @@
   "titleBar": {
     "qobuzLinkedTip": "Qobuz conectado",
     "qobuzOfflineTip": "Qobuz não conectado — conecte nas Configurações"
+  },
+  "about": {
+    "disclaimer": "Este app não é afiliado, autorizado nem endossado pela Deezer, Qobuz ou Spotify. Ele se destina ao uso pessoal com suas próprias contas. Use-o com responsabilidade e de acordo com as leis locais sobre download de música, e respeite os direitos autorais e os termos de serviço de cada plataforma de streaming. Os downloads do Qobuz exigem sua própria assinatura paga e ativa do Qobuz."
   }
 }
