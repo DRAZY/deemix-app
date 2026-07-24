@@ -914,10 +914,16 @@ export const useDownloadStore = defineStore('downloads', () => {
     title: string
     cover?: string
     totalTracks: number
+    service?: 'deezer' | 'qobuz'
   }) {
     await syncSettingsToServer()
     const settingsStore = useSettingsStore()
     const toastStore = useToastStore()
+
+    // 2.4: the Link Analyzer can batch Qobuz matches too. Route to the matching
+    // service's batch endpoint; the request/response shape is identical.
+    const service = config.service === 'qobuz' ? 'qobuz' : 'deezer'
+    const batchEndpoint = service === 'qobuz' ? '/api/qobuz/download-batch' : '/api/download/batch'
 
     const batchId = `batch_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
@@ -946,7 +952,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     saveDownloads()
 
     try {
-      const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/download/batch`, {
+      const response = await fetch(`http://127.0.0.1:${serverPort.value}${batchEndpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

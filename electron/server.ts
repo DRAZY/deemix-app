@@ -922,6 +922,9 @@ export class DeemixServer extends EventEmitter {
       case '/api/qobuz/download':
         await this.handleQobuzDownload(req, res)
         break
+      case '/api/qobuz/download-batch':
+        await this.handleQobuzDownloadBatch(req, res)
+        break
       case '/api/qobuz/download-album':
         await this.handleQobuzDownloadAlbum(req, res)
         break
@@ -3489,6 +3492,51 @@ export class DeemixServer extends EventEmitter {
       this.sendJSON(res, { success: true, downloadId })
     } catch (error: any) {
       this.sendJSON(res, { success: false, error: sanitizeErrorMessage(error, 'Qobuz download failed') }, 500)
+    }
+  }
+
+  /** Batch-download a set of Qobuz track IDs as one playlist item. Mirrors the
+   *  Deezer batch path field-for-field but routes each track through the Qobuz
+   *  no-decrypt options builder. Used by the Link Analyzer when the target
+   *  service is Qobuz. Same request/response shape as /api/download/batch. */
+  private async handleQobuzDownloadBatch(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    if (!qobuzAuth.isLoggedIn()) {
+      this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
+      return
+    }
+
+    const body = await this.parseBody(req)
+    const trackIds: number[] = (Array.isArray(body.trackIds) ? body.trackIds : [])
+      .map((id: any) => validateNumericId(id))
+      .filter((id: number | null): id is number => id !== null)
+    const playlistName = typeof body.playlistName === 'string' ? body.playlistName.trim() : ''
+
+    if (trackIds.length === 0) {
+      this.sendJSON(res, { error: 'At least one valid track ID is required' }, 400)
+      return
+    }
+    if (!validateDownloadPath(this.settings.downloadPath)) {
+      this.sendJSON(res, { error: 'Invalid download path configured' }, 400)
+      return
+    }
+
+    const isPlaylist = !!playlistName
+    console.log(`[Server] Qobuz batch download: ${trackIds.length} tracks${isPlaylist ? `, playlist: "${playlistName}"` : ''}`)
+
+    try {
+      const downloadIds: string[] = []
+      for (let i = 0; i < trackIds.length; i++) {
+        const downloadId = await downloader.download(
+          this.buildQobuzDownloadOptions(trackIds[i], {
+            playlistName: isPlaylist ? playlistName : undefined,
+            playlistPosition: isPlaylist ? i + 1 : undefined
+          })
+        )
+        downloadIds.push(downloadId)
+      }
+      this.sendJSON(res, { ids: downloadIds, count: downloadIds.length })
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error, 'Qobuz batch download failed') }, 500)
     }
   }
 

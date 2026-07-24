@@ -27,6 +27,8 @@ const spotifyResult = ref<any>(null)
 const isConverting = ref(false)
 const conversionResult = ref<any>(null)
 const conversionProgress = ref({ current: 0, total: 0 })
+// 2.4: which service the Link Analyzer resolves a Spotify link against.
+const targetService = ref<'deezer' | 'qobuz'>('deezer')
 
 // Qobuz-specific state (WIP)
 const qobuzResult = ref<any>(null)
@@ -268,7 +270,8 @@ async function convertSpotifyToDeezer() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: spotifyResult.value.type,
-        id: spotifyResult.value.id
+        id: spotifyResult.value.id,
+        targetService: targetService.value
       })
     })
 
@@ -294,17 +297,22 @@ async function downloadConvertedTracks() {
     return
   }
 
-  // Collect all Deezer track IDs from the conversion results
+  // Which service these matches resolved against (server echoes it; default deezer).
+  const service: 'deezer' | 'qobuz' = conversionResult.value.service === 'qobuz' ? 'qobuz' : 'deezer'
+  const serviceLabel = service === 'qobuz' ? 'Qobuz' : 'Deezer'
+
+  // Collect matched track IDs. Prefer the neutral `match` field (2.4); fall back
+  // to the legacy `deezer`/`deezerTrack` shape for older responses.
   const trackIds: number[] = []
-  for (const match of conversionResult.value.matched) {
-    const dz = match.deezer || match.deezerTrack
-    if (dz && dz.id) {
-      trackIds.push(dz.id)
+  for (const m of conversionResult.value.matched) {
+    const hit = m.match || m.deezer || m.deezerTrack
+    if (hit && hit.id) {
+      trackIds.push(Number(hit.id))
     }
   }
 
   if (trackIds.length === 0) {
-    toastStore.error('No matching Deezer tracks found to download')
+    toastStore.error(`No matching ${serviceLabel} tracks found to download`)
     return
   }
 
@@ -314,14 +322,16 @@ async function downloadConvertedTracks() {
     || ''
 
   // Single batch request — the server queues all tracks and returns one set of IDs.
-  // The download store tracks them as a single playlist item with unified progress.
+  // The download store tracks them as a single playlist item with unified progress
+  // and routes to the matching service's batch endpoint.
   try {
     await downloadStore.addBatchDownload({
       trackIds,
       playlistName: sourcePlaylistName,
       title: sourcePlaylistName,
       cover: coverUrl,
-      totalTracks: trackIds.length
+      totalTracks: trackIds.length,
+      service
     })
     toastStore.success(`Added ${trackIds.length} tracks to download queue`)
   } catch (err: any) {
@@ -1064,6 +1074,25 @@ async function pasteLink() {
             {{ spotifyResult.trackCount }} tracks
           </p>
 
+          <!-- Target service picker (2.4): resolve the Spotify link against
+               Deezer (default) or Qobuz. Hidden once a conversion has run. -->
+          <div v-if="!conversionResult" class="mt-4">
+            <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">Convert to</p>
+            <div class="inline-flex border border-white/[0.08] p-0.5 gap-0.5 bg-background-main">
+              <button
+                v-for="svc in (['deezer','qobuz'] as const)"
+                :key="svc"
+                @click="targetService = svc"
+                class="font-mono text-[10px] tracking-[0.12em] uppercase px-4 py-1.5 transition-colors"
+                :class="targetService === svc
+                  ? 'bg-white/[0.1] text-foreground'
+                  : 'text-foreground-muted/50 hover:text-foreground-muted'"
+              >
+                {{ svc }}
+              </button>
+            </div>
+          </div>
+
           <!-- Action Buttons -->
           <div class="flex gap-3 mt-4">
             <button
@@ -1083,7 +1112,7 @@ async function pasteLink() {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              {{ isConverting ? 'Converting...' : 'Convert to Deezer' }}
+              {{ isConverting ? 'Converting...' : (targetService === 'qobuz' ? 'Convert to Qobuz' : 'Convert to Deezer') }}
             </button>
 
             <button
@@ -1099,7 +1128,7 @@ async function pasteLink() {
               Download {{ conversionResult.matched.length }} Tracks
             </button>
             <p v-if="conversionResult && !conversionResult.matched?.length" class="text-sm text-yellow-400">
-              No matching Deezer tracks found. The playlist tracks may not be available on Deezer.
+              No matching {{ conversionResult.service === 'qobuz' ? 'Qobuz' : 'Deezer' }} tracks found. The playlist tracks may not be available on {{ conversionResult.service === 'qobuz' ? 'Qobuz' : 'Deezer' }}.
             </p>
           </div>
 
