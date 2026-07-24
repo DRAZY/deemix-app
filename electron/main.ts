@@ -168,11 +168,12 @@ function createWindow() {
     y: windowState.y,
     minWidth: 1024,
     minHeight: 700,
-    // Frameless everywhere for the custom title bar — EXCEPT Linux, where a
+    // Frameless everywhere for the custom title bar, EXCEPT Linux, where a
     // frameless window opts out of the window manager's edge-snap/half-tiling
-    // (reported on Cinnamon, #125). A native frame on Linux hands window moves
-    // back to the WM so its snapping works; Mac/Windows keep the custom bar.
-    frame: !isLinux,
+    // (reported on Cinnamon, #125). Linux gets a native frame (frame: true) so
+    // window moves go back to the WM and its snapping works; Mac and Windows
+    // stay frameless (frame: false) and keep the custom title bar.
+    frame: isLinux,
     backgroundColor: '#121216',
     webPreferences: {
       preload: join(__dirname, 'preload.js'),

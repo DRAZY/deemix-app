@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '2.4.1',
+    date: '2026-07-24',
+    items: [
+      'Fixed on Linux: 2.4.0 applied the window frame backwards, which left Linux with no title bar and no window controls, and did not restore snapping. Linux now correctly gets a native title bar, so minimize, maximize, and your window manager\'s edge snapping and half tiling all work. This also removes a duplicate title bar that appeared on Windows in 2.4.0. Mac is unaffected.'
+    ]
+  },
+  {
     version: '2.4.0',
     date: '2026-07-24',
     items: [
