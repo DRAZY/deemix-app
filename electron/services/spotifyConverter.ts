@@ -1,11 +1,45 @@
 import { SpotifyTrack, SpotifyAlbum, SpotifyPlaylist, spotifyAPI } from './spotifyAPI'
 import { fetchDeezerPublicJson, DeezerQuotaError } from './deezerPublicApi'
+import { qobuzAuth } from './qobuzAuth'
 
 export interface DeezerMatch {
   spotifyTrack: SpotifyTrack
   deezerTrack: DeezerTrackInfo | null
   matchType: 'isrc' | 'search' | 'none'
   confidence: number // 0-100
+}
+
+/** The download services the Link Analyzer can resolve a Spotify link against. */
+export type MusicService = 'deezer' | 'qobuz'
+
+/**
+ * Service-neutral matched track, normalized from either Deezer or Qobuz so the
+ * server and UI can treat both uniformly. The Deezer path keeps its own
+ * DeezerMatch/DeezerTrackInfo shape for backward compatibility; this is the
+ * shape the multi-service (2.4) path speaks.
+ */
+export interface ServiceTrackInfo {
+  service: MusicService
+  id: number | string
+  title: string
+  artist: { id: number | string; name: string }
+  album: { id: number | string; title: string; cover: string }
+  duration: number
+}
+
+/** Service-neutral match result. Mirrors DeezerMatch but carries the service. */
+export interface ServiceMatch {
+  spotifyTrack: SpotifyTrack
+  service: MusicService
+  track: ServiceTrackInfo | null
+  matchType: 'isrc' | 'search' | 'none'
+  confidence: number
+}
+
+export interface ServiceConversionResult {
+  matched: ServiceMatch[]
+  unmatched: SpotifyTrack[]
+  matchRate: number
 }
 
 export interface DeezerTrackInfo {
@@ -243,6 +277,133 @@ class SpotifyConverter {
         matched.push(result)
       } else {
         unmatched.push(track)
+      }
+
+      if (onProgress) {
+        onProgress(i + 1, tracks.length)
+      }
+    }
+
+    const matchRate = tracks.length > 0
+      ? Math.round((matched.length / tracks.length) * 100)
+      : 0
+
+    return { matched, unmatched, matchRate }
+  }
+
+  // ==================== Qobuz matching (service-neutral) ====================
+  //
+  // Qobuz has no ISRC lookup endpoint the way Deezer does (/track/isrc:XXX). So
+  // the Qobuz path searches by artist + title, then CONFIRMS the hit by matching
+  // the candidate's own isrc field against Spotify's. That preserves ISRC-grade
+  // accuracy without a dedicated endpoint; it just costs one search call per
+  // track instead of a direct lookup. Falls back to fuzzy scoring like Deezer.
+
+  /** Normalize a raw Qobuz track object into the service-neutral shape. */
+  private normalizeQobuzTrack(t: any): ServiceTrackInfo {
+    const img = t.album?.image || {}
+    return {
+      service: 'qobuz',
+      id: t.id,
+      title: t.title || '',
+      artist: {
+        id: t.performer?.id ?? t.album?.artist?.id ?? 0,
+        name: t.performer?.name || t.album?.artist?.name || 'Unknown Artist'
+      },
+      album: {
+        id: t.album?.id ?? 0,
+        title: t.album?.title || '',
+        cover: img.large || img.small || img.thumbnail || ''
+      },
+      duration: t.duration || 0
+    }
+  }
+
+  /** Run a Qobuz catalog search and return the raw track items (may be empty). */
+  private async qobuzSearchTracks(query: string, limit = 15): Promise<any[]> {
+    const results = await qobuzAuth.search(query, limit)
+    const items = results?.tracks?.items
+    return Array.isArray(items) ? items : []
+  }
+
+  /**
+   * Find a Qobuz track by ISRC. No direct endpoint exists, so we search by
+   * artist + title and confirm on the isrc field. Returns null on a clean miss.
+   */
+  async matchQobuzByIsrc(isrc: string, spotifyTrack: SpotifyTrack): Promise<ServiceTrackInfo | null> {
+    const artistName = spotifyTrack.artists[0]?.name || ''
+    const items = await this.qobuzSearchTracks(`${artistName} ${spotifyTrack.name}`.trim(), 20)
+    const target = isrc.toUpperCase()
+    const hit = items.find(t => String(t.isrc || '').toUpperCase() === target)
+    return hit ? this.normalizeQobuzTrack(hit) : null
+  }
+
+  /** Find the best fuzzy Qobuz match for a Spotify track (title/artist/duration). */
+  async matchQobuzBySearch(spotifyTrack: SpotifyTrack): Promise<{ track: ServiceTrackInfo; confidence: number } | null> {
+    const artistName = spotifyTrack.artists[0]?.name || ''
+    const trackName = spotifyTrack.name
+    const items = await this.qobuzSearchTracks(`${artistName} ${trackName}`.trim(), 15)
+    if (items.length === 0) return null
+
+    let bestMatch: { track: ServiceTrackInfo; confidence: number } | null = null
+    for (const t of items) {
+      const performerName = t.performer?.name || t.album?.artist?.name || ''
+      const titleSim = this.calculateSimilarity(trackName, t.title || '')
+      const artistSim = this.calculateSimilarity(artistName, performerName)
+      const confidence = Math.round(titleSim * 0.6 + artistSim * 0.4)
+
+      const durationDiff = Math.abs((spotifyTrack.duration_ms / 1000) - (t.duration || 0))
+      const adjustedConfidence = durationDiff <= 5 ? Math.min(confidence + 10, 100) : confidence
+
+      if (!bestMatch || adjustedConfidence > bestMatch.confidence) {
+        bestMatch = { track: this.normalizeQobuzTrack(t), confidence: adjustedConfidence }
+      }
+    }
+
+    return bestMatch && bestMatch.confidence >= 60 ? bestMatch : null
+  }
+
+  /** Convert a single Spotify track to a Qobuz match (ISRC first, then search). */
+  async convertTrackToQobuz(spotifyTrack: SpotifyTrack): Promise<ServiceMatch> {
+    if (spotifyTrack.external_ids?.isrc) {
+      const isrcTrack = await this.matchQobuzByIsrc(spotifyTrack.external_ids.isrc, spotifyTrack)
+      if (isrcTrack) {
+        return { spotifyTrack, service: 'qobuz', track: isrcTrack, matchType: 'isrc', confidence: 100 }
+      }
+    }
+
+    if (this.enableFallbackSearch) {
+      const searchResult = await this.matchQobuzBySearch(spotifyTrack)
+      if (searchResult) {
+        return { spotifyTrack, service: 'qobuz', track: searchResult.track, matchType: 'search', confidence: searchResult.confidence }
+      }
+    }
+
+    return { spotifyTrack, service: 'qobuz', track: null, matchType: 'none', confidence: 0 }
+  }
+
+  /**
+   * Convert an array of Spotify tracks to Qobuz matches. A single track's search
+   * failure is logged and counted as unmatched rather than aborting the whole
+   * playlist, mirroring how the Deezer path tolerates individual misses.
+   */
+  async convertTracksToQobuz(tracks: SpotifyTrack[], onProgress?: (current: number, total: number) => void): Promise<ServiceConversionResult> {
+    const matched: ServiceMatch[] = []
+    const unmatched: SpotifyTrack[] = []
+
+    for (let i = 0; i < tracks.length; i++) {
+      // Rate limiting: space out Qobuz search calls to stay under its limits.
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+
+      try {
+        const result = await this.convertTrackToQobuz(tracks[i])
+        if (result.track) matched.push(result)
+        else unmatched.push(tracks[i])
+      } catch (error: any) {
+        console.error('[SpotifyConverter] Qobuz match failed for track:', tracks[i]?.name, error?.message)
+        unmatched.push(tracks[i])
       }
 
       if (onProgress) {
