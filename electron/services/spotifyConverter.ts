@@ -451,14 +451,29 @@ class SpotifyConverter {
 
   /** Check a single Spotify track against BOTH Deezer and Qobuz. */
   async convertTrackBoth(spotifyTrack: SpotifyTrack): Promise<BothMatch> {
+    // Deezer first. A Deezer rate-limit (DeezerQuotaError) still propagates so the
+    // caller can surface it as a 503 — the loud, correct behavior.
     const dz = await this.convertTrack(spotifyTrack)
-    const qb = await this.convertTrackToQobuz(spotifyTrack)
+
+    // Qobuz is isolated: a Qobuz-side failure (expired session, network blip,
+    // throttle) must NOT discard the Deezer match we already have. Degrade to
+    // qobuz: null ("Deezer only") instead of losing the track entirely — the
+    // asymmetry the review flagged, where a mid-playlist Qobuz token expiry
+    // silently collapsed the whole matrix to "unavailable on both".
+    let qb: ServiceMatch | null = null
+    try {
+      qb = await this.convertTrackToQobuz(spotifyTrack)
+    } catch (error) {
+      console.error('[SpotifyConverter] Qobuz lookup failed in both-mode (keeping Deezer):', spotifyTrack?.name, (error as any)?.message)
+      qb = null
+    }
+
     return {
       spotifyTrack,
       deezer: dz.deezerTrack && dz.matchType !== 'none'
         ? { ...this.normalizeDeezerTrack(dz.deezerTrack), matchType: dz.matchType, confidence: dz.confidence }
         : null,
-      qobuz: qb.track && qb.matchType !== 'none'
+      qobuz: qb && qb.track && qb.matchType !== 'none'
         ? { ...qb.track, matchType: qb.matchType, confidence: qb.confidence }
         : null
     }
