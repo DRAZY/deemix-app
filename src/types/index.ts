@@ -131,6 +131,9 @@ export interface DownloadItem {
   playlist?: Playlist
   // Which service fulfilled this download — drives the source chip in the rack.
   source?: 'deezer' | 'qobuz'
+  // For mixed-source rows (Link Analyzer "both"): the distinct services this row
+  // pulled from. When it spans both, the row shows a D and a Q chip together.
+  sources?: ('deezer' | 'qobuz')[]
   title: string
   artist?: string
   cover?: string

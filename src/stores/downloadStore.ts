@@ -1018,10 +1018,16 @@ export const useDownloadStore = defineStore('downloads', () => {
 
     const batchId = `mixed_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
+    // Distinct services this batch pulls from. One service -> a single top-level
+    // chip; both -> the row shows D and Q together to flag it as mixed-source.
+    const distinctServices = [...new Set(config.tracks.map(t => t.service))]
+
     const item: DownloadItem = {
       id: batchId,
       title: config.title,
       cover: config.cover,
+      source: distinctServices.length === 1 ? distinctServices[0] : undefined,
+      sources: distinctServices.length > 1 ? distinctServices : undefined,
       progress: 0,
       status: 'pending',
       type: 'playlist',
