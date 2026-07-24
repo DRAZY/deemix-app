@@ -6,9 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 Entries use a compact format, short bullets, one line each. Full per-version detail and release notes live on the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases).
 
-> **Releasing:** add entries under `## [Unreleased]` as you work. At release time, rename that heading to `## [X.Y.Z], <date>`, add a fresh empty `## [Unreleased]` above it, then run `scripts/release-notes.sh X.Y.Z` to emit that version's notes for `gh release create --notes-file`.
+> **Releasing:** add entries under `## [Unreleased]` as you work. At release time, rename that heading to `## [X.Y.Z] - <date>` (the hyphen matters, the About page parser keys on it), add a fresh empty `## [Unreleased]` above it, then run `scripts/release-notes.sh X.Y.Z` to emit that version's notes for `gh release create --notes-file`.
 
 ## [Unreleased]
+
+## [2.4.2] - 2026-07-24
 
 ### Changed
 
