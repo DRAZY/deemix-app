@@ -271,7 +271,10 @@ async function openItemFolder(item: DownloadItem) {
               <span
                 v-if="item.source === 'qobuz'"
                 class="mr-1 px-1 py-px font-mono text-[8.5px] font-bold tracking-[0.08em] border border-qobuz-500/50 text-qobuz-400 bg-qobuz-500/10 align-middle"
-              >Q</span>{{ item.title }}
+              >Q</span><span
+                v-else-if="item.source === 'deezer'"
+                class="mr-1 px-1 py-px font-mono text-[8.5px] font-bold tracking-[0.08em] border border-deezer-500/50 text-deezer-400 bg-deezer-500/10 align-middle"
+              >D</span>{{ item.title }}
             </span>
             <span class="u-stat font-mono text-[9.5px] tracking-[0.1em] flex-shrink-0">
               {{ STAT_WORD[item.status] || item.status.toUpperCase() }}

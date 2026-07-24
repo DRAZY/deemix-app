@@ -36,6 +36,14 @@ export default {
           400: '#7BD3E2',
           500: '#59C2D6',
           600: '#3FA9BE',
+        },
+        // Deezer accent — purple-magenta from Deezer's brand family. Pairs with
+        // the Qobuz cyan so the source chips (D / Q) read as distinct at a glance.
+        // Fixed across themes, same as the Qobuz mark.
+        deezer: {
+          400: '#C084FC',
+          500: '#A238FF',
+          600: '#8B2FD9',
         }
       },
       fontFamily: {
