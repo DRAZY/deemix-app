@@ -114,6 +114,16 @@ export interface SubstitutedTrack {
   artist?: string
 }
 
+// One track within an album/playlist row, for the expandable per-track list.
+// Captured live from the queue each poll; `source` drives the per-track D/Q chip.
+export interface DownloadTrackEntry {
+  id: string
+  title?: string
+  artist?: string
+  status?: string
+  source?: 'deezer' | 'qobuz'
+}
+
 export interface DownloadItem {
   id: string
   track?: Track
@@ -140,6 +150,10 @@ export interface DownloadItem {
   totalTracks?: number
   completedTracks?: number
   failedTracks?: FailedTrack[]
+  // Per-track breakdown for the expandable track list — captured live from the
+  // queue each poll. Each entry carries its own source so a mixed-source
+  // (Link Analyzer "both") row shows each track's real D/Q origin on expand.
+  tracks?: DownloadTrackEntry[]
   trackIds?: string[]  // Server-side download IDs for individual tracks
   // Catalog ids of the tracks contained in an album/playlist row — feeds the
   // duplicate toast so a single-track re-attempt of an album-downloaded song

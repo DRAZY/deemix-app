@@ -183,6 +183,10 @@ export interface DownloadErrorDetails {
 export interface DownloadProgress {
   id: string
   trackId: string | number
+  // Which service this track is being pulled from — drives the per-track D/Q
+  // source chip, and lets mixed-source (Link Analyzer "both") rows show each
+  // track's real origin.
+  source?: 'deezer' | 'qobuz'
   progress: number
   speed: number
   downloaded: number
@@ -756,6 +760,7 @@ export class Downloader extends EventEmitter {
     const progress: DownloadProgress = {
       id: downloadId,
       trackId: options.trackId,
+      source: (options as any).service === 'qobuz' ? 'qobuz' : 'deezer',
       progress: 0,
       speed: 0,
       downloaded: 0,

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Track, Album, Playlist, DownloadItem, DownloadStatus, FailedTrack, SubstitutedTrack, DownloadHistoryEntry } from '../types'
+import type { Track, Album, Playlist, DownloadItem, DownloadStatus, FailedTrack, SubstitutedTrack, DownloadHistoryEntry, DownloadTrackEntry } from '../types'
 import { useSettingsStore } from './settingsStore'
 import { useToastStore } from './toastStore'
 import { useAuthStore } from './authStore'
@@ -1287,6 +1287,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     let completedCount = 0
     let errorCount = 0
     const failedTracks: FailedTrack[] = []
+    const trackList: DownloadTrackEntry[] = []
     let albumFolderPath: string | null = null
     let playlistFolderPath: string | null = null
     let actualFormat: string | null = null
@@ -1376,7 +1377,27 @@ export const useDownloadStore = defineStore('downloads', () => {
             errorDetails: serverItem.errorDetails
           })
         }
+
+        // Capture the per-track row for the expandable track list, including its
+        // own source so mixed-source rows show each track's real D/Q origin.
+        trackList.push({
+          id: trackId,
+          title: serverItem.trackTitle || serverItem.title || 'Unknown Track',
+          artist: serverItem.trackArtist || serverItem.artist,
+          status: serverItem.status,
+          source: serverItem.source
+        })
       }
+    }
+
+    // Live per-track list for the expansion. Reassign each poll so the expanded
+    // view reflects live status; a lightweight signature guards the `changed`
+    // (persist) flag so we don't churn saves when nothing visible moved.
+    const trackSig = trackList.map(t => `${t.id}:${t.status}:${t.source || ''}`).join('|')
+    const prevSig = (item.tracks || []).map(t => `${t.id}:${t.status}:${t.source || ''}`).join('|')
+    if (trackSig !== prevSig) {
+      item.tracks = trackList
+      changed = true
     }
 
     // Progress bar = fraction of tracks finished, normalized over the ORIGINAL

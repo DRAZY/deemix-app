@@ -28,6 +28,8 @@ function showSubstituted(src: { title: string; substitutedTracks?: SubstitutedTr
 
 // Track which items have expanded failed tracks view
 const expandedItems = ref<Set<string>>(new Set())
+// Track which album/playlist rows have their full per-track list expanded
+const expandedTrackLists = ref<Set<string>>(new Set())
 const showHistory = ref(false)
 const showStats = ref(false)
 
@@ -82,6 +84,14 @@ function toggleExpanded(id: string) {
     expandedItems.value.delete(id)
   } else {
     expandedItems.value.add(id)
+  }
+}
+
+function toggleTrackList(id: string) {
+  if (expandedTrackLists.value.has(id)) {
+    expandedTrackLists.value.delete(id)
+  } else {
+    expandedTrackLists.value.add(id)
   }
 }
 
@@ -778,6 +788,19 @@ function copyAllErrorDetails() {
 
           <!-- Actions -->
           <div class="flex items-center" :class="isSlim ? 'gap-0.5' : 'gap-1'">
+            <!-- Expand full per-track list (album/playlist rows) -->
+            <button
+              v-if="(item.type === 'album' || item.type === 'playlist') && item.tracks && item.tracks.length > 0"
+              @click="toggleTrackList(item.id)"
+              class="hover:bg-white/10 transition-colors text-foreground-muted"
+              :class="[isSlim ? 'p-1' : 'p-2', expandedTrackLists.has(item.id) ? 'text-foreground' : '']"
+              v-tooltip="expandedTrackLists.has(item.id) ? 'Hide tracks' : 'Show tracks'"
+            >
+              <svg :class="isSlim ? 'w-4 h-4' : 'w-5 h-5'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 6h16M4 10h16M4 14h10M4 18h10" />
+              </svg>
+            </button>
             <!-- Expand failed tracks button -->
             <button
               v-if="item.failedTracks && item.failedTracks.length > 0"
@@ -897,6 +920,49 @@ function copyAllErrorDetails() {
                 {{ t('downloads.viewError') }}
               </span>
             </button>
+          </div>
+        </div>
+
+        <!-- Expanded per-track list — each track shows its own source (D/Q) so
+             a mixed-source Link Analyzer row reveals every track's origin. -->
+        <div
+          v-if="(item.type === 'album' || item.type === 'playlist') && item.tracks && item.tracks.length > 0 && expandedTrackLists.has(item.id)"
+          class="mt-4 pt-4 border-t border-white/[0.08]"
+        >
+          <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-2">
+            Tracks ({{ item.tracks.length }})
+          </p>
+          <div class="space-y-1 max-h-64 overflow-y-auto">
+            <div
+              v-for="tr in item.tracks"
+              :key="tr.id"
+              class="flex items-center gap-2 text-[12px] py-1.5 px-2 bg-background-main border border-white/[0.06]"
+            >
+              <span
+                v-if="tr.source === 'qobuz'"
+                class="flex-shrink-0 px-1 py-px font-mono text-[9px] font-bold tracking-[0.08em] border border-qobuz-500/50 text-qobuz-400 bg-qobuz-500/10"
+              >Q</span>
+              <span
+                v-else-if="tr.source === 'deezer'"
+                class="flex-shrink-0 px-1 py-px font-mono text-[9px] font-bold tracking-[0.08em] border border-deezer-500/50 text-deezer-400 bg-deezer-500/10"
+              >D</span>
+              <span class="truncate">{{ tr.title }}</span>
+              <span v-if="tr.artist" class="text-foreground-muted truncate">- {{ tr.artist }}</span>
+              <span
+                class="ml-auto flex-shrink-0 font-mono text-[9px] tracking-[0.08em] uppercase"
+                :class="tr.status === 'completed' ? 'text-green-400'
+                  : tr.status === 'error' ? 'text-red-400'
+                  : (tr.status === 'downloading' || tr.status === 'decrypting' || tr.status === 'tagging') ? 'text-foreground'
+                  : 'text-foreground-muted/50'"
+              >
+                {{ tr.status === 'completed' ? 'Done'
+                  : tr.status === 'error' ? 'Failed'
+                  : tr.status === 'downloading' ? 'Downloading'
+                  : tr.status === 'decrypting' ? 'Decrypting'
+                  : tr.status === 'tagging' ? 'Tagging'
+                  : 'Pending' }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
