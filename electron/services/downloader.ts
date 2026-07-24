@@ -760,7 +760,7 @@ export class Downloader extends EventEmitter {
     const progress: DownloadProgress = {
       id: downloadId,
       trackId: options.trackId,
-      source: (options as any).service === 'qobuz' ? 'qobuz' : 'deezer',
+      source: options.service === 'qobuz' ? 'qobuz' : 'deezer',
       progress: 0,
       speed: 0,
       downloaded: 0,
