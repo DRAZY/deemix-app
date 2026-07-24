@@ -166,12 +166,7 @@ function createWindow() {
     height: windowState.height,
     x: windowState.x,
     y: windowState.y,
-    // macOS and Windows keep the 1024 design floor so the dense screens never
-    // crowd. Linux alone drops to 800 so the window can shrink into a left/right
-    // half-tile (a half of a 1920 screen is 960px, which the 1024 floor blocked,
-    // #125). This never affects Mac/Windows, and on a 1920 display the tiled
-    // window is still 960px, essentially the normal minimum, so nothing crowds.
-    minWidth: isLinux ? 800 : 1024,
+    minWidth: 1024,
     minHeight: 700,
     // Frameless everywhere for the custom title bar, EXCEPT Linux, where a
     // frameless window opts out of the window manager's edge-snap/half-tiling
