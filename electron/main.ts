@@ -91,6 +91,7 @@ let windowState: WindowState = DEFAULT_WINDOW_STATE
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 const isMac = process.platform === 'darwin'
 const isWin = process.platform === 'win32'
+const isLinux = process.platform === 'linux'
 
 // Set the app name for macOS menu (overrides package.json "name" field)
 app.setName('Deemix Remastered')
@@ -167,7 +168,11 @@ function createWindow() {
     y: windowState.y,
     minWidth: 1024,
     minHeight: 700,
-    frame: false,
+    // Frameless everywhere for the custom title bar — EXCEPT Linux, where a
+    // frameless window opts out of the window manager's edge-snap/half-tiling
+    // (reported on Cinnamon, #125). A native frame on Linux hands window moves
+    // back to the WM so its snapping works; Mac/Windows keep the custom bar.
+    frame: !isLinux,
     backgroundColor: '#121216',
     webPreferences: {
       preload: join(__dirname, 'preload.js'),

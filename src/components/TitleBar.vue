@@ -26,6 +26,16 @@ const detectPlatform = (): boolean => {
 
 const isMac = detectPlatform()
 
+// On Linux the window is natively framed (#125, for WM snapping), so the OS
+// draws the title bar and window buttons — hide our custom ones to avoid a
+// duplicate set. The status bar itself stays.
+const detectLinux = (): boolean => {
+  const nav = navigator.platform?.toLowerCase() || ''
+  const ua = navigator.userAgent?.toLowerCase() || ''
+  return (nav.includes('linux') || ua.includes('linux')) && !ua.includes('android')
+}
+const isLinux = detectLinux()
+
 // Live clock cell
 const clock = ref('')
 let clockTimer: ReturnType<typeof setInterval> | undefined
@@ -134,8 +144,9 @@ const close = () => window.electronAPI?.close()
       {{ clock }}
     </div>
 
-    <!-- Window controls (Windows/Linux only) -->
-    <div v-if="!isMac" class="flex items-center h-full no-drag" role="group" aria-label="Window controls">
+    <!-- Window controls (Windows only — Mac shows native traffic lights, Linux
+         is natively framed for WM snapping so the OS draws these). -->
+    <div v-if="!isMac && !isLinux" class="flex items-center h-full no-drag" role="group" aria-label="Window controls">
       <button
         @click="minimize"
         :aria-label="t('accessibility.minimizeWindow')"
