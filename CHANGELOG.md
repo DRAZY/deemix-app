@@ -155,3 +155,30 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 ### Fixed
 
 - **Track Total and Disc Total tags now write for Deezer downloads (#107).** With "Track total" / "Disc total" enabled, files were still tagged with a bare track/disc number (e.g. `5` instead of `5/12`, no disc-of-total). Deezer's private track metadata carries the track's own number but not the album-wide totals, so the tagger never had a value to write. The totals are now sourced from the album, the album context on album/playlist downloads, or an authoritative album lookup for standalone tracks, and applied to the Track Total / Disc Total tags and the `%tracktotal%` / `%disctotal%` filename tokens on both MP3 and FLAC.
+
+## [2.0.2] - 2026-07-16
+
+### Fixed
+
+- **Restored the "New Releases" section on Home, now showing genuinely new, dated releases.** Deezer retired the public endpoint that fed it, so the section had quietly disappeared. It now reads Deezer's real new-release feed, including your personalized "New releases for you" list when signed in, newest first from the last 90 days. Home shows the 30 most recent; See All shows the full window. Old catalog stays out.
+
+## [2.0.1] - 2026-07-15
+
+### Fixed
+
+- **Lyrics files now match their audio file's name (#104).** Synced `.lrc` and plain `.txt` lyrics were named from the bare track title, so with a template like `03 - Song` the lyrics file was called `Song.lrc` and players that match by filename never found it. Lyrics files now take their name directly from the audio file, on every download path including playlist and artist sync.
+
+## [2.0.0] - 2026-07-14
+
+### Changed
+
+- **A complete redesign: "Signal Deck."** The app moves to an industrial-console look: acid chartreuse on blue-black, bold display type, hard edges, and monospaced readouts. The title bar is a live status strip (connection LED, region, quality, real-time throughput, clock), the sidebar is a numbered channel rail with a download-activity sparkline, and the download panel is a "Transfer Rack" where each download is a hardware-style unit with a 16-segment meter and a status edge-light. Search is a QUERY command bar with dense console rows. Signal is the new default theme, every previous theme is kept, and light mode gets a tuned "paper console" variant. Downloads, sync, retag, and settings behave exactly as before.
+
+### Added
+
+- **New DM/RM "Console Stack" app icon**, stacked chartreuse letters with a cyan cursor, on the Dock/taskbar, sidebar, and every OS build.
+- **Live album and playlist download speed, plus a clickable "Alternate version" badge** that lists exactly which tracks were fulfilled from an ISRC-matched alternate release, in the panel and in history.
+
+## Earlier releases
+
+Versions before 2.0.0 (the 1.10.x line and earlier) are not detailed here. See the [GitHub Releases page](https://github.com/DRAZY/deemix-remastered/releases) for the full history.
