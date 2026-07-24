@@ -35,6 +35,18 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '2.4.0',
+    date: '2026-07-24',
+    items: [
+      'Link Analyzer, multi service: paste a Spotify link and convert it to Deezer, Qobuz, or both. The service picker sits right on the analyzer, and Both compares the two so you can pull each track from wherever it lives.',
+      'Cross service availability matrix: in Both mode you see, for every track, whether it is on Deezer, Qobuz, or both, along with how it matched (ISRC or search). Set a preferred service with automatic fallback to the other, or click any track to override it. Tracks on neither service are listed and skipped.',
+      'Per track origin: every album and playlist row now expands to its full track list, and each track shows a D or Q chip for where it came from. A mixed download is tagged with both a D and a Q chip on the row so it reads as multi sourced at a glance.',
+      'Source chips everywhere: downloads are uniformly tagged now, D for Deezer and Q for Qobuz, so you always know a track\'s origin.',
+      'Conversion progress: converting a large playlist shows a live progress bar with real track counts instead of a static Converting message.',
+      'Fixed on Linux: the window now uses a native title bar so your desktop\'s edge snapping and half tiling work again (reported on Cinnamon). Mac and Windows keep the custom title bar.'
+    ]
+  },
+  {
     version: '2.3.2',
     date: '2026-07-23',
     items: [
