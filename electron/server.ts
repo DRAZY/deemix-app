@@ -791,6 +791,10 @@ export class DeemixServer extends EventEmitter {
         await this.handleDownloadBatch(req, res)
         break
 
+      case '/api/download/mixed-batch':
+        await this.handleMixedBatchDownload(req, res)
+        break
+
       case '/api/library/reindex':
         await this.handleLibraryReindex(req, res)
         break
@@ -2092,6 +2096,133 @@ export class DeemixServer extends EventEmitter {
       // available at this point (only track IDs). The actual downloaded files
       // will have correct names via the downloader's template engine.
 
+      this.sendJSON(res, { ids: downloadIds, count: downloadIds.length })
+    } catch (error: any) {
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  /** Deezer download options for a single track, matching the batch path exactly.
+   *  Extracted so the mixed-source (both-services) batch queues Deezer tracks
+   *  identically to the pure-Deezer batch. */
+  private buildDeezerDownloadOptions(
+    trackId: number,
+    ctx: { isPlaylist?: boolean; playlistName?: string; playlistCoverUrl?: string; playlistPosition?: number } = {}
+  ): any {
+    const isPlaylist = !!ctx.isPlaylist
+    const playlistName = ctx.playlistName || ''
+    const playlistCoverUrl = ctx.playlistCoverUrl || ''
+    return {
+      trackId,
+      outputPath: this.settings.downloadPath,
+      quality: this.settings.quality,
+      bitrateFallback: this.settings.bitrateFallback,
+      isrcFallback: this.settings.isrcFallback,
+      createFolders: true,
+      artistFolder: this.settings.createArtistFolder,
+      albumFolder: this.settings.createAlbumFolder,
+      saveArtwork: this.settings.saveArtwork,
+      embedArtwork: this.settings.embedArtwork,
+      saveLyrics: this.settings.saveLyrics,
+      syncedLyrics: this.settings.syncedLyrics,
+      isSingle: !isPlaylist,
+      isFromPlaylist: isPlaylist || undefined,
+      playlistName: playlistName || undefined,
+      playlistCoverUrl: (isPlaylist && playlistCoverUrl) ? playlistCoverUrl : undefined,
+      playlistPosition: isPlaylist ? ctx.playlistPosition : undefined,
+      playlistContext: isPlaylist ? { playlistId: 0, playlistName } : undefined,
+      savePlaylistAsCompilation: isPlaylist ? this.settings.savePlaylistAsCompilation : undefined,
+      folderSettings: {
+        createPlaylistFolder: this.settings.createPlaylistFolder,
+        createArtistFolder: this.settings.createArtistFolder,
+        createAlbumFolder: this.settings.createAlbumFolder,
+        createCDFolder: this.settings.createCDFolder,
+        createPlaylistStructure: this.settings.createPlaylistStructure,
+        createSinglesStructure: this.settings.createSinglesStructure,
+        playlistFolderTemplate: this.settings.playlistFolderTemplate,
+        albumFolderTemplate: this.settings.albumFolderTemplate,
+        artistFolderTemplate: this.settings.artistFolderTemplate
+      },
+      trackTemplates: {
+        trackNameTemplate: this.settings.trackNameTemplate,
+        albumTrackTemplate: this.settings.albumTrackTemplate,
+        playlistTrackTemplate: this.settings.playlistTrackTemplate
+      },
+      metadataSettings: {
+        tags: this.settings.tags,
+        albumCovers: this.settings.albumCovers,
+        useNullSeparator: this.settings.useNullSeparator,
+        saveID3v1: this.settings.saveID3v1,
+        saveOnlyMainArtist: this.settings.saveOnlyMainArtist,
+        artistSeparator: this.settings.artistSeparator,
+        dateFormatFlac: this.settings.dateFormatFlac,
+        titleCasing: this.settings.titleCasing,
+        artistCasing: this.settings.artistCasing,
+        removeAlbumVersion: this.settings.removeAlbumVersion,
+        featuredArtistsHandling: this.settings.featuredArtistsHandling,
+        keepVariousArtists: this.settings.keepVariousArtists,
+        removeArtistCombinations: this.settings.removeArtistCombinations
+      },
+      skipDuplicateTracks: this.settings.skipDuplicateTracks,
+      createErrorLog: this.settings.createErrorLog,
+      overwriteMode: this.settings.overwriteFiles
+    }
+  }
+
+  /** Download a mixed set of tracks, each from its chosen service, as ONE
+   *  playlist row (2.4 both-services matrix). Body: { tracks: [{ id, service }],
+   *  playlistName, playlistCoverUrl }. Each track routes to its service's
+   *  download options; expanded rows show per-track D/Q chips. */
+  private async handleMixedBatchDownload(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const body = await this.parseBody(req)
+    const rawTracks = Array.isArray(body.tracks) ? body.tracks : []
+    const tracks = rawTracks
+      .map((t: any) => ({ id: validateNumericId(t?.id), service: t?.service === 'qobuz' ? 'qobuz' as const : 'deezer' as const }))
+      .filter((t): t is { id: number; service: 'deezer' | 'qobuz' } => t.id !== null)
+    const playlistName = typeof body.playlistName === 'string' ? body.playlistName.trim() : ''
+    const playlistCoverUrl = typeof body.playlistCoverUrl === 'string' ? body.playlistCoverUrl.trim() : ''
+
+    if (tracks.length === 0) {
+      this.sendJSON(res, { error: 'At least one valid track is required' }, 400)
+      return
+    }
+
+    const usesDeezer = tracks.some(t => t.service === 'deezer')
+    const usesQobuz = tracks.some(t => t.service === 'qobuz')
+    if (usesDeezer && !deezerAuth.isLoggedIn()) {
+      this.sendJSON(res, { error: 'Deezer not connected' }, 401)
+      return
+    }
+    if (usesQobuz && !qobuzAuth.isLoggedIn()) {
+      this.sendJSON(res, { error: 'Qobuz not connected' }, 401)
+      return
+    }
+    if (!validateDownloadPath(this.settings.downloadPath)) {
+      this.sendJSON(res, { error: 'Invalid download path configured' }, 400)
+      return
+    }
+
+    const isPlaylist = !!playlistName
+    console.log(`[Server] Mixed batch: ${tracks.length} tracks${isPlaylist ? `, playlist: "${playlistName}"` : ''}`)
+
+    try {
+      const downloadIds: string[] = []
+      for (let i = 0; i < tracks.length; i++) {
+        const t = tracks[i]
+        const opts = t.service === 'qobuz'
+          ? this.buildQobuzDownloadOptions(t.id, {
+              playlistName: isPlaylist ? playlistName : undefined,
+              playlistPosition: isPlaylist ? i + 1 : undefined
+            })
+          : this.buildDeezerDownloadOptions(t.id, {
+              isPlaylist,
+              playlistName,
+              playlistCoverUrl,
+              playlistPosition: i + 1
+            })
+        const downloadId = await downloader.download(opts)
+        downloadIds.push(downloadId)
+      }
       this.sendJSON(res, { ids: downloadIds, count: downloadIds.length })
     } catch (error: any) {
       this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
@@ -4016,8 +4147,11 @@ export class DeemixServer extends EventEmitter {
       const { type, id, fallbackSearch = true } = body
       progressToken = typeof body.progressToken === 'string' ? body.progressToken : ''
       // 2.4: the Link Analyzer can resolve a Spotify link against Deezer (the
-      // default, unchanged behavior) or Qobuz. Anything not 'qobuz' stays Deezer.
-      const targetService: 'deezer' | 'qobuz' = body.targetService === 'qobuz' ? 'qobuz' : 'deezer'
+      // default), Qobuz, or 'both' (the cross-service availability matrix).
+      const targetService: 'deezer' | 'qobuz' | 'both' =
+        body.targetService === 'qobuz' ? 'qobuz'
+        : body.targetService === 'both' ? 'both'
+        : 'deezer'
 
       if (!type || !id) {
         this.sendJSON(res, { error: 'Type and ID are required' }, 400)
@@ -4031,6 +4165,12 @@ export class DeemixServer extends EventEmitter {
 
       // Each target service needs its own live session. Guard whichever one we
       // are actually converting to, with a clear message for the Qobuz case.
+      // 'both' compares the two, so it needs both connected (Qobuz matching
+      // needs a session, and downloading from either needs that service live).
+      if (targetService === 'both' && (!deezerAuth.isLoggedIn() || !qobuzAuth.isLoggedIn())) {
+        this.sendJSON(res, { error: 'Comparing both services needs Deezer and Qobuz both connected. Connect them in Settings, or pick a single service.' }, 401)
+        return
+      }
       if (targetService === 'deezer' && !deezerAuth.isLoggedIn()) {
         this.sendJSON(res, { error: 'Deezer authentication required' }, 401)
         return
@@ -4093,6 +4233,30 @@ export class DeemixServer extends EventEmitter {
       const onProgress = progressToken
         ? (current: number, total: number) => this.conversionProgress.set(progressToken, { current, total })
         : undefined
+
+      // 'both' returns a per-track availability matrix (Deezer + Qobuz) plus a
+      // summary tally, rather than a single-service matched list.
+      if (targetService === 'both') {
+        const result = await spotifyConverter.convertTracksBoth(tracks, onProgress)
+        this.sendJSON(res, {
+          service: 'both',
+          matched: result.matched.map(m => ({
+            spotify: spotifyBrief(m.spotifyTrack),
+            deezer: m.deezer, // service-neutral MatchInfo | null
+            qobuz: m.qobuz
+          })),
+          unmatched: result.unmatched.map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            artist: t.artists?.[0]?.name,
+            album: t.album?.name
+          })),
+          summary: result.summary,
+          matchRate: result.matchRate,
+          total: result.matched.length + result.unmatched.length
+        })
+        return
+      }
 
       let matched: any[]
       let unmatched: any[]

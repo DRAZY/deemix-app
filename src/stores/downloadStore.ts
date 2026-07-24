@@ -1002,6 +1002,82 @@ export const useDownloadStore = defineStore('downloads', () => {
     }
   }
 
+  // 2.4 cross-service matrix: download a mixed set of tracks, each from its
+  // chosen service, as ONE playlist row. No top-level source chip (mixed); the
+  // expanded per-track rows carry their own D/Q chips.
+  async function addMixedBatchDownload(config: {
+    tracks: { id: number; service: 'deezer' | 'qobuz' }[]
+    playlistName: string
+    title: string
+    cover?: string
+    totalTracks: number
+  }) {
+    await syncSettingsToServer()
+    const settingsStore = useSettingsStore()
+    const toastStore = useToastStore()
+
+    const batchId = `mixed_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+    const item: DownloadItem = {
+      id: batchId,
+      title: config.title,
+      cover: config.cover,
+      progress: 0,
+      status: 'pending',
+      type: 'playlist',
+      addedAt: new Date().toISOString(),
+      quality: settingsStore.settings.quality,
+      totalTracks: config.totalTracks,
+      completedTracks: 0,
+      failedTracks: [],
+      trackIds: [],
+      catalogTrackIds: config.tracks.map(t => t.id)
+    }
+
+    downloads.value = [item, ...downloads.value]
+    saveDownloads()
+
+    try {
+      const response = await fetch(`http://127.0.0.1:${serverPort.value}/api/download/mixed-batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tracks: config.tracks,
+          playlistName: config.playlistName,
+          playlistCoverUrl: config.cover
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        const errorMsg = errorData.error || 'Mixed batch download request failed'
+        if (response.status === 401 || errorMsg.toLowerCase().includes('session expired')) {
+          toastStore.error('Session expired. Please log in again to download.')
+          throw new Error('Session expired: Please log in again')
+        }
+        throw new Error(errorMsg)
+      }
+
+      const data = await response.json()
+      if (data.ids && data.ids.length > 0) {
+        if (!downloads.value.some(d => d.id === item.id)) {
+          cancelServerIds(data.ids)
+          return
+        }
+        item.trackIds = data.ids
+        if (item.totalTracks !== data.ids.length) item.totalTracks = data.ids.length
+        item.status = 'downloading'
+        saveDownloads()
+        registerForPolling(batchId, data.ids, 'album')
+      } else {
+        throw new Error('Server did not return download IDs')
+      }
+    } catch (error: any) {
+      console.error('[DownloadStore] Mixed batch download error:', error.message)
+      updateDownloadStatus(batchId, 'error', error.message || String(error))
+    }
+  }
+
   // Register a download group for unified polling
   function registerForPolling(groupId: string, trackIds: string[], type: 'track' | 'album') {
     pollingGroups.set(groupId, { trackIds, type })
@@ -1836,6 +1912,7 @@ export const useDownloadStore = defineStore('downloads', () => {
     addQobuzAlbumDownload,
     addPlaylistDownload,
     addBatchDownload,
+    addMixedBatchDownload,
     cancelDownload,
     deleteDownload,
     retryDownload,

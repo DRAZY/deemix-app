@@ -42,6 +42,23 @@ export interface ServiceConversionResult {
   matchRate: number
 }
 
+/** A service match enriched with how it matched, used by the both-services view. */
+export type MatchInfo = ServiceTrackInfo & { matchType: 'isrc' | 'search'; confidence: number }
+
+/** One Spotify track checked against BOTH services (2.4 cross-service matrix). */
+export interface BothMatch {
+  spotifyTrack: SpotifyTrack
+  deezer: MatchInfo | null
+  qobuz: MatchInfo | null
+}
+
+export interface BothConversionResult {
+  matched: BothMatch[]        // available on at least one service
+  unmatched: SpotifyTrack[]   // found on neither
+  summary: { both: number; deezerOnly: number; qobuzOnly: number; neither: number }
+  matchRate: number
+}
+
 export interface DeezerTrackInfo {
   id: number
   title: string
@@ -416,6 +433,83 @@ class SpotifyConverter {
       : 0
 
     return { matched, unmatched, matchRate }
+  }
+
+  // ==================== Cross-service matching (both) ====================
+
+  /** Normalize a raw Deezer track into the service-neutral shape. */
+  private normalizeDeezerTrack(d: DeezerTrackInfo): ServiceTrackInfo {
+    return {
+      service: 'deezer',
+      id: d.id,
+      title: d.title,
+      artist: d.artist || { id: 0, name: 'Unknown Artist' },
+      album: { id: d.album?.id || 0, title: d.album?.title || '', cover: d.album?.cover_medium || '' },
+      duration: d.duration || 0
+    }
+  }
+
+  /** Check a single Spotify track against BOTH Deezer and Qobuz. */
+  async convertTrackBoth(spotifyTrack: SpotifyTrack): Promise<BothMatch> {
+    const dz = await this.convertTrack(spotifyTrack)
+    const qb = await this.convertTrackToQobuz(spotifyTrack)
+    return {
+      spotifyTrack,
+      deezer: dz.deezerTrack && dz.matchType !== 'none'
+        ? { ...this.normalizeDeezerTrack(dz.deezerTrack), matchType: dz.matchType, confidence: dz.confidence }
+        : null,
+      qobuz: qb.track && qb.matchType !== 'none'
+        ? { ...qb.track, matchType: qb.matchType, confidence: qb.confidence }
+        : null
+    }
+  }
+
+  /**
+   * Check every Spotify track against both services and tally where each lives.
+   * This doubles the per-track API work, so calls are spaced (150ms) to stay
+   * clear of both services' rate limits on long playlists. A Deezer rate-limit
+   * still propagates (DeezerQuotaError) so the caller can report it; any other
+   * single-track failure is counted as "neither" rather than aborting the run.
+   */
+  async convertTracksBoth(tracks: SpotifyTrack[], onProgress?: (current: number, total: number) => void): Promise<BothConversionResult> {
+    const matched: BothMatch[] = []
+    const unmatched: SpotifyTrack[] = []
+    let both = 0, deezerOnly = 0, qobuzOnly = 0, neither = 0
+
+    for (let i = 0; i < tracks.length; i++) {
+      if (i > 0) {
+        await new Promise(resolve => setTimeout(resolve, 150))
+      }
+
+      let m: BothMatch
+      try {
+        m = await this.convertTrackBoth(tracks[i])
+      } catch (error) {
+        if (error instanceof DeezerQuotaError) throw error
+        console.error('[SpotifyConverter] Both-match failed for track:', tracks[i]?.name, (error as any)?.message)
+        unmatched.push(tracks[i])
+        neither++
+        if (onProgress) onProgress(i + 1, tracks.length)
+        continue
+      }
+
+      const hasD = !!m.deezer, hasQ = !!m.qobuz
+      if (hasD && hasQ) both++
+      else if (hasD) deezerOnly++
+      else if (hasQ) qobuzOnly++
+      else neither++
+
+      if (hasD || hasQ) matched.push(m)
+      else unmatched.push(tracks[i])
+
+      if (onProgress) onProgress(i + 1, tracks.length)
+    }
+
+    const matchRate = tracks.length > 0
+      ? Math.round((matched.length / tracks.length) * 100)
+      : 0
+
+    return { matched, unmatched, summary: { both, deezerOnly, qobuzOnly, neither }, matchRate }
   }
 
   /**

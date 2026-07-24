@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useDownloadStore } from '../stores/downloadStore'
 import { useAuthStore } from '../stores/authStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { useToastStore } from '../stores/toastStore'
 import BackButton from '../components/BackButton.vue'
 import { isDeezerUrl, isSpotifyUrl, isQobuzUrl } from '../utils/urlHost'
@@ -13,6 +14,7 @@ const router = useRouter()
 const route = useRoute()
 const downloadStore = useDownloadStore()
 const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
 const toastStore = useToastStore()
 
 const linkInput = ref('')
@@ -28,7 +30,46 @@ const isConverting = ref(false)
 const conversionResult = ref<any>(null)
 const conversionProgress = ref({ current: 0, total: 0 })
 // 2.4: which service the Link Analyzer resolves a Spotify link against.
-const targetService = ref<'deezer' | 'qobuz'>('deezer')
+// 'both' runs the cross-service availability matrix.
+const targetService = ref<'deezer' | 'qobuz' | 'both'>('deezer')
+// In 'both' mode, the default service to download from when a track is on both.
+const bothPreference = ref<'deezer' | 'qobuz'>('qobuz')
+// Per-track service overrides in 'both' mode, keyed by Spotify track id.
+const trackOverrides = ref<Record<string, 'deezer' | 'qobuz'>>({})
+
+const deezerConnected = computed(() => authStore.isLoggedIn)
+const qobuzConnected = computed(() => settingsStore.isQobuzLinked)
+
+// Resolve which service a both-mode track downloads from: a valid per-track
+// override wins; otherwise the global preference, falling back to the other
+// service when the preferred one doesn't have it. null = on neither service.
+function resolvedServiceFor(m: any): 'deezer' | 'qobuz' | null {
+  const hasD = !!m.deezer, hasQ = !!m.qobuz
+  const override = trackOverrides.value[m.spotify?.id]
+  if (override === 'deezer' && hasD) return 'deezer'
+  if (override === 'qobuz' && hasQ) return 'qobuz'
+  if (bothPreference.value === 'qobuz') return hasQ ? 'qobuz' : (hasD ? 'deezer' : null)
+  return hasD ? 'deezer' : (hasQ ? 'qobuz' : null)
+}
+
+// Click a lit cell to force that track to that service (no-op if unavailable).
+function chooseService(m: any, service: 'deezer' | 'qobuz') {
+  if (service === 'deezer' && !m.deezer) return
+  if (service === 'qobuz' && !m.qobuz) return
+  trackOverrides.value = { ...trackOverrides.value, [m.spotify.id]: service }
+}
+
+// Download tally for the both-mode button: how many resolve to each service.
+const bothCounts = computed(() => {
+  const matched = conversionResult.value?.matched || []
+  let deezer = 0, qobuz = 0
+  for (const m of matched) {
+    const s = resolvedServiceFor(m)
+    if (s === 'deezer') deezer++
+    else if (s === 'qobuz') qobuz++
+  }
+  return { deezer, qobuz, total: deezer + qobuz }
+})
 
 // Qobuz-specific state (WIP)
 const qobuzResult = ref<any>(null)
@@ -39,6 +80,11 @@ onMounted(async () => {
   if (window.electronAPI) {
     serverPort.value = await window.electronAPI.getServerPort()
   }
+  // Default the target service by what's connected: Both when both services are
+  // live (the richest view), otherwise whichever single service is available.
+  if (deezerConnected.value && qobuzConnected.value) targetService.value = 'both'
+  else if (qobuzConnected.value && !deezerConnected.value) targetService.value = 'qobuz'
+  else targetService.value = 'deezer'
   // Auto-analyze if URL passed via query parameter (from Search redirect)
   if (route.query.url) {
     linkInput.value = route.query.url as string
@@ -262,6 +308,7 @@ async function convertSpotifyToDeezer() {
   isConverting.value = true
   conversionResult.value = null
   conversionProgress.value = { current: 0, total: 0 }
+  trackOverrides.value = {}
 
   // Poll the server's live per-track progress on a side channel so a long match
   // shows real "N / total" movement. Best-effort: the conversion result comes
@@ -316,6 +363,40 @@ async function downloadConvertedTracks() {
     return
   }
 
+  const sourcePlaylistName = spotifyResult.value?.data?.name || 'Spotify Playlist'
+  const coverUrl = spotifyResult.value?.data?.images?.[0]?.url
+    || spotifyResult.value?.data?.album?.images?.[0]?.url
+    || ''
+
+  // Both-services matrix: each matched track downloads from its resolved
+  // service (override or preference+fallback) as one mixed playlist row.
+  if (conversionResult.value.service === 'both') {
+    const tracks: { id: number; service: 'deezer' | 'qobuz' }[] = []
+    for (const m of conversionResult.value.matched) {
+      const svc = resolvedServiceFor(m)
+      if (!svc) continue
+      const hit = svc === 'qobuz' ? m.qobuz : m.deezer
+      if (hit && hit.id) tracks.push({ id: Number(hit.id), service: svc })
+    }
+    if (tracks.length === 0) {
+      toastStore.error('No downloadable tracks in this selection')
+      return
+    }
+    try {
+      await downloadStore.addMixedBatchDownload({
+        tracks,
+        playlistName: sourcePlaylistName,
+        title: sourcePlaylistName,
+        cover: coverUrl,
+        totalTracks: tracks.length
+      })
+      toastStore.success(`Added ${tracks.length} tracks to download queue`)
+    } catch (err: any) {
+      toastStore.error(`Failed to start download: ${err.message || 'Unknown error'}`)
+    }
+    return
+  }
+
   // Which service these matches resolved against (server echoes it; default deezer).
   const service: 'deezer' | 'qobuz' = conversionResult.value.service === 'qobuz' ? 'qobuz' : 'deezer'
   const serviceLabel = service === 'qobuz' ? 'Qobuz' : 'Deezer'
@@ -334,11 +415,6 @@ async function downloadConvertedTracks() {
     toastStore.error(`No matching ${serviceLabel} tracks found to download`)
     return
   }
-
-  const sourcePlaylistName = spotifyResult.value?.data?.name || 'Spotify Playlist'
-  const coverUrl = spotifyResult.value?.data?.images?.[0]?.url
-    || spotifyResult.value?.data?.album?.images?.[0]?.url
-    || ''
 
   // Single batch request — the server queues all tracks and returns one set of IDs.
   // The download store tracks them as a single playlist item with unified progress
@@ -1099,17 +1175,22 @@ async function pasteLink() {
             <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">Convert to</p>
             <div class="inline-flex border border-white/[0.08] p-0.5 gap-0.5 bg-background-main">
               <button
-                v-for="svc in (['deezer','qobuz'] as const)"
+                v-for="svc in (['deezer','qobuz','both'] as const)"
                 :key="svc"
                 @click="targetService = svc"
                 class="font-mono text-[10px] tracking-[0.12em] uppercase px-4 py-1.5 transition-colors"
                 :class="targetService === svc
-                  ? (svc === 'qobuz' ? 'bg-qobuz-500/20 text-qobuz-400' : 'bg-white/[0.1] text-foreground')
+                  ? (svc === 'qobuz' ? 'bg-qobuz-500/20 text-qobuz-400'
+                     : svc === 'deezer' ? 'bg-deezer-500/20 text-deezer-400'
+                     : 'bg-gradient-to-r from-deezer-500/25 to-qobuz-500/25 text-foreground')
                   : 'text-foreground-muted/50 hover:text-foreground-muted'"
               >
                 {{ svc }}
               </button>
             </div>
+            <p v-if="targetService === 'both' && !(deezerConnected && qobuzConnected)" class="font-mono text-[10px] text-yellow-400/80 mt-1.5">
+              Comparing both needs Deezer and Qobuz connected.
+            </p>
           </div>
 
           <!-- Action Buttons -->
@@ -1131,11 +1212,23 @@ async function pasteLink() {
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              {{ isConverting ? 'Converting...' : (targetService === 'qobuz' ? 'Convert to Qobuz' : 'Convert to Deezer') }}
+              {{ isConverting ? 'Converting...' : (targetService === 'both' ? 'Compare Deezer & Qobuz' : targetService === 'qobuz' ? 'Convert to Qobuz' : 'Convert to Deezer') }}
             </button>
 
             <button
-              v-if="conversionResult?.matched?.length"
+              v-if="conversionResult?.matched?.length && conversionResult.service === 'both'"
+              @click="downloadConvertedTracks"
+              :disabled="!authStore.isLoggedIn || bothCounts.total === 0"
+              class="btn btn-primary font-mono text-[11px] tracking-[0.1em] uppercase flex items-center gap-2"
+            >
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download {{ bothCounts.total }} tracks<span class="opacity-60 normal-case">&nbsp;· {{ bothCounts.qobuz }} Qobuz, {{ bothCounts.deezer }} Deezer</span>
+            </button>
+            <button
+              v-else-if="conversionResult?.matched?.length"
               @click="downloadConvertedTracks"
               :disabled="!authStore.isLoggedIn"
               class="btn btn-primary font-mono text-[11px] tracking-[0.1em] uppercase flex items-center gap-2"
@@ -1147,7 +1240,8 @@ async function pasteLink() {
               Download {{ conversionResult.matched.length }} Tracks
             </button>
             <p v-if="conversionResult && !conversionResult.matched?.length" class="text-sm text-yellow-400">
-              No matching {{ conversionResult.service === 'qobuz' ? 'Qobuz' : 'Deezer' }} tracks found. The playlist tracks may not be available on {{ conversionResult.service === 'qobuz' ? 'Qobuz' : 'Deezer' }}.
+              <template v-if="conversionResult.service === 'both'">No tracks were found on either Deezer or Qobuz.</template>
+              <template v-else>No matching {{ conversionResult.service === 'qobuz' ? 'Qobuz' : 'Deezer' }} tracks found. The playlist tracks may not be available on {{ conversionResult.service === 'qobuz' ? 'Qobuz' : 'Deezer' }}.</template>
             </p>
           </div>
 
@@ -1182,8 +1276,72 @@ async function pasteLink() {
           </span>
         </div>
 
-        <!-- Matched Tracks -->
-        <div v-if="conversionResult.matched?.length" class="space-y-2 mb-4">
+        <!-- Cross-service availability matrix (both mode) -->
+        <div v-if="conversionResult.service === 'both' && conversionResult.matched?.length" class="space-y-3 mb-4">
+          <!-- summary tally -->
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 p-2.5 bg-background-main border border-white/[0.06] text-[11px] text-foreground-muted">
+            <span><span class="inline-block w-2 h-2 rounded-sm bg-green-400 mr-1.5 align-middle"></span><b class="text-foreground">{{ conversionResult.summary?.both || 0 }}</b> on both</span>
+            <span><span class="inline-block w-2 h-2 rounded-sm bg-qobuz-500 mr-1.5 align-middle"></span><b class="text-foreground">{{ conversionResult.summary?.qobuzOnly || 0 }}</b> Qobuz only</span>
+            <span><span class="inline-block w-2 h-2 rounded-sm bg-deezer-500 mr-1.5 align-middle"></span><b class="text-foreground">{{ conversionResult.summary?.deezerOnly || 0 }}</b> Deezer only</span>
+            <span><span class="inline-block w-2 h-2 rounded-sm bg-white/20 mr-1.5 align-middle"></span><b class="text-foreground">{{ conversionResult.summary?.neither || 0 }}</b> unavailable</span>
+          </div>
+
+          <!-- preference control -->
+          <div class="flex flex-wrap items-center gap-2 text-[11px] text-foreground-muted">
+            <span class="font-mono text-[9.5px] tracking-[0.15em] uppercase">Prefer</span>
+            <div class="inline-flex border border-white/[0.08] p-0.5 gap-0.5">
+              <button @click="bothPreference = 'qobuz'" class="font-mono text-[10px] tracking-[0.1em] uppercase px-2.5 py-1 transition-colors"
+                :class="bothPreference === 'qobuz' ? 'bg-qobuz-500/20 text-qobuz-400' : 'text-foreground-muted/50 hover:text-foreground-muted'">Qobuz</button>
+              <button @click="bothPreference = 'deezer'" class="font-mono text-[10px] tracking-[0.1em] uppercase px-2.5 py-1 transition-colors"
+                :class="bothPreference === 'deezer' ? 'bg-deezer-500/20 text-deezer-400' : 'text-foreground-muted/50 hover:text-foreground-muted'">Deezer</button>
+            </div>
+            <span class="opacity-80">fall back to the other · click a lit cell to override one track</span>
+          </div>
+
+          <!-- matrix header -->
+          <div class="grid grid-cols-[1fr_74px_74px] gap-2 px-2.5 font-mono text-[9px] tracking-[0.16em] uppercase text-foreground-muted">
+            <span>Track</span><span class="text-center">Deezer</span><span class="text-center">Qobuz</span>
+          </div>
+
+          <!-- matrix rows -->
+          <div class="max-h-80 overflow-y-auto space-y-1">
+            <div
+              v-for="m in conversionResult.matched"
+              :key="m.spotify?.id"
+              class="grid grid-cols-[1fr_74px_74px] gap-2 items-center p-2 bg-background-main border border-white/[0.06]"
+            >
+              <div class="min-w-0">
+                <p class="truncate text-[13px]">{{ m.spotify?.name }}</p>
+                <p class="truncate text-[11px] text-foreground-muted">{{ m.spotify?.artist }}</p>
+              </div>
+              <button
+                @click="chooseService(m, 'deezer')"
+                :disabled="!m.deezer"
+                class="flex flex-col items-center justify-center h-10 border rounded-sm transition-colors"
+                :class="m.deezer
+                  ? (resolvedServiceFor(m) === 'deezer' ? 'bg-deezer-500/10 border-deezer-500 text-deezer-400 ring-1 ring-deezer-500' : 'bg-deezer-500/[0.04] border-deezer-500/30 text-deezer-400/70 hover:border-deezer-500/60')
+                  : 'border-white/[0.06] text-foreground-muted/30 cursor-default'"
+              >
+                <span class="font-mono text-[11px] font-bold leading-none">{{ m.deezer ? 'D' : '—' }}</span>
+                <span v-if="m.deezer" class="text-[8px] uppercase tracking-wide opacity-80 mt-0.5">{{ m.deezer.matchType === 'isrc' ? 'ISRC' : m.deezer.confidence + '%' }}</span>
+              </button>
+              <button
+                @click="chooseService(m, 'qobuz')"
+                :disabled="!m.qobuz"
+                class="flex flex-col items-center justify-center h-10 border rounded-sm transition-colors"
+                :class="m.qobuz
+                  ? (resolvedServiceFor(m) === 'qobuz' ? 'bg-qobuz-500/10 border-qobuz-500 text-qobuz-400 ring-1 ring-qobuz-500' : 'bg-qobuz-500/[0.04] border-qobuz-500/30 text-qobuz-400/70 hover:border-qobuz-500/60')
+                  : 'border-white/[0.06] text-foreground-muted/30 cursor-default'"
+              >
+                <span class="font-mono text-[11px] font-bold leading-none">{{ m.qobuz ? 'Q' : '—' }}</span>
+                <span v-if="m.qobuz" class="text-[8px] uppercase tracking-wide opacity-80 mt-0.5">{{ m.qobuz.matchType === 'isrc' ? 'ISRC' : m.qobuz.confidence + '%' }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Matched Tracks (single-service) -->
+        <div v-else-if="conversionResult.matched?.length" class="space-y-2 mb-4">
           <p class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted">Matched ({{ conversionResult.matched.length }})</p>
           <div class="max-h-48 overflow-y-auto space-y-1">
             <div
@@ -1212,7 +1370,7 @@ async function pasteLink() {
               <svg class="w-4 h-4 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
-              <span class="truncate text-sm text-foreground-muted">{{ track.name }} - {{ track.artists?.[0]?.name }}</span>
+              <span class="truncate text-sm text-foreground-muted">{{ track.name }}<template v-if="track.artist"> - {{ track.artist }}</template></span>
             </div>
           </div>
         </div>
