@@ -263,6 +263,23 @@ async function convertSpotifyToDeezer() {
   conversionResult.value = null
   conversionProgress.value = { current: 0, total: 0 }
 
+  // Poll the server's live per-track progress on a side channel so a long match
+  // shows real "N / total" movement. Best-effort: the conversion result comes
+  // back on the main request regardless of whether these polls succeed.
+  const progressToken = `conv_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+  let pollTimer: ReturnType<typeof setInterval> | null = null
+  const pollProgress = async () => {
+    try {
+      const r = await fetch(`http://localhost:${serverPort.value}/api/spotify/convert-progress?token=${progressToken}`)
+      if (!r.ok) return
+      const p = await r.json()
+      if (p && typeof p.total === 'number' && p.total > 0) {
+        conversionProgress.value = { current: p.current || 0, total: p.total }
+      }
+    } catch { /* progress is cosmetic; ignore transient poll failures */ }
+  }
+  pollTimer = setInterval(pollProgress, 400)
+
   try {
     const apiUrl = `http://localhost:${serverPort.value}/api/spotify/convert`
     const response = await fetch(apiUrl, {
@@ -271,7 +288,8 @@ async function convertSpotifyToDeezer() {
       body: JSON.stringify({
         type: spotifyResult.value.type,
         id: spotifyResult.value.id,
-        targetService: targetService.value
+        targetService: targetService.value,
+        progressToken
       })
     })
 
@@ -287,6 +305,7 @@ async function convertSpotifyToDeezer() {
     console.error('[LinkAnalyzer] Conversion error:', err)
     error.value = `Conversion failed: ${err.message || ''}`
   } finally {
+    if (pollTimer) clearInterval(pollTimer)
     isConverting.value = false
   }
 }
@@ -1085,7 +1104,7 @@ async function pasteLink() {
                 @click="targetService = svc"
                 class="font-mono text-[10px] tracking-[0.12em] uppercase px-4 py-1.5 transition-colors"
                 :class="targetService === svc
-                  ? 'bg-white/[0.1] text-foreground'
+                  ? (svc === 'qobuz' ? 'bg-qobuz-500/20 text-qobuz-400' : 'bg-white/[0.1] text-foreground')
                   : 'text-foreground-muted/50 hover:text-foreground-muted'"
               >
                 {{ svc }}
@@ -1130,6 +1149,22 @@ async function pasteLink() {
             <p v-if="conversionResult && !conversionResult.matched?.length" class="text-sm text-yellow-400">
               No matching {{ conversionResult.service === 'qobuz' ? 'Qobuz' : 'Deezer' }} tracks found. The playlist tracks may not be available on {{ conversionResult.service === 'qobuz' ? 'Qobuz' : 'Deezer' }}.
             </p>
+          </div>
+
+          <!-- Conversion progress (2.4): real per-track counts so a long match
+               reads as moving, not hung. -->
+          <div v-if="isConverting && conversionProgress.total > 0" class="mt-3 max-w-sm">
+            <div class="flex items-center justify-between font-mono text-[9.5px] tracking-[0.15em] uppercase text-foreground-muted mb-1">
+              <span>Matching tracks</span>
+              <span>{{ conversionProgress.current }} / {{ conversionProgress.total }}</span>
+            </div>
+            <div class="h-1 bg-white/[0.08] overflow-hidden">
+              <div
+                class="h-full transition-all duration-300"
+                :class="targetService === 'qobuz' ? 'bg-qobuz-500' : 'bg-[#1DB954]'"
+                :style="{ width: Math.round((conversionProgress.current / conversionProgress.total) * 100) + '%' }"
+              ></div>
+            </div>
           </div>
 
           <p v-if="!authStore.isLoggedIn" class="text-sm text-foreground-muted mt-2">

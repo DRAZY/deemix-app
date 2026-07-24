@@ -869,6 +869,10 @@ export class DeemixServer extends EventEmitter {
         await this.handleSpotifyConvert(req, res)
         break
 
+      case '/api/spotify/convert-progress':
+        this.handleConversionProgress(url, res)
+        break
+
       case '/info-spotify':
         this.handleInfoSpotify(res)
         break
@@ -3993,10 +3997,24 @@ export class DeemixServer extends EventEmitter {
     }
   }
 
+  // Live per-conversion progress, keyed by a client-supplied token. The convert
+  // request itself stays a normal request/response; the client polls
+  // /api/spotify/convert-progress against this map so a long playlist match
+  // shows real "N / total" movement instead of a motionless "Converting...".
+  private conversionProgress = new Map<string, { current: number; total: number }>()
+
+  private handleConversionProgress(url: URL, res: ServerResponse): void {
+    const token = url.searchParams.get('token') || ''
+    const p = this.conversionProgress.get(token)
+    this.sendJSON(res, p || { current: 0, total: 0 })
+  }
+
   private async handleSpotifyConvert(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    let progressToken = ''
     try {
       const body = await this.parseBody(req)
       const { type, id, fallbackSearch = true } = body
+      progressToken = typeof body.progressToken === 'string' ? body.progressToken : ''
       // 2.4: the Link Analyzer can resolve a Spotify link against Deezer (the
       // default, unchanged behavior) or Qobuz. Anything not 'qobuz' stays Deezer.
       const targetService: 'deezer' | 'qobuz' = body.targetService === 'qobuz' ? 'qobuz' : 'deezer'
@@ -4070,12 +4088,18 @@ export class DeemixServer extends EventEmitter {
         album: t.album?.name
       })
 
+      // Publish live progress to the poll map if the client sent a token.
+      if (progressToken) this.conversionProgress.set(progressToken, { current: 0, total: tracks.length })
+      const onProgress = progressToken
+        ? (current: number, total: number) => this.conversionProgress.set(progressToken, { current, total })
+        : undefined
+
       let matched: any[]
       let unmatched: any[]
       let matchRate: number
 
       if (targetService === 'qobuz') {
-        const result = await spotifyConverter.convertTracksToQobuz(tracks)
+        const result = await spotifyConverter.convertTracksToQobuz(tracks, onProgress)
         matchRate = result.matchRate
         unmatched = result.unmatched
         matched = result.matched.map(m => ({
@@ -4087,7 +4111,7 @@ export class DeemixServer extends EventEmitter {
           confidence: m.confidence
         }))
       } else {
-        const result = await spotifyConverter.convertTracks(tracks)
+        const result = await spotifyConverter.convertTracks(tracks, onProgress)
         matchRate = result.matchRate
         unmatched = result.unmatched
         matched = result.matched.map(m => ({
@@ -4130,6 +4154,8 @@ export class DeemixServer extends EventEmitter {
         return
       }
       this.sendJSON(res, { error: error.message || 'Conversion failed' }, 500)
+    } finally {
+      if (progressToken) this.conversionProgress.delete(progressToken)
     }
   }
 
