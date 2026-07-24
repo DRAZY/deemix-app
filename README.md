@@ -106,10 +106,11 @@
 
 ### Spotify Integration
 
-- **Playlist Conversion** -- Convert Spotify playlists to Deezer for downloading
+- **Multi-Service Conversion** -- Convert a Spotify link to Deezer, Qobuz, or both. The service picker sits right on the Link Analyzer
+- **Availability Matrix** -- In Both mode, see for every track whether it is on Deezer, Qobuz, or both, and how it matched (ISRC or search). Set a preferred service with automatic fallback, or click any track to override it
 - **Track Matching** -- ISRC-based matching with fallback search and confidence scoring
 - **Link Support** -- Paste Spotify URLs directly into the Link Analyzer
-- **Batch Downloads** -- Converted playlists download as a single item with unified progress tracking
+- **Mixed Downloads** -- A cross-service conversion lands as a single playlist, tagged with D and Q chips, and every track shows the service it came from
 - **Public/Private Badge** -- Spotify playlists show visibility status in the Link Analyzer
 
 ### Playlist Sync
