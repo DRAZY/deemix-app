@@ -177,6 +177,18 @@ Arabic, Chinese (Simplified & Traditional), Croatian, English, Filipino, French,
 </p>
 
 <p align="center">
+  <img src="docs/screenshots/link-analyzer.png" alt="Link Analyzer - Cross-Service Availability Matrix" width="800" />
+  <br />
+  <em>Link Analyzer — Cross-service availability matrix (v2.4.0): convert a Spotify link against Deezer and Qobuz at once, see where every track lives, set a preferred source with fallback, or override any single track</em>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/link-analyzer-convert.png" alt="Link Analyzer - Service Picker & Live Progress" width="800" />
+  <br />
+  <em>Link Analyzer — Deezer / Qobuz / Both service picker with a live conversion progress bar counting real matches as it resolves</em>
+</p>
+
+<p align="center">
   <img src="docs/screenshots/search.png" alt="Search - Acquisition Console" width="800" />
   <br />
   <em>Search — The acquisition console with the Deezer/Qobuz source toggle (v2.1.0): pull the signal down from either catalog</em>
