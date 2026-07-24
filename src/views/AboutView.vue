@@ -35,6 +35,13 @@ interface ReleaseNotes {
 // into ranges, link out to GitHub Releases for full per-version detail.
 const whatsNew: ReleaseNotes[] = [
   {
+    version: '2.4.2',
+    date: '2026-07-24',
+    items: [
+      'Linux side-snapping: on Linux the window can now shrink into a left or right half-screen tile, so your desktop\'s side snapping works. It was previously blocked by the app\'s minimum width. macOS and Windows are unchanged.'
+    ]
+  },
+  {
     version: '2.4.1',
     date: '2026-07-24',
     items: [
