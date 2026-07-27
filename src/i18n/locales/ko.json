@@ -234,6 +234,7 @@
     "createCDFolder": "CD용 폴더 생성",
     "createPlaylistStructure": "플레이리스트 안에 아티스트 및 앨범 폴더 생성",
     "createSinglesStructure": "개별 트랙에 아티스트 및 앨범 폴더 생성",
+    "createShortReleaseFolder": "트랙이 1~2개인 릴리스에 폴더 생성",
     "availableTemplateVars": "사용 가능한 템플릿 변수:",
     "examplePath": "예시 경로:",
     "tracknameTemplate": "트랙명 템플릿",

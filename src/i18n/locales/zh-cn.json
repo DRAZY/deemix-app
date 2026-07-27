@@ -234,6 +234,7 @@
     "createCDFolder": "为 CD 创建文件夹",
     "createPlaylistStructure": "在播放列表内创建艺人和专辑文件夹",
     "createSinglesStructure": "为单独下载的曲目创建艺人和专辑文件夹",
+    "createShortReleaseFolder": "为只有 1 或 2 首曲目的发行创建文件夹",
     "availableTemplateVars": "可用模板变量：",
     "examplePath": "示例路径：",
     "tracknameTemplate": "歌曲名称模板",

@@ -285,6 +285,7 @@
     "createCDFolder": "Tạo thư mục cho CD",
     "createPlaylistStructure": "Tạo thư mục nghệ sĩ và album bên trong playlist",
     "createSinglesStructure": "Tạo thư mục nghệ sĩ và album cho bài hát riêng lẻ",
+    "createShortReleaseFolder": "Tạo thư mục cho bản phát hành có 1 hoặc 2 bài hát",
     "availableTemplateVars": "Biến mẫu có sẵn:",
     "examplePath": "Đường dẫn ví dụ:",
     "tracknameTemplate": "Mẫu tên bài hát",

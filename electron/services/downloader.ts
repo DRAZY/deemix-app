@@ -17,6 +17,7 @@ export interface FolderSettings {
   createCDFolder: boolean
   createPlaylistStructure: boolean
   createSinglesStructure: boolean
+  createShortReleaseFolder: boolean
   playlistFolderTemplate: string
   albumFolderTemplate: string
   artistFolderTemplate: string
@@ -1861,7 +1862,7 @@ export class Downloader extends EventEmitter {
 
     // Debug logging for folder settings
     console.log(`[Downloader] buildOutputPath - isSingle: ${options.isSingle}, isFromPlaylist: ${options.isFromPlaylist}`)
-    console.log(`[Downloader] Folder settings - createArtistFolder: ${folderSettings?.createArtistFolder}, createAlbumFolder: ${folderSettings?.createAlbumFolder}, createSinglesStructure: ${folderSettings?.createSinglesStructure}`)
+    console.log(`[Downloader] Folder settings - createArtistFolder: ${folderSettings?.createArtistFolder}, createAlbumFolder: ${folderSettings?.createAlbumFolder}, createSinglesStructure: ${folderSettings?.createSinglesStructure}, createShortReleaseFolder: ${folderSettings?.createShortReleaseFolder}`)
 
     // For folder structure, prefer album context (ensures all album tracks go to same folder)
     // Fall back to resolved album artist from public API (ensures compilations stay grouped)
@@ -1943,10 +1944,26 @@ export class Downloader extends EventEmitter {
         }
       }
     } else {
-      // Standard folder structure for non-playlist downloads
-      // Handle singles differently if option is enabled
-      if (options.isSingle && folderSettings?.createSinglesStructure === false) {
-        // Don't create album folder for singles if option is disabled
+      // Standard folder structure for non-playlist downloads.
+      // Two independent reasons to skip the album folder:
+      //  - a loose track download, when "artist and album folders for individual
+      //    tracks" is off (the long-standing isSingle path);
+      //  - a release of one or two tracks, when the short-release folder option
+      //    is off (#129).
+      // The second keys on track count, NOT record_type: Deezer routinely reports
+      // every release as "album" (deezerAPI.inferRecordType exists purely to work
+      // around that), and a one-track EP leaves the same single-file folder a
+      // one-track single does. Track count is a fact; the classification isn't.
+      const releaseTrackCount = options.albumContext?.totalTracks
+      const isShortRelease = typeof releaseTrackCount === 'number'
+        && releaseTrackCount > 0
+        && releaseTrackCount <= 2
+      const skipAlbumFolder =
+        (options.isSingle && folderSettings?.createSinglesStructure === false)
+        || (isShortRelease && folderSettings?.createShortReleaseFolder === false)
+
+      if (skipAlbumFolder) {
+        // Artist folder only — the album folder would hold one or two files.
         if (folderSettings?.createArtistFolder || options.artistFolder) {
           const artistFolder = replaceFolderTemplate(folderSettings?.artistFolderTemplate || '%artist%')
           outputPath = path.join(outputPath, artistFolder)

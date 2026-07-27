@@ -10,6 +10,7 @@ type ProfileSettingsKeys =
   | 'createPlaylistFile' | 'clearQueueOnClose'
   | 'createPlaylistFolder' | 'createArtistFolder' | 'createAlbumFolder'
   | 'createCDFolder' | 'createPlaylistStructure' | 'createSinglesStructure'
+  | 'createShortReleaseFolder'
   | 'playlistFolderTemplate' | 'albumFolderTemplate' | 'artistFolderTemplate'
   | 'trackNameTemplate' | 'albumTrackTemplate' | 'playlistTrackTemplate'
   | 'saveArtwork' | 'embedArtwork' | 'saveLyrics' | 'syncedLyrics'
@@ -38,6 +39,7 @@ const PROFILE_SETTINGS_KEYS: ProfileSettingsKeys[] = [
   'createPlaylistFile', 'clearQueueOnClose',
   'createPlaylistFolder', 'createArtistFolder', 'createAlbumFolder',
   'createCDFolder', 'createPlaylistStructure', 'createSinglesStructure',
+  'createShortReleaseFolder',
   'playlistFolderTemplate', 'albumFolderTemplate', 'artistFolderTemplate',
   'trackNameTemplate', 'albumTrackTemplate', 'playlistTrackTemplate',
   'saveArtwork', 'embedArtwork', 'saveLyrics', 'syncedLyrics',

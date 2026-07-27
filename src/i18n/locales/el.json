@@ -234,6 +234,7 @@
     "createCDFolder": "Δημιουργία φακέλου για CD",
     "createPlaylistStructure": "Δημιουργία φακέλων καλλιτέχνη και άλμπουμ μέσα στις λίστες",
     "createSinglesStructure": "Δημιουργία φακέλων καλλιτέχνη και άλμπουμ για μεμονωμένα τραγούδια",
+    "createShortReleaseFolder": "Δημιουργία φακέλου για κυκλοφορίες με 1 ή 2 κομμάτια",
     "availableTemplateVars": "Διαθέσιμες μεταβλητές προτύπου:",
     "examplePath": "Παράδειγμα διαδρομής:",
     "tracknameTemplate": "Πρότυπο ονόματος τραγουδιού",

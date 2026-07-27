@@ -88,6 +88,7 @@ export interface Settings {
   createCDFolder: boolean
   createPlaylistStructure: boolean
   createSinglesStructure: boolean
+  createShortReleaseFolder: boolean
   playlistFolderTemplate: string
   albumFolderTemplate: string
   artistFolderTemplate: string
@@ -159,6 +160,7 @@ export const defaultSettings: Settings = {
   createCDFolder: true,
   createPlaylistStructure: false,
   createSinglesStructure: false,
+  createShortReleaseFolder: true,
   playlistFolderTemplate: '%playlist%',
   albumFolderTemplate: '%artist% - %album%',
   artistFolderTemplate: '%artist%',

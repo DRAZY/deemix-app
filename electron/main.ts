@@ -441,6 +441,7 @@ async function initServer() {
           createCDFolder: s.createCDFolder,
           createPlaylistStructure: s.createPlaylistStructure,
           createSinglesStructure: s.createSinglesStructure,
+          createShortReleaseFolder: s.createShortReleaseFolder,
           playlistFolderTemplate: s.playlistFolderTemplate,
           albumFolderTemplate: s.albumFolderTemplate,
           artistFolderTemplate: s.artistFolderTemplate
@@ -520,6 +521,7 @@ async function initServer() {
           createCDFolder: s.createCDFolder,
           createPlaylistStructure: s.createPlaylistStructure,
           createSinglesStructure: s.createSinglesStructure,
+          createShortReleaseFolder: s.createShortReleaseFolder,
           playlistFolderTemplate: s.playlistFolderTemplate,
           albumFolderTemplate: s.albumFolderTemplate,
           artistFolderTemplate: s.artistFolderTemplate

@@ -285,6 +285,7 @@
     "createCDFolder": "為 CD 建立資料夾",
     "createPlaylistStructure": "在播放清單內建立藝人和專輯資料夾",
     "createSinglesStructure": "為單獨下載的曲目建立藝人和專輯資料夾",
+    "createShortReleaseFolder": "為只有 1 或 2 首曲目的發行建立資料夾",
     "availableTemplateVars": "可用的範本變數：",
     "examplePath": "範例路徑：",
     "tracknameTemplate": "曲目名稱範本",

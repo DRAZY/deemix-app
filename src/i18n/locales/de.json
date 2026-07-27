@@ -234,6 +234,7 @@
     "createCDFolder": "Ordner für CD erstellen",
     "createPlaylistStructure": "Künstler- und Album-Ordner innerhalb von Playlists erstellen",
     "createSinglesStructure": "Künstler- und Album-Ordner für einzelne Titel erstellen",
+    "createShortReleaseFolder": "Ordner für Veröffentlichungen mit 1 oder 2 Titeln erstellen",
     "availableTemplateVars": "Verfügbare Vorlagenvariablen:",
     "examplePath": "Beispielpfad:",
     "tracknameTemplate": "Titelnamen-Vorlage",

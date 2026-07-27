@@ -234,6 +234,7 @@
     "createCDFolder": "Gumawa ng folder para sa CD",
     "createPlaylistStructure": "Gumawa ng artist at album folder sa loob ng mga playlist",
     "createSinglesStructure": "Gumawa ng artist at album folder para sa mga indibidwal na kanta",
+    "createShortReleaseFolder": "Gumawa ng folder para sa mga release na may 1 o 2 kanta",
     "availableTemplateVars": "Mga available na template variable:",
     "examplePath": "Halimbawa ng path:",
     "tracknameTemplate": "Template ng trackname",

@@ -432,6 +432,7 @@ export const useDownloadStore = defineStore('downloads', () => {
         createCDFolder: settingsStore.settings.createCDFolder,
         createPlaylistStructure: settingsStore.settings.createPlaylistStructure,
         createSinglesStructure: settingsStore.settings.createSinglesStructure,
+        createShortReleaseFolder: settingsStore.settings.createShortReleaseFolder,
         playlistFolderTemplate: settingsStore.settings.playlistFolderTemplate,
         albumFolderTemplate: settingsStore.settings.albumFolderTemplate,
         artistFolderTemplate: settingsStore.settings.artistFolderTemplate,

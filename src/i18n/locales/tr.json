@@ -234,6 +234,7 @@
     "createCDFolder": "CD için klasör oluştur",
     "createPlaylistStructure": "Çalma listeleri içinde sanatçı ve albüm klasörleri oluştur",
     "createSinglesStructure": "Tek tek indirilen parçalar için sanatçı ve albüm klasörleri oluştur",
+    "createShortReleaseFolder": "1 veya 2 parçalı yayınlar için klasör oluştur",
     "availableTemplateVars": "Mevcut şablon değişkenleri:",
     "examplePath": "Örnek yol:",
     "tracknameTemplate": "Şarkı adı şablonu",

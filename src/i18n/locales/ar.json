@@ -234,6 +234,7 @@
     "createCDFolder": "إنشاء مجلد للقرص",
     "createPlaylistStructure": "إنشاء مجلدات الفنان والألبوم داخل قوائم التشغيل",
     "createSinglesStructure": "إنشاء مجلدات الفنان والألبوم للمقاطع الفردية",
+    "createShortReleaseFolder": "إنشاء مجلد للإصدارات التي تحتوي على مقطع أو مقطعين",
     "availableTemplateVars": "متغيرات القالب المتاحة:",
     "examplePath": "مسار المثال:",
     "tracknameTemplate": "قالب اسم المسار",

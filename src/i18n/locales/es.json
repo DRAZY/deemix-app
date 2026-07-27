@@ -234,6 +234,7 @@
     "createCDFolder": "Crear carpeta para CD",
     "createPlaylistStructure": "Crear carpetas de artista y álbum dentro de las playlists",
     "createSinglesStructure": "Crear carpetas de artista y álbum para pistas individuales",
+    "createShortReleaseFolder": "Crear carpeta para lanzamientos con 1 o 2 pistas",
     "availableTemplateVars": "Variables de plantilla disponibles:",
     "examplePath": "Ruta de ejemplo:",
     "tracknameTemplate": "Plantilla de nombre de pista",

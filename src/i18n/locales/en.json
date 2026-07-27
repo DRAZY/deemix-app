@@ -408,6 +408,7 @@
     "createCDFolder": "Create folder for CD",
     "createPlaylistStructure": "Create artist and album folders inside playlists",
     "createSinglesStructure": "Create artist and album folders for individual tracks",
+    "createShortReleaseFolder": "Create a folder for releases with 1 or 2 tracks",
     "availableTemplateVars": "Available template variables:",
     "examplePath": "Example path:",
     "tracknameTemplate": "Trackname template",

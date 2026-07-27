@@ -234,6 +234,7 @@
     "createCDFolder": "Создавать папку для CD",
     "createPlaylistStructure": "Создавать папки исполнителя и альбома внутри плейлистов",
     "createSinglesStructure": "Создавать папки исполнителя и альбома для отдельных треков",
+    "createShortReleaseFolder": "Создавать папку для релизов с 1 или 2 треками",
     "availableTemplateVars": "Доступные переменные шаблона:",
     "examplePath": "Пример пути:",
     "tracknameTemplate": "Шаблон имени трека",

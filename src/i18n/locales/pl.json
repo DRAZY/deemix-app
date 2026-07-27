@@ -234,6 +234,7 @@
     "createCDFolder": "Twórz folder dla płyty CD",
     "createPlaylistStructure": "Twórz foldery artysty i albumu wewnątrz playlist",
     "createSinglesStructure": "Twórz foldery artysty i albumu dla pojedynczych utworów",
+    "createShortReleaseFolder": "Twórz folder dla wydań z 1 lub 2 utworami",
     "availableTemplateVars": "Dostępne zmienne szablonu:",
     "examplePath": "Przykładowa ścieżka:",
     "tracknameTemplate": "Szablon nazwy utworu",

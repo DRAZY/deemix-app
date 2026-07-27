@@ -285,6 +285,7 @@
     "createCDFolder": "สร้างโฟลเดอร์สำหรับ CD",
     "createPlaylistStructure": "สร้างโฟลเดอร์ศิลปินและอัลบั้มภายในเพลย์ลิสต์",
     "createSinglesStructure": "สร้างโฟลเดอร์ศิลปินและอัลบั้มสำหรับเพลงเดี่ยว",
+    "createShortReleaseFolder": "สร้างโฟลเดอร์สำหรับผลงานที่มี 1 หรือ 2 เพลง",
     "availableTemplateVars": "ตัวแปรเทมเพลตที่ใช้ได้:",
     "examplePath": "เส้นทางตัวอย่าง:",
     "tracknameTemplate": "เทมเพลตชื่อเพลง",

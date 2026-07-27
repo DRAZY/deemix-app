@@ -406,6 +406,7 @@ interface ServerSettings {
   createCDFolder: boolean
   createPlaylistStructure: boolean
   createSinglesStructure: boolean
+  createShortReleaseFolder: boolean
   playlistFolderTemplate: string
   albumFolderTemplate: string
   artistFolderTemplate: string
@@ -465,6 +466,7 @@ export class DeemixServer extends EventEmitter {
     createCDFolder: true,
     createPlaylistStructure: false,
     createSinglesStructure: false,
+    createShortReleaseFolder: true,
     playlistFolderTemplate: '%playlist%',
     albumFolderTemplate: '%artist% - %album%',
     artistFolderTemplate: '%artist%',
@@ -1595,7 +1597,7 @@ export class DeemixServer extends EventEmitter {
     console.log(`[Server] Settings - embedArtwork: ${this.settings.embedArtwork}, saveArtwork: ${this.settings.saveArtwork}`)
     console.log(`[Server] Settings - tags.cover: ${this.settings.tags?.cover}, tags.title: ${this.settings.tags?.title}`)
     console.log(`[Server] Settings - albumCovers.embeddedArtworkSize: ${this.settings.albumCovers?.embeddedArtworkSize}`)
-    console.log(`[Server] Settings - createArtistFolder: ${this.settings.createArtistFolder}, createAlbumFolder: ${this.settings.createAlbumFolder}, createSinglesStructure: ${this.settings.createSinglesStructure}`)
+    console.log(`[Server] Settings - createArtistFolder: ${this.settings.createArtistFolder}, createAlbumFolder: ${this.settings.createAlbumFolder}, createSinglesStructure: ${this.settings.createSinglesStructure}, createShortReleaseFolder: ${this.settings.createShortReleaseFolder}`)
 
     try {
       // When playlistName is provided, treat as a playlist track (enables playlist
@@ -1626,6 +1628,7 @@ export class DeemixServer extends EventEmitter {
           createCDFolder: this.settings.createCDFolder,
           createPlaylistStructure: this.settings.createPlaylistStructure,
           createSinglesStructure: this.settings.createSinglesStructure,
+          createShortReleaseFolder: this.settings.createShortReleaseFolder,
           playlistFolderTemplate: this.settings.playlistFolderTemplate,
           albumFolderTemplate: this.settings.albumFolderTemplate,
           artistFolderTemplate: this.settings.artistFolderTemplate
@@ -1758,6 +1761,7 @@ export class DeemixServer extends EventEmitter {
             createCDFolder: this.settings.createCDFolder,
             createPlaylistStructure: this.settings.createPlaylistStructure,
             createSinglesStructure: this.settings.createSinglesStructure,
+            createShortReleaseFolder: this.settings.createShortReleaseFolder,
             playlistFolderTemplate: this.settings.playlistFolderTemplate,
             albumFolderTemplate: this.settings.albumFolderTemplate,
             artistFolderTemplate: this.settings.artistFolderTemplate
@@ -1945,6 +1949,7 @@ export class DeemixServer extends EventEmitter {
             createCDFolder: this.settings.createCDFolder,
             createPlaylistStructure: this.settings.createPlaylistStructure,
             createSinglesStructure: this.settings.createSinglesStructure,
+            createShortReleaseFolder: this.settings.createShortReleaseFolder,
             playlistFolderTemplate: this.settings.playlistFolderTemplate,
             albumFolderTemplate: this.settings.albumFolderTemplate,
             artistFolderTemplate: this.settings.artistFolderTemplate
@@ -2061,6 +2066,7 @@ export class DeemixServer extends EventEmitter {
             createCDFolder: this.settings.createCDFolder,
             createPlaylistStructure: this.settings.createPlaylistStructure,
             createSinglesStructure: this.settings.createSinglesStructure,
+            createShortReleaseFolder: this.settings.createShortReleaseFolder,
             playlistFolderTemplate: this.settings.playlistFolderTemplate,
             albumFolderTemplate: this.settings.albumFolderTemplate,
             artistFolderTemplate: this.settings.artistFolderTemplate
@@ -2139,6 +2145,7 @@ export class DeemixServer extends EventEmitter {
         createCDFolder: this.settings.createCDFolder,
         createPlaylistStructure: this.settings.createPlaylistStructure,
         createSinglesStructure: this.settings.createSinglesStructure,
+        createShortReleaseFolder: this.settings.createShortReleaseFolder,
         playlistFolderTemplate: this.settings.playlistFolderTemplate,
         albumFolderTemplate: this.settings.albumFolderTemplate,
         artistFolderTemplate: this.settings.artistFolderTemplate
@@ -2350,6 +2357,7 @@ export class DeemixServer extends EventEmitter {
         // Folder settings
         'createPlaylistFolder', 'createArtistFolder', 'createAlbumFolder',
         'createCDFolder', 'createPlaylistStructure', 'createSinglesStructure',
+        'createShortReleaseFolder',
         // File settings
         'saveArtwork', 'embedArtwork', 'saveLyrics', 'syncedLyrics'
       ]
@@ -3684,7 +3692,7 @@ export class DeemixServer extends EventEmitter {
     trackId: string | number,
     ctx: {
       partOfAlbum?: boolean
-      album?: { title?: string; artist?: string }
+      album?: { title?: string; artist?: string; totalTracks?: number }
       playlistName?: string
       playlistPosition?: number
       playlistOwner?: string
@@ -3720,7 +3728,11 @@ export class DeemixServer extends EventEmitter {
       playlistOwner: ctx.playlistOwner || undefined,
       _m3uTrackerId: ctx.m3uTrackerId || undefined,
       savePlaylistAsCompilation: isFromPlaylist ? this.settings.savePlaylistAsCompilation : undefined,
-      albumContext: ctx.album ? { albumTitle: ctx.album.title, albumArtist: ctx.album.artist } : undefined,
+      // totalTracks feeds the short-release folder rule (#129) — without it a
+      // Qobuz single would keep its one-file folder while the Deezer one didn't.
+      albumContext: ctx.album
+        ? { albumTitle: ctx.album.title, albumArtist: ctx.album.artist, totalTracks: ctx.album.totalTracks }
+        : undefined,
       folderSettings: {
         createPlaylistFolder: this.settings.createPlaylistFolder,
         createArtistFolder: this.settings.createArtistFolder,
@@ -3728,6 +3740,7 @@ export class DeemixServer extends EventEmitter {
         createCDFolder: this.settings.createCDFolder,
         createPlaylistStructure: this.settings.createPlaylistStructure,
         createSinglesStructure: this.settings.createSinglesStructure,
+        createShortReleaseFolder: this.settings.createShortReleaseFolder,
         playlistFolderTemplate: this.settings.playlistFolderTemplate,
         albumFolderTemplate: this.settings.albumFolderTemplate,
         artistFolderTemplate: this.settings.artistFolderTemplate,
@@ -3816,7 +3829,10 @@ export class DeemixServer extends EventEmitter {
         position++
         const id = await downloader.download(this.buildQobuzDownloadOptions(t.id, {
           partOfAlbum: !!albumId,
-          album,
+          // Track count only means "release size" for an album download; on a
+          // playlist it would be the playlist length, which must not drive the
+          // short-release rule.
+          album: albumId && album ? { ...album, totalTracks: validTracks.length } : album,
           playlistName,
           // Position drives M3U ordering for both albums and playlists.
           playlistPosition: position,

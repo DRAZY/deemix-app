@@ -234,6 +234,7 @@
     "createCDFolder": "Kreiraj mapu za CD",
     "createPlaylistStructure": "Kreiraj mape izvođača i albuma unutar popisa",
     "createSinglesStructure": "Kreiraj mape izvođača i albuma za pojedinačne pjesme",
+    "createShortReleaseFolder": "Kreiraj mapu za izdanja s 1 ili 2 pjesme",
     "availableTemplateVars": "Dostupne varijable predloška:",
     "examplePath": "Primjer putanje:",
     "tracknameTemplate": "Predložak imena pjesme",

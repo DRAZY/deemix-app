@@ -285,6 +285,7 @@
     "createCDFolder": "Креирај фасциклу за CD",
     "createPlaylistStructure": "Креирај фасцикле извођача и албума унутар плејлисти",
     "createSinglesStructure": "Креирај фасцикле извођача и албума за појединачне песме",
+    "createShortReleaseFolder": "Креирај фасциклу за издања са 1 или 2 песме",
     "availableTemplateVars": "Доступне варијабле шаблона:",
     "examplePath": "Пример путање:",
     "tracknameTemplate": "Шаблон имена песме",

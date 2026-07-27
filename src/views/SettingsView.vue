@@ -1035,6 +1035,14 @@ async function reindexLibrary() {
           />
           <span class="text-sm">{{ t('settings.createSinglesStructure') }}</span>
         </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            v-model="settingsStore.settings.createShortReleaseFolder"
+            class="w-4 h-4 accent-primary-500"
+          />
+          <span class="text-sm">{{ t('settings.createShortReleaseFolder') }}</span>
+        </label>
       </div>
 
         <!-- Available template variables -->
