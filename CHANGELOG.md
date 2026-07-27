@@ -17,6 +17,7 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 ### Changed
 
 - **The Settings description for Spotify now names Qobuz.** It still described the pre-2.4.0 behavior, converting to Deezer only, three lines above a disclaimer that correctly named both services. Updated across all 21 languages.
+- **Two folder options now say what they do.** "Create playlist structure" and "Create singles structure" were bare checkboxes whose names described nothing, and the second was actively misleading: it reads as though it governs releases Deezer and Qobuz classify as singles, when it only ever applies to tracks downloaded individually. They are now "Create artist and album folders inside playlists" and "Create artist and album folders for individual tracks". Behavior is unchanged, only the labels. Updated across all 21 languages.
 
 ## [2.4.2] - 2026-07-24
 
