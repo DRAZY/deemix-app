@@ -343,7 +343,7 @@
     "commandHint": "Gunakan %file% untuk path berkas. Kosongkan untuk menonaktifkan.",
     "spotify": {
       "title": "Integrasi Spotify",
-      "description": "Impor playlist, album, dan lagu dari Spotify dan konversi ke padanan Deezer untuk diunduh.",
+      "description": "Impor playlist, album, dan lagu dari Spotify dan konversi ke padanan Deezer atau Qobuz untuk diunduh.",
       "clientId": "Client ID",
       "clientIdPlaceholder": "Masukkan Client ID Spotify Anda...",
       "clientSecret": "Client Secret",

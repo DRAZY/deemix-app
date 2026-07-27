@@ -394,7 +394,7 @@
     "commandHint": "使用 %file% 代表下載的檔案路徑。留空以停用。",
     "spotify": {
       "title": "Spotify 功能",
-      "description": "從 Spotify 匯入播放清單、專輯和曲目，並轉換為 Deezer 對應項目進行下載。",
+      "description": "從 Spotify 匯入播放清單、專輯和曲目，並轉換為 Deezer 或 Qobuz 對應項目進行下載。",
       "clientId": "Client ID",
       "clientIdPlaceholder": "輸入您的 Spotify Client ID...",
       "clientSecret": "Client Secret",

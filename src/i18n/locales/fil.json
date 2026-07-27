@@ -343,7 +343,7 @@
     "commandHint": "Gamitin ang %file% para sa file path. Iwanan blangko para i-disable.",
     "spotify": {
       "title": "Spotify Integration",
-      "description": "Mag-import ng mga playlist, album, at kanta mula sa Spotify at i-convert sa mga katumbas ng Deezer para ma-download.",
+      "description": "Mag-import ng mga playlist, album, at kanta mula sa Spotify at i-convert sa mga katumbas ng Deezer o Qobuz para ma-download.",
       "clientId": "Client ID",
       "clientIdPlaceholder": "Ilagay ang iyong Spotify Client ID...",
       "clientSecret": "Client Secret",

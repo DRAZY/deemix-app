@@ -343,7 +343,7 @@
     "commandHint": "استخدم %file% لمسار الملف. اتركه فارغاً للتعطيل.",
     "spotify": {
       "title": "تكامل Spotify",
-      "description": "استورد قوائم التشغيل والألبومات والمقاطع من Spotify وحولها إلى نظائرها في Deezer للتحميل.",
+      "description": "استورد قوائم التشغيل والألبومات والمقاطع من Spotify وحولها إلى نظائرها في Deezer أو Qobuz للتحميل.",
       "clientId": "معرف العميل",
       "clientIdPlaceholder": "أدخل معرف العميل الخاص بـ Spotify...",
       "clientSecret": "سر العميل",

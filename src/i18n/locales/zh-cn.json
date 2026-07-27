@@ -343,7 +343,7 @@
     "commandHint": "使用 %file% 代表文件路径。留空以禁用。",
     "spotify": {
       "title": "Spotify 集成",
-      "description": "从 Spotify 导入播放列表、专辑和歌曲，并转换为 Deezer 上的对应内容进行下载。",
+      "description": "从 Spotify 导入播放列表、专辑和歌曲，并转换为 Deezer 或 Qobuz 上的对应内容进行下载。",
       "clientId": "客户端 ID",
       "clientIdPlaceholder": "输入您的 Spotify 客户端 ID...",
       "clientSecret": "客户端密钥",

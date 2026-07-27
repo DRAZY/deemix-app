@@ -519,7 +519,7 @@
     "commandHint": "Use %file% for the downloaded file path. Leave empty to disable.",
     "spotify": {
       "title": "Spotify Features",
-      "description": "Import playlists, albums, and tracks from Spotify and convert them to Deezer equivalents for download.",
+      "description": "Import playlists, albums, and tracks from Spotify and convert them to Deezer or Qobuz equivalents for download.",
       "clientId": "Client ID",
       "clientIdPlaceholder": "Enter your Spotify Client ID...",
       "clientSecret": "Client Secret",

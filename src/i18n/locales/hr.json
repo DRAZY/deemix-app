@@ -343,7 +343,7 @@
     "commandHint": "Koristi %file% za putanju datoteke. Ostavi prazno za onemogućavanje.",
     "spotify": {
       "title": "Spotify Integracija",
-      "description": "Uvezi playlisty, albume i pjesme sa Spotifyja i pretvori ih u Deezer ekvivalente za preuzimanje.",
+      "description": "Uvezi playlisty, albume i pjesme sa Spotifyja i pretvori ih u Deezer ili Qobuz ekvivalente za preuzimanje.",
       "clientId": "Client ID",
       "clientIdPlaceholder": "Unesite svoj Spotify Client ID...",
       "clientSecret": "Client Secret",

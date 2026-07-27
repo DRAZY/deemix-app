@@ -394,7 +394,7 @@
     "commandHint": "ใช้ %file% สำหรับเส้นทางไฟล์ที่ดาวน์โหลด เว้นว่างเพื่อปิดใช้งาน",
     "spotify": {
       "title": "คุณสมบัติ Spotify",
-      "description": "นำเข้าเพลย์ลิสต์ อัลบั้ม และเพลงจาก Spotify และแปลงเป็นเทียบเท่า Deezer สำหรับดาวน์โหลด",
+      "description": "นำเข้าเพลย์ลิสต์ อัลบั้ม และเพลงจาก Spotify และแปลงเป็นเทียบเท่า Deezer หรือ Qobuz สำหรับดาวน์โหลด",
       "clientId": "Client ID",
       "clientIdPlaceholder": "ใส่ Spotify Client ID ของคุณ...",
       "clientSecret": "Client Secret",

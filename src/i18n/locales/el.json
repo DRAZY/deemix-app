@@ -343,7 +343,7 @@
     "commandHint": "Χρησιμοποιήστε %file% για τη διαδρομή αρχείου. Αφήστε κενό για απενεργοποίηση.",
     "spotify": {
       "title": "Ενσωμάτωση Spotify",
-      "description": "Εισαγάγετε λίστες αναπαραγωγής, άλμπουμ και τραγούδια από το Spotify και μετατρέψτε τα σε αντίστοιχα του Deezer για λήψη.",
+      "description": "Εισαγάγετε λίστες αναπαραγωγής, άλμπουμ και τραγούδια από το Spotify και μετατρέψτε τα σε αντίστοιχα του Deezer ή του Qobuz για λήψη.",
       "clientId": "Client ID",
       "clientIdPlaceholder": "Εισάγετε το Spotify Client ID σας...",
       "clientSecret": "Client Secret",

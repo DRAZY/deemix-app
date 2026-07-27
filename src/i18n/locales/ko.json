@@ -343,7 +343,7 @@
     "commandHint": "파일 경로에 %file%을 사용하세요. 비활성화하려면 비워두세요.",
     "spotify": {
       "title": "Spotify 연동",
-      "description": "Spotify에서 플레이리스트, 앨범, 트랙을 가져와 Deezer에서 다운로드할 수 있도록 변환합니다.",
+      "description": "Spotify에서 플레이리스트, 앨범, 트랙을 가져와 Deezer 또는 Qobuz에서 다운로드할 수 있도록 변환합니다.",
       "clientId": "클라이언트 ID",
       "clientIdPlaceholder": "Spotify 클라이언트 ID를 입력하세요...",
       "clientSecret": "클라이언트 시크릿",

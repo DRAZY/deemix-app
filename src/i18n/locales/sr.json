@@ -394,7 +394,7 @@
     "commandHint": "Користи %file% за путању преузете датотеке. Остави празно за онемогућавање.",
     "spotify": {
       "title": "Spotify функције",
-      "description": "Увезите плејлисте, албуме и песме са Spotify-а и конвертујте их у Deezer еквиваленте за преузимање.",
+      "description": "Увезите плејлисте, албуме и песме са Spotify-а и конвертујте их у Deezer или Qobuz еквиваленте за преузимање.",
       "clientId": "Client ID",
       "clientIdPlaceholder": "Унесите ваш Spotify Client ID...",
       "clientSecret": "Client Secret",

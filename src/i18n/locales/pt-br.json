@@ -343,7 +343,7 @@
     "commandHint": "Use %file% para o caminho do arquivo. Deixe vazio para desativar.",
     "spotify": {
       "title": "Integração com Spotify",
-      "description": "Importe playlists, álbuns e músicas do Spotify e converta para equivalentes do Deezer para download.",
+      "description": "Importe playlists, álbuns e músicas do Spotify e converta para equivalentes do Deezer ou Qobuz para download.",
       "clientId": "Client ID",
       "clientIdPlaceholder": "Digite seu Client ID do Spotify...",
       "clientSecret": "Client Secret",

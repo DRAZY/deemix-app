@@ -343,7 +343,7 @@
     "commandHint": "Dosya yolu için %file% kullanın. Devre dışı bırakmak için boş bırakın.",
     "spotify": {
       "title": "Spotify Entegrasyonu",
-      "description": "Spotify'dan çalma listeleri, albümler ve şarkıları içe aktarın ve indirmek için Deezer eşdeğerlerine dönüştürün.",
+      "description": "Spotify'dan çalma listeleri, albümler ve şarkıları içe aktarın ve indirmek için Deezer veya Qobuz eşdeğerlerine dönüştürün.",
       "clientId": "Client ID",
       "clientIdPlaceholder": "Spotify Client ID'nizi girin...",
       "clientSecret": "Client Secret",

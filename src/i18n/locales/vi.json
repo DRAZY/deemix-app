@@ -394,7 +394,7 @@
     "commandHint": "Dùng %file% cho đường dẫn tập tin đã tải. Để trống để tắt.",
     "spotify": {
       "title": "Tính năng Spotify",
-      "description": "Nhập playlist, album và bài hát từ Spotify và chuyển đổi sang tương đương Deezer để tải.",
+      "description": "Nhập playlist, album và bài hát từ Spotify và chuyển đổi sang tương đương Deezer hoặc Qobuz để tải.",
       "clientId": "Client ID",
       "clientIdPlaceholder": "Nhập Spotify Client ID của bạn...",
       "clientSecret": "Client Secret",

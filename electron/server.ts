@@ -4107,13 +4107,21 @@ export class DeemixServer extends EventEmitter {
       const msg = error.message || 'Failed to analyze Spotify URL'
       const status: number = typeof error.status === 'number' ? error.status : 0
       const notFound = status === 404 || msg.toLowerCase().includes('not found')
-      // Spotify-owned editorial + algorithmic playlists (Today's Top Hits,
-      // RapCaviar, Discover Weekly — IDs starting 37i9) stopped being reachable
-      // without user-level OAuth after Spotify's Nov-2024 Client-Credentials
-      // deprecation. Name the real cause, not "personalized".
+      // Spotify answers 404 for two very different playlist cases, and we only
+      // get to tell them apart by the ID. Its own editorial + algorithmic
+      // playlists (Today's Top Hits, RapCaviar, Discover Weekly) all carry the
+      // 37i9 prefix and stopped being reachable without user-level OAuth after
+      // Spotify's Nov-2024 Client-Credentials deprecation. Any other 404 is a
+      // user-owned playlist that is private or deleted: client-credentials
+      // tokens have no user context, so a private playlist is invisible even to
+      // the person who owns it. Blaming the editorial change for that case told
+      // people the opposite of the truth ("playlists by regular users still
+      // work") while they stared at their own playlist failing.
       if (notFound && parsedUrl?.type === 'playlist') {
         this.sendJSON(res, {
-          error: "This playlist can't be opened. Spotify's own editorial and algorithmic playlists (Today's Top Hits, RapCaviar, Discover Weekly — links starting with 37i9) require a personal Spotify login that this app doesn't use, following a Spotify API change in late 2024. Playlists created by regular users still work."
+          error: parsedUrl.id.startsWith('37i9')
+            ? "This playlist can't be opened. Spotify's own editorial and algorithmic playlists (Today's Top Hits, RapCaviar, Discover Weekly — links starting with 37i9) require a personal Spotify login that this app doesn't use, following a Spotify API change in late 2024. Playlists created by regular users still work."
+            : "This playlist can't be opened. It's either private or no longer exists. Spotify credentials identify this app, not you, so only public playlists can be read, and a private playlist stays invisible even when it's your own. In Spotify, open the playlist, choose Make public, then analyze the link again."
         }, 404)
       } else if (status === 429 || status >= 500) {
         // Transient — makeRequest already retried; tell the user to retry.

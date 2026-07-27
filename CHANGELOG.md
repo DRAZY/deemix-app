@@ -10,6 +10,14 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 
 ## [Unreleased]
 
+### Fixed
+
+- **A private Spotify playlist is no longer blamed on the editorial API change.** Spotify answers 404 both for its own editorial and algorithmic playlists and for a user's private playlist, and the app reported every one of them as the first case, ending with "playlists created by regular users still work" while someone stared at their own playlist failing. The message now branches on the playlist ID: links starting with `37i9` keep the editorial explanation, everything else says the playlist is private or gone, explains that Spotify credentials identify the app rather than the person, and points to the Make public option. Raised by alex5908 on #117.
+
+### Changed
+
+- **The Settings description for Spotify now names Qobuz.** It still described the pre-2.4.0 behavior, converting to Deezer only, three lines above a disclaimer that correctly named both services. Updated across all 21 languages.
+
 ## [2.4.2] - 2026-07-24
 
 ### Changed
