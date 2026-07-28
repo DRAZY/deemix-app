@@ -2545,11 +2545,11 @@ export class Downloader extends EventEmitter {
 
       if (chunkIndex % 3 === 0 && chunkSize === 2048) {
         // Decrypt this chunk with Blowfish CBC
+        let decrypted: Buffer
         try {
           // Reset IV for each chunk decryption
           bf.setIv(iv)
-          const decrypted = Buffer.from(bf.decode(chunk, Blowfish.TYPE.UINT8_ARRAY))
-          decrypted.copy(output, position)
+          decrypted = Buffer.from(bf.decode(chunk, Blowfish.TYPE.UINT8_ARRAY))
         } catch (e: any) {
           // Unreachable under the guard above: decode() only throws on a non-Buffer
           // input, an unset IV, a length not divisible by 8, or a bad return-type
@@ -2565,6 +2565,34 @@ export class Downloader extends EventEmitter {
           // file is written only after this loop finishes, no partial file survives.
           console.error(`[Downloader] Chunk decryption failed at position ${position}:`, e.message)
           throw new Error(`Chunk decryption failed at byte ${position}: ${e.message}`)
+        }
+        decrypted.copy(output, position)
+
+        // The Blowfish instance is built with PADDING.NULL, and that library's
+        // decode() strips trailing 0x00 bytes from the plaintext. So a 2048-byte
+        // stripe legitimately comes back at 2047 or 2046 — measured at ~0.4% of
+        // chunks, since MP3 frame data is full of nulls. This is not an error.
+        //
+        // It stays lossless only because the bytes stripped are zeros by
+        // definition and `output` came from Buffer.alloc, which zero-fills, so
+        // the gap already holds the right values. That makes the allocator above
+        // LOAD-BEARING, not a style choice: Buffer.allocUnsafe returns recycled
+        // memory and would scatter garbage bytes through the audio on ~1 chunk
+        // in 250 while still reporting a successful download — silent corruption
+        // that only shows up by ear.
+        //
+        // Verify rather than trust, so the coupling can't be broken silently.
+        // Runs only on a short decode, and decode() strips at most 7 bytes.
+        if (decrypted.length < chunkSize) {
+          for (let i = position + decrypted.length; i < position + chunkSize; i++) {
+            if (output[i] !== 0) {
+              throw new Error(
+                `Decrypt output buffer is not zero-filled at byte ${i}: PADDING.NULL ` +
+                `strips trailing nulls, so this buffer must come from Buffer.alloc, ` +
+                `never Buffer.allocUnsafe`
+              )
+            }
+          }
         }
       } else {
         // Copy chunk as-is
