@@ -29,17 +29,30 @@ All three reports remain unsupported by any byte-level evidence.
 
 ## Other tools (audited 2026-07-28)
 
-Source: `github.com/bambanah/deemix` (maintained JS port, 1123 stars).
+Source: `github.com/bambanah/deemix` (maintained JS port, 1123 stars), at commit
+**`d0ac6b434f6fe78eccb0b57cbb1b67ead880e4ec`** (2026-07-27). Line numbers below
+refer to that commit. Re-clone and check out that SHA to reproduce; the working
+copy used for this audit was temporary and is gone.
 
 | Question | deemix | Deemix Remastered |
 |---|---|---|
 | Endpoint for file URL | `media.deezer.com/v1/get_url` | Same |
 | Private API | `gw-light.php` | Same |
 | Cipher | `BF_CBC_STRIPE` (`deezer.ts:202`) | Same |
+| Audio processing deps | **None** — `browser-id3-writer`, `metaflac-js2`, `deezer-sdk`, `got`, `async`, `tough-cookie`, `html-entities`, Spotify SDK. No ffmpeg / lamejs / DSP | None |
 | Writes `REPLAYGAIN_TRACK_GAIN` | **Yes** (`tagger.ts:79`, MP3 + FLAC) | Yes |
 | ReplayGain formula | `Math.round((gain + 18.4) * -100)/100` | `(-(g + 18.4)).toFixed(2)` — mathematically identical |
 | ReplayGain default | `false` (`settings.ts:90`) | `false` |
 | **Post-download shell hook** | **Yes — `executeCommand`** (`downloader.ts:673`) | **No equivalent** |
+
+deemix also queries more public `api.deezer.com` routes than we do, but those are
+metadata only and never touch audio.
+
+**Important framing:** deemix's own download path is as clean as ours. It carries
+no encoder or DSP dependency either. The two tools are functionally identical from
+request through decrypt to tag write. `executeCommand` is therefore not evidence
+that deemix processes audio; it is the single point at which a *user* can make it
+do so. Any difference between the two tools originates outside both codebases.
 
 ### The `executeCommand` finding
 
