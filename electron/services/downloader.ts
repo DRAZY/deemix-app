@@ -2551,9 +2551,20 @@ export class Downloader extends EventEmitter {
           const decrypted = Buffer.from(bf.decode(chunk, Blowfish.TYPE.UINT8_ARRAY))
           decrypted.copy(output, position)
         } catch (e: any) {
+          // Unreachable under the guard above: decode() only throws on a non-Buffer
+          // input, an unset IV, a length not divisible by 8, or a bad return-type
+          // enum — and `chunkSize === 2048` plus the setIv() two lines up rule out
+          // all four. Kept as a tripwire in case the chunking ever changes (streaming,
+          // a different stripe size).
+          //
+          // Rethrow rather than fall back to copying the chunk. Writing the still-
+          // ENCRYPTED bytes through would emit a file that reports a successful
+          // download but contains digital noise where audio should be — exactly the
+          // kind of silent corruption users can only detect by ear. The caller turns
+          // this into "Decryption error" and fails the download, and since the output
+          // file is written only after this loop finishes, no partial file survives.
           console.error(`[Downloader] Chunk decryption failed at position ${position}:`, e.message)
-          // If decryption fails, just copy the chunk as-is
-          chunk.copy(output, position)
+          throw new Error(`Chunk decryption failed at byte ${position}: ${e.message}`)
         }
       } else {
         // Copy chunk as-is

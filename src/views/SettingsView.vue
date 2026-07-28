@@ -1580,13 +1580,14 @@ async function reindexLibrary() {
             />
             <span class="text-sm">{{ t('settings.tags.bpm') }}</span>
           </label>
-          <label class="flex items-center gap-3 cursor-pointer">
+          <label class="flex items-center gap-3 cursor-pointer" :title="t('settings.tags.replayGainHelp')">
             <input
               type="checkbox"
               v-model="settingsStore.settings.tags.replayGain"
               class="w-4 h-4 accent-primary-500"
             />
             <span class="text-sm">{{ t('settings.tags.replayGain') }}</span>
+            <span class="text-xs text-foreground-muted cursor-help" :title="t('settings.tags.replayGainHelp')">ⓘ</span>
           </label>
           <label class="flex items-center gap-3 cursor-pointer">
             <input
