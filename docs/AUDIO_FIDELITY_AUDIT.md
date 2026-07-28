@@ -49,18 +49,42 @@ deemix runs an arbitrary user-supplied shell command after every track, with
 (`SettingsPage.vue:1267`, helper text "Leave blank for no action"), localized into
 every shipped language including Spanish.
 
-Default is empty, but any user who pasted an `mp3gain`, `loudgain`, or
+Default is empty, but a user who pasted an `mp3gain`, `loudgain`, or
 `ffmpeg -af loudnorm` one-liner there would get:
 
 - changed perceived loudness (the one thing #130 actually measured)
 - altered dynamics (the subjective complaint)
 - a still-genuine 320 CBR spectrum (what #130 verified)
 
-This is the single most likely explanation for a real audible difference between
-the two tools, and it puts the processing in deemix, not here.
+#### Status of this theory: mechanism confirmed, usage NOT evidenced
 
-**Ask first if the report resurfaces:** what is in your deemix
-"Command to execute after download" box?
+Read carefully before citing this. The hook is real and verified in source. What
+is **not** established is that anyone actually uses it for audio processing.
+
+A web sweep on 2026-07-28 found no supporting evidence at all: web search for
+`executeCommand` + ffmpeg/normalize, Reddit-targeted queries for
+deemix + replaygain/mp3gain, a search for the literal UI label
+"Command to execute after download", GitHub **code** search for
+`executeCommand deemix` (zero results), the deemix issue tracker (one unrelated
+release PR), and the deemix man page (fetched: "contains no information about
+post-download commands... or audio processing"). No guide, forum post, or config
+example anywhere recommends using it this way.
+
+So the honest framing is: **this is the only known mechanism** by which a deemix
+download could differ from ours, given that endpoints, cipher, and ReplayGain
+handling are otherwise identical. It is NOT a demonstrated cause, and it should
+not be described as the likely explanation. That was reasoning from capability
+to conclusion, and the evidence does not carry it.
+
+Two caveats keep the absence of evidence weak rather than conclusive: deemix's
+main community is a **Telegram group**, which is unindexed and unsearchable (both
+#87 and #130 reporters linked Telegram), and the original RemixDev repos live on
+GitLab and `git.freezer.life`, which were unreachable from here.
+
+**If the report resurfaces, ask neutrally:** what is in your deemix "Command to
+execute after download" box? Frame it as eliminating the last unseen variable,
+not as an accusation. An empty box is a useful result: it rules out the only
+remaining known difference between the two tools.
 
 ### Murglar
 
