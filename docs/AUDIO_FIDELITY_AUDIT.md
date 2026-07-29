@@ -1,13 +1,68 @@
 # Audio Fidelity Audit
 
-Reference for the recurring "downloads sound worse" report (#87, #99, #130). Every
-claim below was verified against source or by measurement on 2026-07-28. Cite this
-instead of re-deriving it.
+Reference for the recurring "downloads sound worse" report (#87, #99, #130). Source
+and measurement claims verified 2026-07-28; reporter-supplied sample analysis added
+2026-07-29. Cite this instead of re-deriving it.
 
 ## Verdict
 
 Deemix Remastered cannot alter audio. The capability is not present in the tree.
-All three reports remain unsupported by any byte-level evidence.
+
+This is no longer only a structural argument. On 2026-07-29 the reporters supplied
+fourteen files, and **all seven pairs proved bit-identical in the audio.** The
+question is settled on their evidence, not ours.
+
+## Reporter-supplied samples (2026-07-29) — DEFINITIVE
+
+Both reporters posted files as GitHub attachments. Every pair was tested: strip the
+ID3v2 tag off the front, strip the ID3v1 tag off the end, SHA-256 the remaining MPEG
+frames. That is an arithmetic null test, immune to volume, hardware, and expectation.
+
+| Pair | Thread | Audio frames | Result |
+|---|---|---|---|
+| Dyland & Lenny, Pégate Más | #130 | 8,038,399 B | Identical |
+| DJ Luian, La Ocasión | #130 | 13,448,880 B | Identical |
+| Chiquetete, Aprende A Soñar | #130 | 7,361,305 B | Identical |
+| Isabel Pantoja, Así Fue | #130 | 13,063,313 B | Identical |
+| Maná, El Verdadero Amor Perdona | #130 | 11,248,325 B | Identical |
+| Maluma & Feid, Mojando Asientos | #87 | 10,089,533 B | Identical |
+| Danny Ocean, Me Rehúso | #87 | 8,231,705 B | Identical |
+
+**Seven of seven.** Every differing byte in the whole set lives in the 128-byte ID3v1
+trailer:
+
+- Pégate Más, Chiquetete: **1 byte**, the genre field (`0xFF` unset vs `0x0D` = Pop)
+- Isabel Pantoja: **2 bytes**, year `2016` vs `2017`
+- Maná: **3 bytes**, artist `Mana` vs `Maná` (the accent, in UTF-8)
+
+Out of 8–13 MB per file. Not one differing byte inside an audio frame.
+
+Two findings worth keeping:
+
+1. **The La Ocasión pair is the same file twice** — identical whole-file SHA-256
+   `bfa681850db897c7...`, tags included. The reported difference was between a file
+   and itself.
+2. **The #87 pair is not a test of this app.** Labeled "(deemix original)" and
+   "(deemixfix)", it compares two other tools. Their audio is byte-identical too, so
+   all three tools demonstrably deliver the same bytes.
+
+All fourteen files: LAME 3.99, 320 CBR, 44.1 kHz stereo, durations matching to 0.01s.
+That is Deezer's own encode. No tool in the comparison re-encoded anything.
+
+### Version-regression claim (#130, armijos2333)
+
+Claim: audio degraded after 2.2.3, still bad in 2.4.2. Tested by extracting
+`decryptFile` and `handleDownloadResponse` from every tag in that range and hashing:
+
+```
+v2.2.3 / v2.3.0 / v2.3.1 / v2.3.2 / v2.4.0 / v2.4.1 / v2.4.2
+decryptFile            = 2fc1e5c2fa15   (identical at all seven)
+handleDownloadResponse = b0afba2e0272   (identical at all seven)
+```
+
+The fetch and decrypt paths did not change by one character across those releases.
+Reproduce with `git show <tag>:electron/services/downloader.ts` (brace the variable
+in zsh: `${v}:path`, since `$v:e` parses as a modifier).
 
 ## Our download path
 
@@ -116,13 +171,32 @@ Errors made in #130 comments, all since fixed in-thread. Do not repeat them:
 | "If even one byte came out wrong, MP3 frames wouldn't decode" | Overstated. MP3 tolerates isolated byte errors. The real argument is that a systematic difference corrupts every third 2048-byte block across the whole file, which is grossly audible |
 | "deterministic and bijective" | Blowfish is; the pipeline is not strictly, because `PADDING.NULL` is information-losing and recovered only by zero-fill |
 
-## Gaps not yet raised with reporters
+## Superseded lines of inquiry
 
-- **File size check.** Two 320 CBR files of the same recording are within a few KB.
-  Fastest possible discriminator, never offered.
-- **Track IDs.** #130 was told to compare Deezer track IDs, but the `sourceId` tag
-  ("Source and song ID") is **off by default** (`settingsStore.ts:203`), so the ID
-  is not in their existing files. They must enable it and re-download first.
-- **The other fork is the unexamined variable.** If two tools yield audibly
-  different files from the same source and ours is provably byte-exact, the
-  difference originates in the other tool.
+These mattered while the question was open. The 2026-07-29 sample analysis answered
+it directly, so none of them need pursuing unless a *new* report arrives without
+files.
+
+- **File size check.** Was the fastest discriminator to offer a reporter. Moot now
+  that the frames themselves have been hashed.
+- **Track IDs.** #130 was asked to compare Deezer track IDs, but the `sourceId` tag
+  ("Source and song ID") is off by default (`settingsStore.ts:203`), so the ID is not
+  in files already downloaded. Enabling it and re-downloading is required first. Still
+  the right ask for a future report, since a track-ID mismatch means two different
+  recordings and voids the comparison before any hashing is needed.
+- **The other fork as unexamined variable.** Resolved: the #87 pair showed original
+  Deemix and DeemixFix producing byte-identical audio to each other and to us. No
+  fork in the comparison alters anything.
+- **deemix `executeCommand`.** Still the only known mechanism by which any of these
+  tools could process audio, and still unevidenced as ever being used that way. It is
+  now also unnecessary as an explanation, since the files came back identical. Ask
+  only if a future reporter supplies files that genuinely differ.
+
+## If this comes up again
+
+1. Ask for both files as attachments. Everything else is impressions.
+2. Strip ID3v2 (front) and ID3v1 (last 128 bytes), then SHA-256 the MPEG frames.
+   Skipping the ID3v1 strip produces false "differs" results: metadata alone
+   accounted for every difference in all seven pairs above.
+3. If frames match, it is playback-side or a different master. Nothing to fix.
+4. If frames genuinely differ, compare Deezer track IDs first, then reopen.
