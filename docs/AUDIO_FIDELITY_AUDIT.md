@@ -199,9 +199,49 @@ the skip decision passes all 13 cases including both never-downgrade directions
 (never replace a 320 with a 128, never replace a FLAC with an MP3) and every
 unsure input.
 
-Still untested end to end: one live download per tier (128 / 320 / FLAC) of the
-same track, probed afterward. That is the only thing that would close the MP3 tier
-selection question with direct evidence rather than inference.
+### Live end-to-end tier test (2026-07-30) — DEFINITIVE
+
+Same track downloaded three times through the running app's own HTTP API, one per
+tier, each into its own folder, with `skipDuplicateTracks` off so nothing was
+short-circuited. Track 67238732, Daft Punk "Instant Crush (feat. Julian
+Casablancas)". Settings were captured beforehand and restored afterward, verified
+field by field.
+
+| Requested | Delivered | Bitstream | Size | SHA-256 (first 16) |
+|---|---|---|---|---|
+| MP3_128 | MP3_128 | 128 kbps CBR, 44.1 kHz | 5,402,121 | `1eb10f19415b88e2` |
+| MP3_320 | MP3_320 | 320 kbps CBR, 44.1 kHz | 13,505,305 | `e46db50c2063ca16` |
+| FLAC | FLAC | 16-bit / 44.1 kHz / 2ch | 40,048,725 | `b902a0954a7a316e` |
+
+Three for three. The 320:128 size ratio is 2.50, exactly what those bitrates
+imply. All three decode to an identical 337.56 s, so no ISRC substitution swapped
+in a different master.
+
+The tiers are three genuinely different encodes, not one file relabelled. Energy
+remaining above each cutoff, measured over the same 45 s window:
+
+| Above | 128 | 320 | FLAC |
+|---|---|---|---|
+| 15 kHz | -45.4 dB | -41.1 dB | -40.8 dB |
+| 17 kHz | -53.7 dB | -44.8 dB | -44.1 dB |
+| 19 kHz | -69.9 dB | -52.3 dB | -49.2 dB |
+| 20 kHz | -83.3 dB | -60.9 dB | -52.7 dB |
+| 21 kHz | -90.3 dB | -81.9 dB | -58.4 dB |
+
+Strictly monotonic at every frequency, with the gaps widening exactly where lossy
+encoders place their lowpass: 128 is dead by 21 kHz, 320 is nearly dead, FLAC
+still carries content. This is what correct tier selection looks like from the
+audio side, independent of any label.
+
+Finally, the two live MP3s were used to reproduce the skip defect directly. Copied
+in turn to the single filename both tiers resolve to, the fixed decision returns
+re-download for 128-under-320 and 128-under-FLAC, and skip for 320-under-320 and
+320-under-128. 4/4.
+
+**Conclusion: the app requests the tier the user selected, Deezer delivers that
+tier, and the delivered bytes really are that tier.** The bitrate mismatch that
+was reachable in shipped code was never in the selection path at all — it was the
+skip path keeping an older, lower-bitrate file and reporting the newer tier.
 
 ## Other tools (audited 2026-07-28)
 
