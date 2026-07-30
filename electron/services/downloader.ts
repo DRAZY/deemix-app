@@ -9,6 +9,7 @@ import { applyMergeFromMeta, replayGainString, type ResolvedMeta, type RetagFiel
 import { libraryIndex } from './libraryIndex'
 import { qobuzAuth } from './qobuzAuth'
 import { downloadQobuzTrack } from './qobuzDownloader'
+import { probeAudioFile, expectedContainer, isLowerTier } from './audioProbe'
 
 export interface FolderSettings {
   createPlaylistFolder: boolean
@@ -964,7 +965,11 @@ export class Downloader extends EventEmitter {
       // (reuses the Deezer path builder via the Qobuz→trackInfo shim), then honor
       // the overwrite mode ('no' → skip when the file already exists).
       const initialOutputPath = this.buildOutputPath(shim, options, options.quality)
-      const outputPath = this.reserveOutputPath(initialOutputPath, options.trackId, options.overwriteMode)
+      // Qobuz negotiates the tier during the fetch, so the requested quality is
+      // the best expectation available at skip time — which is the right basis
+      // anyway: "you asked for 320 and this file is 128" is what should override
+      // the skip.
+      const outputPath = this.reserveOutputPath(initialOutputPath, options.trackId, options.overwriteMode, options.quality)
       if (outputPath === null) {
         progress.status = 'completed'
         progress.progress = 100
@@ -1027,11 +1032,16 @@ export class Downloader extends EventEmitter {
       // Qobuz is the hi-res service — the delivered tier IS the product, so
       // every Qobuz FLAC chip shows it (e.g. 'FLAC 24/192', 'FLAC 16/44.1'),
       // not just step-downs. Delivery facts come straight from getFileUrl.
+      //
+      // The lossy branch used to assert MP3_320 outright, since that is the only
+      // lossy tier Qobuz sells. Read it off the bitstream instead: an assumption
+      // that happens to be true is still the thing that hides it becoming false.
+      const qobuzProbe = gotFlac ? null : probeAudioFile(result.path)
       progress.actualFormat = gotFlac
         ? (result.bitDepth && result.samplingRate
             ? `FLAC ${result.bitDepth}/${result.samplingRate}`
             : 'FLAC')
-        : 'MP3_320'
+        : (qobuzProbe && qobuzProbe.tier !== 'MP3_OTHER' ? qobuzProbe.tier : 'MP3_320')
 
       // Qobuz files arrive untagged — tag them from the API metadata by reusing
       // the Deezer tagger via a Deezer-shaped shim + a pre-fetched cover buffer.
@@ -1455,7 +1465,12 @@ export class Downloader extends EventEmitter {
     if (options.skipDuplicateTracks && trackInfo.ISRC) {
       await libraryIndex.ensureLoaded()
       const existingPath = libraryIndex.findExisting(trackInfo.ISRC)
-      if (existingPath) {
+      // De-dup matches on ISRC alone, so without a tier check it would answer
+      // "already have it" while holding a copy worse than the one being fetched
+      // — including a 128 MP3 when this download would have been FLAC.
+      if (existingPath && isLowerTier(existingPath, actualFormat)) {
+        console.log(`[Downloader] Duplicate ISRC ${trackInfo.ISRC} found at ${existingPath}, but it is a lower tier than ${actualFormat} — downloading anyway`)
+      } else if (existingPath) {
         console.log(`[Downloader] Skipping duplicate (ISRC ${trackInfo.ISRC} already in library): ${existingPath}`)
         progress.status = 'completed'
         progress.progress = 100
@@ -1480,7 +1495,9 @@ export class Downloader extends EventEmitter {
 
     // Reserve a unique output path to prevent concurrent download collisions
     // Returns null if overwrite mode is 'no' and file already exists (skip download)
-    const outputPath = this.reserveOutputPath(initialOutputPath, trackInfo.SNG_ID, options.overwriteMode)
+    // actualFormat, not options.quality: if Deezer only has this track at 128
+    // there is nothing to upgrade to, so an existing 128 file should still skip.
+    const outputPath = this.reserveOutputPath(initialOutputPath, trackInfo.SNG_ID, options.overwriteMode, actualFormat)
     if (outputPath === null) {
       // File exists and overwrite mode is 'no' — mark as completed and skip
       progress.status = 'completed'
@@ -1615,6 +1632,42 @@ export class Downloader extends EventEmitter {
         fs.unlinkSync(encryptedPath)
       }
       encryptedPath = null // Mark as cleaned up
+
+      // Check the delivered bitstream against the tier the Media API claimed.
+      // Everything downstream — the extension already on disk, the tagger picked
+      // below, the quality chip, the downgrade badge — runs off that one label,
+      // and until here nothing had ever compared it to the actual bytes. The
+      // label also has a soft spot worth covering: getMediaUrl falls back to the
+      // FIRST format it requested when the response omits `media.format`, which
+      // is the most optimistic possible guess.
+      const delivered = probeAudioFile(decryptedPath)
+      if (delivered) {
+        const wantContainer = expectedContainer(actualFormat)
+        if (wantContainer && delivered.container !== wantContainer) {
+          // Not a quality question — the file is the wrong kind of thing. Its
+          // extension lies and the tagger below would write ID3 frames into a
+          // FLAC (or Vorbis comments into an MP3) and corrupt it. Delete rather
+          // than ship it, same as a truncated transfer.
+          try { if (fs.existsSync(decryptedPath)) fs.unlinkSync(decryptedPath) } catch (e) {}
+          throw new Error(
+            `Delivered audio is ${delivered.container.toUpperCase()} but the Media API reported ` +
+            `${actualFormat}. Refusing to write a file whose extension and tags would both be wrong.`
+          )
+        }
+        if (delivered.tier !== 'MP3_OTHER' && delivered.tier !== actualFormat) {
+          // Same container, different tier. The audio is whatever Deezer sent and
+          // is fine to keep; only the label was wrong. Correct it so the quality
+          // chip and the downgrade badge tell the truth.
+          console.warn(
+            `[Downloader] Format label mismatch: API said ${actualFormat}, ` +
+            `bitstream is ${delivered.tier} (${delivered.bitrate} kbps) — trusting the bitstream`
+          )
+          actualFormat = delivered.tier
+          progress.actualFormat = delivered.tier
+        } else {
+          console.log(`[Downloader] Verified delivered format: ${delivered.tier}${delivered.bitrate ? ` (${delivered.bitrate} kbps)` : ''}`)
+        }
+      }
 
       // Tag the file with metadata
       progress.status = 'tagging'
@@ -2201,9 +2254,16 @@ export class Downloader extends EventEmitter {
    *
    * @param basePath - The output path from buildOutputPath
    * @param trackId - The Deezer track ID for logging
-   * @returns The reserved path (same as input, collision info logged)
+   * @param overwriteMode - 'no' skips when the file exists, 'rename' finds a free
+   *   name, anything else overwrites
+   * @param expectedFormat - Quality tier this download would produce. Under mode
+   *   'no', an existing file at a LOWER tier is overwritten rather than skipped:
+   *   MP3_128 and MP3_320 share the same `.mp3` filename, so without this a 320
+   *   re-download silently kept the 128 already on disk. Omit it to get the old
+   *   unconditional skip.
+   * @returns The reserved path, or null to signal "skip this download"
    */
-  private reserveOutputPath(basePath: string, trackId: string | number, overwriteMode?: string): string | null {
+  private reserveOutputPath(basePath: string, trackId: string | number, overwriteMode?: string, expectedFormat?: string): string | null {
     const normalizedPath = path.normalize(basePath)
 
     // Check for collision with another in-progress download
@@ -2214,7 +2274,12 @@ export class Downloader extends EventEmitter {
     // Check for existing file and handle based on overwrite mode
     if (fs.existsSync(normalizedPath)) {
       const mode = overwriteMode || 'overwrite'
-      if (mode === 'no') {
+      if (mode === 'no' && isLowerTier(normalizedPath, expectedFormat)) {
+        // Fall through to overwrite: skipping here would keep a file that is
+        // genuinely worse than what the user just asked for, while the UI went
+        // on to report the requested tier.
+        console.log(`[Downloader] Existing file for track ${trackId} is a lower tier than ${expectedFormat} — re-downloading instead of skipping`)
+      } else if (mode === 'no') {
         console.log(`[Downloader] Skipping track ${trackId} — file already exists: ${normalizedPath}`)
         return null // Signal to skip this download
       } else if (mode === 'rename') {
