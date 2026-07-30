@@ -127,6 +127,82 @@ in zsh: `${v}:path`, since `$v:e` parses as a modifier).
 | Per-chunk catch copied still-ENCRYPTED bytes into output on decrypt failure | `downloader.ts` catch block | Fixed, commit `6f1fb15`. Unreachable today (2000/2000 decode calls under call-site contract threw zero times); now rethrows instead of corrupting |
 | `PADDING.NULL` makes `decode()` strip trailing `0x00`, so ~0.4% of stripes return 2047/2046 bytes. Lossless ONLY because `Buffer.alloc` zero-fills | `downloader.ts` decrypt loop | Fixed, commit `db17e83`. Runtime guard asserts the zero-fill. Verified: silent under `Buffer.alloc`, throws at exact offset under `allocUnsafe` (which corrupts ~1 chunk in 250, still reporting success) |
 
+## Bitrate selection audit (2026-07-30)
+
+Different question from everything above. The rest of this document asks "are the
+bytes we wrote the bytes Deezer sent." This asks "did we request the right tier,
+and did we handle what came back correctly."
+
+**The request path was already correct.** `getTrackUrl` (`deezerAuth.ts:1599`)
+builds an ordered format chain, sends the whole chain to
+`media.deezer.com/v1/get_url`, and lets Deezer pick the best entry it can serve.
+The delivered tier is read back from `media.format` and drives the extension, the
+output path, the tagger branch, and the UI badge. With Bitrate Fallback off it
+hard-fails rather than quietly stepping down.
+
+**Empirical baseline.** A purpose-built parser read actual MPEG frame headers and
+FLAC STREAMINFO (ignoring filenames, extensions and tags) across all 8,809 files
+in the maintainer's own library:
+
+| Result | Count |
+|---|---|
+| Valid FLAC (real STREAMINFO, correct depth/rate) | 8,793 |
+| — 16-bit/44.1 kHz (Deezer HiFi) | 7,687 |
+| — 24-bit at 48/96/176.4/192 kHz (Qobuz hi-res) | 1,106 |
+| MP3 at 320 CBR | 10 |
+| MP3 at 128 CBR | 6 |
+| Parse failures | 0 |
+| Lossy audio inside a FLAC container | 0 |
+| Wrong sample rate or unexpected mono | 0 |
+
+Spectral check on a normal FLAC shows energy sloping smoothly to 20 kHz, which is
+genuine lossless. The 128s are tracks (karaoke, lofi) Deezer only carries at that
+tier, so the fallback behaved correctly. Note the corpus only exercises "request
+FLAC" — it does not test the 320-versus-128 selection.
+
+### Defect found: bitrate-blind skip (fixed, commit `0ae8e57`)
+
+The naming templates have no bitrate placeholder — there is no `%bitrate%` or
+`%quality%` token anywhere in the template engine — so MP3_128 and MP3_320 both
+resolve to the identical `<name>.mp3`. Default `overwriteFiles` is `'no'`.
+
+1. A track sits on disk at 128, from an earlier fallback or an earlier setting.
+2. The user switches to MP3 320 and re-downloads it.
+3. `reserveOutputPath` sees the path exists and returns null, so the download is skipped.
+4. `progress.actualFormat` was set to `MP3_320` *before* the skip check, so the UI
+   reports MP3 320 and `isDowngraded()` compares 320 to 320 and shows no badge.
+5. The file on disk is still 128.
+
+FLAC was never affected: `.flac` is a different filename. The trap is specifically
+128 → 320 upgrades. The opt-in `skipDuplicateTracks` path was broader still,
+matching on ISRC alone with no tier comparison, so it would keep a 128 MP3 when
+the download would have been FLAC.
+
+Fixed by `electron/services/audioProbe.ts`, which reads the real encoded
+parameters out of the bitstream and compares tiers before skipping. Only
+mp3-vs-mp3 needs the probe; across containers the extension settles it. The probe
+answers "unknown" rather than guessing, and every caller treats unknown as "leave
+the previous behavior alone" — a wrong answer there either destroys a good file or
+re-downloads an entire library.
+
+### Also closed
+
+| Gap | Location | Fix |
+|---|---|---|
+| `media.format \|\| formats[0]` — an absent format field silently labels the file with the BEST tier we asked for | `deezerAuth.ts:1832` | Every completed download is now verified against its bitstream; a tier mismatch corrects the label, a container mismatch deletes the file and fails the download |
+| Nothing anywhere compared delivered bytes to the claimed tier | — | Same verification pass |
+| Qobuz asserted `MP3_320` for any non-FLAC delivery | `downloader.ts` Qobuz path | Reads the tier off the bitstream instead |
+
+Verification: the shipped probe agrees exactly with an independently written sweep
+across all 8,809 files (8,793 / 10 / 6, zero unidentified) at 0.23 ms per file, and
+the skip decision passes all 13 cases including both never-downgrade directions
+(never replace a 320 with a 128, never replace a FLAC with an MP3) and every
+unsure input.
+
+Still untested end to end: one live download per tier (128 / 320 / FLAC) of the
+same track, probed afterward. That is the only thing that would close the MP3 tier
+selection question with direct evidence rather than inference.
+
 ## Other tools (audited 2026-07-28)
 
 Source: `github.com/bambanah/deemix` (maintained JS port, 1123 stars), at commit
