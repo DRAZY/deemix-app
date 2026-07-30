@@ -37,14 +37,59 @@ trailer:
 
 Out of 8–13 MB per file. Not one differing byte inside an audio frame.
 
-Two findings worth keeping:
+### Full hash table (all 14 files)
 
-1. **The La Ocasión pair is the same file twice** — identical whole-file SHA-256
-   `bfa681850db897c7...`, tags included. The reported difference was between a file
-   and itself.
+Attachment IDs are the GitHub `user-attachments/files/<id>` path segment, so any of
+these can be re-fetched and re-verified independently.
+
+| # | Thread | Attachment | Bytes | Full-file SHA-256 | Audio-frames SHA-256 | ID3v1 |
+|---|---|---|---|---|---|---|
+| 1 | 130 | 30511313 | 8,275,008 | `8a36cb242242400a` | `285ce9b23b43dc0f` | yes |
+| 2 | 130 | 30511388 | 8,397,167 | `d54e2e5c9ca41cc2` | `285ce9b23b43dc0f` | yes |
+| 3 | 130 | 30511431 | 13,533,156 | `bfa681850db897c7` | `20dfc51612a75d76` | yes |
+| 4 | 130 | 30511459 | 13,533,156 | `bfa681850db897c7` | `20dfc51612a75d76` | yes |
+| 5 | 130 | 30511517 | 7,435,442 | `38e431ec90f6b601` | `58e4e56bd173a1c2` | yes |
+| 6 | 130 | 30511537 | 7,496,488 | `e1ad0c32a8a58199` | `58e4e56bd173a1c2` | yes |
+| 7 | 130 | 30511553 | 13,175,487 | `4f18c34a26f2c825` | `dfc6a8f0c856ef9d` | yes |
+| 8 | 130 | 30511562 | 13,129,644 | `1a76646caa26ecc3` | `dfc6a8f0c856ef9d` | yes |
+| 9 | 130 | 30511571 | 11,351,906 | `fabe61952ba664aa` | `75fe8011e68b2b79` | yes |
+| 10 | 130 | 30511573 | 11,449,164 | `5e3cb473e3fcd785` | `75fe8011e68b2b79` | yes |
+| 11 | 87 | 28805831 | 10,430,759 | `9d8f16cebf0f8860` | `5c51c87e660ec09b` | **no** |
+| 12 | 87 | 28805847 | 10,430,887 | `63cfc93063e50f26` | `5c51c87e660ec09b` | yes |
+| 13 | 87 | 28806061 | 8,300,515 | `a0e3c8fd8ed01536` | `f32ac7bc75f6463e` | no |
+| 14 | 87 | 28806086 | 8,300,515 | `a0e3c8fd8ed01536` | `f32ac7bc75f6463e` | no |
+
+Full 64-char audio-frame hashes, one per pair:
+
+```
+Pégate Más       285ce9b23b43dc0f5ebe0765025297d33b984b765a7d39058613c9dcede32714
+La Ocasión       20dfc51612a75d763cf2876122c896d69e5ab911c309cedfed698321316935a5
+Chiquetete       58e4e56bd173a1c2bb6feabd63f3d460dc44b8141f5cf7ea3f370f70fe1adfd9
+Isabel Pantoja   dfc6a8f0c856ef9d14aac8d3238a9a16779fe9827ace99b73086e2444a7cf997
+Maná             75fe8011e68b2b79e84276eef508db86206a0dc78f54d200af25f08d7180ea28
+Mojando Asientos 5c51c87e660ec09bcb8571e39b3185890c9f84f0dfe66690946130c2ee4ecd49
+Me Rehúso        f32ac7bc75f6463ebc7116d9a010603cb4db7864da752a396f2117735a56f88f
+```
+
+### Findings worth keeping
+
+1. **Two separate same-file-twice cases, from two different reporters.**
+   - **La Ocasión** (#130, files 3 and 4): identical whole-file SHA `bfa681850db897c7`.
+   - **Me Rehúso** (#87, files 13 and 14): identical whole-file SHA `a0e3c8fd8ed01536`,
+     posted as "deemix original" vs "deemixfix".
+
+   In both cases the reported audible difference was between a file and itself. Two
+   independent occurrences, in two threads, months apart, is the strongest available
+   evidence that this comparison is unreliable done by ear.
+
 2. **The #87 pair is not a test of this app.** Labeled "(deemix original)" and
    "(deemixfix)", it compares two other tools. Their audio is byte-identical too, so
    all three tools demonstrably deliver the same bytes.
+
+3. **The Mojando pair differs by exactly 128 bytes** (10,430,887 − 10,430,759), which
+   is precisely one ID3v1 tag: file 11 has none, file 12 does. That is the entire
+   difference between "deemix original" and "deemixfix" output for that track. A
+   metadata trailer, and nothing else.
 
 All fourteen files: LAME 3.99, 320 CBR, 44.1 kHz stereo, durations matching to 0.01s.
 That is Deezer's own encode. No tool in the comparison re-encoded anything.
