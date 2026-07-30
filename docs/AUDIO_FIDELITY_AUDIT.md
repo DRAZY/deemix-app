@@ -89,6 +89,15 @@ Source: `github.com/bambanah/deemix` (maintained JS port, 1123 stars), at commit
 refer to that commit. Re-clone and check out that SHA to reproduce; the working
 copy used for this audit was temporary and is gone.
 
+**Scope — read this before citing any of it.** Exactly one third-party codebase was
+audited: `bambanah/deemix`. **Original Deemix and DeemixFix were NOT examined**; the
+RemixDev repos live on GitLab and `git.freezer.life`, both unreachable from here.
+Murglar is closed source. So every source-level claim below describes the maintained
+JS port only, and says nothing about what the other forks do or do not contain. The
+one thing known about original Deemix and DeemixFix is empirical, not source-level:
+the #87 sample pair shows them producing byte-identical audio to each other and to
+us. That is easy to misremember as "the other forks lack feature X" — it is not.
+
 | Question | deemix | Deemix Remastered |
 |---|---|---|
 | Endpoint for file URL | `media.deezer.com/v1/get_url` | Same |
@@ -123,6 +132,48 @@ Default is empty, but a user who pasted an `mp3gain`, `loudgain`, or
 - changed perceived loudness (the one thing #130 actually measured)
 - altered dynamics (the subjective complaint)
 - a still-genuine 320 CBR spectrum (what #130 verified)
+
+#### Does it ship a non-empty default? No. Checked twice.
+
+The obvious follow-on theory is that deemix ships default parameters in that box
+which quietly process audio. It does not, and this was verified two independent
+ways at commit `d0ac6b4`.
+
+**1. Nothing in the code sets it.** Every occurrence of `executeCommand` in the
+whole repo, translations aside:
+
+| Location | Value |
+|---|---|
+| `deemix/src/settings.ts:70` | `""` (the shipped default) |
+| `webui/.../SettingsPage.vue:28` | `""` (initial UI state) |
+| `deemix/src/downloader.ts:673, 811` | guard `!== ""` plus the `exec` call |
+| `deemix/src/types/Settings.ts:39` | type declaration only |
+| `deemix/src/downloader.test.ts:43` | test fixture, `""` |
+| `webui/CHANGELOG.md:86` | historical "Fix executeCommand not being saved" |
+
+Two defaults, both empty. Searched every `.json`, `.yml`, `.yaml`, `Dockerfile`,
+and `.env*` in the tree for the key: **zero hits**, so no docker preset, config
+template, or example file sets it either. With the shipped default the `!== ""`
+guard means the hook never executes. The rest of the defaults block is filenames,
+artwork sizes, casing, and tag toggles, with nothing audio-processing in it.
+
+**2. The samples rule it out regardless of config.** This is the stronger leg,
+because it holds no matter what any install's config contains:
+
+- `ffmpeg -af loudnorm` re-encodes, changing the encoder string, frame count, and
+  length. All fourteen files report **LAME 3.99**, durations matching to 0.01s,
+  identical frame byte-counts.
+- `mp3gain` is subtler: it rewrites the global gain field inside each MP3 frame
+  *without* re-encoding, so the LAME tag survives. But it must change frame bytes,
+  and the frames hashed identical across all seven pairs.
+
+Neither tool touched any of these files. That includes the #87 pair, which was
+original Deemix vs DeemixFix, two forks never audited here: their output is
+byte-identical to each other and to ours, so whatever defaults they ship applied
+no processing either.
+
+Conclusion: a hidden default is dead as a theory. Any real difference would
+require a user to have typed a command in themselves.
 
 #### Status of this theory: mechanism confirmed, usage NOT evidenced
 
