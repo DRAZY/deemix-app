@@ -243,6 +243,82 @@ tier, and the delivered bytes really are that tier.** The bitrate mismatch that
 was reachable in shipped code was never in the selection path at all — it was the
 skip path keeping an older, lower-bitrate file and reporting the newer tier.
 
+## The settings path (2026-07-31)
+
+Recorded here because the settings that govern audio behavior all travel this
+path. `quality`, `bitrateFallback`, `isrcFallback`, `overwriteFiles`,
+`skipDuplicateTracks` and the whole `tags` object (which carries `replayGain`)
+reach the download engine the same way, and a break anywhere along it produces a
+file that does not match what the user asked for. That is the exact shape of
+every audio-quality report in this document.
+
+### How a setting actually reaches the code that reads it
+
+There are four links, and all four must carry the key:
+
+1. `src/stores/settingsStore.ts` — the `Settings` interface and `defaultSettings`.
+2. `src/stores/downloadStore.ts` — the `settingsToSync` object. **This is an
+   allowlist.** It is a hand-written literal, not a spread of the settings
+   object, so a key absent here is never sent.
+3. `electron/server.ts` — `ServerSettings`, `DEFAULT_SETTINGS`, and the
+   per-type validator array (`booleanSettings`, `templateSettings`, ...).
+   **Also an allowlist**, and `handleSettings` only writes keys the request body
+   actually carries.
+4. The consuming code, which reads `this.settings.<key>`.
+
+The trap is links 2 and 3 being two separate allowlists with no shared source of
+truth, combined with link 3 falling back to its own default. Miss link 2 and the
+server keeps its default forever: the checkbox saves, the UI reflects it, the
+value persists across restarts, and the feature ignores it completely. Nothing
+errors and nothing logs.
+
+### What that cost
+
+`createAlbumPlaylistFile` (#131) shipped in 2.4.3 wired into links 1, 3 and 4,
+plus the UI, the profile keys and `main.ts`. Link 2 was missed. Unticking the box
+did nothing, album M3Us kept being written, and it took a second report (#134,
+same reporter, 56 minutes later) to establish it. Fixed in 2.4.4.
+
+### Verified state
+
+Confirmed 2026-07-31 by parsing both allowlists out of source:
+
+| Setting | Renderer sends | Server accepts |
+|---|---|---|
+| `quality` | yes | non-boolean validator |
+| `bitrateFallback` | yes | yes |
+| `isrcFallback` | yes | yes |
+| `overwriteFiles` | yes | non-boolean validator |
+| `skipDuplicateTracks` | yes | yes |
+| `tags` (carries `replayGain`) | yes | non-boolean validator |
+| `createPlaylistFile` | yes | yes |
+| `createAlbumPlaylistFile` | yes | yes |
+
+A full sweep of both directions found exactly one key the server declares that
+the renderer never sends: `checkForUpdates`, which is deliberate (main-process
+only, unrelated to downloads). No other setting is silently dropped.
+
+### The verification standard this changed
+
+The 2.4.3 miss passed a typecheck, a production build, and a grep confirming the
+key was present in six files and in the built bundle. All green, because none of
+them asked whether the setting *did anything*. A setting wired to nothing passes
+every static check there is.
+
+The only check that can fail is behavioral, and it is cheap:
+
+1. Launch a real build.
+2. Set the option to its non-default value.
+3. Perform the operation it governs.
+4. Assert the observable outcome changed.
+5. Flip it back and assert it changed back. **Both directions**, otherwise a
+   feature that is simply broken looks identical to one correctly turned off.
+
+For #131 that was: album M3U off, download a 14-track album, zero `.m3u8`
+written; toggle on, same album, `Discovery.m3u8` appears. Twelve minutes, against
+four minutes to write the fix. Do not skip it for a one-line settings change,
+because a one-line settings change is precisely where this failure lives.
+
 ## Other tools (audited 2026-07-28)
 
 Source: `github.com/bambanah/deemix` (maintained JS port, 1123 stars), at commit
