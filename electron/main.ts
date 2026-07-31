@@ -431,6 +431,7 @@ async function initServer() {
         createErrorLog: s.createErrorLog,
         savePlaylistAsCompilation: s.savePlaylistAsCompilation,
         createPlaylistFile: s.createPlaylistFile,
+        createAlbumPlaylistFile: s.createAlbumPlaylistFile,
         overwriteFiles: s.overwriteFiles,
         skipDuplicateTracks: s.skipDuplicateTracks,
         maxConcurrentDownloads: s.maxConcurrentDownloads,

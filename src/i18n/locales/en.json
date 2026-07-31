@@ -397,6 +397,8 @@
     "isrcFallback": "ISRC fallback",
     "createLogFiles": "Create log files for errors",
     "createPlaylistFile": "Create playlist file",
+    "createAlbumPlaylistFile": "Also create one for each album",
+    "createAlbumPlaylistFileHelp": "Writes an .m3u8 into every album folder as well as for playlists. A playlist needs its file because nothing else records the ordering and selection, but an album folder plus its tags already say the same thing. Leave this off if you import into Navidrome, MusicBee or similar, where each album file is picked up as a separate playlist.",
     "clearQueueOnClose": "Clear queue on close",
     "savePlaylistAsM3U": "Save playlist as M3U file",
     "createPlaylistFolder": "Create folder for playlists",

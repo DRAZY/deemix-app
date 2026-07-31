@@ -893,7 +893,17 @@ async function reindexLibrary() {
             />
             <span class="text-sm">{{ t('settings.createPlaylistFile') }}</span>
           </label>
-          <div v-if="settingsStore.settings.createPlaylistFile" class="ml-7">
+          <div v-if="settingsStore.settings.createPlaylistFile" class="ml-7 space-y-3">
+            <label class="flex items-center gap-3 cursor-pointer" :title="t('settings.createAlbumPlaylistFileHelp')">
+              <input
+                type="checkbox"
+                v-model="settingsStore.settings.createAlbumPlaylistFile"
+                class="w-4 h-4 accent-primary-500"
+              />
+              <span class="text-sm">{{ t('settings.createAlbumPlaylistFile') }}</span>
+              <span class="text-xs text-foreground-muted cursor-help" :title="t('settings.createAlbumPlaylistFileHelp')">ⓘ</span>
+            </label>
+            <div>
             <label class="block font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted mb-1.5">M3U filename template</label>
             <input
               v-model="settingsStore.settings.m3uNameTemplate"
@@ -902,6 +912,7 @@ async function reindexLibrary() {
               class="w-full px-3 py-2 bg-background-main/60 font-mono text-[13px] border border-white/[0.1] focus:border-primary-500/50 outline-none"
             />
             <p class="text-xs text-foreground-muted mt-1">Variables: %playlist%, %date%, %year%</p>
+            </div>
           </div>
         </div>
       </div>

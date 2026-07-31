@@ -7,7 +7,7 @@ type ProfileSettingsKeys =
   | 'downloadPath' | 'quality' | 'maxConcurrentDownloads' | 'downloadPacing'
   | 'overwriteFiles' | 'bitrateFallback' | 'isrcFallback'
   | 'createErrorLog'
-  | 'createPlaylistFile' | 'clearQueueOnClose'
+  | 'createPlaylistFile' | 'createAlbumPlaylistFile' | 'clearQueueOnClose'
   | 'createPlaylistFolder' | 'createArtistFolder' | 'createAlbumFolder'
   | 'createCDFolder' | 'createPlaylistStructure' | 'createSinglesStructure'
   | 'createShortReleaseFolder'
@@ -36,7 +36,7 @@ const PROFILE_SETTINGS_KEYS: ProfileSettingsKeys[] = [
   'downloadPath', 'quality', 'maxConcurrentDownloads', 'downloadPacing',
   'overwriteFiles', 'bitrateFallback', 'isrcFallback',
   'createErrorLog',
-  'createPlaylistFile', 'clearQueueOnClose',
+  'createPlaylistFile', 'createAlbumPlaylistFile', 'clearQueueOnClose',
   'createPlaylistFolder', 'createArtistFolder', 'createAlbumFolder',
   'createCDFolder', 'createPlaylistStructure', 'createSinglesStructure',
   'createShortReleaseFolder',

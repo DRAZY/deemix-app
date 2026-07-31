@@ -80,6 +80,7 @@ export interface Settings {
   isrcFallback: boolean
   createErrorLog: boolean
   createPlaylistFile: boolean
+  createAlbumPlaylistFile: boolean
   clearQueueOnClose: boolean
   // Folder settings
   createPlaylistFolder: boolean
@@ -152,6 +153,10 @@ export const defaultSettings: Settings = {
   isrcFallback: true,
   createErrorLog: true,
   createPlaylistFile: false,
+  // Only consulted when createPlaylistFile is on. Defaults true so installs
+  // that already had playlist files enabled keep writing album M3Us (#121);
+  // turning it off leaves playlists alone and stops the per-album files (#131).
+  createAlbumPlaylistFile: true,
   clearQueueOnClose: false,
   // Folder settings
   createPlaylistFolder: true,

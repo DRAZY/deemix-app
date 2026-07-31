@@ -398,6 +398,7 @@ interface ServerSettings {
   isrcFallback: boolean
   createErrorLog: boolean
   createPlaylistFile: boolean
+  createAlbumPlaylistFile: boolean
   clearQueueOnClose: boolean
   // Folder settings
   createPlaylistFolder: boolean
@@ -458,6 +459,7 @@ export class DeemixServer extends EventEmitter {
     isrcFallback: true,
     createErrorLog: true,
     createPlaylistFile: false,
+    createAlbumPlaylistFile: true,
     clearQueueOnClose: false,
     // Folder settings
     createPlaylistFolder: true,
@@ -1735,8 +1737,14 @@ export class DeemixServer extends EventEmitter {
       // Album M3U (#121, legacy deemix parity): when "create playlist file" is
       // on, generate an .m3u8 for the album too, written into the album folder.
       // Reuses the playlist M3U tracker; recording keys off _m3uTrackerId.
+      //
+      // Gated separately from playlists (#131). One checkbox used to mean both,
+      // but the two are not equally useful: a playlist's M3U is the only record
+      // of its ordering and selection, while an album's just restates the folder
+      // and tags. Downloading a full discography wrote one file per album folder,
+      // and library managers ingest each as its own playlist.
       const albumM3uId = `album_${albumId}_${Date.now()}`
-      if (this.settings.createPlaylistFile) {
+      if (this.settings.createPlaylistFile && this.settings.createAlbumPlaylistFile) {
         downloader.registerPlaylistForM3U(albumM3uId, albumInfo.title || 'Album', this.settings.downloadPath, albumTracks.data.length, this.settings.m3uNameTemplate)
       }
 
@@ -2353,7 +2361,7 @@ export class DeemixServer extends EventEmitter {
         // Download behavior
         'skipDuplicateTracks',
         'bitrateFallback', 'isrcFallback',
-        'createErrorLog', 'createPlaylistFile', 'clearQueueOnClose',
+        'createErrorLog', 'createPlaylistFile', 'createAlbumPlaylistFile', 'clearQueueOnClose',
         // Folder settings
         'createPlaylistFolder', 'createArtistFolder', 'createAlbumFolder',
         'createCDFolder', 'createPlaylistStructure', 'createSinglesStructure',
@@ -3811,7 +3819,9 @@ export class DeemixServer extends EventEmitter {
         if (playlistName) {
           m3uTrackerId = `qobuzplaylist_${playlistId}_${Date.now()}`
           downloader.registerPlaylistForM3U(m3uTrackerId, playlistName, this.settings.downloadPath, validTracks.length, this.settings.m3uNameTemplate)
-        } else if (albumId) {
+        } else if (albumId && this.settings.createAlbumPlaylistFile) {
+          // Album M3U is opt-out independently of playlists (#131) — same split
+          // the Deezer album path makes.
           m3uTrackerId = `qobuzalbum_${albumId}_${Date.now()}`
           downloader.registerPlaylistForM3U(m3uTrackerId, album?.title || 'Album', this.settings.downloadPath, validTracks.length, this.settings.m3uNameTemplate)
         }
