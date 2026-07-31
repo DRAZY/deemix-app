@@ -398,6 +398,7 @@ interface ServerSettings {
   isrcFallback: boolean
   createErrorLog: boolean
   createPlaylistFile: boolean
+  createAlbumPlaylistFile: boolean
   clearQueueOnClose: boolean
   // Folder settings
   createPlaylistFolder: boolean
@@ -406,6 +407,7 @@ interface ServerSettings {
   createCDFolder: boolean
   createPlaylistStructure: boolean
   createSinglesStructure: boolean
+  createShortReleaseFolder: boolean
   playlistFolderTemplate: string
   albumFolderTemplate: string
   artistFolderTemplate: string
@@ -457,6 +459,7 @@ export class DeemixServer extends EventEmitter {
     isrcFallback: true,
     createErrorLog: true,
     createPlaylistFile: false,
+    createAlbumPlaylistFile: true,
     clearQueueOnClose: false,
     // Folder settings
     createPlaylistFolder: true,
@@ -465,6 +468,7 @@ export class DeemixServer extends EventEmitter {
     createCDFolder: true,
     createPlaylistStructure: false,
     createSinglesStructure: false,
+    createShortReleaseFolder: true,
     playlistFolderTemplate: '%playlist%',
     albumFolderTemplate: '%artist% - %album%',
     artistFolderTemplate: '%artist%',
@@ -1595,7 +1599,7 @@ export class DeemixServer extends EventEmitter {
     console.log(`[Server] Settings - embedArtwork: ${this.settings.embedArtwork}, saveArtwork: ${this.settings.saveArtwork}`)
     console.log(`[Server] Settings - tags.cover: ${this.settings.tags?.cover}, tags.title: ${this.settings.tags?.title}`)
     console.log(`[Server] Settings - albumCovers.embeddedArtworkSize: ${this.settings.albumCovers?.embeddedArtworkSize}`)
-    console.log(`[Server] Settings - createArtistFolder: ${this.settings.createArtistFolder}, createAlbumFolder: ${this.settings.createAlbumFolder}, createSinglesStructure: ${this.settings.createSinglesStructure}`)
+    console.log(`[Server] Settings - createArtistFolder: ${this.settings.createArtistFolder}, createAlbumFolder: ${this.settings.createAlbumFolder}, createSinglesStructure: ${this.settings.createSinglesStructure}, createShortReleaseFolder: ${this.settings.createShortReleaseFolder}`)
 
     try {
       // When playlistName is provided, treat as a playlist track (enables playlist
@@ -1626,6 +1630,7 @@ export class DeemixServer extends EventEmitter {
           createCDFolder: this.settings.createCDFolder,
           createPlaylistStructure: this.settings.createPlaylistStructure,
           createSinglesStructure: this.settings.createSinglesStructure,
+          createShortReleaseFolder: this.settings.createShortReleaseFolder,
           playlistFolderTemplate: this.settings.playlistFolderTemplate,
           albumFolderTemplate: this.settings.albumFolderTemplate,
           artistFolderTemplate: this.settings.artistFolderTemplate
@@ -1732,8 +1737,14 @@ export class DeemixServer extends EventEmitter {
       // Album M3U (#121, legacy deemix parity): when "create playlist file" is
       // on, generate an .m3u8 for the album too, written into the album folder.
       // Reuses the playlist M3U tracker; recording keys off _m3uTrackerId.
+      //
+      // Gated separately from playlists (#131). One checkbox used to mean both,
+      // but the two are not equally useful: a playlist's M3U is the only record
+      // of its ordering and selection, while an album's just restates the folder
+      // and tags. Downloading a full discography wrote one file per album folder,
+      // and library managers ingest each as its own playlist.
       const albumM3uId = `album_${albumId}_${Date.now()}`
-      if (this.settings.createPlaylistFile) {
+      if (this.settings.createPlaylistFile && this.settings.createAlbumPlaylistFile) {
         downloader.registerPlaylistForM3U(albumM3uId, albumInfo.title || 'Album', this.settings.downloadPath, albumTracks.data.length, this.settings.m3uNameTemplate)
       }
 
@@ -1758,6 +1769,7 @@ export class DeemixServer extends EventEmitter {
             createCDFolder: this.settings.createCDFolder,
             createPlaylistStructure: this.settings.createPlaylistStructure,
             createSinglesStructure: this.settings.createSinglesStructure,
+            createShortReleaseFolder: this.settings.createShortReleaseFolder,
             playlistFolderTemplate: this.settings.playlistFolderTemplate,
             albumFolderTemplate: this.settings.albumFolderTemplate,
             artistFolderTemplate: this.settings.artistFolderTemplate
@@ -1945,6 +1957,7 @@ export class DeemixServer extends EventEmitter {
             createCDFolder: this.settings.createCDFolder,
             createPlaylistStructure: this.settings.createPlaylistStructure,
             createSinglesStructure: this.settings.createSinglesStructure,
+            createShortReleaseFolder: this.settings.createShortReleaseFolder,
             playlistFolderTemplate: this.settings.playlistFolderTemplate,
             albumFolderTemplate: this.settings.albumFolderTemplate,
             artistFolderTemplate: this.settings.artistFolderTemplate
@@ -2061,6 +2074,7 @@ export class DeemixServer extends EventEmitter {
             createCDFolder: this.settings.createCDFolder,
             createPlaylistStructure: this.settings.createPlaylistStructure,
             createSinglesStructure: this.settings.createSinglesStructure,
+            createShortReleaseFolder: this.settings.createShortReleaseFolder,
             playlistFolderTemplate: this.settings.playlistFolderTemplate,
             albumFolderTemplate: this.settings.albumFolderTemplate,
             artistFolderTemplate: this.settings.artistFolderTemplate
@@ -2139,6 +2153,7 @@ export class DeemixServer extends EventEmitter {
         createCDFolder: this.settings.createCDFolder,
         createPlaylistStructure: this.settings.createPlaylistStructure,
         createSinglesStructure: this.settings.createSinglesStructure,
+        createShortReleaseFolder: this.settings.createShortReleaseFolder,
         playlistFolderTemplate: this.settings.playlistFolderTemplate,
         albumFolderTemplate: this.settings.albumFolderTemplate,
         artistFolderTemplate: this.settings.artistFolderTemplate
@@ -2346,10 +2361,11 @@ export class DeemixServer extends EventEmitter {
         // Download behavior
         'skipDuplicateTracks',
         'bitrateFallback', 'isrcFallback',
-        'createErrorLog', 'createPlaylistFile', 'clearQueueOnClose',
+        'createErrorLog', 'createPlaylistFile', 'createAlbumPlaylistFile', 'clearQueueOnClose',
         // Folder settings
         'createPlaylistFolder', 'createArtistFolder', 'createAlbumFolder',
         'createCDFolder', 'createPlaylistStructure', 'createSinglesStructure',
+        'createShortReleaseFolder',
         // File settings
         'saveArtwork', 'embedArtwork', 'saveLyrics', 'syncedLyrics'
       ]
@@ -3684,7 +3700,7 @@ export class DeemixServer extends EventEmitter {
     trackId: string | number,
     ctx: {
       partOfAlbum?: boolean
-      album?: { title?: string; artist?: string }
+      album?: { title?: string; artist?: string; totalTracks?: number }
       playlistName?: string
       playlistPosition?: number
       playlistOwner?: string
@@ -3720,7 +3736,11 @@ export class DeemixServer extends EventEmitter {
       playlistOwner: ctx.playlistOwner || undefined,
       _m3uTrackerId: ctx.m3uTrackerId || undefined,
       savePlaylistAsCompilation: isFromPlaylist ? this.settings.savePlaylistAsCompilation : undefined,
-      albumContext: ctx.album ? { albumTitle: ctx.album.title, albumArtist: ctx.album.artist } : undefined,
+      // totalTracks feeds the short-release folder rule (#129) — without it a
+      // Qobuz single would keep its one-file folder while the Deezer one didn't.
+      albumContext: ctx.album
+        ? { albumTitle: ctx.album.title, albumArtist: ctx.album.artist, totalTracks: ctx.album.totalTracks }
+        : undefined,
       folderSettings: {
         createPlaylistFolder: this.settings.createPlaylistFolder,
         createArtistFolder: this.settings.createArtistFolder,
@@ -3728,6 +3748,7 @@ export class DeemixServer extends EventEmitter {
         createCDFolder: this.settings.createCDFolder,
         createPlaylistStructure: this.settings.createPlaylistStructure,
         createSinglesStructure: this.settings.createSinglesStructure,
+        createShortReleaseFolder: this.settings.createShortReleaseFolder,
         playlistFolderTemplate: this.settings.playlistFolderTemplate,
         albumFolderTemplate: this.settings.albumFolderTemplate,
         artistFolderTemplate: this.settings.artistFolderTemplate,
@@ -3798,7 +3819,9 @@ export class DeemixServer extends EventEmitter {
         if (playlistName) {
           m3uTrackerId = `qobuzplaylist_${playlistId}_${Date.now()}`
           downloader.registerPlaylistForM3U(m3uTrackerId, playlistName, this.settings.downloadPath, validTracks.length, this.settings.m3uNameTemplate)
-        } else if (albumId) {
+        } else if (albumId && this.settings.createAlbumPlaylistFile) {
+          // Album M3U is opt-out independently of playlists (#131) — same split
+          // the Deezer album path makes.
           m3uTrackerId = `qobuzalbum_${albumId}_${Date.now()}`
           downloader.registerPlaylistForM3U(m3uTrackerId, album?.title || 'Album', this.settings.downloadPath, validTracks.length, this.settings.m3uNameTemplate)
         }
@@ -3816,7 +3839,10 @@ export class DeemixServer extends EventEmitter {
         position++
         const id = await downloader.download(this.buildQobuzDownloadOptions(t.id, {
           partOfAlbum: !!albumId,
-          album,
+          // Track count only means "release size" for an album download; on a
+          // playlist it would be the playlist length, which must not drive the
+          // short-release rule.
+          album: albumId && album ? { ...album, totalTracks: validTracks.length } : album,
           playlistName,
           // Position drives M3U ordering for both albums and playlists.
           playlistPosition: position,
@@ -4107,13 +4133,21 @@ export class DeemixServer extends EventEmitter {
       const msg = error.message || 'Failed to analyze Spotify URL'
       const status: number = typeof error.status === 'number' ? error.status : 0
       const notFound = status === 404 || msg.toLowerCase().includes('not found')
-      // Spotify-owned editorial + algorithmic playlists (Today's Top Hits,
-      // RapCaviar, Discover Weekly — IDs starting 37i9) stopped being reachable
-      // without user-level OAuth after Spotify's Nov-2024 Client-Credentials
-      // deprecation. Name the real cause, not "personalized".
+      // Spotify answers 404 for two very different playlist cases, and we only
+      // get to tell them apart by the ID. Its own editorial + algorithmic
+      // playlists (Today's Top Hits, RapCaviar, Discover Weekly) all carry the
+      // 37i9 prefix and stopped being reachable without user-level OAuth after
+      // Spotify's Nov-2024 Client-Credentials deprecation. Any other 404 is a
+      // user-owned playlist that is private or deleted: client-credentials
+      // tokens have no user context, so a private playlist is invisible even to
+      // the person who owns it. Blaming the editorial change for that case told
+      // people the opposite of the truth ("playlists by regular users still
+      // work") while they stared at their own playlist failing.
       if (notFound && parsedUrl?.type === 'playlist') {
         this.sendJSON(res, {
-          error: "This playlist can't be opened. Spotify's own editorial and algorithmic playlists (Today's Top Hits, RapCaviar, Discover Weekly — links starting with 37i9) require a personal Spotify login that this app doesn't use, following a Spotify API change in late 2024. Playlists created by regular users still work."
+          error: parsedUrl.id.startsWith('37i9')
+            ? "This playlist can't be opened. Spotify's own editorial and algorithmic playlists (Today's Top Hits, RapCaviar, Discover Weekly — links starting with 37i9) require a personal Spotify login that this app doesn't use, following a Spotify API change in late 2024. Playlists created by regular users still work."
+            : "This playlist can't be opened. It's either private or no longer exists. Spotify credentials identify this app, not you, so only public playlists can be read, and a private playlist stays invisible even when it's your own. In Spotify, open the playlist, choose Make public, then analyze the link again."
         }, 404)
       } else if (status === 429 || status >= 500) {
         // Transient — makeRequest already retried; tell the user to retry.

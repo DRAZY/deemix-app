@@ -9,6 +9,7 @@ import { applyMergeFromMeta, replayGainString, type ResolvedMeta, type RetagFiel
 import { libraryIndex } from './libraryIndex'
 import { qobuzAuth } from './qobuzAuth'
 import { downloadQobuzTrack } from './qobuzDownloader'
+import { probeAudioFile, expectedContainer, isLowerTier } from './audioProbe'
 
 export interface FolderSettings {
   createPlaylistFolder: boolean
@@ -17,6 +18,7 @@ export interface FolderSettings {
   createCDFolder: boolean
   createPlaylistStructure: boolean
   createSinglesStructure: boolean
+  createShortReleaseFolder: boolean
   playlistFolderTemplate: string
   albumFolderTemplate: string
   artistFolderTemplate: string
@@ -963,7 +965,11 @@ export class Downloader extends EventEmitter {
       // (reuses the Deezer path builder via the Qobuz→trackInfo shim), then honor
       // the overwrite mode ('no' → skip when the file already exists).
       const initialOutputPath = this.buildOutputPath(shim, options, options.quality)
-      const outputPath = this.reserveOutputPath(initialOutputPath, options.trackId, options.overwriteMode)
+      // Qobuz negotiates the tier during the fetch, so the requested quality is
+      // the best expectation available at skip time — which is the right basis
+      // anyway: "you asked for 320 and this file is 128" is what should override
+      // the skip.
+      const outputPath = this.reserveOutputPath(initialOutputPath, options.trackId, options.overwriteMode, options.quality)
       if (outputPath === null) {
         progress.status = 'completed'
         progress.progress = 100
@@ -1026,11 +1032,16 @@ export class Downloader extends EventEmitter {
       // Qobuz is the hi-res service — the delivered tier IS the product, so
       // every Qobuz FLAC chip shows it (e.g. 'FLAC 24/192', 'FLAC 16/44.1'),
       // not just step-downs. Delivery facts come straight from getFileUrl.
+      //
+      // The lossy branch used to assert MP3_320 outright, since that is the only
+      // lossy tier Qobuz sells. Read it off the bitstream instead: an assumption
+      // that happens to be true is still the thing that hides it becoming false.
+      const qobuzProbe = gotFlac ? null : probeAudioFile(result.path)
       progress.actualFormat = gotFlac
         ? (result.bitDepth && result.samplingRate
             ? `FLAC ${result.bitDepth}/${result.samplingRate}`
             : 'FLAC')
-        : 'MP3_320'
+        : (qobuzProbe && qobuzProbe.tier !== 'MP3_OTHER' ? qobuzProbe.tier : 'MP3_320')
 
       // Qobuz files arrive untagged — tag them from the API metadata by reusing
       // the Deezer tagger via a Deezer-shaped shim + a pre-fetched cover buffer.
@@ -1454,7 +1465,12 @@ export class Downloader extends EventEmitter {
     if (options.skipDuplicateTracks && trackInfo.ISRC) {
       await libraryIndex.ensureLoaded()
       const existingPath = libraryIndex.findExisting(trackInfo.ISRC)
-      if (existingPath) {
+      // De-dup matches on ISRC alone, so without a tier check it would answer
+      // "already have it" while holding a copy worse than the one being fetched
+      // — including a 128 MP3 when this download would have been FLAC.
+      if (existingPath && isLowerTier(existingPath, actualFormat)) {
+        console.log(`[Downloader] Duplicate ISRC ${trackInfo.ISRC} found at ${existingPath}, but it is a lower tier than ${actualFormat} — downloading anyway`)
+      } else if (existingPath) {
         console.log(`[Downloader] Skipping duplicate (ISRC ${trackInfo.ISRC} already in library): ${existingPath}`)
         progress.status = 'completed'
         progress.progress = 100
@@ -1479,7 +1495,9 @@ export class Downloader extends EventEmitter {
 
     // Reserve a unique output path to prevent concurrent download collisions
     // Returns null if overwrite mode is 'no' and file already exists (skip download)
-    const outputPath = this.reserveOutputPath(initialOutputPath, trackInfo.SNG_ID, options.overwriteMode)
+    // actualFormat, not options.quality: if Deezer only has this track at 128
+    // there is nothing to upgrade to, so an existing 128 file should still skip.
+    const outputPath = this.reserveOutputPath(initialOutputPath, trackInfo.SNG_ID, options.overwriteMode, actualFormat)
     if (outputPath === null) {
       // File exists and overwrite mode is 'no' — mark as completed and skip
       progress.status = 'completed'
@@ -1614,6 +1632,42 @@ export class Downloader extends EventEmitter {
         fs.unlinkSync(encryptedPath)
       }
       encryptedPath = null // Mark as cleaned up
+
+      // Check the delivered bitstream against the tier the Media API claimed.
+      // Everything downstream — the extension already on disk, the tagger picked
+      // below, the quality chip, the downgrade badge — runs off that one label,
+      // and until here nothing had ever compared it to the actual bytes. The
+      // label also has a soft spot worth covering: getMediaUrl falls back to the
+      // FIRST format it requested when the response omits `media.format`, which
+      // is the most optimistic possible guess.
+      const delivered = probeAudioFile(decryptedPath)
+      if (delivered) {
+        const wantContainer = expectedContainer(actualFormat)
+        if (wantContainer && delivered.container !== wantContainer) {
+          // Not a quality question — the file is the wrong kind of thing. Its
+          // extension lies and the tagger below would write ID3 frames into a
+          // FLAC (or Vorbis comments into an MP3) and corrupt it. Delete rather
+          // than ship it, same as a truncated transfer.
+          try { if (fs.existsSync(decryptedPath)) fs.unlinkSync(decryptedPath) } catch (e) {}
+          throw new Error(
+            `Delivered audio is ${delivered.container.toUpperCase()} but the Media API reported ` +
+            `${actualFormat}. Refusing to write a file whose extension and tags would both be wrong.`
+          )
+        }
+        if (delivered.tier !== 'MP3_OTHER' && delivered.tier !== actualFormat) {
+          // Same container, different tier. The audio is whatever Deezer sent and
+          // is fine to keep; only the label was wrong. Correct it so the quality
+          // chip and the downgrade badge tell the truth.
+          console.warn(
+            `[Downloader] Format label mismatch: API said ${actualFormat}, ` +
+            `bitstream is ${delivered.tier} (${delivered.bitrate} kbps) — trusting the bitstream`
+          )
+          actualFormat = delivered.tier
+          progress.actualFormat = delivered.tier
+        } else {
+          console.log(`[Downloader] Verified delivered format: ${delivered.tier}${delivered.bitrate ? ` (${delivered.bitrate} kbps)` : ''}`)
+        }
+      }
 
       // Tag the file with metadata
       progress.status = 'tagging'
@@ -1861,7 +1915,7 @@ export class Downloader extends EventEmitter {
 
     // Debug logging for folder settings
     console.log(`[Downloader] buildOutputPath - isSingle: ${options.isSingle}, isFromPlaylist: ${options.isFromPlaylist}`)
-    console.log(`[Downloader] Folder settings - createArtistFolder: ${folderSettings?.createArtistFolder}, createAlbumFolder: ${folderSettings?.createAlbumFolder}, createSinglesStructure: ${folderSettings?.createSinglesStructure}`)
+    console.log(`[Downloader] Folder settings - createArtistFolder: ${folderSettings?.createArtistFolder}, createAlbumFolder: ${folderSettings?.createAlbumFolder}, createSinglesStructure: ${folderSettings?.createSinglesStructure}, createShortReleaseFolder: ${folderSettings?.createShortReleaseFolder}`)
 
     // For folder structure, prefer album context (ensures all album tracks go to same folder)
     // Fall back to resolved album artist from public API (ensures compilations stay grouped)
@@ -1943,10 +1997,26 @@ export class Downloader extends EventEmitter {
         }
       }
     } else {
-      // Standard folder structure for non-playlist downloads
-      // Handle singles differently if option is enabled
-      if (options.isSingle && folderSettings?.createSinglesStructure === false) {
-        // Don't create album folder for singles if option is disabled
+      // Standard folder structure for non-playlist downloads.
+      // Two independent reasons to skip the album folder:
+      //  - a loose track download, when "artist and album folders for individual
+      //    tracks" is off (the long-standing isSingle path);
+      //  - a release of one or two tracks, when the short-release folder option
+      //    is off (#129).
+      // The second keys on track count, NOT record_type: Deezer routinely reports
+      // every release as "album" (deezerAPI.inferRecordType exists purely to work
+      // around that), and a one-track EP leaves the same single-file folder a
+      // one-track single does. Track count is a fact; the classification isn't.
+      const releaseTrackCount = options.albumContext?.totalTracks
+      const isShortRelease = typeof releaseTrackCount === 'number'
+        && releaseTrackCount > 0
+        && releaseTrackCount <= 2
+      const skipAlbumFolder =
+        (options.isSingle && folderSettings?.createSinglesStructure === false)
+        || (isShortRelease && folderSettings?.createShortReleaseFolder === false)
+
+      if (skipAlbumFolder) {
+        // Artist folder only — the album folder would hold one or two files.
         if (folderSettings?.createArtistFolder || options.artistFolder) {
           const artistFolder = replaceFolderTemplate(folderSettings?.artistFolderTemplate || '%artist%')
           outputPath = path.join(outputPath, artistFolder)
@@ -2184,9 +2254,16 @@ export class Downloader extends EventEmitter {
    *
    * @param basePath - The output path from buildOutputPath
    * @param trackId - The Deezer track ID for logging
-   * @returns The reserved path (same as input, collision info logged)
+   * @param overwriteMode - 'no' skips when the file exists, 'rename' finds a free
+   *   name, anything else overwrites
+   * @param expectedFormat - Quality tier this download would produce. Under mode
+   *   'no', an existing file at a LOWER tier is overwritten rather than skipped:
+   *   MP3_128 and MP3_320 share the same `.mp3` filename, so without this a 320
+   *   re-download silently kept the 128 already on disk. Omit it to get the old
+   *   unconditional skip.
+   * @returns The reserved path, or null to signal "skip this download"
    */
-  private reserveOutputPath(basePath: string, trackId: string | number, overwriteMode?: string): string | null {
+  private reserveOutputPath(basePath: string, trackId: string | number, overwriteMode?: string, expectedFormat?: string): string | null {
     const normalizedPath = path.normalize(basePath)
 
     // Check for collision with another in-progress download
@@ -2197,7 +2274,12 @@ export class Downloader extends EventEmitter {
     // Check for existing file and handle based on overwrite mode
     if (fs.existsSync(normalizedPath)) {
       const mode = overwriteMode || 'overwrite'
-      if (mode === 'no') {
+      if (mode === 'no' && isLowerTier(normalizedPath, expectedFormat)) {
+        // Fall through to overwrite: skipping here would keep a file that is
+        // genuinely worse than what the user just asked for, while the UI went
+        // on to report the requested tier.
+        console.log(`[Downloader] Existing file for track ${trackId} is a lower tier than ${expectedFormat} — re-downloading instead of skipping`)
+      } else if (mode === 'no') {
         console.log(`[Downloader] Skipping track ${trackId} — file already exists: ${normalizedPath}`)
         return null // Signal to skip this download
       } else if (mode === 'rename') {
@@ -2528,15 +2610,54 @@ export class Downloader extends EventEmitter {
 
       if (chunkIndex % 3 === 0 && chunkSize === 2048) {
         // Decrypt this chunk with Blowfish CBC
+        let decrypted: Buffer
         try {
           // Reset IV for each chunk decryption
           bf.setIv(iv)
-          const decrypted = Buffer.from(bf.decode(chunk, Blowfish.TYPE.UINT8_ARRAY))
-          decrypted.copy(output, position)
+          decrypted = Buffer.from(bf.decode(chunk, Blowfish.TYPE.UINT8_ARRAY))
         } catch (e: any) {
+          // Unreachable under the guard above: decode() only throws on a non-Buffer
+          // input, an unset IV, a length not divisible by 8, or a bad return-type
+          // enum — and `chunkSize === 2048` plus the setIv() two lines up rule out
+          // all four. Kept as a tripwire in case the chunking ever changes (streaming,
+          // a different stripe size).
+          //
+          // Rethrow rather than fall back to copying the chunk. Writing the still-
+          // ENCRYPTED bytes through would emit a file that reports a successful
+          // download but contains digital noise where audio should be — exactly the
+          // kind of silent corruption users can only detect by ear. The caller turns
+          // this into "Decryption error" and fails the download, and since the output
+          // file is written only after this loop finishes, no partial file survives.
           console.error(`[Downloader] Chunk decryption failed at position ${position}:`, e.message)
-          // If decryption fails, just copy the chunk as-is
-          chunk.copy(output, position)
+          throw new Error(`Chunk decryption failed at byte ${position}: ${e.message}`)
+        }
+        decrypted.copy(output, position)
+
+        // The Blowfish instance is built with PADDING.NULL, and that library's
+        // decode() strips trailing 0x00 bytes from the plaintext. So a 2048-byte
+        // stripe legitimately comes back at 2047 or 2046 — measured at ~0.4% of
+        // chunks, since MP3 frame data is full of nulls. This is not an error.
+        //
+        // It stays lossless only because the bytes stripped are zeros by
+        // definition and `output` came from Buffer.alloc, which zero-fills, so
+        // the gap already holds the right values. That makes the allocator above
+        // LOAD-BEARING, not a style choice: Buffer.allocUnsafe returns recycled
+        // memory and would scatter garbage bytes through the audio on ~1 chunk
+        // in 250 while still reporting a successful download — silent corruption
+        // that only shows up by ear.
+        //
+        // Verify rather than trust, so the coupling can't be broken silently.
+        // Runs only on a short decode, and decode() strips at most 7 bytes.
+        if (decrypted.length < chunkSize) {
+          for (let i = position + decrypted.length; i < position + chunkSize; i++) {
+            if (output[i] !== 0) {
+              throw new Error(
+                `Decrypt output buffer is not zero-filled at byte ${i}: PADDING.NULL ` +
+                `strips trailing nulls, so this buffer must come from Buffer.alloc, ` +
+                `never Buffer.allocUnsafe`
+              )
+            }
+          }
         }
       } else {
         // Copy chunk as-is

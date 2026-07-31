@@ -80,6 +80,7 @@ export interface Settings {
   isrcFallback: boolean
   createErrorLog: boolean
   createPlaylistFile: boolean
+  createAlbumPlaylistFile: boolean
   clearQueueOnClose: boolean
   // Folder settings
   createPlaylistFolder: boolean
@@ -88,6 +89,7 @@ export interface Settings {
   createCDFolder: boolean
   createPlaylistStructure: boolean
   createSinglesStructure: boolean
+  createShortReleaseFolder: boolean
   playlistFolderTemplate: string
   albumFolderTemplate: string
   artistFolderTemplate: string
@@ -151,6 +153,10 @@ export const defaultSettings: Settings = {
   isrcFallback: true,
   createErrorLog: true,
   createPlaylistFile: false,
+  // Only consulted when createPlaylistFile is on. Defaults true so installs
+  // that already had playlist files enabled keep writing album M3Us (#121);
+  // turning it off leaves playlists alone and stops the per-album files (#131).
+  createAlbumPlaylistFile: true,
   clearQueueOnClose: false,
   // Folder settings
   createPlaylistFolder: true,
@@ -159,6 +165,7 @@ export const defaultSettings: Settings = {
   createCDFolder: true,
   createPlaylistStructure: false,
   createSinglesStructure: false,
+  createShortReleaseFolder: true,
   playlistFolderTemplate: '%playlist%',
   albumFolderTemplate: '%artist% - %album%',
   artistFolderTemplate: '%artist%',

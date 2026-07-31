@@ -10,6 +10,19 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 
 ## [Unreleased]
 
+### Added
+
+- **Option to skip the folder for one and two track releases (#129).** Pulling a discography used to leave a folder for every single, each holding one file. A new folder option, "Create a folder for releases with 1 or 2 tracks", is on by default and can be turned off to send those tracks straight into the artist folder instead. It keys on how many tracks a release actually has rather than on how the service labels it, so a one-track EP is treated the same as a one-track single, and a five-track EP still gets its folder. Works the same for Deezer and Qobuz, on manual album downloads and on artist sync. Requested by AmiFox.
+
+### Fixed
+
+- **A private Spotify playlist is no longer blamed on the editorial API change.** Spotify answers 404 both for its own editorial and algorithmic playlists and for a user's private playlist, and the app reported every one of them as the first case, ending with "playlists created by regular users still work" while someone stared at their own playlist failing. The message now branches on the playlist ID: links starting with `37i9` keep the editorial explanation, everything else says the playlist is private or gone, explains that Spotify credentials identify the app rather than the person, and points to the Make public option. Raised by alex5908 on #117.
+
+### Changed
+
+- **The Settings description for Spotify now names Qobuz.** It still described the pre-2.4.0 behavior, converting to Deezer only, three lines above a disclaimer that correctly named both services. Updated across all 21 languages.
+- **Two folder options now say what they do.** "Create playlist structure" and "Create singles structure" were bare checkboxes whose names described nothing, and the second was actively misleading: it reads as though it governs releases Deezer and Qobuz classify as singles, when it only ever applies to tracks downloaded individually. They are now "Create artist and album folders inside playlists" and "Create artist and album folders for individual tracks". Behavior is unchanged, only the labels. Updated across all 21 languages.
+
 ## [2.4.2] - 2026-07-24
 
 ### Changed
