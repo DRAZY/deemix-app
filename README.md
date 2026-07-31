@@ -67,7 +67,7 @@
 
 - **ID3 Tagging:** 26 configurable fields including title, artist, album, lyrics, ISRC, BPM, and Release Type
 - **Featured Artists:** all credited artists included, with a configurable separator
-- **M3U Playlists:** automatic M3U8 generation for playlists and albums, with a customizable filename template
+- **M3U Playlists:** optional M3U8 generation for playlists, with a separate toggle for albums and a customizable filename template
 - **Artwork:** embedded and local cover art with configurable size and format, plus a playlist cover saved as `cover.jpg`
 - **Synced Lyrics:** optional LRC file generation
 - **Folder & Track Templates:** customizable organization with variables like `%artist%`, `%album%`, `%year%`, `%explicit%`, and `%barcode%`
@@ -223,7 +223,7 @@ The Settings page offers deep customization organized into these categories:
 | Category | Key Options |
 |----------|-------------|
 | **Appearance** | Theme (9 color themes, Signal default), dark/light/system mode, slim sidebar, slim downloads |
-| **Downloads** | Quality (128/320/FLAC), max concurrent, natural download pacing, overwrite mode, bitrate fallback, M3U filename template |
+| **Downloads** | Quality (128/320/FLAC), max concurrent, natural download pacing, overwrite mode, bitrate fallback, playlist file (with a separate album toggle) and M3U filename template |
 | **Folder Structure** | Create artist/album/playlist/CD folders, templates with `%explicit%`, `%owner%`, `%date%` support |
 | **Track Naming** | Templates for single tracks, album tracks, and playlist tracks |
 | **Metadata Tags** | Toggle 21 individual ID3 tag fields (title, artist, album, lyrics, ISRC, BPM, etc.) |
