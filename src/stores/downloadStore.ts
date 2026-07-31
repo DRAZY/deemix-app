@@ -425,6 +425,11 @@ export const useDownloadStore = defineStore('downloads', () => {
         isrcFallback: settingsStore.settings.isrcFallback,
         createErrorLog: settingsStore.settings.createErrorLog,
         createPlaylistFile: settingsStore.settings.createPlaylistFile,
+        // Must be listed explicitly: this payload is an allowlist, and the server
+        // only overwrites keys the body actually carries. Omitting it left the
+        // server on its own default of true forever, so unticking the box in
+        // Settings changed nothing and album M3Us kept being written (#131).
+        createAlbumPlaylistFile: settingsStore.settings.createAlbumPlaylistFile,
         clearQueueOnClose: settingsStore.settings.clearQueueOnClose,
         createPlaylistFolder: settingsStore.settings.createPlaylistFolder,
         createArtistFolder: settingsStore.settings.createArtistFolder,
