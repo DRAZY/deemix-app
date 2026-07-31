@@ -10,6 +10,12 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 
 ## [Unreleased]
 
+## [2.4.4] - 2026-07-31
+
+### Fixed
+
+- **Turning off album playlist files now works (#131).** 2.4.3 added the "Also create one for each album" option but the app never told its own download engine what the checkbox was set to, so the engine stayed on its built-in default of on and kept writing an .m3u8 into every album folder no matter what you chose. The setting is now sent through correctly. Verified by downloading a 14 track album with the option off, which produced no playlist file, and again with it on, which produced one. Reported by SchwanzusLongus.
+
 ## [2.4.3] - 2026-07-31
 
 ### Added
