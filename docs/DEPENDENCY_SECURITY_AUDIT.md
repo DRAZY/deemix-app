@@ -85,6 +85,21 @@ The 26.8.1 tree has no such template — that version generated `AppRun` through
 `app-builder-bin` Go toolset, which matches the advisory's note that the flaw existed in
 two independent code paths.
 
+The generation path is single and unconditional, which is what makes the template a
+sufficient check. `generateAppRunScript()` is one `return` of a template literal with no
+JS branching (the `if [ -z "$APPDIR" ]` lines are bash text inside it). It is called
+unconditionally by `writeAppLauncherAndRelatedFiles()`, and **both** AppImage build paths
+— `buildStaticRuntimeAppImage` and `buildLegacyFuse2AppImage` — go through that function.
+Unifying the two previously independent paths onto one hardened generator is how 26.15.0
+fixed this. The `LD_LIBRARY_PATH` line takes no interpolated config, so there is no input
+that produces a different result.
+
+Caveat, stated rather than glossed: the AppRun bytes were **not** read back out of the
+shipped `.AppImage`. Its squashfs payload is compressed and no `unsquashfs` is available
+on this machine (electron-builder bundles only `mksquashfs`). The verification above is
+code-path analysis of the exact generator that produced the artifact, not extraction from
+it.
+
 The advisory is titled "electron-updater: …" but the defect is in the AppImage that
 app-builder-lib produces. We do not ship electron-updater (verified: no `electron-updater`
 or `autoUpdater` reference in the tree), so the *sibling* advisory `GHSA-p2f4-r6v6-j797`
@@ -309,6 +324,28 @@ Same standard as the security work — the packaged app, not just a compile:
   (`/downloads` → "DOWNLOAD STATISTICS", `/settings` → "QUICK PRESETS",
   `/about` → "WHAT'S NEW"), with no console errors
 - `bun audit` unchanged at 10 — vite 8 introduced nothing new
+
+### Full cross-platform build (2026-08-07)
+
+`bun run build:all` completed with exit code 0, producing all ten artifacts. Every
+target reports Electron 43.3.0, and the Linux binaries report Chromium 150.0.7871.212:
+
+| Artifact | Size |
+|---|---|
+| Deemix Remastered-2.4.4-universal.dmg | 217.7 MB |
+| Deemix Remastered-2.4.4-arm64.dmg | 125.3 MB |
+| Deemix Remastered-Setup-2.4.4-x64.exe | 103.7 MB |
+| Deemix Remastered-Setup-2.4.4-arm64.exe | 100.2 MB |
+| Deemix Remastered-Portable-2.4.4-x64.exe | 103.5 MB |
+| Deemix Remastered-Portable-2.4.4-arm64.exe | 100.0 MB |
+| Deemix Remastered-2.4.4.AppImage | 133.4 MB |
+| Deemix Remastered-2.4.4-arm64.AppImage | 131.9 MB |
+| deemix-app_2.4.4_amd64.deb | 103.9 MB |
+| deemix-app_2.4.4_arm64.deb | 97.5 MB |
+
+Both Windows targets cross-built from macOS without incident, as did both Linux
+architectures (fpm and the linux tools are fetched into the electron-builder cache).
+The whole set runs unsandboxed because of the `hdiutil` limitation noted above.
 
 ## Verification
 
