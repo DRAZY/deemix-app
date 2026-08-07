@@ -171,14 +171,144 @@ patterns reaching this code are the `files` globs in our own `package.json`. An 
 who can edit those already owns the repository. This clears itself when minimatch
 publishes a release requiring `^5.0.9`, or if bun adds nested override support.
 
-## Deferred — currency, not security
+## Major upgrades — assessed 2026-08-07
 
-None of these carries an advisory. They are majors with real migration cost and zero
-security benefit, so they were deliberately left out of a security-motivated change:
+None of these was urgent, so each was judged on whether it works. Every verdict below
+came from installing it and testing, not from reading a changelog. Six landed, two did
+not.
 
-pinia 2 → 4, vue-i18n 9 → 11, vue-router 4 → 5, tailwindcss 3 → 4 (CSS-first config
-rewrite, high visual-regression risk across the whole UI), typescript 5 → 7,
-vite 6 → 8, @vitejs/plugin-vue 5 → 6, vite-plugin-electron 0.28 → 1.1.
+One nuance on "no advisories": vue-i18n does carry four (GHSA-x8qp-wqqm-57ph,
+GHSA-p2ph-7g93-hw3m, GHSA-hjwq-mjwj-4x6c, GHSA-9r9m-ffp6-9x4v — prototype pollution and
+DOM XSS). We were **not** exposed: they are patched in 9.14.2 / 9.14.3 / 9.14.5, and we
+were already on 9.14.5. The forward-looking risk is what argued for moving anyway. The
+9.x line is two majors behind (11 current, 12 in alpha) and only survives on backports.
+That is the same shape as the Electron 39 problem in Finding 1 — a line that is fine
+until the day it stops being maintained, at which point it becomes urgent. Moving while
+it is cheap is the whole point.
+
+| Package | From → To | Verdict |
+|---|---|---|
+| pinia | 2.3.1 → 4.0.2 | **Taken** |
+| vue-i18n | 9.14.5 → 11.4.8 | **Taken** |
+| vue-router | 4.6.4 → 5.2.0 | **Taken** |
+| @vitejs/plugin-vue | 5.2.4 → 6.0.8 | **Taken** |
+| vite | 6.4.3 → 8.2.1 | **Taken** |
+| vite-plugin-electron(-renderer) | 0.28.8 / 0.14.7 → 1.1.1 / 1.0.0 | **Taken** |
+| typescript | 5.9.3 → 7.0.2 | **Blocked** — vue-tsc incompatible |
+| tailwindcss | 3.4.19 → 4.3.3 | **Rejected** — breaks layout |
+
+### Why the Vue-side majors were nearly free
+
+This codebase happened to sit on the right side of every deprecation:
+
+- **pinia** — all 10 stores are setup-style (`defineStore('id', () => {…})`), and there
+  are zero uses of `mapState` / `mapActions` / `storeToRefs`. Pinia 3 only removed
+  option-object `defineStore({id})`, `PiniaStorePlugin`, and Vue 2. Pinia 4 is "ESM only
+  plus `@vue/devtools-api` v8", and Vite bundles ESM natively.
+- **vue-i18n** — already `legacy: false`, zero `$t` / `tc` / `$tc` / `v-t` usage across
+  54 `useI18n` call sites. v11's headline change is deprecating Legacy API mode, which
+  we were never on.
+
+One real conflict surfaced: pinia 4 peers on `@vue/devtools-api ^8.1.5`, while
+vue-router 4 and vue-i18n 11 both depend on `^6.x`. Only one copy was hoisted, leaving
+pinia's peer unsatisfied. Declaring `@vue/devtools-api ^8.1.5` as a direct dependency
+fixes it — 8.x hoists for pinia, 6.x nests for the other two.
+
+### vite 8 — taken, with a known and understood size delta
+
+Clean rebuilds on each version (`dist-electron` accumulates stale chunks across builds,
+so a naive `du` comparison is meaningless — see below):
+
+| | vite 6.4.3 | vite 8.2.1 |
+|---|---|---|
+| `dist-electron/main.js` | 327,647 B | 609,495 B (+86%) |
+| `dist-electron` total | 567,954 B | 843,213 B |
+| `dist` (renderer) | 3,154,594 B | 3,167,552 B (+0.4%) |
+
+The renderer is unchanged; the growth is entirely in the main-process bundle, and it is
+benign. Externals are still correct — `electron` stays external and `fs` / `path` /
+`crypto` / `http` / `https` remain `require`d rather than bundled. The extra weight is
+music-metadata parser chunks (`APEv2Parser`, `BasicParser`, `ID3v1Parser`, `lib-*`) that
+vite 6 left on disk and vite 8 bundles, which makes the output more self-contained. In a
+131 MB app, 275 KB is noise.
+
+### typescript 7 — blocked, not deferred
+
+TypeScript 7 is the native Go port; it ships per-platform binaries and exposes only a
+`tsc` bin. `vue-tsc` 3.3.9 resolves `typescript/lib/tsc` internally, which the native
+port does not export:
+
+```
+Error [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './lib/tsc' is not defined
+by "exports" in node_modules/typescript/package.json
+```
+
+`vue-tsc`'s declared peer range (`typescript >=5.0.0`) admits 7.x, so this only shows up
+at runtime. Revisit when Volar ships native-port support; there is nothing to do at our
+end.
+
+### tailwindcss 4 — rejected on measured evidence
+
+Attempted with the lowest-risk path: keep the JS config via `@config`, swap
+`@tailwind base/components/utilities` for `@import "tailwindcss"`, and move PostCSS to
+`@tailwindcss/postcss`. It built, and the custom theme survived (`primary-*`, `qobuz`,
+`deezer`, `bg-main` all present in the output CSS).
+
+It is still broken. Computed styles were captured over CDP from the packaged app for 40
+elements across 4 routes on both versions — 2,240 values compared:
+
+| | |
+|---|---|
+| identical | 2,016 |
+| differing | 224 (10.0%) |
+
+Breakdown: `borderColor` 112, **`padding` 94**, `backgroundColor` 6, `color` 4,
+`borderRadius` 4, `margin` 4.
+
+Most of the `borderColor` drift is cosmetic notation (`rgba(255,255,255,0.06)` →
+`oklab(…)`, the same color) plus v4's documented default border change. The `padding`
+drift is a genuine layout break — `px-4` resolved to `0px`:
+
+```css
+.px-4 { padding-inline: calc(var(--spacing) * 4) }   /* --spacing is never defined */
+```
+
+v4 emits spacing utilities against a `--spacing` theme variable that comes from its
+`@theme` layer. Using `@config` with a legacy JS config suppresses that layer, so the
+`calc()` is invalid and every horizontal/vertical padding utility collapses to zero.
+
+The consequence: there is no shim path. A real v4 migration means porting the theme into
+CSS `@theme` blocks and then visually re-checking all 39 components — a deliberate piece
+of work with its own QA pass, not a dependency bump. It buys no security.
+
+### Incidental finding: `dist-electron` accumulates stale chunks
+
+`dist-electron` is written by vite-plugin-electron as a secondary output directory, and
+`emptyOutDir` does not apply to it. Before cleaning, it held 70 files dated across three
+separate build days — orphaned content-hashed chunks from every prior build.
+
+`package.json` `build.files` includes `dist-electron/**/*`, so **every stale chunk gets
+packaged into the shipped app**. It is dead weight rather than a vulnerability, and the
+practical fix is `rm -rf dist dist-electron` before a release build. Worth folding into
+the build scripts.
+
+### Verification of the accepted set
+
+Same standard as the security work — the packaged app, not just a compile:
+
+- `vue-tsc --noEmit` clean; `vite build` clean; full `electron-builder --mac --arm64`
+  producing a 131.4 MB DMG
+- Packaged app launched with `--remote-debugging-port`, confirming
+  **Chrome/150.0.7871.212, Electron/43.3.0** in the renderer
+- DOM read back over CDP: Vue mounted, Tailwind applied
+  (`background-color: rgb(18,18,22)`, matching `--bg-main`), all 12 i18n nav labels
+  rendered ("Home", "Search", "Charts", …), and live store data present
+  ("Q:LINKED", "QUALITY · FLAC/1411") — which exercises vue-i18n 11 and pinia 4 together
+- Route changes driven across `/downloads`, `/settings`, `/favorites`, `/analyzer`,
+  `/about`, `/` — each resolved its hash and rendered its own view
+  (`/downloads` → "DOWNLOAD STATISTICS", `/settings` → "QUICK PRESETS",
+  `/about` → "WHAT'S NEW"), with no console errors
+- `bun audit` unchanged at 10 — vite 8 introduced nothing new
 
 ## Verification
 
