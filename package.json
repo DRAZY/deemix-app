@@ -80,7 +80,9 @@
       "target": [
         "dmg"
       ],
-      "icon": "public/icon.icns"
+      "icon": "public/icon.icns",
+      "identity": "-",
+      "hardenedRuntime": true
     },
     "win": {
       "target": [
