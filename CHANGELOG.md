@@ -10,6 +10,24 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-08-07
+
+### Summary
+
+- **This is a security release. Nothing in the app itself changed, but everything underneath it did.** No settings move, no features are added or removed, and the app looks and behaves exactly as 2.4.4 did. The version number moved to 2.5.0 rather than 2.4.5 because the entire engine the app runs on was replaced, and if some display oddity does turn up, it will help to know which release it arrived in.
+- **Updating is safe and nobody gets left behind.** Existing settings, library, and download history carry over untouched. System requirements are unchanged: macOS Monterey or newer, Windows 10 or newer, and the same Linux versions as before.
+
+### Security
+
+- **The app runs on a current browser engine again.** Deemix Remastered is built on Electron, which bundles the same engine Chrome uses to draw the interface and talk to Deezer, Qobuz, and Spotify. It had been sitting on Electron 39, and Electron only issues security fixes for its three newest versions. 39 fell out of that window and received its last fix on 5 May 2026, so for three months every browser security fix published had been missing from the app. This release moves to Electron 43, which takes the engine from Chromium 142 to Chromium 150, eight versions of accumulated fixes, and the copy of Node inside the app from 22 to 24. This matters more here than it would in an offline tool, because the app loads real web pages: the Deezer sign-in window, the Qobuz player used to sign in, and cover art fetched from their servers.
+- **Linux AppImage builds no longer add the folder they are launched from to the library search path.** Every AppImage released up to and including 2.4.4 was built by a version of the packaging tool that left a stray separator at the end of `LD_LIBRARY_PATH`. Linux reads that empty entry as "look in the current directory", so a file placed next to the AppImage could be loaded and run in place of a real system library. Anyone using the `.AppImage` should replace it with this build. The `.deb` packages were never affected, and neither were the Windows or macOS builds.
+- **Twenty-two of the thirty-two known issues in the build toolchain are resolved.** These sit in the tools that assemble the installers rather than in the app you run, but they are worth closing regardless. The ten that remain are all the same component on one build-time path, they cannot be reached by anything a user does, and they are documented in `docs/DEPENDENCY_SECURITY_AUDIT.md` along with why forcing a fix would break the packaging instead.
+
+### Changed
+
+- **The interface libraries the app is built on were brought up to date.** Pinia, Vue I18n, Vue Router, and Vite all moved up a major version. None of this is meant to be visible. It is listed because it is the kind of change that can produce an odd rendering or layout glitch, and if you hit one it will help to know the version it arrived in.
+- **Installers no longer carry leftover files from previous builds.** The build wrote each release into a folder it never cleared first, so unused fragments from earlier versions had been accumulating and shipping inside the app. The build now starts clean.
+
 ## [2.4.4] - 2026-07-31
 
 ### Fixed
