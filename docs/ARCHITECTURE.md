@@ -248,13 +248,13 @@ Password never crosses the IPC boundary. Only the resulting ARL cookie does, and
 
 ## Stack Summary
 
-- **Runtime:** Electron 39
+- **Runtime:** Electron 43 (Chromium 150, Node 24)
 - **UI framework:** Vue 3 with Composition API + `<script setup>` syntax
-- **State:** Pinia (Composition API style stores)
-- **Routing:** Vue Router 4
+- **State:** Pinia 4 (Composition API style stores)
+- **Routing:** Vue Router 5
 - **i18n:** vue-i18n (21 languages)
 - **Styling:** Tailwind CSS 3 over a CSS-variable theme system — 9 color themes (Signal default) with per-theme light-mode variants; Archivo Black + IBM Plex Sans/Mono bundled via @fontsource
-- **Bundler:** Vite 6 with vite-plugin-electron
+- **Bundler:** Vite 8 with vite-plugin-electron
 - **Type safety:** TypeScript 5, `vue-tsc --noEmit` enforced via CI
 - **Audio decryption:** `egoroof-blowfish` (CBC mode with Blowfish-derived key per track)
 - **Tagging:** `node-id3` for MP3, `flac-metadata` for FLAC

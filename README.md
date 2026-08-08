@@ -15,7 +15,7 @@
   <a href="https://github.com/DRAZY/deemix-remastered/actions/workflows/typecheck.yml"><img alt="CI" src="https://github.com/DRAZY/deemix-remastered/actions/workflows/typecheck.yml/badge.svg" /></a>
   <img alt="Last commit" src="https://img.shields.io/github/last-commit/DRAZY/deemix-remastered?color=C8F135" />
   <br />
-  <img alt="Electron" src="https://img.shields.io/badge/Electron-39-47848F?logo=electron&logoColor=white" />
+  <img alt="Electron" src="https://img.shields.io/badge/Electron-43-47848F?logo=electron&logoColor=white" />
   <img alt="Vue" src="https://img.shields.io/badge/Vue-3-4FC08D?logo=vue.js&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0-green" />
