@@ -1,6 +1,9 @@
 # Dependency & Runtime Security Audit
 
-Stack assessment performed 2026-08-07 against `2.4.4`. Every version claim below was
+Stack assessment performed 2026-08-07 against `2.4.4`, shipped as `2.5.0`. The minor
+bump rather than a patch is deliberate: no app code changed, but the entire runtime was
+replaced, and the version number is the only thing that will point at that if a display
+regression is reported later. Every version claim below was
 read from the npm registry, the GitHub advisory API, or the installed tree — not from
 memory. Cite this instead of re-deriving it.
 
@@ -330,18 +333,20 @@ Same standard as the security work — the packaged app, not just a compile:
 `bun run build:all` completed with exit code 0, producing all ten artifacts. Every
 target reports Electron 43.3.0, and the Linux binaries report Chromium 150.0.7871.212:
 
+Rebuilt and re-verified at `2.5.0` before release; the sizes below are the shipped set.
+
 | Artifact | Size |
 |---|---|
-| Deemix Remastered-2.4.4-universal.dmg | 217.7 MB |
-| Deemix Remastered-2.4.4-arm64.dmg | 125.3 MB |
-| Deemix Remastered-Setup-2.4.4-x64.exe | 103.7 MB |
-| Deemix Remastered-Setup-2.4.4-arm64.exe | 100.2 MB |
-| Deemix Remastered-Portable-2.4.4-x64.exe | 103.5 MB |
-| Deemix Remastered-Portable-2.4.4-arm64.exe | 100.0 MB |
-| Deemix Remastered-2.4.4.AppImage | 133.4 MB |
-| Deemix Remastered-2.4.4-arm64.AppImage | 131.9 MB |
-| deemix-app_2.4.4_amd64.deb | 103.9 MB |
-| deemix-app_2.4.4_arm64.deb | 97.5 MB |
+| Deemix Remastered-2.5.0-universal.dmg | 217.7 MB |
+| Deemix Remastered-2.5.0-arm64.dmg | 125.3 MB |
+| Deemix Remastered-Setup-2.5.0-x64.exe | 103.7 MB |
+| Deemix Remastered-Setup-2.5.0-arm64.exe | 100.2 MB |
+| Deemix Remastered-Portable-2.5.0-x64.exe | 103.5 MB |
+| Deemix Remastered-Portable-2.5.0-arm64.exe | 100.0 MB |
+| Deemix Remastered-2.5.0.AppImage | 133.4 MB |
+| Deemix Remastered-2.5.0-arm64.AppImage | 131.9 MB |
+| deemix-app_2.5.0_amd64.deb | 104.0 MB |
+| deemix-app_2.5.0_arm64.deb | 97.5 MB |
 
 Both Windows targets cross-built from macOS without incident, as did both Linux
 architectures (fpm and the linux tools are fetched into the electron-builder cache).
