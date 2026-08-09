@@ -10,6 +10,12 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 
 ## [Unreleased]
 
+## [2.5.1] - 2026-08-09
+
+### Summary
+
+- **A fix-only release for two problems in 2.5.0. Nothing in the app itself changed.** If your 2.5.0 macOS download refused to open, this is the release that fixes it. Windows and Linux users are on identical code to 2.5.0 and have nothing to gain by updating, though nothing to lose either.
+
 ### Fixed
 
 - **macOS builds are properly signed again.** The 2.5.0 macOS downloads failed to open, with macOS calling the app damaged and offering only to move it to the Trash. The app was not damaged. Moving to a newer build tool in 2.5.0 silently dropped a step: older versions automatically applied a basic signature when no developer certificate was present, and the newer one stopped doing that and simply skipped signing. That left the bundle carrying the stock signature from an unmodified copy of Electron, which no longer matched its own contents, and macOS refuses to open an app whose signature does not verify. Signing is now requested explicitly rather than left to a default, so the macOS builds carry the same valid signature every release before 2.5.0 did. Windows and Linux downloads were never affected. Reported by DRAZY.
