@@ -765,7 +765,7 @@ const contextMenuItems = computed(() => {
                 v-model="searchQuery"
                 type="text"
                 :placeholder="t('search.placeholder')"
-                class="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[14px] px-4 text-foreground placeholder:text-foreground-muted/60"
+                class="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[14px] px-4 text-foreground placeholder:text-foreground-muted"
                 :class="searchSource === 'qobuz' ? 'caret-qobuz-500' : 'caret-primary-500'"
                 @paste="handlePaste"
                 @focus="handleSearchFocus"
@@ -775,7 +775,7 @@ const contextMenuItems = computed(() => {
             </div>
             <!-- Source selector: search Deezer or Qobuz's catalog -->
             <div class="mt-2 flex items-center gap-2">
-              <span class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted/70">Source</span>
+              <span class="font-mono text-[9.5px] tracking-[0.2em] uppercase text-foreground-muted">Source</span>
               <button
                 type="button"
                 @click="setSearchSource('deezer')"
@@ -791,8 +791,8 @@ const contextMenuItems = computed(() => {
                 :class="searchSource === 'qobuz' ? 'border-qobuz-500/60 text-qobuz-400 bg-qobuz-500/10' : 'border-white/[0.1] text-foreground-muted hover:text-foreground'"
               >Qobuz <span class="text-[8px] align-top">HI-RES</span></button>
             </div>
-            <div class="mt-2 font-mono text-[10px] tracking-[0.06em] uppercase text-foreground-muted/80">{{ t('search.searchHint') }}</div>
-            <div class="mt-1 font-mono text-[10px] tracking-[0.04em] text-foreground-muted/55">{{ t('search.searchHintPaste') }}</div>
+            <div class="mt-2 font-mono text-[10px] tracking-[0.06em] uppercase text-foreground-muted">{{ t('search.searchHint') }}</div>
+            <div class="mt-1 font-mono text-[10px] tracking-[0.04em] text-foreground-muted">{{ t('search.searchHintPaste') }}</div>
 
           <!-- Search History Dropdown -->
           <div
@@ -852,7 +852,7 @@ const contextMenuItems = computed(() => {
             <span
               v-if="tab.id !== 'all' && resultCounts[tab.id + 's' as keyof typeof resultCounts] > 0"
               class="text-[9.5px]"
-              :class="activeTab === tab.id ? 'text-primary-500/80' : 'text-foreground-muted/70'"
+              :class="activeTab === tab.id ? 'text-primary-500/80' : 'text-foreground-muted'"
             >
               {{ resultCounts[tab.id + 's' as keyof typeof resultCounts].toLocaleString() }}
             </span>

@@ -10,6 +10,17 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 
 ## [Unreleased]
 
+## [2.5.4] - 2026-08-09
+
+### Summary
+
+- **Small text throughout the app is easier to read, in every theme.** This is the same problem as the track count in 2.5.2, found everywhere else it occurs. Nothing moves and no colours change character; the greyer text simply stops being quite so faint.
+
+### Fixed
+
+- **The muted grey used for secondary text was too light on cards and panels.** Labels, hints, settings descriptions and similar small text are drawn in a lighter grey so they sit behind the main text. That grey was measured against every one of the app's twenty theme and mode combinations, on all three background shades each of them uses, and it fell below the recognised minimum for readable text in four of them, on the darker card and tile backgrounds in particular. It was slightly too light before anything else was done to it, so the grey itself has been adjusted: a little darker in light mode and in the light Signal theme, a little lighter in Dracula. Every combination now clears the minimum. The other seventeen were already fine and are untouched.
+- **Thirty-three places were fading that text further still.** On top of the grey, individual labels were being drawn at partial opacity, some as low as 30%, which took them well below readable. That extra fading has been removed. These elements are still clearly secondary, because they were already set apart by size, spacing, capitals and typeface rather than by the fading. Twelve other faded elements were left exactly as they are on purpose: the drawings on empty pages, and options that are switched off, where the fading is what tells you the option is unavailable.
+
 ## [2.5.3] - 2026-08-09
 
 ### Fixed

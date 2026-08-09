@@ -864,7 +864,7 @@ async function pasteLink() {
             v-model="linkInput"
             type="text"
             placeholder="Paste a Deezer or Spotify link (track, album, artist, or playlist)..."
-            class="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[13px] px-4 text-foreground placeholder:text-foreground-muted/60 caret-primary-500"
+            class="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[13px] px-4 text-foreground placeholder:text-foreground-muted caret-primary-500"
             @paste="handlePaste"
             @contextmenu="openInputMenu"
           />
@@ -1183,7 +1183,7 @@ async function pasteLink() {
                   ? (svc === 'qobuz' ? 'bg-qobuz-500/20 text-qobuz-400'
                      : svc === 'deezer' ? 'bg-deezer-500/20 text-deezer-400'
                      : 'bg-gradient-to-r from-deezer-500/25 to-qobuz-500/25 text-foreground')
-                  : 'text-foreground-muted/50 hover:text-foreground-muted'"
+                  : 'text-foreground-muted hover:text-foreground-muted'"
               >
                 {{ svc }}
               </button>
@@ -1291,9 +1291,9 @@ async function pasteLink() {
             <span class="font-mono text-[9.5px] tracking-[0.15em] uppercase">Prefer</span>
             <div class="inline-flex border border-white/[0.08] p-0.5 gap-0.5">
               <button @click="bothPreference = 'qobuz'" class="font-mono text-[10px] tracking-[0.1em] uppercase px-2.5 py-1 transition-colors"
-                :class="bothPreference === 'qobuz' ? 'bg-qobuz-500/20 text-qobuz-400' : 'text-foreground-muted/50 hover:text-foreground-muted'">Qobuz</button>
+                :class="bothPreference === 'qobuz' ? 'bg-qobuz-500/20 text-qobuz-400' : 'text-foreground-muted hover:text-foreground-muted'">Qobuz</button>
               <button @click="bothPreference = 'deezer'" class="font-mono text-[10px] tracking-[0.1em] uppercase px-2.5 py-1 transition-colors"
-                :class="bothPreference === 'deezer' ? 'bg-deezer-500/20 text-deezer-400' : 'text-foreground-muted/50 hover:text-foreground-muted'">Deezer</button>
+                :class="bothPreference === 'deezer' ? 'bg-deezer-500/20 text-deezer-400' : 'text-foreground-muted hover:text-foreground-muted'">Deezer</button>
             </div>
             <span class="opacity-80">fall back to the other · click a lit cell to override one track</span>
           </div>

@@ -101,6 +101,7 @@
 
 - **"Signal Deck" Interface:** an industrial-console design with a live status-strip title bar, a numbered channel rail, a Transfer Rack with VU meters, and a command-bar search
 - **Themes:** 9 color themes with dark, light, and system mode
+- **Readable Text:** secondary text meets the WCAG AA contrast minimum on every theme, mode, and surface
 - **Settings Profiles:** save, apply, export, and import named configurations (Audiophile, Quick, and Balanced built-ins plus your own)
 - **Backup & Restore:** one backup file for your whole app data, with per-segment and per-profile selection
 - **Quality of Life:** slim sidebar, keyboard shortcuts, search history, context menus, offline detection, toasts, and an auto-update checker

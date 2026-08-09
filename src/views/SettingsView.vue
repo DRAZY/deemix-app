@@ -1938,7 +1938,7 @@ async function reindexLibrary() {
           <p class="text-sm text-foreground-muted mt-2">
             {{ t('settings.arlRequired') }}
           </p>
-          <p class="text-xs text-foreground-muted/70 mt-2 leading-relaxed">
+          <p class="text-xs text-foreground-muted mt-2 leading-relaxed">
             {{ t('settings.deezerDisclaimer') }}
           </p>
         </div>
@@ -1968,7 +1968,7 @@ async function reindexLibrary() {
         <p class="text-sm text-foreground-muted">
           {{ t('settings.qobuz.description') }}
         </p>
-        <p class="text-xs text-foreground-muted/70 leading-relaxed">
+        <p class="text-xs text-foreground-muted leading-relaxed">
           {{ t('settings.qobuz.disclaimer') }}
         </p>
 
@@ -2020,7 +2020,7 @@ async function reindexLibrary() {
             <button
               type="button"
               @click="qobuzAdvancedOpen = !qobuzAdvancedOpen"
-              class="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.12em] uppercase text-foreground-muted/70 hover:text-foreground-muted transition-colors"
+              class="flex items-center gap-1.5 font-mono text-[10px] tracking-[0.12em] uppercase text-foreground-muted hover:text-foreground-muted transition-colors"
             >
               <svg class="w-3 h-3 transition-transform" :class="qobuzAdvancedOpen ? 'rotate-90' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
@@ -2084,7 +2084,7 @@ async function reindexLibrary() {
         <p class="text-sm text-foreground-muted">
         {{ t('settings.spotify.description') }}
       </p>
-      <p class="text-xs text-foreground-muted/70 leading-relaxed">
+      <p class="text-xs text-foreground-muted leading-relaxed">
         {{ t('settings.spotify.disclaimer') }}
       </p>
 

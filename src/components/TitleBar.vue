@@ -109,7 +109,7 @@ const close = () => window.electronAPI?.close()
          + Q:OFFLINE when disconnected or the session expired -->
     <div
       class="hidden sm:flex items-center gap-2 h-full px-4 border-r border-white/[0.06] font-mono text-[10.5px] tracking-[0.08em]"
-      :class="settingsStore.isQobuzLinked ? 'text-foreground-muted' : 'text-foreground-muted/50'"
+      :class="settingsStore.isQobuzLinked ? 'text-foreground-muted' : 'text-foreground-muted'"
       v-tooltip="settingsStore.isQobuzLinked ? t('titleBar.qobuzLinkedTip') : t('titleBar.qobuzOfflineTip')"
     >
       <span

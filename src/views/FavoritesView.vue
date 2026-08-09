@@ -600,7 +600,7 @@ async function importFromDeezer() {
         <span
           v-if="tab.count() > 0"
           class="text-[9.5px]"
-          :class="activeTab === tab.id ? 'text-primary-500/80' : 'text-foreground-muted/70'"
+          :class="activeTab === tab.id ? 'text-primary-500/80' : 'text-foreground-muted'"
         >
           {{ tab.count() }}
         </span>

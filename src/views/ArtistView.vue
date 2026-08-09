@@ -492,7 +492,7 @@ const contextMenuItems = computed(() => {
           v-else
           class="w-48 h-48 rounded-full shadow-2xl bg-background-tertiary border border-white/[0.08] flex items-center justify-center"
         >
-          <span class="font-display uppercase text-[64px] text-foreground-muted/60">{{ (artist.name || '?').charAt(0) }}</span>
+          <span class="font-display uppercase text-[64px] text-foreground-muted">{{ (artist.name || '?').charAt(0) }}</span>
         </div>
         <div class="flex-1">
           <p class="font-mono text-[10px] tracking-[0.3em] uppercase text-primary-500 mb-2">{{ t('common.artist') }}</p>
