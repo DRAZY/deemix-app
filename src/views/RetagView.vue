@@ -219,7 +219,7 @@ function resultClass(status?: string) {
               :value="folder"
               readonly
               :placeholder="t('retag.noFolder')"
-              class="flex-1 min-w-0 bg-transparent outline-none font-mono text-[13px] px-3 text-foreground placeholder:text-foreground-muted/60"
+              class="flex-1 min-w-0 bg-transparent outline-none font-mono text-[13px] px-3 text-foreground placeholder:text-foreground-muted"
             />
           </div>
           <button class="px-3 py-2 font-mono text-[10.5px] uppercase tracking-[0.12em] border border-white/[0.08] text-foreground-muted hover:text-primary-500 hover:border-primary-500/50 transition-colors whitespace-nowrap" @click="pickFolder">{{ t('retag.selectFolder') }}</button>

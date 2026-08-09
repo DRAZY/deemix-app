@@ -629,7 +629,7 @@ function copyAllErrorDetails() {
       >
         <div class="flex items-center" :class="isSlim ? 'gap-2' : 'gap-4'">
           <!-- Drag handle -->
-          <div class="flex-shrink-0 cursor-grab active:cursor-grabbing text-foreground-muted/40 hover:text-foreground-muted">
+          <div class="flex-shrink-0 cursor-grab active:cursor-grabbing text-foreground-muted hover:text-foreground-muted">
             <svg :class="isSlim ? 'w-3 h-3' : 'w-4 h-4'" viewBox="0 0 24 24" fill="currentColor">
               <circle cx="9" cy="6" r="1.5" />
               <circle cx="15" cy="6" r="1.5" />
@@ -657,7 +657,7 @@ function copyAllErrorDetails() {
               class="bg-background-tertiary border border-white/[0.08] flex items-center justify-center"
               :class="isSlim ? 'w-8 h-8' : 'w-12 h-12'"
             >
-              <svg class="text-foreground-muted/50" :class="isSlim ? 'w-4 h-4' : 'w-6 h-6'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="text-foreground-muted" :class="isSlim ? 'w-4 h-4' : 'w-6 h-6'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                   d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
               </svg>
@@ -954,7 +954,7 @@ function copyAllErrorDetails() {
                 :class="tr.status === 'completed' ? 'text-green-400'
                   : tr.status === 'error' ? 'text-red-400'
                   : (tr.status === 'downloading' || tr.status === 'decrypting' || tr.status === 'tagging') ? 'text-foreground'
-                  : 'text-foreground-muted/50'"
+                  : 'text-foreground-muted'"
               >
                 {{ tr.status === 'completed' ? 'Done'
                   : tr.status === 'error' ? 'Failed'
@@ -1255,7 +1255,7 @@ function copyAllErrorDetails() {
             {{ entry.type }}
           </span>
           <!-- Timestamp -->
-          <span class="text-xs text-foreground-muted/50 flex-shrink-0 w-20 text-right">
+          <span class="text-xs text-foreground-muted flex-shrink-0 w-20 text-right">
             {{ new Date(entry.completedAt).toLocaleDateString() }}
           </span>
         </div>

@@ -97,7 +97,7 @@ function handleAuthClick() {
     </div>
 
     <!-- Channels label -->
-    <div v-if="!isSlim" class="px-5 pt-2 pb-2 font-mono text-[9.5px] tracking-[0.3em] text-foreground-muted/60">
+    <div v-if="!isSlim" class="px-5 pt-2 pb-2 font-mono text-[9.5px] tracking-[0.3em] text-foreground-muted">
       CHANNELS
     </div>
 
@@ -129,7 +129,7 @@ function handleAuthClick() {
           <span
             v-if="!isSlim"
             class="font-mono text-[10px] w-5 flex-shrink-0"
-            :class="isActive(item.path) ? 'text-primary-600' : 'text-foreground-muted/50'"
+            :class="isActive(item.path) ? 'text-primary-600' : 'text-foreground-muted'"
           >{{ String(idx + 1).padStart(2, '0') }}</span>
 
           <!-- Icons (slim mode only) -->
@@ -227,7 +227,7 @@ function handleAuthClick() {
       v-if="!isSlim && activeDownloadsCount > 0"
       class="mx-4 mb-3 p-3 border border-white/[0.08] bg-background-main/60"
     >
-      <div class="flex justify-between font-mono text-[9px] tracking-[0.24em] text-foreground-muted/70 mb-2">
+      <div class="flex justify-between font-mono text-[9px] tracking-[0.24em] text-foreground-muted mb-2">
         <span>THROUGHPUT</span>
         <span class="text-primary-500">{{ throughput }}</span>
       </div>

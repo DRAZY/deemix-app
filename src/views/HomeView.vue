@@ -99,7 +99,7 @@ const contextMenuItems = computed(() => [
               v-model="searchQuery"
               type="text"
               :placeholder="t('home.searchPlaceholder')"
-              class="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[13px] px-4 text-foreground placeholder:text-foreground-muted/60 caret-primary-500"
+              class="flex-1 min-w-0 bg-transparent border-none outline-none font-mono text-[13px] px-4 text-foreground placeholder:text-foreground-muted caret-primary-500"
               @contextmenu="openSearchMenu"
             />
           </div>

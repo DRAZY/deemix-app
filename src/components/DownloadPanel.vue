@@ -255,7 +255,7 @@ async function openItemFolder(item: DownloadItem) {
       <!-- Units -->
       <div class="flex-1 overflow-y-auto overflow-x-hidden p-3 rack-scroll">
         <div v-if="!hasDownloads" class="flex flex-col items-center justify-center h-full gap-2">
-          <span class="font-mono text-[10px] tracking-[0.24em] text-foreground-muted/60">NO SIGNAL</span>
+          <span class="font-mono text-[10px] tracking-[0.24em] text-foreground-muted">NO SIGNAL</span>
           <p class="text-[12px] text-foreground-muted">{{ t('downloadPanel.noDownloads') }}</p>
         </div>
 
@@ -382,9 +382,9 @@ async function openItemFolder(item: DownloadItem) {
               <div v-for="track in selectedItemForDetails.failedTracks" :key="track.id" class="px-2.5 py-2 bg-red-500/5 border-l-2 border-red-500">
                 <div class="flex flex-wrap items-baseline gap-1 leading-relaxed">
                   <span class="text-foreground-muted font-medium flex-shrink-0">{{ track.trackId || track.id }}</span>
-                  <span class="text-foreground-muted/60 flex-shrink-0">|</span>
+                  <span class="text-foreground-muted flex-shrink-0">|</span>
                   <span class="text-foreground font-medium">{{ track.artist ? `${track.artist} - ${track.title}` : track.title }}</span>
-                  <span class="text-foreground-muted/60 flex-shrink-0">|</span>
+                  <span class="text-foreground-muted flex-shrink-0">|</span>
                   <span class="text-red-400 break-words">{{ track.error || 'Unknown error' }}</span>
                 </div>
               </div>

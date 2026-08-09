@@ -79,7 +79,7 @@ const contextMenuItems = computed(() => [
                group-hover:border-primary-500/60 transition-colors duration-200
                flex items-center justify-center"
       >
-        <svg class="w-12 h-12 text-foreground-muted/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg class="w-12 h-12 text-foreground-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
             d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
@@ -98,7 +98,7 @@ const contextMenuItems = computed(() => [
     <h3 class="text-[13px] font-semibold truncate group-hover:text-primary-400 transition-colors">
       {{ artist.name }}
     </h3>
-    <p class="font-mono text-[9.5px] tracking-[0.16em] uppercase text-foreground-muted/70 mt-0.5">{{ t('common.artist') }}</p>
+    <p class="font-mono text-[9.5px] tracking-[0.16em] uppercase text-foreground-muted mt-0.5">{{ t('common.artist') }}</p>
 
     <!-- Context Menu -->
     <ContextMenu

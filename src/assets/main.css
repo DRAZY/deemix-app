@@ -138,6 +138,11 @@
     --bg-main: 40 42 54;
     --bg-secondary: 48 51 65;
     --bg-tertiary: 59 62 77;
+    /* Dracula's surfaces are lighter than the default dark ones, so the
+       inherited 161 161 170 only reached 4.13:1 on --bg-tertiary. Lifted just
+       enough to clear AA on all three (worst case 4.54:1); every other dark
+       theme keeps the inherited value, which already passes comfortably. */
+    --fg-muted: 169 169 177;
     --primary-50: 255 243 255;
     --primary-100: 250 232 255;
     --primary-200: 245 208 254;
@@ -203,7 +208,11 @@
     --bg-secondary: 243 244 246;
     --bg-tertiary: 229 231 235;
     --fg-default: 24 24 27;
-    --fg-muted: 113 113 122;
+    /* Was 113 113 122, which measured 3.90:1 on --bg-tertiary and 4.39:1 on
+       --bg-secondary: under the 4.5:1 AA minimum on both, before any opacity
+       modifier was applied. Darkened to the nearest value along the same hue
+       that clears AA on all three surfaces (worst case 4.52:1). */
+    --fg-muted: 103 103 112;
   }
 
   /* Light-mode Signal: chartreuse #C8F135 is unreadable as text on white, so
@@ -214,7 +223,9 @@
     --bg-secondary: 238 240 232;
     --bg-tertiary: 226 229 218;
     --fg-default: 26 31 24;
-    --fg-muted: 106 115 100;
+    /* Was 106 115 100 (3.87:1 on --bg-tertiary). See the note in the shared
+       light-mode block; same fix, olive hue preserved. Worst case now 4.53:1. */
+    --fg-muted: 96 104 91;
     --primary-300: 143 174 36;
     --primary-400: 122 148 30;
     --primary-500: 101 123 25;
