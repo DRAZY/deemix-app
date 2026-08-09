@@ -212,7 +212,12 @@ const contextMenuItems = computed(() => [
         {{ album.artist?.name || t('common.variousArtists') }}
       </span>
     </p>
-    <p v-if="album.nb_tracks" class="font-mono text-[9.5px] tracking-[0.12em] text-foreground-muted/60 mt-0.5">
+    <!-- Track count sits at full --fg-muted, not a dimmed variant: at 9.5px the
+         /60 overlay measured 2.26:1 to 4.42:1 across the ten themes, failing WCAG
+         AA everywhere. The mono face, size, casing and tracking already separate
+         this from the artist line above, so the opacity only cost legibility.
+         Matches the TRK readout in DownloadPanel, which was full-strength already. -->
+    <p v-if="album.nb_tracks" class="font-mono text-[9.5px] tracking-[0.12em] text-foreground-muted mt-0.5">
       {{ album.nb_tracks }} TRK
     </p>
 
