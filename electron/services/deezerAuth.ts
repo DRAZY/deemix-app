@@ -1201,6 +1201,13 @@ export class DeezerAuth extends EventEmitter {
   private newReleasesCache: { data: any[]; timestamp: number; token: string } | null = null
   private readonly NEW_RELEASES_CACHE_TTL = 60 * 60 * 1000 // 1 hour
 
+  // Album id -> track count. Deezer's home feed omits the count entirely (its
+  // album objects carry 13 fields and none of them is a track total), so the
+  // only way to show it is album.getData per album. A count never changes once
+  // a release is out, so this is cached for the process lifetime; 0 is stored
+  // for failures too, to stop a broken id being retried on every page load.
+  private albumTrackCountCache = new Map<string, number>()
+
   // In-flight guest bootstrap, memoized so concurrent callers share one round-trip.
   private gwGuestBootstrap: Promise<void> | null = null
 
@@ -1257,6 +1264,11 @@ export class DeezerAuth extends EventEmitter {
       release_date: this.gwAlbumDate(d),
       record_type: String(d.TYPE) === '0' ? 'single' : 'album',
       explicit_lyrics: d?.EXPLICIT_ALBUM_CONTENT?.EXPLICIT_LYRICS_STATUS === 1,
+      // GW spells the track count NB_SONG on some payloads and NUMBER_TRACK on
+      // others, so read both (same order as the discography mapper in
+      // server.ts). Left undefined rather than 0 when neither is present, so the
+      // card hides the line instead of advertising "0 TRK".
+      nb_tracks: Number(d.NB_SONG ?? d.NUMBER_TRACK) || undefined,
       artist: { id: Number(d.ART_ID) || d.ART_ID, name: d.ART_NAME || '' },
       link: `https://www.deezer.com/album/${d.ALB_ID}`
     }
@@ -1348,8 +1360,67 @@ export class DeezerAuth extends EventEmitter {
       .map(d => this.mapGwAlbum(d))
     console.log(`[DeezerAuth] New releases: ${albums.length} albums within 90 days`)
 
+    await this.hydrateAlbumTrackCounts(albums)
+
     this.newReleasesCache = { data: albums, timestamp: Date.now(), token: this.apiToken }
     return albums.slice(0, limit)
+  }
+
+  /**
+   * Fill in nb_tracks on albums that arrived without one.
+   *
+   * Deezer's GW home feed returns album objects with no track total on them at
+   * all, and there is no batch lookup: album.getListData is not a real method
+   * (the gateway rejects it), so this is one album.getData per album. Bounded
+   * concurrency keeps that from turning into a hundred simultaneous requests,
+   * and the cache means it happens once per album rather than once per page
+   * load. Failures are swallowed on purpose: a missing count hides the line,
+   * which is the same as the behaviour before this existed, so a flaky lookup
+   * must never take the whole feed down with it.
+   */
+  async hydrateAlbumTrackCounts(albums: any[], concurrency = 10): Promise<void> {
+    if (!Array.isArray(albums) || !this.apiToken) return
+    const targets = albums.filter(a => a && !a.nb_tracks && a.id != null)
+    if (targets.length === 0) return
+
+    const started = Date.now()
+    let cursor = 0
+    let fetched = 0
+    let failed = 0
+
+    const worker = async (): Promise<void> => {
+      while (cursor < targets.length) {
+        const album = targets[cursor++]
+        const key = String(album.id)
+        const cached = this.albumTrackCountCache.get(key)
+        if (cached !== undefined) {
+          if (cached > 0) album.nb_tracks = cached
+          continue
+        }
+        try {
+          const response = await this.rawApiCall('album.getData', { alb_id: key })
+          // Only a successful lookup is cached, including a genuine zero. A
+          // thrown call is deliberately left uncached: an expired session or a
+          // dropped connection would otherwise pin every album it touched to 0
+          // for the rest of the process, and the counts would stay missing long
+          // after the problem cleared.
+          const count = Number(response?.results?.NUMBER_TRACK) || 0
+          this.albumTrackCountCache.set(key, count)
+          if (count > 0) album.nb_tracks = count
+          fetched++
+        } catch {
+          failed++
+        }
+      }
+    }
+
+    await Promise.all(
+      Array.from({ length: Math.min(concurrency, targets.length) }, worker)
+    )
+    console.log(
+      `[DeezerAuth] Track counts: ${targets.filter(a => a.nb_tracks).length}/${targets.length} resolved ` +
+      `(${fetched} fetched, ${failed} failed) in ${Date.now() - started}ms`
+    )
   }
 
   async getTrackInfo(trackId: string | number): Promise<any> {

@@ -2562,6 +2562,10 @@ export class DeemixServer extends EventEmitter {
       // For worldwide charts (ID 0), use the public chart API
       if (countryId === '0') {
         const response = await this.deezerPublicAPI(`/chart/0/${type}?limit=${limit}`)
+        // Deezer's public chart album objects have no nb_tracks (verified: the
+        // payload carries 15 fields and no track total), so the count is filled
+        // in from the cached GW lookup. No-ops when signed out.
+        if (type === 'albums') await deezerAuth.hydrateAlbumTrackCounts(response?.data)
         this.sendJSON(res, response)
         return
       }
@@ -3542,6 +3546,12 @@ export class DeemixServer extends EventEmitter {
       chartTracks: charts?.tracks?.data || [],
       chartAlbums: charts?.albums?.data || [],
     }
+    // Same gap as the worldwide chart: the editorial endpoints omit nb_tracks.
+    // Hydrate before caching so the 30 minute cache stores the counts too.
+    await Promise.all([
+      deezerAuth.hydrateAlbumTrackCounts(data.picks),
+      deezerAuth.hydrateAlbumTrackCounts(data.chartAlbums),
+    ])
     this.deezerGenreBrowseCache.set(id, { data, timestamp: Date.now() })
     this.sendJSON(res, data)
   }
@@ -3561,6 +3571,7 @@ export class DeemixServer extends EventEmitter {
     const limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit')) || 50))
     try {
       const r = await this.deezerPublicAPI(`/chart/${id}/${kind}?index=${index}&limit=${limit}`)
+      if (kind === 'albums') await deezerAuth.hydrateAlbumTrackCounts(r?.data)
       this.sendJSON(res, { items: r?.data || [], total: r?.total ?? (r?.data?.length || 0) })
     } catch (error: any) {
       this.sendJSON(res, { error: sanitizeErrorMessage(error, 'Failed to load genre chart') }, 500)

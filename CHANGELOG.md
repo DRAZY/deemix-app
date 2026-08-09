@@ -10,6 +10,12 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 
 ## [Unreleased]
 
+## [2.5.3] - 2026-08-09
+
+### Fixed
+
+- **Track counts now appear on New Releases, Charts and Genres.** These pages never showed the `TRK` line, while search results and Qobuz pages did. The reason is that the Deezer feeds behind them do not include a track total: the New Releases feed returns thirteen fields per album and a track count is not one of them, and the public chart and editorial feeds leave it out as well. The app was correctly hiding a number it had never been given. It now looks the count up separately for those albums and remembers it, so the first visit to one of those pages takes a couple of seconds longer while the numbers come in and every visit after that is immediate. Nothing was removed in 2.5.2; that release made the existing counts easier to read, which is what made the pages that never had them stand out. Reported by DRAZY.
+
 ## [2.5.2] - 2026-08-09
 
 ### Fixed
