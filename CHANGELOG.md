@@ -13,6 +13,7 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 ### Fixed
 
 - **macOS builds are properly signed again.** The 2.5.0 macOS downloads failed to open, with macOS calling the app damaged and offering only to move it to the Trash. The app was not damaged. Moving to a newer build tool in 2.5.0 silently dropped a step: older versions automatically applied a basic signature when no developer certificate was present, and the newer one stopped doing that and simply skipped signing. That left the bundle carrying the stock signature from an unmodified copy of Electron, which no longer matched its own contents, and macOS refuses to open an app whose signature does not verify. Signing is now requested explicitly rather than left to a default, so the macOS builds carry the same valid signature every release before 2.5.0 did. Windows and Linux downloads were never affected. Reported by DRAZY.
+- **Building from source with npm works again (#136).** `npm install` stopped at once with an `EOVERRIDE` error about postcss. The 2.5.0 security pass pinned a minimum version for postcss in two places and the two did not agree, and npm refuses to continue when they disagree. It is a source-build problem only: the released downloads were built and shipped correctly and nobody using them was affected. The pin is now written so the two places cannot drift apart again. Reported by username227.
 
 ## [2.5.0] - 2026-08-07
 
