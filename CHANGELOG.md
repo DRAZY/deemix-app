@@ -10,6 +10,8 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 
 ## [Unreleased]
 
+## [2.5.2] - 2026-08-09
+
 ### Fixed
 
 - **The track count on album and playlist cards is readable now.** The small `109 TRK` line under the artist name was being dimmed twice, a muted grey then dropped to 60% opacity, at a 9.5px size. Measured against every one of the ten themes in both dark and light mode, all twenty combinations fell below the WCAG AA minimum for text this size, the worst of them at less than half the required contrast. The extra dimming is gone and the line now sits at the same grey as the artist name above it. It stays clearly distinct because it is already set in the monospace face, smaller, uppercase and widely letter-spaced, so the hierarchy never depended on the fading. This also brings it in line with the identical `TRK` readout in the download panel, which was full strength all along. Reported by alex5908, with a useful observation from cisko99za that the line only appears when the service actually returns a track count, which is why some cards show it and others do not.
