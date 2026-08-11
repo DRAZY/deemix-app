@@ -2,7 +2,7 @@ import { EventEmitter } from 'events'
 import { app } from 'electron'
 import { join, dirname } from 'path'
 import { readFile, writeFile, mkdir, rename } from 'fs/promises'
-import { spotifyAPI } from './spotifyAPI'
+import { spotifyAPI, describeSpotifyError } from './spotifyAPI'
 import { spotifyConverter } from './spotifyConverter'
 import { deezerAuth } from './deezerAuth'
 import { downloader, type DownloadOptions, type FolderSettings, type TrackTemplates, type MetadataSettings } from './downloader'
@@ -876,7 +876,12 @@ class PlaylistSyncEngine extends EventEmitter {
     } catch (err: any) {
       playlist.lastSyncAt = new Date().toISOString()
       playlist.lastSyncStatus = 'error'
-      playlist.lastSyncError = err.message
+      // Store the explained form, not the raw API text. "Resource not found"
+      // told users nothing and was indistinguishable from the premium-block
+      // failure, which is why #117 and #137 read as the same bug (#137).
+      playlist.lastSyncError = playlist.source === 'spotify'
+        ? describeSpotifyError(err, playlist.sourcePlaylistId)
+        : err.message
       await this.saveState()
 
       const result: SyncResult = {

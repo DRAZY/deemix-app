@@ -472,6 +472,18 @@ function getScheduleLabel(schedule: SyncSchedule): string {
             <span>{{ t('sync.lastSync') }}: {{ formatDate(playlist.lastSyncAt) }}</span>
           </div>
 
+          <!-- Why the last sync failed. The engine has always recorded this in
+               lastSyncError, but nothing rendered it, so a failure showed as a
+               bare ERROR badge and users could not tell a blocked Spotify
+               playlist from a credentials problem (#137). -->
+          <p
+            v-if="playlist.lastSyncError && playlist.lastSyncStatus !== 'success'"
+            class="mt-2 px-2 py-1.5 text-[12px] leading-relaxed border"
+            :class="playlist.lastSyncStatus === 'partial'
+              ? 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20'
+              : 'text-red-400 bg-red-500/10 border-red-500/20'"
+          >{{ playlist.lastSyncError }}</p>
+
           <!-- Sync Progress -->
           <div v-if="syncStore.isSyncing(playlist.id)" class="mt-2">
             <div class="flex items-center gap-2 text-xs text-primary-400">

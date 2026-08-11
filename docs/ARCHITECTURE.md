@@ -84,7 +84,7 @@ Runs on `127.0.0.1:6595` (port shifts on collision). Serves `/api/*` endpoints t
 - **Auth:** `/api/auth/{login,login-email,login-captcha,captcha-status,logout,status,health}`
 - **Catalog:** `/api/{search,track,album,artist,artist/discography,playlist}`
 - **Editorial:** `/api/{chart,chart/countries,editorial/releases,user/favorites}`
-- **Spotify:** `/api/spotify/{auth,status,analyze,convert}`
+- **Spotify:** `/api/spotify/{auth,status,analyze,convert}`. Note that `auth` deliberately performs a real read after the client-credentials exchange, not just the token call. Spotify keeps issuing tokens under both failure modes the integration hits (the app owner lacking Premium since 9 March 2026, and Spotify-owned playlists being unreadable), so a token-only check reports success to users for whom every subsequent request will fail. `describeSpotifyError()` in `spotifyAPI.ts` is the single place those statuses are turned into user-facing text; route new Spotify failures through it rather than surfacing raw API messages.
 - **Downloads:** `/api/{download,download/album,download/playlist,download/batch,queue,queue/cancel,queue/priority,queue/clear,queue/pause,queue/resume,queue/status}`
 - **Playlist Sync:** `/api/sync/{playlists,run,run-all,reset,cancel,resolve-url}`
 - **Artist Sync:** `/api/sync/artists{,/run,/run-all,/reset,/cancel}`

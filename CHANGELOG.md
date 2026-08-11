@@ -10,6 +10,22 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 
 ## [Unreleased]
 
+## [2.5.5] - 2026-08-11
+
+### Summary
+
+- **When a playlist fails to sync, the app now tells you why.** Two different Spotify problems used to look identical, and neither of them explained itself. Both now say what happened and what to do about it.
+
+### Fixed
+
+- **A failed sync showed a red ERROR label and nothing else (#137).** The reason was being recorded the whole time, it simply was never displayed, so there was no way to tell a Spotify restriction apart from a problem with your own settings. The explanation now appears on the playlist itself.
+- **Syncing one of Spotify's own playlists now explains itself.** Spotify no longer lets other apps read the playlists it makes: the editorial ones such as "All Out 60s" and "Today's Top Hits", and the automatic ones such as "Discover Weekly". Spotify reports these as though the playlist does not exist, which previously surfaced as an unexplained failure. The app now recognises them and tells you to copy the tracks into a playlist of your own and sync that instead, which works. Playlists made by people were never affected.
+- **The Test Connection button no longer reports success when Spotify will refuse every request.** Since 9 March 2026 Spotify requires the account that created your developer app to hold Spotify Premium. Spotify still hands out an access token in that situation and only refuses the actual requests, so the button was reporting a good connection to people whose every sync was going to fail. It now performs a real read before saying it worked, and explains the subscription requirement if that is what is blocking you. This affects only the owner of the developer app, not the people whose playlists you read.
+
+### Changed
+
+- **The Spotify setup instructions now state both of Spotify's restrictions up front**, in the README and in the troubleshooting guide, so they are visible before you spend time on a setup that cannot work.
+
 ## [2.5.4] - 2026-08-09
 
 ### Summary

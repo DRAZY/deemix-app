@@ -3244,15 +3244,25 @@ export class DeemixServer extends EventEmitter {
         return
       }
 
-      // Set credentials and test authentication
+      // Set credentials and test authentication. The token exchange alone is
+      // not proof of a working setup: it succeeds even when the app owner
+      // lacks the Premium subscription Spotify began requiring on 9 March
+      // 2026, so a read is performed too before reporting success (#137).
       spotifyAPI.setCredentials(clientId, clientSecret)
       const success = await spotifyAPI.authenticate()
 
-      if (success) {
-        this.sendJSON(res, { success: true, message: 'Spotify authentication successful' })
-      } else {
+      if (!success) {
         this.sendJSON(res, { error: 'Invalid Spotify credentials' }, 401)
+        return
       }
+
+      const readable = await spotifyAPI.verifyReadAccess()
+      if (!readable.ok) {
+        this.sendJSON(res, { error: readable.message }, 403)
+        return
+      }
+
+      this.sendJSON(res, { success: true, message: 'Spotify authentication successful' })
     } catch (error: any) {
       console.error('[Server] Spotify auth error:', error.message)
       this.sendJSON(res, { error: error.message || 'Authentication failed' }, 500)

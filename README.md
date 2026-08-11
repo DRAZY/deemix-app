@@ -215,6 +215,13 @@ Click the download button on any track, album, or playlist and select your prefe
 4. Choose Deezer, Qobuz, or Both, and let the app match tracks by ISRC with search fallback
 5. Download the matched tracks
 
+**Two limits Spotify imposes, both outside this app's control:**
+
+- **The account that creates the developer app needs Spotify Premium.** Spotify [changed this in February 2026](https://developer.spotify.com/blog/2026-02-06-update-on-developer-access-and-platform-security), effective 9 March 2026. It applies to the app's owner only, not to anyone whose playlists you read. Without it, credentials appear to save correctly but every request is refused.
+- **Spotify's own playlists cannot be read.** Editorial lists such as "All Out 60s" and auto-generated ones such as "Discover Weekly" are blocked for all third-party apps. Their links contain an ID starting `37i9dQZ`. Copy the tracks into a playlist of your own and use that instead.
+
+Both are explained in more detail, with fixes, in [Troubleshooting](docs/TROUBLESHOOTING.md#spotify-integration).
+
 ---
 
 ## Settings Overview

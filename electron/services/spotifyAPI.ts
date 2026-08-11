@@ -13,6 +13,70 @@ export class SpotifyApiError extends Error {
   }
 }
 
+/**
+ * Spotify playlists whose id begins with this prefix are owned by Spotify
+ * itself: editorial ("All Out 60s", "RapCaviar") and algorithmic ("Discover
+ * Weekly"). Since Spotify's November 2024 endpoint changes these are invisible
+ * to Web API apps, which report them as a plain 404 rather than a permission
+ * error. Verified 2026-08-11 against a live app: All Out 60s, Today's Top Hits,
+ * RapCaviar and Discover Weekly all return 404 "Resource not found", while
+ * every user-owned playlist tested returned 200.
+ */
+const SPOTIFY_OWNED_PLAYLIST_PREFIX = /^37i9dQZ/
+
+export function isSpotifyOwnedPlaylistId(id: string | null | undefined): boolean {
+  return !!id && SPOTIFY_OWNED_PLAYLIST_PREFIX.test(id)
+}
+
+/**
+ * Turn a raw Spotify failure into something a user can act on.
+ *
+ * Two failure modes dominate and they look identical in the raw API response
+ * layer, which is what made issues #117 and #137 hard to tell apart:
+ *
+ *  - 404 on a Spotify-owned playlist. Nothing is wrong with the user's setup;
+ *    the playlist simply cannot be read by any third-party app any more.
+ *  - 403 naming a premium subscription. Spotify's February 2026 developer
+ *    update made Development Mode require the *app owner* to hold Premium,
+ *    effective 9 March 2026. Token issuance still succeeds, so this only
+ *    surfaces on real reads.
+ *
+ * `playlistId` is optional context; when present it lets a 404 be attributed
+ * to the Spotify-owned case rather than a generic "not found".
+ */
+export function describeSpotifyError(err: unknown, playlistId?: string | null): string {
+  const status = err instanceof SpotifyApiError ? err.status : 0
+  const raw = err instanceof Error ? err.message : String(err)
+
+  if (status === 404 && isSpotifyOwnedPlaylistId(playlistId)) {
+    return 'Spotify no longer lets other apps read its own playlists, and this is one of them ' +
+      '(the editorial and auto-generated ones such as "All Out 60s" or "Discover Weekly"). ' +
+      'Nothing is wrong with your setup. To sync it, open the playlist in Spotify, add its tracks ' +
+      'to a playlist of your own, and sync that one instead.'
+  }
+  if (status === 404) {
+    return 'Spotify could not find this playlist. It may have been deleted, made private, or it ' +
+      'may be one of Spotify\'s own playlists, which other apps are no longer allowed to read.'
+  }
+  if (status === 403 && /premium/i.test(raw)) {
+    return 'Spotify now requires the account that created your developer app to have Spotify ' +
+      'Premium. This started on 9 March 2026 and applies to the app owner only, not to anyone ' +
+      'whose playlists you are reading. Upgrading that account fixes it, and Spotify notes it can ' +
+      'take a few hours to take effect.'
+  }
+  if (status === 403) {
+    return `Spotify refused the request: ${raw}`
+  }
+  if (status === 401) {
+    return 'Spotify rejected the credentials. Re-copy the Client ID and Client Secret from the ' +
+      'Spotify Developer Dashboard and test the connection again.'
+  }
+  if (status === 429) {
+    return 'Spotify is rate-limiting requests. Wait a few minutes and try again.'
+  }
+  return raw
+}
+
 export interface SpotifyTrack {
   id: string
   name: string
@@ -313,6 +377,27 @@ class SpotifyAPI {
    */
   isSpotifyUrl(url: string): boolean {
     return isSpotifyUrlByHost(url)
+  }
+
+  /**
+   * Verify the credentials can actually READ, not merely mint a token.
+   *
+   * authenticate() only performs the client-credentials exchange, and that
+   * exchange keeps succeeding under both of the failure modes users hit: the
+   * premium requirement and the Spotify-owned-playlist block. So a token-only
+   * check reported "Connected to Spotify" to users for whom every subsequent
+   * request was guaranteed to fail, which is exactly what happened in #137.
+   *
+   * A search costs one request and exercises the same authenticated read path
+   * a sync uses, so a 403 shows up here instead of hours later on a schedule.
+   */
+  async verifyReadAccess(): Promise<{ ok: true } | { ok: false; message: string }> {
+    try {
+      await this.apiRequest<unknown>('/search?q=a&type=track&limit=1')
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, message: describeSpotifyError(err) }
+    }
   }
 
   /**

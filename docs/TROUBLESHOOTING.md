@@ -105,9 +105,36 @@ Qobuz requires a paid plan for downloads — that's enforced on their side.
 The app needs your own Spotify Developer API credentials to convert Spotify playlists to Deezer.
 
 **Fix:**
-1. Go to https://developer.spotify.com/dashboard and create a free app.
+1. Go to https://developer.spotify.com/dashboard and create an app.
 2. Copy the Client ID and Client Secret.
 3. In the app: Settings → Spotify → paste both → click **Test Connection**.
+
+Note that since 9 March 2026 the Spotify account you create that app under must have Spotify Premium. See "Spotify says a premium subscription is required" below.
+
+### A playlist fails to sync with "Spotify no longer lets other apps read its own playlists"
+
+You are trying to sync one of Spotify's own playlists. These are the ones Spotify makes rather than a person: the editorial lists like "All Out 60s", "Today's Top Hits" and "RapCaviar", and the auto-generated ones like "Discover Weekly" and "Release Radar". Spotify stopped letting other apps read them, so the request comes back as if the playlist does not exist.
+
+Nothing is wrong with your credentials, and this is not affected by whether you have Premium. Verified on 2026-08-11: "All Out 60s", "Today's Top Hits", "RapCaviar" and "Discover Weekly" all return HTTP 404, while every playlist made by a person returns normally.
+
+You can tell them apart from the link. Spotify's own playlists have an ID beginning `37i9dQZ`:
+
+```
+https://open.spotify.com/playlist/37i9dQZF1DXaKIA8E7WcJj   <- Spotify's, cannot be synced
+https://open.spotify.com/playlist/4P8LYbKIDMDeXHKOXPGaXI   <- someone's, syncs fine
+```
+
+**Fix:** open the playlist in Spotify, select all the tracks, add them to a new playlist of your own, and sync that one instead. A copy you own is readable.
+
+### Spotify says a premium subscription is required
+
+The full message is "Active premium subscription required for the owner of the app".
+
+In [February 2026](https://developer.spotify.com/blog/2026-02-06-update-on-developer-access-and-platform-security) Spotify changed the rules for developer apps. From 9 March 2026, the account that created the app must have Spotify Premium. This is about the **owner of the developer app only**. It does not matter whether the playlist's creator has Premium, and the people whose playlists you read do not need it.
+
+Confusingly, entering your credentials can still appear to work, because Spotify still issues the access token. Only the actual requests are refused. Deemix Remastered 2.5.5 and later perform a real read when you click **Test Connection**, so this shows up straight away rather than the first time a sync runs.
+
+**Fix:** put Spotify Premium on the account that owns the developer app, or create the app under an account that already has it. Spotify notes it can take a few hours after the subscription changes before requests are allowed.
 
 ### Spotify playlist conversion finds wrong tracks
 
