@@ -1745,7 +1745,7 @@ export class DeemixServer extends EventEmitter {
       // and library managers ingest each as its own playlist.
       const albumM3uId = `album_${albumId}_${Date.now()}`
       if (this.settings.createPlaylistFile && this.settings.createAlbumPlaylistFile) {
-        downloader.registerPlaylistForM3U(albumM3uId, albumInfo.title || 'Album', this.settings.downloadPath, albumTracks.data.length, this.settings.m3uNameTemplate)
+        downloader.registerPlaylistForM3U(albumM3uId, albumInfo.title || 'Album', this.settings.downloadPath, albumTracks.data.length, this.settings.m3uNameTemplate, 'album')
       }
 
       for (const track of albumTracks.data) {
@@ -3844,7 +3844,7 @@ export class DeemixServer extends EventEmitter {
           // Album M3U is opt-out independently of playlists (#131) — same split
           // the Deezer album path makes.
           m3uTrackerId = `qobuzalbum_${albumId}_${Date.now()}`
-          downloader.registerPlaylistForM3U(m3uTrackerId, album?.title || 'Album', this.settings.downloadPath, validTracks.length, this.settings.m3uNameTemplate)
+          downloader.registerPlaylistForM3U(m3uTrackerId, album?.title || 'Album', this.settings.downloadPath, validTracks.length, this.settings.m3uNameTemplate, 'album')
         }
       }
 

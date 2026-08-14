@@ -288,6 +288,11 @@ export class Downloader extends EventEmitter {
   // so M3U can be generated from real paths instead of reconstructed guesses
   private playlistM3UTracker: Map<string, {
     outputDir: string
+    // What this tracker is generating for. Albums legitimately write their .m3u8
+    // into the album folder (#121); playlists must NOT inherit that fallback —
+    // doing so put the playlist M3U inside the first track's album folder
+    // whenever playlist folders were off (#138). See recordM3UEntry.
+    kind: 'album' | 'playlist'
     // The playlist's own folder, captured from the first track that carries it
     // (set only when createPlaylistFolder is on). The M3U is written here — next
     // to the music — instead of the download root, and its relative paths are
@@ -927,7 +932,8 @@ export class Downloader extends EventEmitter {
             artist: shim.ART_NAME || 'Unknown Artist',
             title: progress.trackTitle || shim.SNG_TITLE || 'Unknown Track',
             absolutePath,
-            playlistFolder: progress.playlistFolder || progress.albumRootFolder || progress.albumFolder
+            playlistFolder: progress.playlistFolder,
+            albumFolder: progress.albumRootFolder || progress.albumFolder
           })
         }
       }
@@ -1483,7 +1489,8 @@ export class Downloader extends EventEmitter {
             artist: trackInfo.ART_NAME || 'Unknown Artist',
             title: progress.trackTitle || trackInfo.SNG_TITLE || 'Unknown Track',
             absolutePath: existingPath,
-            playlistFolder: progress.playlistFolder || progress.albumRootFolder || progress.albumFolder
+            playlistFolder: progress.playlistFolder,
+            albumFolder: progress.albumRootFolder || progress.albumFolder
           })
         }
         this.emit('progress', progress)
@@ -1510,7 +1517,8 @@ export class Downloader extends EventEmitter {
           artist: trackInfo.ART_NAME || 'Unknown Artist',
           title: progress.trackTitle || trackInfo.SNG_TITLE || 'Unknown Track',
           absolutePath: initialOutputPath,
-          playlistFolder: progress.playlistFolder || progress.albumRootFolder || progress.albumFolder
+          playlistFolder: progress.playlistFolder,
+          albumFolder: progress.albumRootFolder || progress.albumFolder
         })
       }
       // Keep the library index fresh even when the file already existed at the
@@ -1736,7 +1744,8 @@ export class Downloader extends EventEmitter {
           artist: trackInfo.ART_NAME || 'Unknown Artist',
           title: progress.trackTitle || trackInfo.SNG_TITLE || 'Unknown Track',
           absolutePath: decryptedPath,
-          playlistFolder: progress.playlistFolder || progress.albumRootFolder || progress.albumFolder
+          playlistFolder: progress.playlistFolder,
+          albumFolder: progress.albumRootFolder || progress.albumFolder
         })
       }
 
@@ -4599,9 +4608,10 @@ export class Downloader extends EventEmitter {
    * As tracks complete, their actual paths are collected. When all tracks
    * are done, the M3U is generated with paths that match the files on disk.
    */
-  registerPlaylistForM3U(trackerId: string, playlistName: string, outputDir: string, totalTracks: number, m3uNameTemplate?: string): void {
+  registerPlaylistForM3U(trackerId: string, playlistName: string, outputDir: string, totalTracks: number, m3uNameTemplate?: string, kind: 'album' | 'playlist' = 'playlist'): void {
     this.playlistM3UTracker.set(trackerId, {
       outputDir,
+      kind,
       totalTracks,
       processedCount: 0,
       m3uNameTemplate: m3uNameTemplate || '%playlist%',
@@ -4640,13 +4650,24 @@ export class Downloader extends EventEmitter {
     title: string
     absolutePath: string
     playlistFolder?: string
+    albumFolder?: string
   }): void {
     const tracker = this.playlistM3UTracker.get(trackerId)
     if (!tracker) return
 
-    // First track that knows its playlist folder pins where the M3U lands (#121).
-    if (entry.playlistFolder && !tracker.resolvedPlaylistFolder) {
-      tracker.resolvedPlaylistFolder = entry.playlistFolder
+    // First track that knows its folder pins where the M3U lands (#121).
+    //
+    // The album folder is a valid target ONLY for album trackers. Playlists used
+    // to share one `playlistFolder || albumRootFolder || albumFolder` expression
+    // at every call site, so with createPlaylistFolder OFF the playlist M3U was
+    // pinned to whichever track finished first and written into that track's
+    // album folder instead of the download root (#138). A playlist tracker now
+    // accepts only a real playlist folder; absent one, baseDir stays outputDir.
+    const candidate = tracker.kind === 'album'
+      ? (entry.playlistFolder || entry.albumFolder)
+      : entry.playlistFolder
+    if (candidate && !tracker.resolvedPlaylistFolder) {
+      tracker.resolvedPlaylistFolder = candidate
     }
     tracker.completedEntries.push(entry)
     tracker.processedCount++
