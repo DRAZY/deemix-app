@@ -10,6 +10,28 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 
 ## [Unreleased]
 
+## [2.5.7] - 2026-08-15
+
+### Summary
+
+- **Spotify changed the shape of its playlist replies, and downloads stopped working for anyone who registered a developer app recently.** The app now reads both the old and the new format, and explains the one case Spotify will not let it read at all.
+
+### Fixed
+
+- **Spotify links failed with "Cannot read properties of undefined" (discussion #105, reported by @alex5908).** In February 2026 Spotify renamed the fields carrying a playlist's songs. Apps registered before that change are still sent the old names and kept working, which is why this only affected people who created their Spotify credentials recently. The app now accepts either format, so both groups work.
+- **A playlist whose songs Spotify withholds now explains itself instead of failing strangely.** The same change means a developer app only receives the contents of playlists owned by the account that authorised it; everything else arrives with the name and artwork but no songs. That is a successful reply as far as Spotify is concerned, so it used to slip past the error handling entirely. It is now recognised and explained.
+- **Explanations reached people syncing a playlist but not people downloading one.** The messages written for 2.5.5 were only wired into the sync path, so the same underlying problem produced a clear answer in one place and a raw error in another. Both paths now use them.
+
+### Changed
+
+- **Long playlists page through Spotify's own paging links** rather than a fixed address, so a future rename of the endpoint cannot break them either.
+
+## [2.5.6] - 2026-08-14
+
+### Fixed
+
+- **A playlist's M3U file was written into the first track's album folder instead of the download root (#138).** With folder creation for playlists switched off, the M3U tracker latched onto whichever album folder appeared first, so the playlist file ended up filed under an unrelated album. Album M3U generation, which shares the same tracker, is unchanged.
+
 ## [2.5.5] - 2026-08-11
 
 ### Summary
