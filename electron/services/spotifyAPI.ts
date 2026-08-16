@@ -127,8 +127,11 @@ export function describeSpotifyError(err: unknown, playlistId?: string | null): 
   if (status === 404 && isSpotifyOwnedPlaylistId(playlistId)) {
     return 'Spotify no longer lets other apps read its own playlists, and this is one of them ' +
       '(the editorial and auto-generated ones such as "All Out 60s" or "Discover Weekly"). ' +
-      'Nothing is wrong with your setup. To sync it, open the playlist in Spotify, add its tracks ' +
-      'to a playlist of your own, and sync that one instead.'
+      'Nothing is wrong with your setup. If your Spotify Client ID was created before February ' +
+      '2026, you can open the playlist in Spotify, add its tracks to a playlist of your own, and ' +
+      'sync that one instead. If you created it recently, copying will not help either: Spotify ' +
+      'withholds the songs from newer developer apps for every playlist including your own, and ' +
+      'the way out is to request extended access for your app in the Spotify Developer Dashboard.'
   }
   if (status === 404) {
     return 'Spotify could not find this playlist. It may have been deleted, made private, or it ' +
