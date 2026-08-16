@@ -6,12 +6,6 @@ rather than in a global config.
 
 ## Releases
 
-- **Signing is not optional.** Public/release builds (both Universal and ARM64
-  DMGs) must be code-signed and notarized before shipping. Unsigned builds trip
-  macOS Gatekeeper, which reports the app as damaged and offers to move it to
-  the trash. RC test builds may stay arm64-only and unsigned for internal
-  testing, but a final tagged release requires both architectures, signed.
-
 - **Cosmetic changes re-roll in place.** For minor changes that don't warrant a
   new version (a font-size tweak, a copy fix), move the existing tag and replace
   the release assets with `--clobber` rather than burning a new version number.
