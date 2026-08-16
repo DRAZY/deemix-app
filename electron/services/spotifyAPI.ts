@@ -14,6 +14,64 @@ export class SpotifyApiError extends Error {
 }
 
 /**
+ * Spotify returned the playlist, but without its contents.
+ *
+ * Since the February 2026 Web API changes, a Development Mode app is only given
+ * the songs for playlists the authorising user owns or collaborates on. Every
+ * other playlist comes back as a normal 200 carrying name, artwork and
+ * description, with the contents object simply absent. That is a success as far
+ * as HTTP is concerned, so it cannot be represented as a `status >= 400` and
+ * needs its own type (reported by @alex5908, 2026-08-15).
+ */
+export class SpotifyContentsUnavailableError extends SpotifyApiError {
+  constructor(message: string) {
+    super(message, 200)
+    this.name = 'SpotifyContentsUnavailableError'
+  }
+}
+
+/**
+ * The playlist contents object, under either the old or the new field name.
+ *
+ * February 2026 renamed the container and the per-entry key: `tracks` became
+ * `items`, and each entry's `track` became `item`. Both shapes are live at the
+ * same time — an app registered before the migration is still served the old
+ * one, a Client ID created today gets the new one — so the reader accepts
+ * either rather than picking a side. Everything downstream keeps seeing the old
+ * shape because `getPlaylist` normalises before returning.
+ */
+interface RawContents {
+  entries: Array<Record<string, any>>
+  total: number | null
+  next: string | null
+}
+
+function readContents(playlist: any): RawContents | null {
+  const container = playlist?.tracks ?? playlist?.items
+  if (!container || typeof container !== 'object') return null
+  const entries = container.items ?? container.tracks
+  if (!Array.isArray(entries)) return null
+  return {
+    entries,
+    total: typeof container.total === 'number' ? container.total : null,
+    next: typeof container.next === 'string' ? container.next : null,
+  }
+}
+
+/** A contents entry holds its track under `track` (old) or `item` (new). */
+function entryTrack(entry: Record<string, any>): SpotifyTrack | null {
+  return (entry?.track ?? entry?.item ?? null) as SpotifyTrack | null
+}
+
+/** `next` is an absolute URL; apiRequest wants the path after the version. */
+function nextEndpoint(next: string | null): string | null {
+  if (!next) return null
+  const marker = 'api.spotify.com/v1'
+  const at = next.indexOf(marker)
+  return at === -1 ? null : next.slice(at + marker.length)
+}
+
+/**
  * Spotify playlists whose id begins with this prefix are owned by Spotify
  * itself: editorial ("All Out 60s", "RapCaviar") and algorithmic ("Discover
  * Weekly"). Since Spotify's November 2024 endpoint changes these are invisible
@@ -47,6 +105,15 @@ export function isSpotifyOwnedPlaylistId(id: string | null | undefined): boolean
 export function describeSpotifyError(err: unknown, playlistId?: string | null): string {
   const status = err instanceof SpotifyApiError ? err.status : 0
   const raw = err instanceof Error ? err.message : String(err)
+
+  // Checked first, and by type rather than status: this one arrives as a 200.
+  if (err instanceof SpotifyContentsUnavailableError) {
+    return 'Spotify sent the playlist details but not the songs in it. Since February 2026 a ' +
+      'developer app only receives the contents of playlists owned by the account that authorised ' +
+      'it, and returns name and artwork only for everything else. Nothing is wrong with your ' +
+      'credentials. Copying the tracks into a playlist on your own account and using that one is ' +
+      'the reliable way around it.'
+  }
 
   if (status === 404 && isSpotifyOwnedPlaylistId(playlistId)) {
     return 'Spotify no longer lets other apps read its own playlists, and this is one of them ' +
@@ -418,25 +485,50 @@ class SpotifyAPI {
    * Get playlist info with tracks (paginated)
    */
   async getPlaylist(id: string, market: string = 'US'): Promise<SpotifyPlaylist> {
-    const playlist = await this.apiRequest<SpotifyPlaylist>(`/playlists/${id}?market=${market}`)
+    const playlist = await this.apiRequest<any>(`/playlists/${id}?market=${market}`)
 
-    // If playlist has more than 100 tracks, fetch remaining pages
-    if (playlist.tracks.total > 100) {
-      const allItems = [...playlist.tracks.items]
-      let offset = 100
-
-      while (offset < playlist.tracks.total) {
-        const page = await this.apiRequest<{ items: Array<{ track: SpotifyTrack }> }>(
-          `/playlists/${id}/tracks?offset=${offset}&limit=100&market=${market}`
-        )
-        allItems.push(...page.items)
-        offset += 100
-      }
-
-      playlist.tracks.items = allItems
+    const first = readContents(playlist)
+    if (!first) {
+      // 200 with the contents object absent. Not an error status, so this is the
+      // only place it can be caught before a caller dereferences nothing.
+      throw new SpotifyContentsUnavailableError(
+        'Spotify returned this playlist without its contents.'
+      )
     }
 
-    return playlist
+    const entries = [...first.entries]
+    const total = first.total
+
+    // Page until exhausted. Prefer the paging object's own `next` link so the
+    // endpoint name is never guessed; fall back to offset paging for responses
+    // that omit it. `total` is advisory only — the loop ends when Spotify stops
+    // handing back pages, not when a counter says it should.
+    let next = nextEndpoint(first.next)
+    let offset = entries.length
+    while (true) {
+      if (!next && (total === null || offset >= total || entries.length === 0)) break
+      const page = await this.apiRequest<any>(
+        next ?? `/playlists/${id}/tracks?offset=${offset}&limit=100&market=${market}`
+      )
+      const pageContents = readContents({ tracks: page }) ?? readContents(page)
+      if (!pageContents || pageContents.entries.length === 0) break
+      entries.push(...pageContents.entries)
+      offset = entries.length
+      next = nextEndpoint(pageContents.next)
+      if (!next && total === null) break
+    }
+
+    // Hand every caller the pre-February shape regardless of what arrived, so
+    // playlistSync, spotifyConverter and server.ts need no knowledge of this.
+    playlist.tracks = {
+      items: entries
+        .map(entry => ({ track: entryTrack(entry) }))
+        .filter((entry): entry is { track: SpotifyTrack } => !!entry.track),
+      total: total ?? entries.length,
+    }
+    delete playlist.items
+
+    return playlist as SpotifyPlaylist
   }
 
   /**

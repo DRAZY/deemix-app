@@ -8,7 +8,7 @@ import { app } from 'electron'
 import { deezerAuth, DeezerSession } from './services/deezerAuth'
 import { urlHasHost } from './utils/urlHost'
 import { downloader, DownloadProgress } from './services/downloader'
-import { spotifyAPI } from './services/spotifyAPI'
+import { spotifyAPI, describeSpotifyError, SpotifyContentsUnavailableError } from './services/spotifyAPI'
 import { spotifyConverter } from './services/spotifyConverter'
 import { qobuzAuth, QOBUZ_FORMAT } from './services/qobuzAuth'
 import { playlistSync } from './services/playlistSync'
@@ -4154,6 +4154,14 @@ export class DeemixServer extends EventEmitter {
       const msg = error.message || 'Failed to analyze Spotify URL'
       const status: number = typeof error.status === 'number' ? error.status : 0
       const notFound = status === 404 || msg.toLowerCase().includes('not found')
+      // Checked before the 404 branches because this one is a 200: since the
+      // February 2026 Web API change a developer app is served playlist
+      // metadata without its contents, which used to surface here as a raw
+      // "Cannot read properties of undefined" (reported by @alex5908).
+      if (error instanceof SpotifyContentsUnavailableError) {
+        this.sendJSON(res, { error: describeSpotifyError(error, parsedUrl?.id) }, 422)
+        return
+      }
       // Spotify answers 404 for two very different playlist cases, and we only
       // get to tell them apart by the ID. Its own editorial + algorithmic
       // playlists (Today's Top Hits, RapCaviar, Discover Weekly) all carry the
@@ -4370,6 +4378,13 @@ export class DeemixServer extends EventEmitter {
         this.sendJSON(res, {
           error: 'Deezer is rate-limiting matching requests right now. Wait a moment and try the conversion again.'
         }, 503)
+        return
+      }
+      // Spotify served the playlist without its contents (February 2026 Web API
+      // change). A 200 carrying no songs is not a conversion failure, so it
+      // gets its own explanation rather than "Conversion failed".
+      if (error instanceof SpotifyContentsUnavailableError) {
+        this.sendJSON(res, { error: describeSpotifyError(error, id) }, 422)
         return
       }
       this.sendJSON(res, { error: error.message || 'Conversion failed' }, 500)
