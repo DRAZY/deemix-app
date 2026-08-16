@@ -340,7 +340,10 @@ class DeezerAPI {
       const type = album.record_type || 'undefined'
       typeCounts[type] = (typeCounts[type] || 0) + 1
     }
-    console.log(`[DeezerAPI] Fetched ${allAlbums.length} albums for artist ${id}. Types:`, typeCounts)
+    // Artist id is user-supplied and console.log treats its first argument as a
+    // format string, so it goes in an argument slot rather than interpolated
+    // (CodeQL js/tainted-format-string, alert #24).
+    console.log('[DeezerAPI] Fetched %s albums for artist %s. Types:', allAlbums.length, id, typeCounts)
 
     return allAlbums.slice(0, maxResults)
   }
@@ -640,7 +643,9 @@ class DeezerAPI {
         return emptyResult
       }
 
-      console.log(`[DeezerAPI] Server discography for artist ${artistId}:`, data.counts)
+      // Same as above: artistId is user-supplied, so it stays out of the
+      // format-string position (CodeQL js/tainted-format-string, alert #25).
+      console.log('[DeezerAPI] Server discography for artist %s:', artistId, data.counts)
 
       const result = {
         all: data.all || [],
