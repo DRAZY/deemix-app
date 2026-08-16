@@ -107,12 +107,21 @@ export function describeSpotifyError(err: unknown, playlistId?: string | null): 
   const raw = err instanceof Error ? err.message : String(err)
 
   // Checked first, and by type rather than status: this one arrives as a 200.
+  //
+  // The advice here was wrong in 2.5.7 and cost a user real time: it suggested
+  // copying the tracks into a playlist of your own. That cannot help, because
+  // this app signs in with a client ID and secret and no user login, so there is
+  // no authorising account for any playlist to be owned by. @alex5908 tried it
+  // on a playlist he had just created himself and got the identical response.
   if (err instanceof SpotifyContentsUnavailableError) {
     return 'Spotify sent the playlist details but not the songs in it. Since February 2026 a ' +
-      'developer app only receives the contents of playlists owned by the account that authorised ' +
-      'it, and returns name and artwork only for everything else. Nothing is wrong with your ' +
-      'credentials. Copying the tracks into a playlist on your own account and using that one is ' +
-      'the reliable way around it.'
+      'developer app only receives the contents of playlists belonging to the account that ' +
+      'authorised it. This app signs in with a Client ID and Secret and no personal login, so ' +
+      'there is no such account, and Spotify withholds the songs for every playlist including ' +
+      'your own. Nothing is wrong with your credentials, and Spotify Premium does not change it. ' +
+      'This affects apps whose Spotify credentials were created recently; older ones are still ' +
+      'served the songs. The only fix is on Spotify\'s side: request extended access for your app ' +
+      'in the Spotify Developer Dashboard so it is no longer in Development Mode.'
   }
 
   if (status === 404 && isSpotifyOwnedPlaylistId(playlistId)) {
