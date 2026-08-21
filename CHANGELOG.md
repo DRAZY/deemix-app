@@ -10,6 +10,25 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 
 ## [Unreleased]
 
+## [2.5.8] - 2026-08-21
+
+### Summary
+
+- **Playlist folders were saving one track's album cover instead of the playlist's own artwork, and a security pass hardened how the app writes files and logs.** Downloading itself is unchanged. Covers now land correctly, and several ways a file could be left half-written are closed.
+
+### Fixed
+
+- **A playlist folder showed a random track's album cover instead of the playlist artwork.** The playlist's own cover has to be fetched over the network before it can be saved, while a finished track already holds its album art in memory. With several tracks downloading at once, a track's cover reached `cover.jpg` first and the playlist's image then found the file already there and gave up. The playlist now claims that filename before it starts fetching. Album downloads are unaffected.
+- **Qobuz playlists were labelled as albums in the downloads list.** The badge was fixed to "album" regardless of what had actually been queued. Deezer playlists were always labelled correctly.
+- **Album art and tags could be left truncated when several tracks finished at the same moment.** Covers, playlist covers, artist images and tag writes now go to a temporary file and are swapped into place in one step, so a partly written file can never be read or left behind.
+- **A track title containing a line break could forge extra rows in `errors.txt`.** Those fields are flattened to a single line before the file is written.
+
+### Changed
+
+- **Remote text has line breaks stripped before it reaches the app's logs**, across the download, authentication and server paths, so a crafted track or playlist name cannot fake log entries.
+- **The build workflow pins its Bun setup action to an exact commit** instead of a moving tag, so an upstream change cannot alter what runs in CI.
+- **Deezer share links are matched on the actual hostname** rather than by searching for that text anywhere in the address, so a lookalike address is no longer accepted.
+
 ## [2.5.7] - 2026-08-15
 
 ### Summary
