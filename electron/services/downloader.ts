@@ -11,6 +11,9 @@ import { qobuzAuth } from './qobuzAuth'
 import { downloadQobuzTrack } from './qobuzDownloader'
 import { probeAudioFile, expectedContainer, isLowerTier } from './audioProbe'
 
+/** Collapse newlines so remote-supplied text cannot forge extra log lines. */
+const logSafe = (v: unknown): string => String(v ?? '').replace(/[\r\n]+/g, ' ')
+
 export interface FolderSettings {
   createPlaylistFolder: boolean
   createArtistFolder: boolean
@@ -547,8 +550,7 @@ export class Downloader extends EventEmitter {
       // errors.txt is one record per line and the title, artist and error text
       // all come from the remote service, so a newline inside any of them would
       // forge extra records in a file the user (and future tooling) reads back.
-      const oneLine = (v: unknown) => String(v ?? '').replace(/[\r\n]+/g, ' ')
-      const errorLine = `${oneLine(trackId)} | ${oneLine(trackArtist)} - ${oneLine(trackTitle)} | ${oneLine(errorMessage)}\n`
+      const errorLine = `${logSafe(trackId)} | ${logSafe(trackArtist)} - ${logSafe(trackTitle)} | ${logSafe(errorMessage)}\n`
 
       // Append to existing file or create new one
       fs.appendFileSync(errorLogPath, errorLine, 'utf8')
@@ -835,7 +837,7 @@ export class Downloader extends EventEmitter {
     this.currentDownloads++
     this.processDownload(next.id, next.options)
       .catch(error => {
-        console.error(`[Downloader] processDownload error for ${next.id}:`, error.message)
+        console.error(`[Downloader] processDownload error for ${logSafe(next.id)}:`, logSafe(error.message))
         const progress = this.activeDownloads.get(next.id)
         if (progress) {
           progress.status = 'error'
@@ -1215,7 +1217,7 @@ export class Downloader extends EventEmitter {
       trackInfo = await deezerAuth.getTrackInfo(options.trackId)
       console.log(`[Downloader] Got track info:`, trackInfo ? `${trackInfo.SNG_TITLE} by ${trackInfo.ART_NAME}` : 'null')
     } catch (error: any) {
-      console.error(`[Downloader] Failed to get track info:`, error.message)
+      console.error(`[Downloader] Failed to get track info:`, logSafe(error.message))
 
       // Check if this is a clear auth error (don't validate session - it can cause issues)
       const errorMsg = error.message || 'Unknown error'
@@ -1360,7 +1362,7 @@ export class Downloader extends EventEmitter {
         throw new Error(`Invalid download URL received: ${downloadUrl?.substring(0, 50) || 'empty'}`)
       }
     } catch (error: any) {
-      console.error(`[Downloader] Failed to get media URL:`, error.message)
+      console.error(`[Downloader] Failed to get media URL:`, logSafe(error.message))
       if (error.message.includes('PreferredBitrateNotFound')) {
         throw new Error(`Preferred bitrate (${options.quality}) not available for this track. Enable Bitrate Fallback in settings to download in a lower quality.`)
       }
@@ -1447,7 +1449,7 @@ export class Downloader extends EventEmitter {
           trackInfo.DISKS_COUNT = Number(albumMeta.NUMBER_DISK)
         }
       } catch (e: any) {
-        console.log('[Downloader] Album totals lookup failed (tags will omit them):', e.message)
+        console.log('[Downloader] Album totals lookup failed (tags will omit them):', logSafe(e.message))
       }
     }
 
@@ -1583,7 +1585,7 @@ export class Downloader extends EventEmitter {
         await this.downloadFromUrl(downloadUrl, encryptedPath, progress)
         console.log(`[Downloader] Encrypted file downloaded`)
       } catch (error: any) {
-        console.error(`[Downloader] Download file error:`, error.message)
+        console.error(`[Downloader] Download file error:`, logSafe(error.message))
         // Clean up any partial file
         try {
           if (encryptedPath && fs.existsSync(encryptedPath)) {
@@ -2406,7 +2408,7 @@ export class Downloader extends EventEmitter {
               }
               this.handleDownloadResponse(redirectResponse, file, progress, resolve, reject)
             }).on('error', (err) => {
-              console.error(`[Downloader] Redirect error:`, err.message)
+              console.error(`[Downloader] Redirect error:`, logSafe(err.message))
               file.close()
               try { if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath) } catch (e) {}
               reject(err)
@@ -2433,7 +2435,7 @@ export class Downloader extends EventEmitter {
 
         this.handleDownloadResponse(response, file, progress, resolve, reject)
       }).on('error', (error) => {
-        console.error(`[Downloader] Download error:`, error.message)
+        console.error(`[Downloader] Download error:`, logSafe(error.message))
         file.close()
         try {
           if (fs.existsSync(outputPath)) {
@@ -4017,7 +4019,7 @@ export class Downloader extends EventEmitter {
       }
       return genres
     } catch (error: any) {
-      console.error(`[Downloader] Failed to fetch album genres: ${error.message}`)
+      console.error(`[Downloader] Failed to fetch album genres: ${logSafe(error.message)}`)
       return []
     }
   }
@@ -4059,7 +4061,7 @@ export class Downloader extends EventEmitter {
         req.destroy(new Error('Genre fetch timed out'))
       })
       req.on('error', (e) => {
-        console.error(`[Downloader] Public API request failed:`, e.message)
+        console.error(`[Downloader] Public API request failed:`, logSafe(e.message))
         resolve([])
       })
     })
@@ -4513,7 +4515,7 @@ export class Downloader extends EventEmitter {
     if (queueIndex <= 0) return false // Not found or already first
     const [item] = this.downloadQueue.splice(queueIndex, 1)
     this.downloadQueue.unshift(item)
-    console.log(`[Downloader] Moved ${downloadId} to front of queue (was position ${queueIndex + 1})`)
+    console.log(`[Downloader] Moved ${logSafe(downloadId)} to front of queue (was position ${queueIndex + 1})`)
     return true
   }
 
