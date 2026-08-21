@@ -544,7 +544,11 @@ export class Downloader extends EventEmitter {
       }
 
       const errorLogPath = path.join(folderPath, 'errors.txt')
-      const errorLine = `${trackId} | ${trackArtist} - ${trackTitle} | ${errorMessage}\n`
+      // errors.txt is one record per line and the title, artist and error text
+      // all come from the remote service, so a newline inside any of them would
+      // forge extra records in a file the user (and future tooling) reads back.
+      const oneLine = (v: unknown) => String(v ?? '').replace(/[\r\n]+/g, ' ')
+      const errorLine = `${oneLine(trackId)} | ${oneLine(trackArtist)} - ${oneLine(trackTitle)} | ${oneLine(errorMessage)}\n`
 
       // Append to existing file or create new one
       fs.appendFileSync(errorLogPath, errorLine, 'utf8')
