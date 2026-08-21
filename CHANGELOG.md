@@ -10,6 +10,16 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 
 ## [Unreleased]
 
+## [2.5.9] - 2026-08-21
+
+### Summary
+
+- **MP3 downloads were being saved with no tags at all.** A single malformed lyric timestamp aborted the whole tag write, so the file arrived with no title, artist, album, artwork or anything else. FLAC was never affected.
+
+### Fixed
+
+- **MP3 files downloaded with synced lyrics enabled had no tags whatsoever (#139, reported by @lukisbaby).** The tag library requires a synced-lyric timestamp to be a whole number and refuses anything else. Deezer returns them as text, so the write was rejected outright, and the fallback path was rejected for the same reason, leaving the file with no tag block at all. It looked like individual fields were missing because every field was. Timestamps are now converted before use, and any line that still cannot be read is dropped rather than taking the whole file down with it. Synced lyrics are enabled by default, so this affected most MP3 downloads.
+
 ## [2.5.8] - 2026-08-21
 
 ### Summary

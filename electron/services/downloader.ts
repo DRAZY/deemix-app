@@ -3024,12 +3024,17 @@ export class Downloader extends EventEmitter {
           const syltLines: Array<{ text: string; timeStamp: number }> = []
 
           for (const line of syncedLyrics) {
-            if (line.milliseconds !== undefined && line.line) {
-              syltLines.push({
-                text: line.line,
-                timeStamp: line.milliseconds
-              })
-            }
+            if (line.milliseconds === undefined || !line.line) continue
+            // node-id3 rejects a SYLT timestamp that is not a true integer and
+            // throws "An integer value is expected" for a string, a float or
+            // undefined. That throw aborts the entire write, and the update()
+            // fallback below fails identically, so one bad timestamp leaves the
+            // file with no ID3 tag at all rather than merely losing its lyrics.
+            // Deezer returns these as strings, so coerce here and drop anything
+            // that will not survive the round trip.
+            const ms = Math.round(Number(line.milliseconds))
+            if (!Number.isFinite(ms) || ms < 0) continue
+            syltLines.push({ text: line.line, timeStamp: ms })
           }
 
           if (syltLines.length > 0) {

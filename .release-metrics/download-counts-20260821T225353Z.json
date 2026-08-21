@@ -1,0 +1,189 @@
+[
+  {
+    "tag": "v2.5.8",
+    "assets": [
+      {
+        "name": "deemix-app_2.5.8_amd64.deb",
+        "download_count": 0
+      },
+      {
+        "name": "deemix-app_2.5.8_arm64.deb",
+        "download_count": 0
+      },
+      {
+        "name": "Deemix.Remastered-2.5.8-arm64.AppImage",
+        "download_count": 0
+      },
+      {
+        "name": "Deemix.Remastered-2.5.8-arm64.dmg",
+        "download_count": 1
+      },
+      {
+        "name": "Deemix.Remastered-2.5.8-universal.dmg",
+        "download_count": 0
+      },
+      {
+        "name": "Deemix.Remastered-2.5.8.AppImage",
+        "download_count": 0
+      },
+      {
+        "name": "Deemix.Remastered-Portable-2.5.8-arm64.exe",
+        "download_count": 0
+      },
+      {
+        "name": "Deemix.Remastered-Portable-2.5.8-x64.exe",
+        "download_count": 0
+      },
+      {
+        "name": "Deemix.Remastered-Setup-2.5.8-arm64.exe",
+        "download_count": 0
+      },
+      {
+        "name": "Deemix.Remastered-Setup-2.5.8-x64.exe",
+        "download_count": 2
+      }
+    ],
+    "release_total": 3
+  },
+  {
+    "tag": "v2.5.7",
+    "assets": [
+      {
+        "name": "deemix-app_2.5.7_amd64.deb",
+        "download_count": 23
+      },
+      {
+        "name": "deemix-app_2.5.7_arm64.deb",
+        "download_count": 0
+      },
+      {
+        "name": "Deemix.Remastered-2.5.7-arm64.AppImage",
+        "download_count": 10
+      },
+      {
+        "name": "Deemix.Remastered-2.5.7-arm64.dmg",
+        "download_count": 33
+      },
+      {
+        "name": "Deemix.Remastered-2.5.7-universal.dmg",
+        "download_count": 13
+      },
+      {
+        "name": "Deemix.Remastered-2.5.7.AppImage",
+        "download_count": 14
+      },
+      {
+        "name": "Deemix.Remastered-Portable-2.5.7-arm64.exe",
+        "download_count": 17
+      },
+      {
+        "name": "Deemix.Remastered-Portable-2.5.7-x64.exe",
+        "download_count": 78
+      },
+      {
+        "name": "Deemix.Remastered-Setup-2.5.7-arm64.exe",
+        "download_count": 10
+      },
+      {
+        "name": "Deemix.Remastered-Setup-2.5.7-x64.exe",
+        "download_count": 87
+      }
+    ],
+    "release_total": 285
+  },
+  {
+    "tag": "v2.5.6",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.5.5",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.5.4",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.5.3",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.5.2",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.5.1",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.5.0",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.4.4",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.4.3",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.4.2",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.4.1",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.4.0",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.3.2",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.3.1",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.3.0",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.2.3",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.2.2",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.2.1",
+    "assets": [],
+    "release_total": 0
+  },
+  {
+    "tag": "v2.2.0",
+    "assets": [],
+    "release_total": 0
+  }
+]
