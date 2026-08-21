@@ -9,6 +9,8 @@ rather than in a global config.
 - **Cosmetic changes re-roll in place.** For minor changes that don't warrant a
   new version (a font-size tweak, a copy fix), move the existing tag and replace
   the release assets with `--clobber` rather than burning a new version number.
+  Note that `--clobber` resets that asset's download count to zero, so weigh a
+  re-roll against the count it costs.
 
 - **Keep the local build until the next one starts.** After each rebuild or
   re-roll, leave the current installers in `release/` on disk. Clear that folder
@@ -17,9 +19,19 @@ rather than in a global config.
   clobbered to the latest build, so the local copies are the only offline access
   to the current one.
 
-- **Delete superseded artifacts everywhere else.** When rolling a new version,
-  remove prior-version build artifacts from both local disk and the GitHub
-  releases, keeping only the latest version's builds.
+- **Never delete GitHub release assets.** Download counts are stored per asset
+  and are destroyed with it. There is no transfer and no merge, so removing a
+  superseded version's assets permanently reduces the repository's total
+  download count and the shields.io badge that reports it. Prior versions keep
+  their assets indefinitely. Clean up superseded builds on local disk only.
+  (Learned 2026-08-21: an earlier sweep of older releases had already cut the
+  repo total from roughly 1,400 to 285, and by then every remaining download
+  sat on a single version's assets.)
+
+- **Snapshot download counts before every rollout.** Write the per-asset counts
+  to `.release-metrics/` and commit them. That file is the only durable record
+  if an asset is ever lost, since the API cannot recover a deleted asset's
+  count.
 
 - **Housekeeping ships with the version.** Each rollout audits and updates
   project structure and documentation surfaces so they describe what actually
