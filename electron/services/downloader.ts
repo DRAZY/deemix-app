@@ -287,6 +287,12 @@ export class Downloader extends EventEmitter {
   private reservedPaths: Set<string> = new Set()
   // Playlist folders that already had their cover artwork saved (avoid saving per-track)
   private playlistCoverSaved: Set<string> = new Set()
+  // Cover paths claimed by a playlist. savePlaylistCover has to fetch its image
+  // over HTTP first, while per-track album art is written from a buffer already
+  // in memory, so a finished track would otherwise land its album cover at
+  // cover.jpg and the playlist cover would find a non-empty file and give up.
+  // A playlist folder is not an album, so its cover belongs to the playlist.
+  private playlistCoverPaths: Set<string> = new Set()
   // Playlist M3U tracker: collects actual file paths as tracks complete
   // so M3U can be generated from real paths instead of reconstructed guesses
   private playlistM3UTracker: Map<string, {
@@ -4081,6 +4087,10 @@ export class Downloader extends EventEmitter {
     const coverName = albumCoverSettings.coverNameTemplate || 'cover'
     const artworkPath = path.join(outputDir, `${coverName}.jpg`)
 
+    // This path belongs to a playlist, so a single track's album art is the
+    // wrong image for it. Leave it to savePlaylistCover.
+    if (this.playlistCoverPaths.has(artworkPath)) return
+
     // A non-empty cover already on disk means another worker got here first.
     // Nothing needs unlinking: the atomic write replaces whatever is there in a
     // single step, so a zero-byte leftover is overwritten rather than removed
@@ -4134,6 +4144,10 @@ export class Downloader extends EventEmitter {
       // Build artwork path
       const artworkPath = path.join(outputDir, `${coverName}.jpg`)
 
+      // This path belongs to a playlist, so a single track's album art is the
+      // wrong image for it. Leave it to savePlaylistCover.
+      if (this.playlistCoverPaths.has(artworkPath)) return
+
       // Don't overwrite existing artwork
       // A non-empty file already on disk means another worker got here first.
       // The atomic write below replaces whatever is present in one step, so a
@@ -4165,6 +4179,13 @@ export class Downloader extends EventEmitter {
     const dedupKey = playlistName ? `${saveDir}:${playlistName}` : saveDir
     if (this.playlistCoverSaved.has(dedupKey)) return
     this.playlistCoverSaved.add(dedupKey)
+
+    // Claim the exact path synchronously, before the async cover fetch below,
+    // so album art from a track that finishes first cannot take it.
+    const claimName = playlistName
+      ? this.sanitizeFilename(playlistName)
+      : (options.metadataSettings?.albumCovers?.coverNameTemplate || 'cover')
+    this.playlistCoverPaths.add(path.join(saveDir, `${claimName}.jpg`))
 
     try {
       const albumCoverSettings = options.metadataSettings?.albumCovers || {
@@ -4564,6 +4585,7 @@ export class Downloader extends EventEmitter {
     this.reservedPaths.clear()
     this.albumInfoCache.clear()
     this.playlistCoverSaved.clear()
+    this.playlistCoverPaths.clear()
     // Clear activity timers before clearing trackers
     for (const tracker of this.playlistM3UTracker.values()) {
       if (tracker.activityTimer) clearTimeout(tracker.activityTimer)
