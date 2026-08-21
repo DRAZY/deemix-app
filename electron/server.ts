@@ -17,6 +17,9 @@ import { scanFolder, retagFile, retagFileInFolder, type RetagFields } from './se
 import { libraryIndex } from './services/libraryIndex'
 import { buildAlbumContext } from './services/albumContext'
 
+/** Collapse newlines so remote-supplied text cannot forge extra log lines. */
+const logSafe = (v: unknown): string => String(v ?? '').replace(/[\r\n]+/g, ' ')
+
 // File-based cache for discography (persists across app restarts)
 const DISCOGRAPHY_FILE_CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
 
@@ -261,7 +264,7 @@ function sanitizeErrorMessage(error: any, fallback: string = 'Internal server er
     return msg.substring(0, 200) // Truncate to prevent huge messages
   }
   // Log the real error server-side, return generic message to client
-  console.error('[Server] Internal error (sanitized):', msg)
+  console.error('[Server] Internal error (sanitized):', logSafe(msg))
   return fallback
 }
 
@@ -309,7 +312,7 @@ function validateDownloadPath(pathStr: string): boolean {
     const isUnixAbsolute = normalizedPath.startsWith('/')
 
     if (!isWindowsAbsolute && !isUnixAbsolute) {
-      console.warn('[Security] Path is not absolute:', pathStr)
+      console.warn('[Security] Path is not absolute:', logSafe(pathStr))
       return false
     }
 
@@ -324,7 +327,7 @@ function validateDownloadPath(pathStr: string): boolean {
     })
 
     if (isBlocked) {
-      console.warn('[Security] Path is in blocked system directory:', pathStr)
+      console.warn('[Security] Path is in blocked system directory:', logSafe(pathStr))
       return false
     }
 
@@ -559,7 +562,7 @@ export class DeemixServer extends EventEmitter {
 
     // Forward auth events from deezerAuth
     deezerAuth.on('auth-expired', (data) => {
-      console.log('[Server] Auth expired event received:', data.reason)
+      console.log('[Server] Auth expired event received:', logSafe(data.reason))
       this.emit('auth-expired', data)
     })
 
@@ -579,10 +582,10 @@ export class DeemixServer extends EventEmitter {
   async start(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.server = createServer((req, res) => {
-        console.log(`[Server] ${req.method} ${req.url}`)
+        console.log(`[Server] ${logSafe(req.method)} ${logSafe(req.url)}`)
 
         this.handleRequest(req, res).catch(error => {
-          console.error('[Server] Request error:', error)
+          console.error('[Server] Request error:', logSafe((error as any)?.message ?? error))
           // Always return JSON, even on error
           try {
             this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
@@ -1085,7 +1088,7 @@ export class DeemixServer extends EventEmitter {
         arl: session.arl
       })
     } catch (error: any) {
-      console.error('[Server] Login error:', error.message)
+      console.error('[Server] Login error:', logSafe(error.message))
       this.sendJSON(res, { error: error.message || 'Login failed' }, 401)
     }
   }
@@ -1105,7 +1108,7 @@ export class DeemixServer extends EventEmitter {
 
       // Security: Mask email in logs (only show domain)
       const maskedEmail = email.includes('@') ? `***@${email.split('@')[1]}` : '***'
-      console.log('[Server] Attempting login with email:', maskedEmail)
+      console.log('[Server] Attempting login with email:', logSafe(maskedEmail))
       const result = await deezerAuth.loginWithEmail(email, password)
 
       // Check if CAPTCHA is required
@@ -1129,7 +1132,7 @@ export class DeemixServer extends EventEmitter {
         arl: session.arl
       })
     } catch (error: any) {
-      console.error('[Server] Email login error:', error.message)
+      console.error('[Server] Email login error:', logSafe(error.message))
       this.sendJSON(res, { error: error.message || 'Login failed' }, 401)
     }
   }
@@ -1165,7 +1168,7 @@ export class DeemixServer extends EventEmitter {
         arl: session.arl
       })
     } catch (error: any) {
-      console.error('[Server] CAPTCHA login error:', error.message)
+      console.error('[Server] CAPTCHA login error:', logSafe(error.message))
       this.sendJSON(res, { error: error.message || 'CAPTCHA verification failed' }, 401)
     }
   }
@@ -1595,7 +1598,7 @@ export class DeemixServer extends EventEmitter {
         albumTrackDisc = fetched.tracks.find((t: any) => t.id === trackId)?.disk_number
       }
     }
-    console.log(`[Server] Download request - trackId: ${trackId}, quality: ${this.settings.quality}, path: ${this.settings.downloadPath}${isPlaylistTrack ? `, playlist: "${playlistName}"` : ''}${albumCtx ? `, album-retry: "${albumCtx.albumTitle}"` : ''}`)
+    console.log(`[Server] Download request - trackId: ${logSafe(trackId)}, quality: ${this.settings.quality}, path: ${this.settings.downloadPath}${isPlaylistTrack ? `, playlist: "${logSafe(playlistName)}"` : ''}${albumCtx ? `, album-retry: "${logSafe(albumCtx.albumTitle)}"` : ''}`)
     console.log(`[Server] Settings - embedArtwork: ${this.settings.embedArtwork}, saveArtwork: ${this.settings.saveArtwork}`)
     console.log(`[Server] Settings - tags.cover: ${this.settings.tags?.cover}, tags.title: ${this.settings.tags?.title}`)
     console.log(`[Server] Settings - albumCovers.embeddedArtworkSize: ${this.settings.albumCovers?.embeddedArtworkSize}`)
@@ -2040,7 +2043,7 @@ export class DeemixServer extends EventEmitter {
     }
 
     const isPlaylist = !!playlistName
-    console.log(`[Server] Batch download: ${trackIds.length} tracks${isPlaylist ? `, playlist: "${playlistName}"` : ''}`)
+    console.log(`[Server] Batch download: ${trackIds.length} tracks${isPlaylist ? `, playlist: "${logSafe(playlistName)}"` : ''}`)
     console.log(`[Server] Batch settings - quality: ${this.settings.quality}, path: ${this.settings.downloadPath}, createPlaylistFolder: ${this.settings.createPlaylistFolder}, createAlbumFolder: ${this.settings.createAlbumFolder}`)
 
     try {
@@ -2218,7 +2221,7 @@ export class DeemixServer extends EventEmitter {
     }
 
     const isPlaylist = !!playlistName
-    console.log(`[Server] Mixed batch: ${tracks.length} tracks${isPlaylist ? `, playlist: "${playlistName}"` : ''}`)
+    console.log(`[Server] Mixed batch: ${tracks.length} tracks${isPlaylist ? `, playlist: "${logSafe(playlistName)}"` : ''}`)
 
     try {
       const downloadIds: string[] = []
@@ -2323,7 +2326,7 @@ export class DeemixServer extends EventEmitter {
         if (typeof body.downloadPath === 'string' && validateDownloadPath(body.downloadPath)) {
           validatedSettings.downloadPath = body.downloadPath
         } else {
-          console.warn('[Security] Invalid download path rejected:', body.downloadPath)
+          console.warn('[Security] Invalid download path rejected:', logSafe(body.downloadPath))
         }
       }
 
@@ -2581,7 +2584,7 @@ export class DeemixServer extends EventEmitter {
         this.sendJSON(res, { data: [], total: 0 })
       }
     } catch (error: any) {
-      console.error('[Server] Chart fetch error:', error.message)
+      console.error('[Server] Chart fetch error:', logSafe(error.message))
       this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
     }
   }
@@ -2699,7 +2702,7 @@ export class DeemixServer extends EventEmitter {
       const albums = await deezerAuth.getNewReleases(limit)
       this.sendJSON(res, { data: albums, total: albums.length })
     } catch (error: any) {
-      console.error('[Server] New releases fetch error:', error.message)
+      console.error('[Server] New releases fetch error:', logSafe(error.message))
       this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
     }
   }
@@ -2835,7 +2838,7 @@ export class DeemixServer extends EventEmitter {
     if (urlHasHost(resolvedUrl, ['link.deezer.com', 'deezer.page.link'])) {
       try {
         resolvedUrl = await followRedirectsSafely(resolvedUrl)
-        console.log(`[Server] Resolved share link: ${rawUrl} -> ${resolvedUrl}`)
+        console.log(`[Server] Resolved share link: ${logSafe(rawUrl)} -> ${logSafe(resolvedUrl)}`)
       } catch (err: any) {
         console.error('[Server] Failed to resolve share link:', err.message)
         this.sendJSON(res, { error: 'Failed to resolve share link' }, 400)
@@ -2871,7 +2874,7 @@ export class DeemixServer extends EventEmitter {
                 data = normalized
               }
             } catch (gwErr: any) {
-              console.log('[Server] Track analyze: gateway fallback also failed:', gwErr.message)
+              console.log('[Server] Track analyze: gateway fallback also failed:', logSafe(gwErr.message))
               // fall through — data still has .error, handled below
             }
           }
@@ -2913,7 +2916,7 @@ export class DeemixServer extends EventEmitter {
                   }
                 }
               } catch (listErr) {
-                console.log('[Server] song.getListData failed:', listErr)
+                console.log('[Server] song.getListData failed:', logSafe((listErr as any)?.message ?? listErr))
               }
 
               // If still no countries, try deezer.pageTrack
@@ -2962,14 +2965,14 @@ export class DeemixServer extends EventEmitter {
                     }
                   }
                 } catch (pageErr) {
-                  console.log('[Server] deezer.pageTrack failed:', pageErr)
+                  console.log('[Server] deezer.pageTrack failed:', logSafe((pageErr as any)?.message ?? pageErr))
                 }
               }
 
               additionalInfo.countries = countries
               console.log('[Server] Final countries array length:', countries.length)
             } catch (err) {
-              console.log('[Server] Could not fetch private track info:', err)
+              console.log('[Server] Could not fetch private track info:', logSafe((err as any)?.message ?? err))
             }
           } else {
             console.log('[Server] Not logged in, skipping private API call for countries')
@@ -2990,7 +2993,7 @@ export class DeemixServer extends EventEmitter {
                 data = normalized
               }
             } catch (gwErr: any) {
-              console.log('[Server] Album analyze: gateway fallback also failed:', gwErr.message)
+              console.log('[Server] Album analyze: gateway fallback also failed:', logSafe(gwErr.message))
               // fall through — data still has .error, handled below
             }
           }
@@ -3693,7 +3696,7 @@ export class DeemixServer extends EventEmitter {
     }
 
     const isPlaylist = !!playlistName
-    console.log(`[Server] Qobuz batch download: ${trackIds.length} tracks${isPlaylist ? `, playlist: "${playlistName}"` : ''}`)
+    console.log(`[Server] Qobuz batch download: ${trackIds.length} tracks${isPlaylist ? `, playlist: "${logSafe(playlistName)}"` : ''}`)
 
     try {
       const downloadIds: string[] = []
@@ -4552,7 +4555,7 @@ export class DeemixServer extends EventEmitter {
       playlistSync.syncPlaylist(id).catch(err =>
         // Request-supplied id passed as an argument, not interpolated into the
         // format string (CodeQL #19: tainted format string / log forgery).
-        console.error('[Server] Sync failed for playlist:', id, err)
+        console.error('[Server] Sync failed for playlist:', logSafe(id), logSafe((err as any)?.message ?? err))
       )
 
       this.sendJSON(res, { success: true, message: 'Sync started' })
@@ -4780,7 +4783,7 @@ export class DeemixServer extends EventEmitter {
       }
       artistSync.syncArtist(id).catch(err =>
         // Request-supplied id passed as an argument, not interpolated (CodeQL #20).
-        console.error('[Server] Artist sync failed for artist:', id, err)
+        console.error('[Server] Artist sync failed for artist:', logSafe(id), logSafe((err as any)?.message ?? err))
       )
       this.sendJSON(res, { success: true, message: 'Artist sync started' })
     } catch (error: any) {
