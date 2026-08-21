@@ -8,6 +8,9 @@ import { artistSync } from './services/artistSync'
 import { spotifyAPI } from './services/spotifyAPI'
 import { qobuzAuth } from './services/qobuzAuth'
 
+/** Collapse newlines so remote-supplied text cannot forge extra log lines. */
+const logSafe = (v: unknown): string => String(v ?? '').replace(/[\r\n]+/g, ' ')
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling
 // Squirrel startup is handled by electron-builder
 
@@ -331,7 +334,7 @@ async function initServer() {
 
     // Listen for auth-expired events and forward to renderer
     server.on('auth-expired', (data: { reason: string }) => {
-      console.log('[Main] Auth expired, notifying renderer:', data.reason)
+      console.log('[Main] Auth expired, notifying renderer:', logSafe(data.reason))
       if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('auth:expired', data)
       }

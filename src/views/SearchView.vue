@@ -20,6 +20,9 @@ import ContextMenu from '../components/ContextMenu.vue'
 import { useContextMenu } from '../composables/useContextMenu'
 import type { Track, Album, Artist, Playlist } from '../types'
 
+/** Collapse newlines so remote-supplied text cannot forge extra log lines. */
+const logSafe = (v: unknown): string => String(v ?? '').replace(/[\r\n]+/g, ' ')
+
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
@@ -654,7 +657,7 @@ async function handlePaste(e: ClipboardEvent) {
       }
     } catch (err) {
       // Pasted-link values passed as arguments, not interpolated (CodeQL #18).
-      console.error('[Search] Bulk download failed for link:', link.type, link.id, err)
+      console.error('[Search] Bulk download failed for link:', logSafe(link.type), logSafe(link.id), err)
       failed++
     }
     // Pace between pasted links so a big batch doesn't burst Deezer's API (#84).
