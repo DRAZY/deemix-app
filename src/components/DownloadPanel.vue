@@ -364,7 +364,7 @@ async function openItemFolder(item: DownloadItem) {
               <h4 class="m-0 mb-1 text-[15px] font-semibold text-foreground leading-tight">{{ selectedItemForDetails.title }}</h4>
               <p class="m-0 mb-1 text-[13px] text-foreground-muted">{{ getArtistName(selectedItemForDetails) }}</p>
               <p class="m-0 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground-muted">
-                {{ selectedItemForDetails.type === 'album' ? t('analyzer.types.album') : selectedItemForDetails.type === 'playlist' ? t('analyzer.types.playlist') : t('analyzer.types.track') }}
+                {{ (selectedItemForDetails.type === 'playlist' || selectedItemForDetails.album?.qobuzType === 'playlist') ? t('analyzer.types.playlist') : selectedItemForDetails.type === 'album' ? t('analyzer.types.album') : t('analyzer.types.track') }}
               </p>
             </div>
           </div>

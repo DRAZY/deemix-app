@@ -667,7 +667,7 @@ function copyAllErrorDetails() {
               v-if="(item.type === 'album' || item.type === 'playlist') && !isSlim"
               class="absolute -bottom-1 -right-1 px-1 py-0.5 font-mono text-[9px] tracking-[0.08em] uppercase bg-primary-500 text-background-main"
             >
-              {{ item.type === 'album' ? t('common.album') : t('common.playlist') }}
+              {{ (item.type === 'playlist' || item.album?.qobuzType === 'playlist') ? t('common.playlist') : t('common.album') }}
             </span>
           </div>
 
@@ -729,7 +729,7 @@ function copyAllErrorDetails() {
                 v-if="isSlim && (item.type === 'album' || item.type === 'playlist')"
                 class="flex-shrink-0 px-1.5 py-0.5 font-mono text-[10px] tracking-[0.08em] uppercase border bg-background-main/60 text-foreground-muted border-white/[0.1]"
               >
-                {{ item.type === 'album' ? t('common.album') : t('common.playlist') }}
+                {{ (item.type === 'playlist' || item.album?.qobuzType === 'playlist') ? t('common.playlist') : t('common.album') }}
               </span>
             </div>
             <p class="text-[11.5px] text-foreground-muted truncate">
