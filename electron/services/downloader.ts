@@ -3071,21 +3071,21 @@ export class Downloader extends EventEmitter {
       })
       console.log(`[Downloader] Writing to file: ${filePath}`)
 
-      // Verify file still exists before writing
-      if (!fs.existsSync(filePath)) {
+      // Read the file into a buffer, write tags, then write back.
+      // This is more reliable than direct file operations.
+      // The read is what establishes the file is there. An exists/stat check
+      // first would only open a window in which the file can change between the
+      // check and the read, and tells us nothing the read itself cannot.
+      let fileBuffer: Buffer
+      try {
+        fileBuffer = fs.readFileSync(filePath)
+      } catch {
         console.error('[Downloader] ERROR: File does not exist before tag write!')
         return
       }
+      console.log(`[Downloader] Read file buffer: ${fileBuffer.length} bytes`)
 
-      // Get file stats
-      const fileStats = fs.statSync(filePath)
-      console.log(`[Downloader] File size before tagging: ${fileStats.size} bytes`)
-
-      // Read the file into a buffer, write tags, then write back
-      // This is more reliable than direct file operations
       try {
-        const fileBuffer = fs.readFileSync(filePath)
-        console.log(`[Downloader] Read file buffer: ${fileBuffer.length} bytes`)
 
         // Check if it's a valid MP3 (starts with ID3 tag or MP3 frame sync)
         const hasID3 = fileBuffer[0] === 0x49 && fileBuffer[1] === 0x44 && fileBuffer[2] === 0x33 // "ID3"
@@ -3097,7 +3097,7 @@ export class Downloader extends EventEmitter {
 
         if (taggedBuffer && Buffer.isBuffer(taggedBuffer)) {
           console.log(`[Downloader] Tagged buffer size: ${taggedBuffer.length} bytes`)
-          fs.writeFileSync(filePath, taggedBuffer)
+          this.writeFileAtomic(filePath, taggedBuffer)
           console.log('[Downloader] Tags written successfully via buffer method')
 
           // Write ID3v1 tags if enabled (for legacy player compatibility)
@@ -4075,13 +4075,34 @@ export class Downloader extends EventEmitter {
     const coverName = albumCoverSettings.coverNameTemplate || 'cover'
     const artworkPath = path.join(outputDir, `${coverName}.jpg`)
 
-    if (fs.existsSync(artworkPath)) {
-      const stats = fs.statSync(artworkPath)
-      if (stats.size > 0) return
-      fs.unlinkSync(artworkPath)
-    }
-    fs.writeFileSync(artworkPath, cover)
+    // A non-empty cover already on disk means another worker got here first.
+    // Nothing needs unlinking: the atomic write replaces whatever is there in a
+    // single step, so a zero-byte leftover is overwritten rather than removed
+    // into a window where the path is briefly absent.
+    if (fs.existsSync(artworkPath) && fs.statSync(artworkPath).size > 0) return
+    this.writeFileAtomic(artworkPath, cover)
     console.log(`[Downloader] Saved Qobuz artwork: ${artworkPath} (${cover.length} bytes)`)
+  }
+
+  /**
+   * Write a file so no concurrent worker can observe a partial result.
+   *
+   * The queue runs maxConcurrent workers and several tracks from one album share
+   * a single cover path, which reservedPaths does not cover (it guards track
+   * outputs only). A plain writeFileSync there lets two workers interleave and
+   * leave a truncated or zero-byte file. Writing to a unique temp name and
+   * renaming makes the swap atomic within the filesystem, so the last writer
+   * wins whole and no reader ever sees a half-written file.
+   */
+  private writeFileAtomic(targetPath: string, data: Buffer): void {
+    const tmpPath = `${targetPath}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`
+    try {
+      fs.writeFileSync(tmpPath, data)
+      fs.renameSync(tmpPath, targetPath)
+    } catch (error) {
+      try { fs.unlinkSync(tmpPath) } catch { /* nothing left to clean up */ }
+      throw error
+    }
   }
 
   private async saveArtwork(albumPicture: string, outputDir: string, options: DownloadOptions): Promise<void> {
@@ -4108,14 +4129,12 @@ export class Downloader extends EventEmitter {
       const artworkPath = path.join(outputDir, `${coverName}.jpg`)
 
       // Don't overwrite existing artwork
-      if (fs.existsSync(artworkPath)) {
-        const stats = fs.statSync(artworkPath)
-        if (stats.size > 0) {
-          console.log(`[Downloader] Artwork already exists: ${artworkPath} (${stats.size} bytes)`)
-          return
-        }
-        // Remove zero-byte file
-        fs.unlinkSync(artworkPath)
+      // A non-empty file already on disk means another worker got here first.
+      // The atomic write below replaces whatever is present in one step, so a
+      // zero-byte leftover needs no unlink into a briefly-absent state.
+      if (fs.existsSync(artworkPath) && fs.statSync(artworkPath).size > 0) {
+        console.log(`[Downloader] Artwork already exists: ${artworkPath}`)
+        return
       }
 
       // Deezer CDN only reliably serves JPEG
@@ -4125,7 +4144,7 @@ export class Downloader extends EventEmitter {
       const buffer = await this.downloadBuffer(artworkUrl)
 
       if (buffer.length > 0) {
-        fs.writeFileSync(artworkPath, buffer)
+        this.writeFileAtomic(artworkPath, buffer)
         console.log(`[Downloader] Saved artwork: ${artworkPath} (${buffer.length} bytes)`)
       } else {
         console.error('[Downloader] Downloaded artwork is empty')
@@ -4161,13 +4180,12 @@ export class Downloader extends EventEmitter {
       const artworkPath = path.join(saveDir, `${coverName}.jpg`)
 
       // Don't overwrite existing artwork
-      if (fs.existsSync(artworkPath)) {
-        const stats = fs.statSync(artworkPath)
-        if (stats.size > 0) {
-          console.log(`[Downloader] Playlist cover already exists: ${artworkPath}`)
-          return
-        }
-        fs.unlinkSync(artworkPath)
+      // A non-empty file already on disk means another worker got here first.
+      // The atomic write below replaces whatever is present in one step, so a
+      // zero-byte leftover needs no unlink into a briefly-absent state.
+      if (fs.existsSync(artworkPath) && fs.statSync(artworkPath).size > 0) {
+        console.log(`[Downloader] Playlist cover already exists: ${artworkPath}`)
+        return
       }
 
       // Ensure directory exists
@@ -4188,7 +4206,7 @@ export class Downloader extends EventEmitter {
       const buffer = await this.downloadBuffer(url)
 
       if (buffer.length > 0) {
-        fs.writeFileSync(artworkPath, buffer)
+        this.writeFileAtomic(artworkPath, buffer)
         console.log(`[Downloader] Saved playlist cover: ${artworkPath} (${buffer.length} bytes)`)
       }
     } catch (error) {
@@ -4218,14 +4236,12 @@ export class Downloader extends EventEmitter {
       const artistImagePath = path.join(outputDir, `${sanitizedArtistName}.jpg`)
 
       // Don't overwrite existing artist image
-      if (fs.existsSync(artistImagePath)) {
-        const stats = fs.statSync(artistImagePath)
-        if (stats.size > 0) {
-          console.log(`[Downloader] Artist image already exists: ${artistImagePath}`)
-          return
-        }
-        // Remove zero-byte file
-        fs.unlinkSync(artistImagePath)
+      // A non-empty file already on disk means another worker got here first.
+      // The atomic write below replaces whatever is present in one step, so a
+      // zero-byte leftover needs no unlink into a briefly-absent state.
+      if (fs.existsSync(artistImagePath) && fs.statSync(artistImagePath).size > 0) {
+        console.log(`[Downloader] Artist image already exists: ${artistImagePath}`)
+        return
       }
 
       // The artist picture URL from Deezer public API is like:
@@ -4253,7 +4269,7 @@ export class Downloader extends EventEmitter {
       const buffer = await this.downloadBuffer(artworkUrl)
 
       if (buffer.length > 0) {
-        fs.writeFileSync(artistImagePath, buffer)
+        this.writeFileAtomic(artistImagePath, buffer)
         console.log(`[Downloader] Saved artist image: ${artistImagePath} (${buffer.length} bytes)`)
       } else {
         console.error('[Downloader] Downloaded artist image is empty')
