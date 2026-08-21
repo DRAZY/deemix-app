@@ -11,6 +11,9 @@ import { qobuzAuth } from './qobuzAuth'
 import { downloadQobuzTrack } from './qobuzDownloader'
 import { probeAudioFile, expectedContainer, isLowerTier } from './audioProbe'
 
+/** Collapse newlines so remote-supplied text cannot forge extra log lines. */
+const logSafe = (v: unknown): string => String(v ?? '').replace(/[\r\n]+/g, ' ')
+
 export interface FolderSettings {
   createPlaylistFolder: boolean
   createArtistFolder: boolean
@@ -284,6 +287,12 @@ export class Downloader extends EventEmitter {
   private reservedPaths: Set<string> = new Set()
   // Playlist folders that already had their cover artwork saved (avoid saving per-track)
   private playlistCoverSaved: Set<string> = new Set()
+  // Cover paths claimed by a playlist. savePlaylistCover has to fetch its image
+  // over HTTP first, while per-track album art is written from a buffer already
+  // in memory, so a finished track would otherwise land its album cover at
+  // cover.jpg and the playlist cover would find a non-empty file and give up.
+  // A playlist folder is not an album, so its cover belongs to the playlist.
+  private playlistCoverPaths: Set<string> = new Set()
   // Playlist M3U tracker: collects actual file paths as tracks complete
   // so M3U can be generated from real paths instead of reconstructed guesses
   private playlistM3UTracker: Map<string, {
@@ -544,7 +553,10 @@ export class Downloader extends EventEmitter {
       }
 
       const errorLogPath = path.join(folderPath, 'errors.txt')
-      const errorLine = `${trackId} | ${trackArtist} - ${trackTitle} | ${errorMessage}\n`
+      // errors.txt is one record per line and the title, artist and error text
+      // all come from the remote service, so a newline inside any of them would
+      // forge extra records in a file the user (and future tooling) reads back.
+      const errorLine = `${logSafe(trackId)} | ${logSafe(trackArtist)} - ${logSafe(trackTitle)} | ${logSafe(errorMessage)}\n`
 
       // Append to existing file or create new one
       fs.appendFileSync(errorLogPath, errorLine, 'utf8')
@@ -831,7 +843,7 @@ export class Downloader extends EventEmitter {
     this.currentDownloads++
     this.processDownload(next.id, next.options)
       .catch(error => {
-        console.error(`[Downloader] processDownload error for ${next.id}:`, error.message)
+        console.error(`[Downloader] processDownload error for ${logSafe(next.id)}:`, logSafe(error.message))
         const progress = this.activeDownloads.get(next.id)
         if (progress) {
           progress.status = 'error'
@@ -1211,7 +1223,7 @@ export class Downloader extends EventEmitter {
       trackInfo = await deezerAuth.getTrackInfo(options.trackId)
       console.log(`[Downloader] Got track info:`, trackInfo ? `${trackInfo.SNG_TITLE} by ${trackInfo.ART_NAME}` : 'null')
     } catch (error: any) {
-      console.error(`[Downloader] Failed to get track info:`, error.message)
+      console.error(`[Downloader] Failed to get track info:`, logSafe(error.message))
 
       // Check if this is a clear auth error (don't validate session - it can cause issues)
       const errorMsg = error.message || 'Unknown error'
@@ -1356,7 +1368,7 @@ export class Downloader extends EventEmitter {
         throw new Error(`Invalid download URL received: ${downloadUrl?.substring(0, 50) || 'empty'}`)
       }
     } catch (error: any) {
-      console.error(`[Downloader] Failed to get media URL:`, error.message)
+      console.error(`[Downloader] Failed to get media URL:`, logSafe(error.message))
       if (error.message.includes('PreferredBitrateNotFound')) {
         throw new Error(`Preferred bitrate (${options.quality}) not available for this track. Enable Bitrate Fallback in settings to download in a lower quality.`)
       }
@@ -1443,7 +1455,7 @@ export class Downloader extends EventEmitter {
           trackInfo.DISKS_COUNT = Number(albumMeta.NUMBER_DISK)
         }
       } catch (e: any) {
-        console.log('[Downloader] Album totals lookup failed (tags will omit them):', e.message)
+        console.log('[Downloader] Album totals lookup failed (tags will omit them):', logSafe(e.message))
       }
     }
 
@@ -1579,7 +1591,7 @@ export class Downloader extends EventEmitter {
         await this.downloadFromUrl(downloadUrl, encryptedPath, progress)
         console.log(`[Downloader] Encrypted file downloaded`)
       } catch (error: any) {
-        console.error(`[Downloader] Download file error:`, error.message)
+        console.error(`[Downloader] Download file error:`, logSafe(error.message))
         // Clean up any partial file
         try {
           if (encryptedPath && fs.existsSync(encryptedPath)) {
@@ -2402,7 +2414,7 @@ export class Downloader extends EventEmitter {
               }
               this.handleDownloadResponse(redirectResponse, file, progress, resolve, reject)
             }).on('error', (err) => {
-              console.error(`[Downloader] Redirect error:`, err.message)
+              console.error(`[Downloader] Redirect error:`, logSafe(err.message))
               file.close()
               try { if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath) } catch (e) {}
               reject(err)
@@ -2429,7 +2441,7 @@ export class Downloader extends EventEmitter {
 
         this.handleDownloadResponse(response, file, progress, resolve, reject)
       }).on('error', (error) => {
-        console.error(`[Downloader] Download error:`, error.message)
+        console.error(`[Downloader] Download error:`, logSafe(error.message))
         file.close()
         try {
           if (fs.existsSync(outputPath)) {
@@ -3071,21 +3083,21 @@ export class Downloader extends EventEmitter {
       })
       console.log(`[Downloader] Writing to file: ${filePath}`)
 
-      // Verify file still exists before writing
-      if (!fs.existsSync(filePath)) {
+      // Read the file into a buffer, write tags, then write back.
+      // This is more reliable than direct file operations.
+      // The read is what establishes the file is there. An exists/stat check
+      // first would only open a window in which the file can change between the
+      // check and the read, and tells us nothing the read itself cannot.
+      let fileBuffer: Buffer
+      try {
+        fileBuffer = fs.readFileSync(filePath)
+      } catch {
         console.error('[Downloader] ERROR: File does not exist before tag write!')
         return
       }
+      console.log(`[Downloader] Read file buffer: ${fileBuffer.length} bytes`)
 
-      // Get file stats
-      const fileStats = fs.statSync(filePath)
-      console.log(`[Downloader] File size before tagging: ${fileStats.size} bytes`)
-
-      // Read the file into a buffer, write tags, then write back
-      // This is more reliable than direct file operations
       try {
-        const fileBuffer = fs.readFileSync(filePath)
-        console.log(`[Downloader] Read file buffer: ${fileBuffer.length} bytes`)
 
         // Check if it's a valid MP3 (starts with ID3 tag or MP3 frame sync)
         const hasID3 = fileBuffer[0] === 0x49 && fileBuffer[1] === 0x44 && fileBuffer[2] === 0x33 // "ID3"
@@ -3097,7 +3109,7 @@ export class Downloader extends EventEmitter {
 
         if (taggedBuffer && Buffer.isBuffer(taggedBuffer)) {
           console.log(`[Downloader] Tagged buffer size: ${taggedBuffer.length} bytes`)
-          fs.writeFileSync(filePath, taggedBuffer)
+          this.writeFileAtomic(filePath, taggedBuffer)
           console.log('[Downloader] Tags written successfully via buffer method')
 
           // Write ID3v1 tags if enabled (for legacy player compatibility)
@@ -4013,7 +4025,7 @@ export class Downloader extends EventEmitter {
       }
       return genres
     } catch (error: any) {
-      console.error(`[Downloader] Failed to fetch album genres: ${error.message}`)
+      console.error(`[Downloader] Failed to fetch album genres: ${logSafe(error.message)}`)
       return []
     }
   }
@@ -4055,7 +4067,7 @@ export class Downloader extends EventEmitter {
         req.destroy(new Error('Genre fetch timed out'))
       })
       req.on('error', (e) => {
-        console.error(`[Downloader] Public API request failed:`, e.message)
+        console.error(`[Downloader] Public API request failed:`, logSafe(e.message))
         resolve([])
       })
     })
@@ -4075,13 +4087,38 @@ export class Downloader extends EventEmitter {
     const coverName = albumCoverSettings.coverNameTemplate || 'cover'
     const artworkPath = path.join(outputDir, `${coverName}.jpg`)
 
-    if (fs.existsSync(artworkPath)) {
-      const stats = fs.statSync(artworkPath)
-      if (stats.size > 0) return
-      fs.unlinkSync(artworkPath)
-    }
-    fs.writeFileSync(artworkPath, cover)
+    // This path belongs to a playlist, so a single track's album art is the
+    // wrong image for it. Leave it to savePlaylistCover.
+    if (this.playlistCoverPaths.has(artworkPath)) return
+
+    // A non-empty cover already on disk means another worker got here first.
+    // Nothing needs unlinking: the atomic write replaces whatever is there in a
+    // single step, so a zero-byte leftover is overwritten rather than removed
+    // into a window where the path is briefly absent.
+    if (fs.existsSync(artworkPath) && fs.statSync(artworkPath).size > 0) return
+    this.writeFileAtomic(artworkPath, cover)
     console.log(`[Downloader] Saved Qobuz artwork: ${artworkPath} (${cover.length} bytes)`)
+  }
+
+  /**
+   * Write a file so no concurrent worker can observe a partial result.
+   *
+   * The queue runs maxConcurrent workers and several tracks from one album share
+   * a single cover path, which reservedPaths does not cover (it guards track
+   * outputs only). A plain writeFileSync there lets two workers interleave and
+   * leave a truncated or zero-byte file. Writing to a unique temp name and
+   * renaming makes the swap atomic within the filesystem, so the last writer
+   * wins whole and no reader ever sees a half-written file.
+   */
+  private writeFileAtomic(targetPath: string, data: Buffer): void {
+    const tmpPath = `${targetPath}.${process.pid}.${crypto.randomBytes(4).toString('hex')}.tmp`
+    try {
+      fs.writeFileSync(tmpPath, data)
+      fs.renameSync(tmpPath, targetPath)
+    } catch (error) {
+      try { fs.unlinkSync(tmpPath) } catch { /* nothing left to clean up */ }
+      throw error
+    }
   }
 
   private async saveArtwork(albumPicture: string, outputDir: string, options: DownloadOptions): Promise<void> {
@@ -4107,15 +4144,17 @@ export class Downloader extends EventEmitter {
       // Build artwork path
       const artworkPath = path.join(outputDir, `${coverName}.jpg`)
 
+      // This path belongs to a playlist, so a single track's album art is the
+      // wrong image for it. Leave it to savePlaylistCover.
+      if (this.playlistCoverPaths.has(artworkPath)) return
+
       // Don't overwrite existing artwork
-      if (fs.existsSync(artworkPath)) {
-        const stats = fs.statSync(artworkPath)
-        if (stats.size > 0) {
-          console.log(`[Downloader] Artwork already exists: ${artworkPath} (${stats.size} bytes)`)
-          return
-        }
-        // Remove zero-byte file
-        fs.unlinkSync(artworkPath)
+      // A non-empty file already on disk means another worker got here first.
+      // The atomic write below replaces whatever is present in one step, so a
+      // zero-byte leftover needs no unlink into a briefly-absent state.
+      if (fs.existsSync(artworkPath) && fs.statSync(artworkPath).size > 0) {
+        console.log(`[Downloader] Artwork already exists: ${artworkPath}`)
+        return
       }
 
       // Deezer CDN only reliably serves JPEG
@@ -4125,7 +4164,7 @@ export class Downloader extends EventEmitter {
       const buffer = await this.downloadBuffer(artworkUrl)
 
       if (buffer.length > 0) {
-        fs.writeFileSync(artworkPath, buffer)
+        this.writeFileAtomic(artworkPath, buffer)
         console.log(`[Downloader] Saved artwork: ${artworkPath} (${buffer.length} bytes)`)
       } else {
         console.error('[Downloader] Downloaded artwork is empty')
@@ -4140,6 +4179,13 @@ export class Downloader extends EventEmitter {
     const dedupKey = playlistName ? `${saveDir}:${playlistName}` : saveDir
     if (this.playlistCoverSaved.has(dedupKey)) return
     this.playlistCoverSaved.add(dedupKey)
+
+    // Claim the exact path synchronously, before the async cover fetch below,
+    // so album art from a track that finishes first cannot take it.
+    const claimName = playlistName
+      ? this.sanitizeFilename(playlistName)
+      : (options.metadataSettings?.albumCovers?.coverNameTemplate || 'cover')
+    this.playlistCoverPaths.add(path.join(saveDir, `${claimName}.jpg`))
 
     try {
       const albumCoverSettings = options.metadataSettings?.albumCovers || {
@@ -4161,13 +4207,12 @@ export class Downloader extends EventEmitter {
       const artworkPath = path.join(saveDir, `${coverName}.jpg`)
 
       // Don't overwrite existing artwork
-      if (fs.existsSync(artworkPath)) {
-        const stats = fs.statSync(artworkPath)
-        if (stats.size > 0) {
-          console.log(`[Downloader] Playlist cover already exists: ${artworkPath}`)
-          return
-        }
-        fs.unlinkSync(artworkPath)
+      // A non-empty file already on disk means another worker got here first.
+      // The atomic write below replaces whatever is present in one step, so a
+      // zero-byte leftover needs no unlink into a briefly-absent state.
+      if (fs.existsSync(artworkPath) && fs.statSync(artworkPath).size > 0) {
+        console.log(`[Downloader] Playlist cover already exists: ${artworkPath}`)
+        return
       }
 
       // Ensure directory exists
@@ -4188,7 +4233,7 @@ export class Downloader extends EventEmitter {
       const buffer = await this.downloadBuffer(url)
 
       if (buffer.length > 0) {
-        fs.writeFileSync(artworkPath, buffer)
+        this.writeFileAtomic(artworkPath, buffer)
         console.log(`[Downloader] Saved playlist cover: ${artworkPath} (${buffer.length} bytes)`)
       }
     } catch (error) {
@@ -4218,14 +4263,12 @@ export class Downloader extends EventEmitter {
       const artistImagePath = path.join(outputDir, `${sanitizedArtistName}.jpg`)
 
       // Don't overwrite existing artist image
-      if (fs.existsSync(artistImagePath)) {
-        const stats = fs.statSync(artistImagePath)
-        if (stats.size > 0) {
-          console.log(`[Downloader] Artist image already exists: ${artistImagePath}`)
-          return
-        }
-        // Remove zero-byte file
-        fs.unlinkSync(artistImagePath)
+      // A non-empty file already on disk means another worker got here first.
+      // The atomic write below replaces whatever is present in one step, so a
+      // zero-byte leftover needs no unlink into a briefly-absent state.
+      if (fs.existsSync(artistImagePath) && fs.statSync(artistImagePath).size > 0) {
+        console.log(`[Downloader] Artist image already exists: ${artistImagePath}`)
+        return
       }
 
       // The artist picture URL from Deezer public API is like:
@@ -4253,7 +4296,7 @@ export class Downloader extends EventEmitter {
       const buffer = await this.downloadBuffer(artworkUrl)
 
       if (buffer.length > 0) {
-        fs.writeFileSync(artistImagePath, buffer)
+        this.writeFileAtomic(artistImagePath, buffer)
         console.log(`[Downloader] Saved artist image: ${artistImagePath} (${buffer.length} bytes)`)
       } else {
         console.error('[Downloader] Downloaded artist image is empty')
@@ -4493,7 +4536,7 @@ export class Downloader extends EventEmitter {
     if (queueIndex <= 0) return false // Not found or already first
     const [item] = this.downloadQueue.splice(queueIndex, 1)
     this.downloadQueue.unshift(item)
-    console.log(`[Downloader] Moved ${downloadId} to front of queue (was position ${queueIndex + 1})`)
+    console.log(`[Downloader] Moved ${logSafe(downloadId)} to front of queue (was position ${queueIndex + 1})`)
     return true
   }
 
@@ -4542,6 +4585,7 @@ export class Downloader extends EventEmitter {
     this.reservedPaths.clear()
     this.albumInfoCache.clear()
     this.playlistCoverSaved.clear()
+    this.playlistCoverPaths.clear()
     // Clear activity timers before clearing trackers
     for (const tracker of this.playlistM3UTracker.values()) {
       if (tracker.activityTimer) clearTimeout(tracker.activityTimer)

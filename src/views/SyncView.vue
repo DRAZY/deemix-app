@@ -233,6 +233,19 @@ function toggleArtistErrors(id: string) {
   }
 }
 
+/**
+ * Hostname of a pasted link, tolerating input typed without a scheme.
+ * Returns '' when the input cannot be parsed as a URL at all.
+ */
+function hostnameOf(input: string): string {
+  for (const candidate of [input, `https://${input}`]) {
+    try {
+      return new URL(candidate).hostname.toLowerCase()
+    } catch { /* fall through and try the next form */ }
+  }
+  return ''
+}
+
 async function detectUrl() {
   const url = playlistUrl.value.trim()
 
@@ -252,8 +265,12 @@ async function detectUrl() {
     return
   }
 
-  // Deezer share link (link.deezer.com/s/...) — resolve via server
-  if (url.match(/link\.deezer\.com\//)) {
+  // Deezer share link (link.deezer.com/s/...) — resolve via server.
+  // Compared against the parsed hostname rather than searched for as a
+  // substring: an unanchored pattern also matches hosts such as
+  // link.deezer.com.example.com, and any host carrying link.deezer.com/ in its
+  // path, either of which would hand an arbitrary URL to the resolver below.
+  if (hostnameOf(url) === 'link.deezer.com') {
     resolving.value = true
     detectedSource.value = null
     detectedId.value = ''

@@ -194,9 +194,12 @@ function probeMp3(fd: number, size: number): AudioProbeResult | null {
 export function probeAudioFile(filePath: string): AudioProbeResult | null {
   let fd: number | undefined
   try {
-    const size = fs.statSync(filePath).size
-    if (size < 32) return null
+    // Open first, then stat the descriptor. Statting the path and reopening it
+    // leaves a window in which the file can be replaced between the two calls,
+    // so the size could describe a different file than the one being read.
     fd = fs.openSync(filePath, 'r')
+    const size = fs.fstatSync(fd).size
+    if (size < 32) return null
     // FLAC's magic is unambiguous, so test it first and only fall through to the
     // (heuristic) MP3 frame scan when it fails.
     return probeFlac(fd) ?? probeMp3(fd, size)

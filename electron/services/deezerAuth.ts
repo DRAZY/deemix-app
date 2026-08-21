@@ -4,6 +4,9 @@ import crypto from 'crypto'
 import { URL } from 'url'
 import dns from 'dns'
 
+/** Collapse newlines so remote-supplied text cannot forge extra log lines. */
+const logSafe = (v: unknown): string => String(v ?? '').replace(/[\r\n]+/g, ' ')
+
 // Configure DNS to use both IPv4 and IPv6 with IPv4 preferred
 // This helps with Electron's DNS resolution issues
 dns.setDefaultResultOrder('ipv4first')
@@ -53,7 +56,7 @@ async function withRetry<T>(
       // in lockstep and re-trip the limit together (issue #84).
       const target = baseDelayMs * Math.pow(2, attempt - 1)
       const delay = Math.round(target * (0.5 + Math.random()))
-      console.log(`[DeezerAuth] ${operationName} failed (attempt ${attempt}/${maxRetries}): ${error.code || error.message}. Retrying in ${delay}ms...`)
+      console.log(`[DeezerAuth] ${logSafe(operationName)} failed (attempt ${attempt}/${maxRetries}): ${logSafe(error.code || error.message)}. Retrying in ${delay}ms...`)
       await new Promise(resolve => setTimeout(resolve, delay))
     }
   }
@@ -437,7 +440,7 @@ export class DeezerAuth extends EventEmitter {
       })
 
       req.on('error', (err) => {
-        console.error('[DeezerAuth] Failed to get initial cookies:', err)
+        console.error('[DeezerAuth] Failed to get initial cookies:', logSafe(err?.message ?? err))
         reject(err)
       })
       req.end()
@@ -557,7 +560,7 @@ export class DeezerAuth extends EventEmitter {
       return this.session
 
     } catch (error: any) {
-      console.error('[DeezerAuth] Login failed:', error.message)
+      console.error('[DeezerAuth] Login failed:', logSafe(error.message))
       this.session = null
       this.cookies.clear()
       this.apiToken = ''
@@ -626,7 +629,7 @@ export class DeezerAuth extends EventEmitter {
       return await this.login(authResponse.arl)
 
     } catch (error: any) {
-      console.error('[DeezerAuth] Email login failed:', error.message)
+      console.error('[DeezerAuth] Email login failed:', logSafe(error.message))
       this.session = null
       throw error
     }
@@ -666,7 +669,7 @@ export class DeezerAuth extends EventEmitter {
       return await this.login(authResponse.arl)
 
     } catch (error: any) {
-      console.error('[DeezerAuth] CAPTCHA login failed:', error.message)
+      console.error('[DeezerAuth] CAPTCHA login failed:', logSafe(error.message))
       throw error
     }
   }
@@ -829,7 +832,7 @@ export class DeezerAuth extends EventEmitter {
       })
 
       req.on('error', (err) => {
-        console.error('[DeezerAuth] Email login request error:', err)
+        console.error('[DeezerAuth] Email login request error:', logSafe(err?.message ?? err))
         reject(err)
       })
       req.write(postData)
@@ -921,7 +924,7 @@ export class DeezerAuth extends EventEmitter {
       console.log('[DeezerAuth] validateSession: Session is valid')
       return true
     } catch (error: any) {
-      console.error('[DeezerAuth] validateSession error:', error.message)
+      console.error('[DeezerAuth] validateSession error:', logSafe(error.message))
       // Don't immediately invalidate on network errors - could be temporary
       if (error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET') {
         console.log('[DeezerAuth] validateSession: Network error, keeping session')
@@ -938,7 +941,7 @@ export class DeezerAuth extends EventEmitter {
    * to maintain download history across sessions
    */
   private handleAuthExpired(reason: string): void {
-    console.log('[DeezerAuth] Auth expired:', reason)
+    console.log('[DeezerAuth] Auth expired:', logSafe(reason))
     const wasLoggedIn = this.session !== null
 
     // Stop periodic validation
@@ -1176,7 +1179,7 @@ export class DeezerAuth extends EventEmitter {
       })
 
       req.on('error', (err) => {
-        console.error('[DeezerAuth] API request error:', err)
+        console.error('[DeezerAuth] API request error:', logSafe(err?.message ?? err))
         reject(err)
       })
       req.write(body)
@@ -1344,7 +1347,7 @@ export class DeezerAuth extends EventEmitter {
         LANG: 'en',
         OPTIONS: []
       }).catch((error: any) => {
-        console.log(`[DeezerAuth] New-releases module ${slug} fetch failed:`, error.message)
+        console.log(`[DeezerAuth] New-releases module ${logSafe(slug)} fetch failed:`, logSafe(error.message))
         return null
       })
     ))
@@ -1500,7 +1503,7 @@ export class DeezerAuth extends EventEmitter {
       })
       return response.results
     } catch (error: any) {
-      console.log(`[DeezerAuth] Failed to get lyrics for track ${trackId}:`, error.message)
+      console.log(`[DeezerAuth] Failed to get lyrics for track ${logSafe(trackId)}:`, logSafe(error.message))
       return null
     }
   }
@@ -1658,7 +1661,7 @@ export class DeezerAuth extends EventEmitter {
 
       return result
     } catch (error: any) {
-      console.error('[DeezerAuth] Failed to get artist discography:', error.message)
+      console.error('[DeezerAuth] Failed to get artist discography:', logSafe(error.message))
       return result
     }
   }
@@ -1756,7 +1759,7 @@ export class DeezerAuth extends EventEmitter {
           }
         }
       } catch (isrcError: any) {
-        console.warn('[DeezerAuth] ISRC lookup failed:', isrcError.message)
+        console.warn('[DeezerAuth] ISRC lookup failed:', logSafe(isrcError.message))
       }
     }
 

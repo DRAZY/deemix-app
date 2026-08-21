@@ -37,6 +37,9 @@ import path from 'path'
 import { EventEmitter } from 'events'
 import { app } from 'electron'
 
+/** Collapse newlines so remote-supplied text cannot forge extra log lines. */
+const logSafe = (v: unknown): string => String(v ?? '').replace(/[\r\n]+/g, ' ')
+
 const QOBUZ_API_BASE = 'https://www.qobuz.com/api.json/0.2'
 const QOBUZ_LOGIN_PAGE = 'https://play.qobuz.com/login'
 const QOBUZ_PLAY_BASE = 'https://play.qobuz.com'
@@ -541,7 +544,7 @@ class QobuzAuth extends EventEmitter {
       const top = page?.top_tracks
       if (Array.isArray(top) && top.length > 0) return top.slice(0, limit)
     } catch (e: any) {
-      console.log('[QobuzAuth] artist/page unavailable, using extra=tracks:', e.message)
+      console.log('[QobuzAuth] artist/page unavailable, using extra=tracks:', logSafe(e.message))
     }
     const artist = await this.apiGet(`artist/get?artist_id=${artistId}&extra=tracks&limit=${limit}&app_id=${appId}`, true)
     return ((artist?.tracks?.items || []) as any[]).slice(0, limit)
@@ -561,7 +564,7 @@ class QobuzAuth extends EventEmitter {
       this.apiGet(`artist/getReleasesList?artist_id=${artistId}&release_type=${b.qobuzType}&limit=100&sort=release_date&app_id=${appId}`, true)
         .then(r => ({ b, items: (r?.items || r?.albums?.items || []) as any[] }))
         .catch((e: any) => {
-          console.log(`[QobuzAuth] getReleasesList ${b.qobuzType} failed:`, e.message)
+          console.log(`[QobuzAuth] getReleasesList ${logSafe(b.qobuzType)} failed:`, logSafe(e.message))
           return { b, items: [] as any[] }
         })
     ))
@@ -616,7 +619,7 @@ class QobuzAuth extends EventEmitter {
         if (!Array.isArray(items) || items.length === 0) break // upstream stopped early — keep what we have
         tracks.items.push(...items)
       } catch (e: any) {
-        console.log(`[QobuzAuth] Track pagination stopped at ${tracks.items.length}/${total}:`, e.message)
+        console.log(`[QobuzAuth] Track pagination stopped at ${tracks.items.length}/${total}:`, logSafe(e.message))
         break
       }
     }

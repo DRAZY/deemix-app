@@ -136,6 +136,18 @@ Confusingly, entering your credentials can still appear to work, because Spotify
 
 **Fix:** put Spotify Premium on the account that owns the developer app, or create the app under an account that already has it. Spotify notes it can take a few hours after the subscription changes before requests are allowed.
 
+### Spotify returns the playlist name but none of the songs
+
+The message says Spotify sent the playlist details but not the songs in it.
+
+The same [February 2026](https://developer.spotify.com/blog/2026-02-06-update-on-developer-access-and-platform-security) change restricts *what* a developer app receives, not just whether it works. A playlist's contents are only returned for the account that authorised the request. Deemix Remastered signs in with a Client ID and Secret and no personal Spotify login, so there is no such account and the songs are withheld for every playlist, including ones you created yourself. Copying tracks into a playlist of your own does not help, for the same reason.
+
+This only affects Client IDs created recently. Credentials registered before February are still served the songs, which is why most setups are unaffected.
+
+**Why there is no "sign in with Spotify" button.** Adding a personal login would create the authorising account Spotify wants, and it was considered. It was not built, for two reasons. February also removed public playlist browsing from the supported endpoints, so signing in would likely restore your own playlists without restoring the ability to open a link someone sent you, which is the main reason people use this. And it would mean maintaining a second authentication path against an API that has narrowed twice in eighteen months. Spotify support here is a convenience for converting links; Deezer and Qobuz are what the app is for.
+
+**Fix:** in the Spotify Developer Dashboard, request extended access for your app so it leaves Development Mode. That is Spotify's own route out of these restrictions and it is the only one available today.
+
 ### Spotify playlist conversion finds wrong tracks
 
 Spotify-to-Deezer matching uses ISRC codes (the standardized track identifier) first, then falls back to title+artist search. ISRC matching is exact; the search fallback is best-effort and can mismatch on covers, live versions, or remixes.

@@ -8,6 +8,9 @@ import { runPool, safeWriteJson, quarantineCorruptFile } from './playlistSync'
 import { fetchDeezerPublicJson, fetchDeezerPublicPaginated } from './deezerPublicApi'
 import { buildAlbumContext, type AlbumContext } from './albumContext'
 
+/** Collapse newlines so remote-supplied text cannot forge extra log lines. */
+const logSafe = (v: unknown): string => String(v ?? '').replace(/[\r\n]+/g, ' ')
+
 // Reuse the SyncSchedule contract from playlistSync to keep one source of truth
 // for cadence semantics across both engines.
 export type SyncSchedule = 'launch' | '1h' | '6h' | '12h' | '24h' | 'manual'
@@ -583,7 +586,7 @@ class ArtistSyncEngine extends EventEmitter {
     // Soft-skip at the concurrency cap — the 60s scheduler retries skipped
     // entries once active syncs drain. See playlistSync.ts for context (#68).
     if (this.activeSyncs.size >= 3) {
-      console.log(`[ArtistSync] Skipping initial sync for ${id} — at concurrency cap; scheduler will retry`)
+      console.log(`[ArtistSync] Skipping initial sync for ${logSafe(id)} — at concurrency cap; scheduler will retry`)
       return {
         artistId: id,
         newAlbums: 0,
@@ -775,7 +778,7 @@ class ArtistSyncEngine extends EventEmitter {
                   })
                   return { ok: true as const, trackId: track.id }
                 } catch (err: any) {
-                  console.error(`[ArtistSync] Track ${track.id} of album ${album.title} failed:`, err.message)
+                  console.error(`[ArtistSync] Track ${logSafe(track.id)} of album ${logSafe(album.title)} failed:`, logSafe(err.message))
                   return { ok: false as const, trackId: track.id, reason: err.message || 'Download failed', code: err.code as string | undefined }
                 }
               }
