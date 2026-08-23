@@ -248,6 +248,7 @@
     "embedArtwork": "Intégrer la pochette dans le fichier",
     "saveLyrics": "Enregistrer les paroles",
     "syncedLyrics": "Paroles synchronisées (.lrc)",
+    "preferSyncedLyrics": "Ignorer le .txt simple lorsque des paroles synchronisées existent",
     "embeddedArtwork": "Taille de la pochette intégrée",
     "localArtwork": "Taille de la pochette locale",
     "saveCovers": "Enregistrer les pochettes d'album",

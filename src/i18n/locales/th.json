@@ -299,6 +299,7 @@
     "embedArtwork": "ฝังภาพปกในไฟล์",
     "saveLyrics": "บันทึกเนื้อเพลง",
     "syncedLyrics": "เนื้อเพลงซิงค์ (.lrc)",
+    "preferSyncedLyrics": "ข้ามไฟล์ .txt ธรรมดาเมื่อมีเนื้อเพลงซิงค์",
     "embeddedArtwork": "ขนาดภาพปกที่ฝัง",
     "localArtwork": "ขนาดภาพปกในเครื่อง",
     "saveCovers": "บันทึกปกอัลบั้ม",

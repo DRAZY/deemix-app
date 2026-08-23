@@ -248,6 +248,7 @@
     "embedArtwork": "在文件中嵌入封面",
     "saveLyrics": "保存歌词",
     "syncedLyrics": "同步歌词 (.lrc)",
+    "preferSyncedLyrics": "存在同步歌词时跳过纯文本 .txt",
     "embeddedArtwork": "内嵌封面大小",
     "localArtwork": "本地封面大小",
     "saveCovers": "保存专辑封面",

@@ -248,6 +248,7 @@
     "embedArtwork": "Tanamkan sampul ke berkas",
     "saveLyrics": "Simpan lirik",
     "syncedLyrics": "Lirik sinkron (.lrc)",
+    "preferSyncedLyrics": "Lewati .txt biasa jika lirik sinkron tersedia",
     "embeddedArtwork": "Ukuran sampul tertanam",
     "localArtwork": "Ukuran sampul lokal",
     "saveCovers": "Simpan sampul album",

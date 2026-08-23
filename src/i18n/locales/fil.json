@@ -248,6 +248,7 @@
     "embedArtwork": "I-embed ang artwork sa file",
     "saveLyrics": "I-save ang lyrics",
     "syncedLyrics": "Synced na lyrics (.lrc)",
+    "preferSyncedLyrics": "Laktawan ang plain .txt kapag may synced na lyrics",
     "embeddedArtwork": "Sukat ng embedded artwork",
     "localArtwork": "Sukat ng local artwork",
     "saveCovers": "I-save ang mga album cover",

@@ -248,6 +248,7 @@
     "embedArtwork": "Artwork in Datei einbetten",
     "saveLyrics": "Liedtexte speichern",
     "syncedLyrics": "Synchronisierte Liedtexte (.lrc)",
+    "preferSyncedLyrics": "Einfache .txt überspringen, wenn synchronisierte Liedtexte vorhanden sind",
     "embeddedArtwork": "Eingebettete Covergröße",
     "localArtwork": "Lokale Covergröße",
     "saveCovers": "Albumcover speichern",
