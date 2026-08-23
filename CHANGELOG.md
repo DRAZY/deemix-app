@@ -19,6 +19,7 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 ### Added
 
 - **Click a playlist's creator to browse their other playlists (#135, requested by @alex5908).** On a Deezer playlist, the creator's name under the title is now a link that opens everything else they've shared, so finding one playlist you like leads to the rest of that person's taste. Creators who keep their profile private show as plain text instead of a link, since there's nothing behind it to open. Qobuz playlists list an owner without a profile to link to, so those are unchanged.
+- **Retag can now backfill the copyright tag (#139).** Anything downloaded before 2.5.10 has no copyright tag, and Retag couldn't repair it because it reads a different source than downloads do. Point Retag at those folders with Copyright ticked and it fills them in, no re-downloading needed. Requires a Deezer login; without one the field is skipped and everything else still retags.
 - **A setting to skip the plain .txt when synced lyrics are available (#141, requested by @shark0151).** The app used to save both the .lrc and the .txt for the same track, which meant two files saying the same thing. Turn this on and only the .lrc is kept, with the .txt still written for tracks that have no synced version. Off by default, so nothing about your existing library changes unless you ask.
 
 ## [2.5.10] - 2026-08-23
