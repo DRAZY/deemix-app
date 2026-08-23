@@ -1220,7 +1220,10 @@ export class Downloader extends EventEmitter {
     // Get track info
     let trackInfo
     try {
-      trackInfo = await deezerAuth.getTrackInfo(options.trackId)
+      // Ask for the copyright enrichment only when the tag is actually enabled,
+      // so users who don't want it don't pay a second gateway call per track.
+      const wantsCopyright = options.metadataSettings?.tags?.copyright === true
+      trackInfo = await deezerAuth.getTrackInfo(options.trackId, { withCopyright: wantsCopyright })
       console.log(`[Downloader] Got track info:`, trackInfo ? `${trackInfo.SNG_TITLE} by ${trackInfo.ART_NAME}` : 'null')
     } catch (error: any) {
       console.error(`[Downloader] Failed to get track info:`, logSafe(error.message))
@@ -1340,7 +1343,7 @@ export class Downloader extends EventEmitter {
         // a different album where it has a different position
         const originalTrackNumber = trackInfo.TRACK_NUMBER
         const originalDiskNumber = trackInfo.DISK_NUMBER
-        const resolvedInfo = await deezerAuth.getTrackInfo(result.resolvedTrackId)
+        const resolvedInfo = await deezerAuth.getTrackInfo(result.resolvedTrackId, { withCopyright: options.metadataSettings?.tags?.copyright === true })
         if (resolvedInfo) {
           trackInfo = resolvedInfo
           // Restore original position so the file is numbered correctly on this
