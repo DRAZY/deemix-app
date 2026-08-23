@@ -10,6 +10,12 @@ Entries use a compact format, short bullets, one line each. Full per-version det
 
 ## [Unreleased]
 
+## [2.5.10] - 2026-08-23
+
+### Fixed
+
+- **Copyright was missing from every Deezer download (#139, reported by @lukisbaby).** Deezer publishes copyright, but not on the endpoint the app was asking. The call it used for track details doesn't include the field at all, so the tag had nothing to write and silently stayed empty. It now reads the endpoint that does carry it, and only when the copyright tag is switched on, so nobody pays an extra request for a tag they don't use. Applies to both MP3 and FLAC.
+
 ## [2.5.9] - 2026-08-21
 
 ### Summary
