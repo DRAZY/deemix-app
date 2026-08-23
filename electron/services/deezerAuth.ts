@@ -1426,7 +1426,20 @@ export class DeezerAuth extends EventEmitter {
     )
   }
 
-  async getTrackInfo(trackId: string | number): Promise<any> {
+  /**
+   * Track metadata from the private gateway.
+   *
+   * `song.getData` is the primary source and always has been. It does NOT carry
+   * COPYRIGHT — verified against the live gateway, whose key list runs
+   * ...EXPLICIT_TRACK_CONTENT, GENRE_ID, ISRC... with no copyright field at all.
+   * `deezer.pageTrack` returns a wider DATA object that does include it, which
+   * is why original deemix tags copyright and this app did not (#139).
+   *
+   * pageTrack is a second network call, so it is only made when the caller
+   * actually wants the field. Failure to enrich is never fatal: the track keeps
+   * the metadata song.getData already returned.
+   */
+  async getTrackInfo(trackId: string | number, opts: { withCopyright?: boolean } = {}): Promise<any> {
     const cacheKey = `track_${trackId}`
 
     // Check cache first. Return a defensive copy — processDownload mutates the
@@ -1459,9 +1472,26 @@ export class DeezerAuth extends EventEmitter {
       throw new Error('Failed to get track info - empty response from Deezer')
     }
 
+    const info = response.results
+
+    // Enrich with COPYRIGHT from pageTrack when asked and song.getData lacked it.
+    if (opts.withCopyright && !info.COPYRIGHT) {
+      try {
+        const page = await this.getTrackPage(trackId)
+        const copyright = page?.DATA?.COPYRIGHT
+        if (copyright) {
+          info.COPYRIGHT = copyright
+          console.log(`[DeezerAuth] Enriched track ${logSafe(trackId)} with COPYRIGHT from pageTrack`)
+        }
+      } catch (e: any) {
+        // Non-fatal by design: the download proceeds without the copyright tag.
+        console.log('[DeezerAuth] pageTrack copyright enrichment failed:', logSafe(e?.message ?? e))
+      }
+    }
+
     // Cache the result — and return a copy for the same reason as above.
-    this.setCachedData(this.trackInfoCache, cacheKey, response.results)
-    return structuredClone(response.results)
+    this.setCachedData(this.trackInfoCache, cacheKey, info)
+    return structuredClone(info)
   }
 
   // Try to get track info with country availability using song.getListData
