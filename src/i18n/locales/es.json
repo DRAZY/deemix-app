@@ -528,6 +528,13 @@
     "filterPlaceholder": "Filtrar por nombre…",
     "noMatches": "Sin resultados"
   },
+  "userPlaylists": {
+    "creator": "Creador",
+    "unavailable": "Listas no disponibles",
+    "loadFailed": "No se pudieron cargar las listas de este creador.",
+    "noPlaylists": "Sin listas públicas",
+    "playlistCount": "{count} listas"
+  },
   "genres": {
     "title": "Géneros",
     "heroQobuz": "El catálogo completo de Qobuz por género — paginado hasta el final de cada género",

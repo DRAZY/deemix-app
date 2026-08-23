@@ -867,6 +867,13 @@
     "filterPlaceholder": "Filter by name…",
     "noMatches": "No matches"
   },
+  "userPlaylists": {
+    "creator": "Creator",
+    "unavailable": "Playlists unavailable",
+    "loadFailed": "Could not load this creator's playlists.",
+    "noPlaylists": "No public playlists",
+    "playlistCount": "{count} playlists"
+  },
   "about": {
     "appName": "Deemix Remastered",
     "tagline": "The Classic Downloader, Remastered",

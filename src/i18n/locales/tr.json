@@ -528,6 +528,13 @@
     "filterPlaceholder": "Ada göre filtrele…",
     "noMatches": "Eşleşme yok"
   },
+  "userPlaylists": {
+    "creator": "Oluşturan",
+    "unavailable": "Çalma listeleri kullanılamıyor",
+    "loadFailed": "Bu kullanıcının çalma listeleri yüklenemedi.",
+    "noPlaylists": "Herkese açık çalma listesi yok",
+    "playlistCount": "{count} çalma listesi"
+  },
   "retag": {
     "viaQobuzTip": "Etiketler Qobuz'dan alındı — Deezer bu ISRC için eşleşme bulamadı"
   },

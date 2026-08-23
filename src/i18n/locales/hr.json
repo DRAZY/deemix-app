@@ -528,6 +528,13 @@
     "filterPlaceholder": "Filtriraj po nazivu…",
     "noMatches": "Nema rezultata"
   },
+  "userPlaylists": {
+    "creator": "Autor",
+    "unavailable": "Popisi nisu dostupni",
+    "loadFailed": "Nije moguće učitati popise ovog autora.",
+    "noPlaylists": "Nema javnih popisa",
+    "playlistCount": "{count} popisa"
+  },
   "genres": {
     "freshPicks": "Svježi odabir",
     "heroDeezer": "Deezer urednički odabir, ljestvice i paginirana nova izdanja po žanru",

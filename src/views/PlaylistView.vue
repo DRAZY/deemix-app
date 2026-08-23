@@ -26,6 +26,16 @@ const loadingProgress = ref(0)
 const loadingTotal = ref(0)
 const isLoadingTracks = ref(false)
 
+// A creator is browsable only on the Deezer path (Qobuz owners carry no id) and
+// only when the profile is not anonymous. Deezer returns the same "no data"
+// error for a private profile and a missing one, so a name check up front is
+// what keeps users out of a dead end they cannot act on.
+const creatorIsBrowsable = computed(() => {
+  const c: any = playlist.value?.creator
+  if (!c?.id || (playlist.value as any)?.source === 'qobuz') return false
+  return String(c.name || '').trim().toLowerCase() !== 'anonymous'
+})
+
 const totalDuration = computed(() => {
   const total = tracks.value.reduce((sum, t) => sum + (t.duration || 0), 0)
   const hours = Math.floor(total / 3600)
@@ -215,7 +225,19 @@ const contextMenuItems = computed(() => {
             {{ playlist.description }}
           </p>
           <p class="text-foreground-muted mb-4">
-            <span v-if="playlist.creator">{{ playlist.creator.name }} &bull; </span>
+            <span v-if="playlist.creator">
+              <!-- Deezer creators with a public profile link through to their
+                   other playlists (#135). Qobuz gives an owner name with no id,
+                   and creators shown as "Anonymous" have no public profile, so
+                   both render as plain text rather than a link into an error. -->
+              <router-link
+                v-if="creatorIsBrowsable"
+                :to="`/user/${playlist.creator.id}`"
+                class="hover:text-primary-500 transition-colors underline decoration-dotted underline-offset-4"
+              >{{ playlist.creator.name }}</router-link>
+              <template v-else>{{ playlist.creator.name }}</template>
+              &bull;
+            </span>
             {{ t('playlistView.tracksCount', { count: tracks.length, duration: totalDuration }) }}
           </p>
           <div class="flex gap-3">

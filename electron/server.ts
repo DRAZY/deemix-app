@@ -16,6 +16,7 @@ import { artistSync, type FirstSyncMode, type ArtistSyncFilters } from './servic
 import { scanFolder, retagFile, retagFileInFolder, type RetagFields } from './services/retagger'
 import { libraryIndex } from './services/libraryIndex'
 import { buildAlbumContext } from './services/albumContext'
+import { fetchDeezerPublicJson, fetchDeezerPublicPaginated } from './services/deezerPublicApi'
 
 /** Collapse newlines so remote-supplied text cannot forge extra log lines. */
 const logSafe = (v: unknown): string => String(v ?? '').replace(/[\r\n]+/g, ' ')
@@ -857,6 +858,10 @@ export class DeemixServer extends EventEmitter {
 
       case '/api/new-releases':
         await this.handleNewReleases(url, res)
+        break
+
+      case '/api/user/playlists':
+        await this.handleUserPlaylists(url, res)
         break
 
       case '/api/analyze':
@@ -2713,6 +2718,53 @@ export class DeemixServer extends EventEmitter {
       this.sendJSON(res, { data: albums, total: albums.length })
     } catch (error: any) {
       console.error('[Server] New releases fetch error:', logSafe(error.message))
+      this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
+    }
+  }
+
+  /**
+   * Public playlists belonging to one Deezer user (#135).
+   *
+   * Deezer returns a flat error for a profile that isn't public, rather than an
+   * empty list, so that case is surfaced as 404 with a readable message instead
+   * of a 500. Most private profiles display as "Anonymous" and the UI declines
+   * to link those at all, but the name is not a guarantee, so this still has to
+   * handle a private profile arriving here.
+   */
+  private async handleUserPlaylists(url: URL, res: ServerResponse): Promise<void> {
+    const userId = (url.searchParams.get('id') || '').trim()
+
+    if (!/^\d+$/.test(userId)) {
+      this.sendJSON(res, { error: 'A numeric Deezer user id is required' }, 400)
+      return
+    }
+
+    try {
+      const playlists = await fetchDeezerPublicPaginated<any>(
+        `https://api.deezer.com/user/${userId}/playlists?limit=100`,
+        `user ${userId} playlists`
+      )
+      const user = await fetchDeezerPublicJson<any>(
+        `https://api.deezer.com/user/${userId}`,
+        { label: `user ${userId}` }
+      ).catch(() => null)
+
+      this.sendJSON(res, {
+        user: user ? { id: user.id, name: user.name, picture: user.picture_medium || user.picture || '' } : { id: Number(userId), name: '', picture: '' },
+        data: playlists,
+        total: playlists.length
+      })
+    } catch (error: any) {
+      const msg = String(error?.message || '')
+      // Deezer answers a private profile and a non-existent one identically:
+      // {"type":"DataException","message":"no data","code":800}. There is no way
+      // to tell them apart from here, so the message says what is observable
+      // rather than asserting a reason the API never gave us.
+      if (/no data|DataException/i.test(msg)) {
+        this.sendJSON(res, { error: "This profile has no public playlists. It's either private or has none shared." }, 404)
+        return
+      }
+      console.error('[Server] User playlists fetch error:', logSafe(msg))
       this.sendJSON(res, { error: sanitizeErrorMessage(error) }, 500)
     }
   }

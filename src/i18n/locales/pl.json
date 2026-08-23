@@ -528,6 +528,13 @@
     "filterPlaceholder": "Filtruj według nazwy…",
     "noMatches": "Brak wyników"
   },
+  "userPlaylists": {
+    "creator": "Twórca",
+    "unavailable": "Playlisty niedostępne",
+    "loadFailed": "Nie udało się wczytać playlist tego twórcy.",
+    "noPlaylists": "Brak publicznych playlist",
+    "playlistCount": "{count} playlist"
+  },
   "genres": {
     "freshPicks": "Świeże propozycje",
     "heroDeezer": "Redakcyjne typy Deezera, listy przebojów i podzielone na strony nowości według gatunku",

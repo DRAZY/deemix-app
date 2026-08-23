@@ -610,6 +610,13 @@
     "filterPlaceholder": "Lọc theo tên…",
     "noMatches": "Không có kết quả"
   },
+  "userPlaylists": {
+    "creator": "Người tạo",
+    "unavailable": "Không có danh sách phát",
+    "loadFailed": "Không thể tải danh sách phát của người này.",
+    "noPlaylists": "Không có danh sách phát công khai",
+    "playlistCount": "{count} danh sách phát"
+  },
   "retag": {
     "viaQobuzTip": "Thẻ được lấy từ Qobuz — Deezer không tìm thấy kết quả khớp cho ISRC này"
   },

@@ -528,6 +528,13 @@
     "filterPlaceholder": "Nach Name filtern…",
     "noMatches": "Keine Treffer"
   },
+  "userPlaylists": {
+    "creator": "Ersteller",
+    "unavailable": "Wiedergabelisten nicht verfügbar",
+    "loadFailed": "Die Wiedergabelisten dieses Erstellers konnten nicht geladen werden.",
+    "noPlaylists": "Keine öffentlichen Wiedergabelisten",
+    "playlistCount": "{count} Wiedergabelisten"
+  },
   "genres": {
     "title": "Genres",
     "heroQobuz": "Der vollständige Qobuz-Katalog nach Genre — paginiert bis zum Ende jedes Genres",
