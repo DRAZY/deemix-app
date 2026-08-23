@@ -528,6 +528,13 @@
     "filterPlaceholder": "I-filter ayon sa pangalan…",
     "noMatches": "Walang tugma"
   },
+  "userPlaylists": {
+    "creator": "Creator",
+    "unavailable": "Hindi available ang playlists",
+    "loadFailed": "Hindi ma-load ang playlists ng creator na ito.",
+    "noPlaylists": "Walang pampublikong playlist",
+    "playlistCount": "{count} playlists"
+  },
   "genres": {
     "title": "Mga Genre",
     "heroQobuz": "Ang buong katalogo ng Qobuz ayon sa genre — pinaghahati-hati hanggang sa dulo ng bawat genre",

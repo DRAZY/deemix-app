@@ -610,6 +610,13 @@
     "filterPlaceholder": "กรองตามชื่อ…",
     "noMatches": "ไม่พบรายการ"
   },
+  "userPlaylists": {
+    "creator": "ผู้สร้าง",
+    "unavailable": "ไม่สามารถใช้เพลย์ลิสต์ได้",
+    "loadFailed": "ไม่สามารถโหลดเพลย์ลิสต์ของผู้สร้างรายนี้",
+    "noPlaylists": "ไม่มีเพลย์ลิสต์สาธารณะ",
+    "playlistCount": "{count} เพลย์ลิสต์"
+  },
   "retag": {
     "viaQobuzTip": "แท็กมาจาก Qobuz — Deezer ไม่พบรายการที่ตรงกับ ISRC นี้"
   },

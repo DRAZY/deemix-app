@@ -528,6 +528,13 @@
     "filterPlaceholder": "按名称筛选…",
     "noMatches": "无匹配项"
   },
+  "userPlaylists": {
+    "creator": "创建者",
+    "unavailable": "播放列表不可用",
+    "loadFailed": "无法加载此创建者的播放列表。",
+    "noPlaylists": "没有公开播放列表",
+    "playlistCount": "{count} 个播放列表"
+  },
   "retag": {
     "viaQobuzTip": "标签来源于 Qobuz — Deezer 未找到与此 ISRC 匹配的内容"
   },

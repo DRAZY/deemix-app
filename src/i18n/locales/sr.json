@@ -610,6 +610,13 @@
     "filterPlaceholder": "Филтрирај по називу…",
     "noMatches": "Нема резултата"
   },
+  "userPlaylists": {
+    "creator": "Аутор",
+    "unavailable": "Плејлисте нису доступне",
+    "loadFailed": "Није могуће учитати плејлисте овог аутора.",
+    "noPlaylists": "Нема јавних плејлисти",
+    "playlistCount": "{count} плејлисти"
+  },
   "genres": {
     "freshPicks": "Свеж избор",
     "heroDeezer": "Deezer уреднички избор, топ-листе и нова издања по жанру са страничењем",

@@ -64,6 +64,12 @@ const router = createRouter({
       component: () => import('./views/PlaylistView.vue')
     },
     {
+      // A Deezer playlist creator's public playlists (#135)
+      path: '/user/:id',
+      name: 'user-playlists',
+      component: () => import('./views/UserPlaylistsView.vue')
+    },
+    {
       path: '/charts',
       name: 'charts',
       component: () => import('./views/ChartsView.vue')

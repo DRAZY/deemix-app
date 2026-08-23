@@ -528,6 +528,13 @@
     "filterPlaceholder": "تصفية حسب الاسم…",
     "noMatches": "لا توجد نتائج"
   },
+  "userPlaylists": {
+    "creator": "المُنشئ",
+    "unavailable": "قوائم التشغيل غير متاحة",
+    "loadFailed": "تعذر تحميل قوائم تشغيل هذا المُنشئ.",
+    "noPlaylists": "لا توجد قوائم تشغيل عامة",
+    "playlistCount": "{count} قائمة تشغيل"
+  },
   "genres": {
     "title": "الأنواع",
     "heroQobuz": "كتالوج Qobuz الكامل حسب النوع — مقسّم إلى صفحات حتى نهاية كل نوع",

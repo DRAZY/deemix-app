@@ -528,6 +528,13 @@
     "filterPlaceholder": "이름으로 필터…",
     "noMatches": "일치하는 항목 없음"
   },
+  "userPlaylists": {
+    "creator": "제작자",
+    "unavailable": "재생목록을 사용할 수 없음",
+    "loadFailed": "이 제작자의 재생목록을 불러오지 못했습니다.",
+    "noPlaylists": "공개 재생목록 없음",
+    "playlistCount": "재생목록 {count}개"
+  },
   "genres": {
     "freshPicks": "새로운 추천",
     "heroDeezer": "장르별 Deezer 편집 추천, 차트 및 페이지 단위 신규 발매",

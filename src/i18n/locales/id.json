@@ -465,6 +465,13 @@
     "filterPlaceholder": "Filter berdasarkan nama…",
     "noMatches": "Tidak ada hasil"
   },
+  "userPlaylists": {
+    "creator": "Pembuat",
+    "unavailable": "Playlist tidak tersedia",
+    "loadFailed": "Tidak dapat memuat playlist pembuat ini.",
+    "noPlaylists": "Tidak ada playlist publik",
+    "playlistCount": "{count} playlist"
+  },
   "genres": {
     "freshPicks": "Pilihan Terbaru",
     "heroDeezer": "Pilihan editorial Deezer, tangga lagu & rilis baru berpaginasi menurut genre",
