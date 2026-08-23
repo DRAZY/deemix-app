@@ -16,6 +16,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as https from 'https'
 import { qobuzAuth } from './qobuzAuth'
+import { deezerAuth } from './deezerAuth'
 
 const NodeID3 = require('node-id3')
 
@@ -53,6 +54,7 @@ export interface RetagFields {
   explicitLyrics?: boolean
   albumBarcode?: boolean // UPC
   albumLabel?: boolean
+  copyright?: boolean    // TCOP / COPYRIGHT. Needs a Deezer login — see resolveCopyright.
   releaseType?: boolean  // RELEASETYPE (album/single/EP/compilation) — #82 retag backfill
   replayGain?: boolean   // REPLAYGAIN_TRACK_GAIN from Deezer's per-track gain. Default OFF.
 }
@@ -71,6 +73,7 @@ export interface ResolvedMeta {
   isrc: string
   upc: string
   label: string
+  copyright: string  // '' when unobtainable — the public API does not carry it (#139)
   year: string
   date: string
   bpm: string
@@ -208,6 +211,9 @@ function buildMeta(track: any, album: any): ResolvedMeta {
     isrc: str(track.isrc),
     upc: typeof album.upc === 'string' ? album.upc : '',
     label: typeof album.label === 'string' ? album.label : '',
+    // Deferred: the public endpoints this resolver uses carry no copyright at
+    // all. resolveCopyright fills it in from the gateway when a session exists.
+    copyright: '',
     year: releaseDate ? releaseDate.split('-')[0] : '',
     date: releaseDate,
     bpm: track.bpm ? str(track.bpm) : '',
@@ -252,11 +258,32 @@ function mapReleaseType(recordType: string): string {
 }
 
 /** Look up a track by ISRC on the public API and normalize track + album metadata. */
+/**
+ * Copyright for a Deezer track, from the private gateway (#139).
+ *
+ * The public endpoints this file resolves from carry no copyright field at all,
+ * so it can only come from deezer.pageTrack, which needs a logged-in session.
+ * Retagging otherwise works logged out, so this stays best-effort: no session,
+ * no lookup, and the field is reported as unavailable rather than failing the
+ * retag or forcing a login for the other twenty fields.
+ */
+async function resolveCopyright(trackId: string | number | undefined): Promise<string> {
+  if (!trackId || !deezerAuth.isLoggedIn()) return ''
+  try {
+    const page = await deezerAuth.getTrackPage(trackId)
+    return typeof page?.DATA?.COPYRIGHT === 'string' ? page.DATA.COPYRIGHT : ''
+  } catch {
+    return ''
+  }
+}
+
 export async function resolveByIsrc(isrc: string): Promise<ResolvedMeta | null> {
   const track = await getJson(`https://api.deezer.com/track/isrc:${encodeURIComponent(isrc)}`)
   if (!track || track.error || !track.id) return null
   const album = track.album?.id ? await getAlbum(track.album.id) : {}
-  return buildMeta(track, album)
+  const meta = buildMeta(track, album)
+  meta.copyright = await resolveCopyright(track.id)
+  return meta
 }
 
 /** Resolve by an explicit Deezer track id (the authoritative album track), with album. */
@@ -264,7 +291,9 @@ export async function resolveTrackById(trackId: string | number): Promise<Resolv
   const track = await getJson(`https://api.deezer.com/track/${trackId}`)
   if (!track || track.error || !track.id) return null
   const album = track.album?.id ? await getAlbum(track.album.id) : {}
-  return buildMeta(track, album)
+  const meta = buildMeta(track, album)
+  meta.copyright = await resolveCopyright(track.id)
+  return meta
 }
 
 // --- Qobuz fallback resolver (#108) ---------------------------------------
@@ -305,6 +334,9 @@ function buildMetaQobuz(track: any, album: any): ResolvedMeta {
     isrc: str(track.isrc),
     upc: typeof a.upc === 'string' ? a.upc : '',
     label: str(a.label?.name),
+    // Qobuz carries copyright on the track object itself, unlike Deezer's
+    // public endpoints, so this path needs no extra request.
+    copyright: str((t as any)?.copyright),
     year: releaseDate ? releaseDate.split('-')[0] : '',
     date: releaseDate,
     bpm: '', // not exposed by Qobuz's catalog
@@ -370,6 +402,7 @@ function planFields(meta: ResolvedMeta, fields: RetagFields): { plan: PlannedFie
   if (fields.explicitLyrics) plan.push({ field: 'explicitLyrics', value: meta.explicit ? '1' : '0' })
   add(fields.albumBarcode, 'albumBarcode', meta.upc)
   add(fields.albumLabel, 'albumLabel', meta.label)
+  add(fields.copyright, 'copyright', meta.copyright)
   add(fields.releaseType, 'releaseType', mapReleaseType(meta.recordType))
   add(fields.replayGain, 'replayGain', replayGainString(meta.gain))
   return { plan, unavailable }
@@ -421,6 +454,7 @@ function applyMp3(filePath: string, plan: PlannedField[], dryRun: boolean): { ch
         record('trackLength', existing.length, ms); tags.length = ms; break
       }
       case 'albumLabel': record(field, existing.publisher, value); tags.publisher = value; break
+      case 'copyright': record(field, existing.copyright, value); tags.copyright = value; break
       case 'albumBarcode': {
         const prev = udt.find((e) => e.description === 'BARCODE')
         record('albumBarcode', prev?.value ?? null, value)
@@ -481,7 +515,8 @@ const FLAC_FIELD_TO_KEY: Record<string, string> = {
   trackNumber: 'TRACKNUMBER', trackTotal: 'TRACKTOTAL', discNumber: 'DISCNUMBER',
   isrc: 'ISRC', year: 'YEAR', date: 'DATE', bpm: 'BPM', genre: 'GENRE',
   trackLength: 'LENGTH', explicitLyrics: 'EXPLICIT',
-  albumBarcode: 'BARCODE', albumLabel: 'LABEL', replayGain: 'REPLAYGAIN_TRACK_GAIN'
+  albumBarcode: 'BARCODE', albumLabel: 'LABEL', replayGain: 'REPLAYGAIN_TRACK_GAIN',
+  copyright: 'COPYRIGHT'
 }
 
 function applyFlac(filePath: string, plan: PlannedField[], dryRun: boolean): { changes: TagChange[]; unchanged: string[] } {
