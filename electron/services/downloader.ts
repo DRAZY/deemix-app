@@ -115,6 +115,9 @@ export interface DownloadOptions {
   embedArtwork: boolean
   saveLyrics: boolean
   syncedLyrics?: boolean
+  // When true, the plain .txt is skipped for any track that also produced an
+  // .lrc, so a track with synced lyrics leaves one file instead of two (#141).
+  preferSyncedLyrics?: boolean
   // Additional folder settings
   folderSettings?: FolderSettings
   // Track naming templates
@@ -1741,7 +1744,7 @@ export class Downloader extends EventEmitter {
       // Save lyrics if requested
       if (options.saveLyrics && trackInfo.LYRICS) {
         try {
-          await this.saveLyrics(trackInfo, decryptedPath, options.syncedLyrics !== false)
+          await this.saveLyrics(trackInfo, decryptedPath, options.syncedLyrics !== false, options.preferSyncedLyrics === true)
         } catch (error: any) {
           console.error(`[Downloader] Lyrics save error:`, error.message)
         }
@@ -4314,7 +4317,7 @@ export class Downloader extends EventEmitter {
     }
   }
 
-  private async saveLyrics(trackInfo: any, audioPath: string, saveSynced: boolean = true): Promise<void> {
+  private async saveLyrics(trackInfo: any, audioPath: string, saveSynced: boolean = true, preferSynced: boolean = false): Promise<void> {
     try {
       if (!trackInfo.LYRICS?.LYRICS_TEXT && !trackInfo.LYRICS?.LYRICS_SYNC_JSON) {
         return
@@ -4328,8 +4331,14 @@ export class Downloader extends EventEmitter {
       const outputDir = path.dirname(audioPath)
       const baseName = path.basename(audioPath, path.extname(audioPath))
 
+      // An .lrc carries the same words plus timing, so when one is going to be
+      // written the .txt is a duplicate. preferSynced skips it, leaving one
+      // file per track instead of two (#141). Off by default: turning it on
+      // changes what an existing library gets, so it stays the user's call.
+      const willWriteLrc = saveSynced && !!trackInfo.LYRICS?.LYRICS_SYNC_JSON
+
       // Save plain lyrics
-      if (trackInfo.LYRICS?.LYRICS_TEXT) {
+      if (trackInfo.LYRICS?.LYRICS_TEXT && !(preferSynced && willWriteLrc)) {
         const lyricsPath = path.join(outputDir, `${baseName}.txt`)
         fs.writeFileSync(lyricsPath, trackInfo.LYRICS.LYRICS_TEXT)
       }

@@ -424,6 +424,7 @@
     "embedArtwork": "Embed artwork in file",
     "saveLyrics": "Save lyrics",
     "syncedLyrics": "Synced lyrics (.lrc)",
+    "preferSyncedLyrics": "Skip the plain .txt when synced lyrics exist",
     "embeddedArtwork": "Embedded artwork size",
     "localArtwork": "Local artwork size",
     "saveCovers": "Save album covers",

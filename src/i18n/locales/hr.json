@@ -248,6 +248,7 @@
     "embedArtwork": "Ugradi omot u datoteku",
     "saveLyrics": "Spremi tekstove",
     "syncedLyrics": "Sinkronizirani tekstovi (.lrc)",
+    "preferSyncedLyrics": "Preskoči obični .txt kada postoje sinkronizirani tekstovi",
     "embeddedArtwork": "Veličina ugrađenog omota",
     "localArtwork": "Veličina lokalnog omota",
     "saveCovers": "Spremi omote albuma",

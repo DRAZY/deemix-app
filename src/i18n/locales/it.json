@@ -248,6 +248,7 @@
     "embedArtwork": "Incorpora copertina nel file",
     "saveLyrics": "Salva testi",
     "syncedLyrics": "Testi sincronizzati (.lrc)",
+    "preferSyncedLyrics": "Salta il .txt semplice quando esistono testi sincronizzati",
     "embeddedArtwork": "Dimensione copertina incorporata",
     "localArtwork": "Dimensione copertina locale",
     "saveCovers": "Salva copertine album",

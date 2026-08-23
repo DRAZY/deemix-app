@@ -248,6 +248,7 @@
     "embedArtwork": "Incorporar capa no arquivo",
     "saveLyrics": "Salvar letras",
     "syncedLyrics": "Letras sincronizadas (.lrc)",
+    "preferSyncedLyrics": "Ignorar o .txt simples quando houver letras sincronizadas",
     "embeddedArtwork": "Tamanho da capa incorporada",
     "localArtwork": "Tamanho da capa local",
     "saveCovers": "Salvar capas de álbum",

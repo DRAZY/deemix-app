@@ -103,6 +103,7 @@ export interface Settings {
   embedArtwork: boolean
   saveLyrics: boolean
   syncedLyrics: boolean
+  preferSyncedLyrics: boolean
   // Tag settings
   tags: TagSettings
   // Appearance settings
@@ -179,6 +180,7 @@ export const defaultSettings: Settings = {
   embedArtwork: true,
   saveLyrics: true,
   syncedLyrics: true,
+  preferSyncedLyrics: false,
   // Tag settings
   tags: {
     title: true,

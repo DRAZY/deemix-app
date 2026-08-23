@@ -248,6 +248,7 @@
     "embedArtwork": "Kapağı dosyaya göm",
     "saveLyrics": "Şarkı sözlerini kaydet",
     "syncedLyrics": "Senkronize şarkı sözleri (.lrc)",
+    "preferSyncedLyrics": "Senkronize şarkı sözleri varsa düz .txt dosyasını atla",
     "embeddedArtwork": "Gömülü kapak boyutu",
     "localArtwork": "Yerel kapak boyutu",
     "saveCovers": "Albüm kapaklarını kaydet",

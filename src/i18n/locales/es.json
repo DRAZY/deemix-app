@@ -248,6 +248,7 @@
     "embedArtwork": "Incrustar carátula en archivo",
     "saveLyrics": "Guardar letras",
     "syncedLyrics": "Letras sincronizadas (.lrc)",
+    "preferSyncedLyrics": "Omitir el .txt simple cuando existan letras sincronizadas",
     "embeddedArtwork": "Tamaño de carátula incrustada",
     "localArtwork": "Tamaño de carátula local",
     "saveCovers": "Guardar carátulas de álbum",

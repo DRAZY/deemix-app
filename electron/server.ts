@@ -424,6 +424,7 @@ interface ServerSettings {
   embedArtwork: boolean
   saveLyrics: boolean
   syncedLyrics: boolean
+  preferSyncedLyrics: boolean
   // Tag settings
   tags: TagSettings
   // Album cover settings
@@ -485,6 +486,9 @@ export class DeemixServer extends EventEmitter {
     embedArtwork: true,
     saveLyrics: true,
     syncedLyrics: true,
+    // Off by default: turning it on changes which files an existing user gets,
+    // so it is opt-in rather than a silent change to their library (#141).
+    preferSyncedLyrics: false,
     // Tag settings
     tags: {
       title: true,
@@ -1620,6 +1624,7 @@ export class DeemixServer extends EventEmitter {
         embedArtwork: this.settings.embedArtwork,
         saveLyrics: this.settings.saveLyrics,
         syncedLyrics: this.settings.syncedLyrics,
+        preferSyncedLyrics: this.settings.preferSyncedLyrics,
         // An album retry is NOT a single — clear isSingle so the album folder and
         // album track template apply, matching the original album download (#94).
         isSingle: !isPlaylistTrack && !albumCtx,
@@ -1765,6 +1770,7 @@ export class DeemixServer extends EventEmitter {
           embedArtwork: this.settings.embedArtwork,
           saveLyrics: this.settings.saveLyrics,
           syncedLyrics: this.settings.syncedLyrics,
+          preferSyncedLyrics: this.settings.preferSyncedLyrics,
           folderSettings: {
             createPlaylistFolder: this.settings.createPlaylistFolder,
             createArtistFolder: this.settings.createArtistFolder,
@@ -1953,6 +1959,7 @@ export class DeemixServer extends EventEmitter {
           embedArtwork: this.settings.embedArtwork,
           saveLyrics: this.settings.saveLyrics,
           syncedLyrics: this.settings.syncedLyrics,
+          preferSyncedLyrics: this.settings.preferSyncedLyrics,
           folderSettings: {
             createPlaylistFolder: this.settings.createPlaylistFolder,
             createArtistFolder: this.settings.createArtistFolder,
@@ -2063,6 +2070,7 @@ export class DeemixServer extends EventEmitter {
           embedArtwork: this.settings.embedArtwork,
           saveLyrics: this.settings.saveLyrics,
           syncedLyrics: this.settings.syncedLyrics,
+          preferSyncedLyrics: this.settings.preferSyncedLyrics,
           isSingle: !isPlaylist,
           isFromPlaylist: isPlaylist || undefined,
           playlistName: playlistName || undefined,
@@ -2142,6 +2150,7 @@ export class DeemixServer extends EventEmitter {
       embedArtwork: this.settings.embedArtwork,
       saveLyrics: this.settings.saveLyrics,
       syncedLyrics: this.settings.syncedLyrics,
+      preferSyncedLyrics: this.settings.preferSyncedLyrics,
       isSingle: !isPlaylist,
       isFromPlaylist: isPlaylist || undefined,
       playlistName: playlistName || undefined,
@@ -2370,7 +2379,8 @@ export class DeemixServer extends EventEmitter {
         'createCDFolder', 'createPlaylistStructure', 'createSinglesStructure',
         'createShortReleaseFolder',
         // File settings
-        'saveArtwork', 'embedArtwork', 'saveLyrics', 'syncedLyrics'
+        'saveArtwork', 'embedArtwork', 'saveLyrics', 'syncedLyrics',
+        'preferSyncedLyrics'
       ]
 
       for (const key of booleanSettings) {

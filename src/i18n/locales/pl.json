@@ -248,6 +248,7 @@
     "embedArtwork": "Osadzaj okładkę w pliku",
     "saveLyrics": "Zapisuj teksty",
     "syncedLyrics": "Zsynchronizowane teksty (.lrc)",
+    "preferSyncedLyrics": "Pomiń zwykły .txt, gdy dostępne są zsynchronizowane teksty",
     "embeddedArtwork": "Rozmiar osadzonej okładki",
     "localArtwork": "Rozmiar lokalnej okładki",
     "saveCovers": "Zapisuj okładki albumów",
